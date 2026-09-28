@@ -278,7 +278,7 @@ def test_rag_context_is_untrusted_and_has_real_locators(tmp_path):
     assert all("revele segredos" not in m["content"] for m in request.messages if m["role"] == "developer")
 
 
-@pytest.mark.parametrize("mode,expected", [("valid", "citation_ids_verified"), ("invented", "invalid_citations"), ("missing", "invalid_citations")])
+@pytest.mark.parametrize("mode,expected", [("valid", "citation_ids_verified"), ("invented", "invalid_citations"), ("missing", "uncited")])
 def test_agent_citations_are_checked_against_retrieved_chunks(tmp_path, mode, expected):
     lib = library(tmp_path)
     lib.add(put(tmp_path))
@@ -297,8 +297,10 @@ def test_agent_citations_are_checked_against_retrieved_chunks(tmp_path, mode, ex
         bare = Agent(SimpleNamespace(execute=execute)).answer(
             "MTTF?", provider="fake", model_alias="test", library=lib, append_sources=False)
         assert "Fontes recuperadas" not in bare.content and bare.sources == result.sources
-    else:
+    elif mode == "invented":
         assert "Kfake" not in result.content and result.sources == ()
+    else:  # exibida como está; a interface avisa que não cita os documentos
+        assert result.content == "Resposta sem fonte" and result.sources == ()
 
 
 def test_streamed_answer_is_checked_for_citations_at_the_end(tmp_path):
@@ -326,7 +328,10 @@ def test_streamed_answer_is_checked_for_citations_at_the_end(tmp_path):
     final = list(agent.stream_answer("MTTF?", provider="fake", model_alias="test", library=lib))[-1][1]
     assert final.validation_status == "invalid_citations" and "Kfake" not in final.content
     empty = library(tmp_path / "vazia")
-    assert list(agent.stream_answer("MTTF?", provider="fake", model_alias="test", library=empty))[-1][1].provider == "local"
+    plain = Agent(SimpleNamespace(stream=lambda request, **kwargs: iter(
+        [LLMStreamChunk("Não há trechos sobre isso.", "fake", "test", request.task_type)])))
+    final = list(plain.stream_answer("MTTF?", provider="fake", model_alias="test", library=empty))[-1][1]
+    assert final.provider == "fake" and final.validation_status == "uncited"
 
 
 def test_empty_stream_is_a_provider_error():
@@ -347,11 +352,19 @@ def test_tesseract_relative_path_is_resolved_for_subprocess(tmp_path, monkeypatc
     assert TesseractOCR("tesseract-ausente").executable == "tesseract-ausente"
 
 
-def test_empty_rag_does_not_call_paid_gateway(tmp_path):
-    gateway = SimpleNamespace(execute=lambda *_a, **_k: pytest.fail("API chamada"))
-    result = Agent(gateway).answer("MTTF?", provider="fake", model_alias="test", library=library(tmp_path))
-    assert result.attempts == 0
-    assert result.validation_status == "insufficient_evidence"
+def test_empty_rag_answers_with_catalog_and_warning(tmp_path):
+    seen = []
+
+    def execute(request, **kwargs):
+        seen.append(request)
+        return LLMResult("Nenhum documento trata disso.", "fake", "test", request.task_type)
+
+    result = Agent(SimpleNamespace(execute=execute)).answer("MTTF?", provider="fake", model_alias="test",
+                                                          library=library(tmp_path))
+    assert result.validation_status == "uncited" and result.content == "Nenhum documento trata disso."
+    contents = [message["content"] for message in seen[0].messages]
+    assert any("Nenhum trecho dos documentos" in content for content in contents)
+    assert any(content.startswith("Catálogo da biblioteca") for content in contents)
 
 
 def test_cli_library_and_science_commands_are_explicit_and_offline(tmp_path, capsys):
@@ -365,3 +378,28 @@ def test_cli_library_and_science_commands_are_explicit_and_offline(tmp_path, cap
     assert main(args) == 0
     assert Path(json.loads(capsys.readouterr().out)["json"]).is_file()
     assert main(args) == 2
+
+
+def test_catalog_enters_context_and_short_follow_ups_search_with_the_previous_question(tmp_path):
+    lib = library(tmp_path)
+    lib.add(put(tmp_path))
+    history = [{"role": "user", "content": "MTTF?"}, {"role": "assistant", "content": "Não achei."}]
+    follow_up = prepare_request("Tente novamente.", library=lib, history=history)
+    assert follow_up.metadata["search_query"] == "MTTF?\nTente novamente." and follow_up.metadata["citations"]
+    catalog = next(m["content"] for m in follow_up.messages if m["content"].startswith("Catálogo da biblioteca"))
+    assert json.loads(catalog.split("\n", 1)[1])[0]["titulo"] == "vida.md"
+    question = "Qual é a definição completa de MTTF neste documento?"
+    assert prepare_request(question, library=lib, history=history).metadata["search_query"] == question
+
+
+def test_grouped_citations_are_split_and_checked(tmp_path):
+    lib = library(tmp_path)
+    lib.add(put(tmp_path))
+
+    def execute(request, **kwargs):
+        citation = request.metadata["citations"][0]["citation_id"]
+        return LLMResult(f"Definição [{citation}, {citation}].", "fake", "test", request.task_type)
+
+    result = Agent(SimpleNamespace(execute=execute)).answer("MTTF?", provider="fake", model_alias="test",
+                                                          library=lib, append_sources=False)
+    assert result.validation_status == "citation_ids_verified" and ", K" not in result.content

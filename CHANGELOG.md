@@ -3,6 +3,31 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Lote 18, a partir dos apontamentos do pesquisador no uso real. A versão 0.2.0 sai com a aba
+Ciência (lote 20), depois da busca (lote 19). Detalhes na [spec 0018](docs/specs/0018-biblioteca-memoria-anexos.md).
+
+### Adicionado
+
+- **Perfil na memória:** o que você conta sobre si (nome, instituição, pesquisa) vale em todas as conversas. O revisor guarda até 8 anotações por troca.
+- **Memória de conversas:** cada troca fica guardada no computador, e até 3 trocas de outras conversas, parecidas com o assunto, entram como contexto. As conversas que já existiam são indexadas na primeira abertura.
+- **Catálogo no modo biblioteca:** o agente recebe a lista dos documentos e responde sobre o acervo.
+- **Busca com contexto:** mensagens curtas, como "tente novamente", buscam junto com a pergunta anterior.
+
+### Alterado
+
+- **Resposta sem citação** no modo biblioteca: aparece com o aviso "Esta resposta não cita trechos dos seus documentos" e entra no histórico. Citação inventada continua bloqueada.
+- **Fontes e memória** abrem numa janela sobre a resposta, que fecha com Esc ou com um clique fora. O painel lateral saiu.
+- **Anexos:** fila de até 3 cartões com contador; os que dão certo somem em 6 s.
+- **Conversa apagada** deixa de ser lembrada. As anotações que saíram dela continuam.
+- Sem anotação sobre algo, o agente diz que não tem isso anotado, e não que não tem memória.
+
+### Corrigido
+
+- Anotações e trocas com mais de 128 tokens ficavam sem vetor e nunca eram achadas por semelhança. As que faltam são preenchidas na abertura.
+- O navegador guardava versões antigas da interface depois de uma atualização.
+
 ## [0.1.0] — 2026-09-27
 
 Primeira versão do AL-IAdo retrabalhado a partir do repositório `mestrado-utfpr`: um agente

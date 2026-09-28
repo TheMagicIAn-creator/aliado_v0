@@ -2,13 +2,14 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.1.0**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
+especialização. Versão **0.1.0**, com as mudanças do lote 18 ainda não lançadas. Tudo está em
+[CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
 
 - **Conversa pelo navegador** com o Gemini ou a OpenAI, com skills que orientam cada tema.
 - **Biblioteca de referências:** PDF, Markdown e JSON enviados pelo chat, com OCR, busca local e citações com a página.
-- **Memória persistente:** o que você ensina vale nas próximas conversas. O que o agente deduz fica marcado para revisão, e correções não apagam o histórico.
+- **Memória persistente:** lembra quem você é, o que você ensina e as conversas anteriores sobre o mesmo assunto. O que o agente deduz fica marcado para revisão, e correções não apagam o histórico.
 - **Busca na web** com as fontes citadas.
 - **Cálculos de confiabilidade** por cenário explícito e a **FMECA** dos inversores.
 - **Experimento de detecção** Denso × AE-LSTM no GPVS-Faults, reproduzível e com relatórios.
@@ -66,15 +67,20 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 - **Conversas:**
   - Respostas em fluxo, com botão para parar, e os tokens de cada resposta.
   - Escolha da skill e do modelo.
-  - Histórico em `data/conversas/`. Conversas apagadas vão para a lixeira sem afetar a memória.
+  - Histórico em `data/conversas/`. Conversas apagadas vão para a lixeira e deixam de ser lembradas; as anotações que saíram delas continuam.
+  - O link no fim da resposta abre uma janela com as fontes e a memória usada, que fecha com Esc.
 - **Documentos:**
   - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página.
+  - Os envios aparecem numa fila de até 3 cartões, com contador. Os que dão certo somem em 6 s.
   - Cada documento ganha uma ficha de leitura.
-  - As respostas citam **[n]** com o trecho e a página no painel de fontes.
+  - Com **Usar biblioteca**, o agente recebe a lista dos documentos, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
 - **Memória** (`data/memoria/`):
   - O que você diz ou corrige vale na hora; o que o agente deduz fica marcado como "inferida".
+  - O que você conta sobre si vira **perfil** e vale em todas as conversas.
+  - Cada troca fica guardada, e até 3 trocas de outras conversas, parecidas com o assunto, entram como contexto.
   - Diga "lembre que…" ou use **Lembrar…**.
   - A aba **Memória** mostra histórico, edição, revogação e conflitos para você decidir. Nada é apagado.
+  - `data/` fica fora do Git e sem cópia automática. Copie `data/memoria` e `data/conversas` se quiser guardá-los.
 - **Busca na web:** ligue **Buscar na web**. As fontes da web aparecem como **[Wn]**, separadas dos seus documentos. Na aba Memória, **Conferir na web** checa uma anotação.
 - **Custo:** cada resposta chama o provedor, e a busca na web pode ter custo à parte no Google. O registro `data/uso/chamadas.jsonl` guarda data, modelo, tokens e número de buscas, sem o texto.
 
@@ -153,7 +159,7 @@ desenvolvimento e não entram no pacote.
 
 ## Documentação
 
-- [Roteiro da v0](docs/roteiro-v0.md): critérios de pronto, lotes e decisões de escopo.
+- [Roteiro da v0](docs/roteiro-v0.md): critérios de pronto, lotes, decisões de escopo e os lotes depois da v0.1.0.
 - [Specs dos lotes](docs/specs/): o que cada lote entregou, com critérios de aceitação.
 - [Mapa de migração](docs/migracao/README.md): o que veio do repositório de origem, com manifestos e validações de cada lote.
 - [Regras de colaboração](AGENTS.md).
@@ -163,4 +169,6 @@ desenvolvimento e não entram no pacote.
 - Reconferir nos PDFs as taxas de falha e as notas da FMECA, quando entrarem na biblioteca.
 - Tempos de reparo e disponibilidade só entram com fonte.
 - No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso.
+- A busca da biblioteca favorece documentos no idioma da pergunta, e o catálogo mostra o nome do arquivo, sem autor nem ano. É o lote 19; veja a [validação do lote 18](docs/migracao/validacao-lote-18.md).
+- A aba **Ciência** da interface ainda está "em breve": entra no lote 20, depois da busca.
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

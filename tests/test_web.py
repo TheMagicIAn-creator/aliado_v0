@@ -401,3 +401,58 @@ def test_check_route_corrects_inference_and_opens_conflict_for_user_note(env):
     assert client.post(f"/api/memoria/{mine['id']}/conferir").status_code == 403
     log = env["settings"].usage_log.read_text(encoding="utf-8")
     assert '"task_type": "memoria-conferencia"' in log and '"web_queries": 1' in log
+
+
+class WordEncoder:
+    """Vetores por grupos de palavras, para testar a memória de conversas sem o modelo local."""
+
+    groups = (("igbt",), ("reparo", "mttr"), ("nome", "rodolfo"))
+
+    def encode(self, texts):
+        return [[1.0 if any(w in t.lower() for w in g) else 0.0 for g in self.groups] + [0.01] for t in texts]
+
+
+def test_conversation_memory_is_recalled_in_new_conversations_and_forgotten_on_delete(env):
+    client, calls, memory = env["client"], env["calls"], env["memory"]
+    memory.encoder = WordEncoder()
+    first = new_conversation(client)
+    ask(client, first, "Qual a taxa do IGBT?", biblioteca=False)
+    assert memory.exchange_count() == 1
+    second = new_conversation(client)
+    _, events = ask(client, second, "E o IGBT, qual era mesmo?", biblioteca=False)
+    assert [item["conversation_id"] for item in calls[-1]["recalled"]] == [first]
+    assert fim(events)["mensagens"][-1]["conversas_lembradas"][0]["conversation_id"] == first
+    ask(client, second, "Mais sobre o IGBT?", biblioteca=False)
+    assert all(item["conversation_id"] != second for item in calls[-1]["recalled"])  # já está no histórico
+    assert client.delete(f"/api/conversas/{first}", headers=HEADERS).status_code == 200
+    ask(client, second, "IGBT de novo?", biblioteca=False)
+    assert calls[-1]["recalled"] == []
+
+
+def test_existing_conversations_are_indexed_once(env):
+    from aliado.interfaces.web.app import _index_conversations
+    from aliado.interfaces.web.conversations import ConversationStore
+
+    env["memory"].encoder = WordEncoder()
+    client = env["client"]
+    ask(client, new_conversation(client), "Taxa do IGBT?", biblioteca=False)
+    store = ConversationStore(env["tmp"] / "dados" / "conversas")
+    assert _index_conversations(store, env["memory"]) == 0  # guardada na hora da resposta
+    fresh = MemoryStore(env["tmp"] / "outra", encoder=WordEncoder())
+    assert _index_conversations(store, fresh) == 1 and _index_conversations(store, fresh) == 0
+
+
+def test_uncited_reply_is_shown_and_kept_in_context(env):
+    client, reply = env["client"], env["reply"]
+    reply.update(status="uncited", sources=())
+    cid = new_conversation(client)
+    ask(client, cid)
+    last = client.get(f"/api/conversas/{cid}").json()["messages"][-1]
+    assert last["validation_status"] == "uncited" and last["in_context"] is True
+
+
+def test_page_and_static_files_are_revalidated_after_updates(env):
+    client = env["client"]
+    for path in ("/", "/static/app.js", "/static/app.css"):
+        assert client.get(path).headers["cache-control"] == "no-cache", path
+

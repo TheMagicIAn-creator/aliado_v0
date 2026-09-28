@@ -3,7 +3,8 @@
 const $ = (id) => document.getElementById(id);
 // A tela inicial sai do DOM quando há mensagens; a referência permite recolocá-la.
 const WELCOME = $("welcome");
-const state ={ conversation: null, models: [], skills: [], documents: 0, busy: false, sourcesOf: null };
+const state ={ conversation: null, models: [], skills: [], documents: 0, busy: false, sourcesOf: null,
+  infoAnchor: null };
 const SKILL_LABELS = {
   "pesquisa-inversores": "Pesquisa · inversores",
   "engenharia": "Engenharia",
@@ -199,7 +200,8 @@ function trashIcon() {
 
 async function deleteConversation(item) {
   const ok = window.confirm(`Apagar a conversa “${item.title}”?\n\nEla sai da lista e vai para a lixeira local ` +
-    "(data/conversas/lixeira). As memórias geradas a partir dela continuam valendo.");
+    "(data/conversas/lixeira) e deixa de ser lembrada em outras conversas. As anotações geradas a partir dela "
+    + "continuam valendo.");
   if (!ok) return;
   if (state.busy && state.conversation?.id === item.id) state.controller?.abort();
   try {
@@ -238,8 +240,6 @@ async function openConversation(id) {
   messages.replaceChildren();
   for (const message of state.conversation.messages) messages.append(renderMessage(message));
   if (!state.conversation.messages.length) showWelcome();
-  const last = [...state.conversation.messages].reverse().find((m) => m.role === "assistant");
-  showSources(last);
   messages.scrollTop = messages.scrollHeight;
   loadConversations();
 }
@@ -249,7 +249,7 @@ function showWelcome() {
   $("messages").replaceChildren(WELCOME);
   $("suggestions").replaceChildren(...SUGGESTIONS.map((text) =>
     el("button", { class: "suggestion", type: "button", text, onclick: () => { $("question").value = text; autosize(); $("question").focus(); } })));
-  showSources(null);
+  closeInfo();
 }
 
 $("new-chat").addEventListener("click", () => {
@@ -270,39 +270,41 @@ function renderMessage(message) {
   answer.innerHTML = message.html; // HTML gerado no servidor, com HTML do modelo escapado
   renderMath(answer);
   answer.querySelectorAll(".cite").forEach((button) =>
-    button.addEventListener("click", () => {
-      showSources(message);
-      openSourcesPanel();
-      if (button.dataset.web) highlightSource(button.dataset.web, "web");
-      else highlightSource(button.dataset.cite);
-    }));
+    button.addEventListener("click", () => openInfo(message, button, button.dataset.web
+      ? { number: button.dataset.web, kind: "web" } : { number: button.dataset.cite, kind: "source" })));
   const node = el("article", { class: "msg-assistant", "data-message": message.id }, answer);
   if (message.validation_status === "insufficient_evidence" || message.validation_status === "invalid_citations") {
     node.append(el("div", { class: "note note-warn",
       text: "Resposta local: a biblioteca não sustentou uma resposta com citações. Ela não entra no histórico enviado ao modelo." }));
+  }
+  if (message.validation_status === "uncited") {
+    node.append(el("div", { class: "note note-uncited", text: "Esta resposta não cita trechos dos seus documentos." }));
   }
   const usage = message.usage || {};
   const meta = el("div", { class: "meta" });
   if (message.model && message.provider !== "local") meta.append(el("span", { text: message.model }));
   if (usage.total_tokens) meta.append(el("span", { text: `${formatTokens(usage.total_tokens)} tokens` }));
   if (usage.reasoning_tokens) meta.append(el("span", { text: `${formatTokens(usage.reasoning_tokens)} de raciocínio` }));
+  const info = (event) => openInfo(message, event.currentTarget);
   if (message.sources?.length) {
     meta.append(el("button", { class: "link", type: "button", text: `${message.sources.length} fonte(s)`,
-      onclick: () => { showSources(message); openSourcesPanel(); } }));
+      onclick: info }));
   }
   if (message.web_sources?.length || message.web_queries?.length) {
     const searches = message.web_queries?.length || 0;
     meta.append(el("button", { class: "link web-link", type: "button",
       text: `${searches} ${searches === 1 ? "busca" : "buscas"} na web · ${message.web_sources?.length || 0} fonte(s)`,
-      onclick: () => { showSources(message); openSourcesPanel(); } }));
+      onclick: info }));
   }
-  const openPanel = () => { showSources(message); openSourcesPanel(); };
+  const recalled = message.conversas_lembradas?.length || 0;
+  if (recalled) meta.append(el("button", { class: "link memory-link", type: "button",
+    text: `lembrou ${recalled} ${recalled === 1 ? "conversa" : "conversas"}`, onclick: info }));
   const used = message.memorias_usadas?.length || 0;
   const created = message.memorias_criadas?.length || 0;
   if (used) meta.append(el("button", { class: "link memory-link", type: "button",
-    text: `usou ${used} ${used === 1 ? "memória" : "memórias"}`, onclick: openPanel }));
+    text: `usou ${used} ${used === 1 ? "memória" : "memórias"}`, onclick: info }));
   if (created) meta.append(el("button", { class: "link memory-link is-new", type: "button",
-    text: `${created} ${created === 1 ? "anotação nova" : "anotações novas"}`, onclick: openPanel }));
+    text: `${created} ${created === 1 ? "anotação nova" : "anotações novas"}`, onclick: info }));
   if (message.id && message.provider !== "local") {
     meta.append(el("button", { class: "link", type: "button", text: "Lembrar…",
       onclick: () => openRemember() }));
@@ -312,7 +314,8 @@ function renderMessage(message) {
 }
 
 /* Memória */
-const KIND_LABELS = { preferencia: "Preferência", correcao: "Correção", fato: "Fato", decisao: "Decisão" };
+const KIND_LABELS = { perfil: "Perfil", preferencia: "Preferência", correcao: "Correção", fato: "Fato",
+  decisao: "Decisão" };
 const ORIGIN_LABELS = { feedback: "sua", comando: "sua", inferido: "inferida" };
 const STATUS_LABELS = { ativa: "ativa", conflito: "em conflito", superada: "superada", revogada: "revogada" };
 
@@ -335,8 +338,17 @@ function renderMemoryPanel(message) {
   const panel = $("memory-panel");
   const used = message?.memorias_usadas || [];
   const created = message?.memorias_criadas || [];
-  if (!used.length && !created.length) { panel.replaceChildren(); return; }
+  const recalled = message?.conversas_lembradas || [];
+  if (!used.length && !created.length && !recalled.length) { panel.replaceChildren(); return; }
   const parts = [el("h2", { class: "panel-title panel-title-spaced", text: "Memória nesta resposta" })];
+  if (recalled.length) {
+    parts.push(el("p", { class: "muted", text: "Conversas lembradas:" }), el("ul", { class: "memory-chips" },
+      ...recalled.map((item) => el("li", { class: "recall-item" },
+        el("span", { class: "muted", text: relativeDate(item.created_at) }),
+        el("span", { class: "memory-chip-text", text: item.question }),
+        el("button", { class: "link", type: "button", text: "Abrir conversa",
+          onclick: () => { closeInfo(); openConversation(item.conversation_id); } })))));
+  }
   if (used.length) parts.push(el("p", { class: "muted", text: "Usadas:" }), el("ul", { class: "memory-chips" }, ...used.map(memoryChip)));
   if (created.length) parts.push(el("p", { class: "muted", text: "Anotações novas:" }), el("ul", { class: "memory-chips" }, ...created.map(memoryChip)));
   parts.push(el("button", { class: "link", type: "button", text: "Abrir a aba Memória", onclick: () => openMemory() }));
@@ -538,9 +550,7 @@ function showSources(message) {
   const sources = message?.sources || [];
   const web = message?.web_sources || [];
   if (!sources.length && !web.length) {
-    list.replaceChildren(el("p", { class: "muted", text: message
-      ? "Esta resposta não usou trechos da biblioteca nem a web."
-      : "As fontes citadas aparecem aqui. Ligue “Usar biblioteca” ou “Buscar na web” para respostas com fontes." }));
+    list.replaceChildren(el("p", { class: "muted", text: "Esta resposta não usou trechos da biblioteca nem a web." }));
     return;
   }
   const parts = [];
@@ -588,13 +598,54 @@ function showSources(message) {
 
 const SMALL = window.matchMedia("(max-width: 1100px)");
 
-function openSourcesPanel() {
-  // Em telas estreitas o painel fica oculto e abre sobreposto; em telas largas já está visível.
-  if (SMALL.matches) $("app").classList.add("sources-open");
+/* Janela de fontes e memória: abre sobre a resposta, perto do link clicado. */
+function openInfo(message, anchor, focus) {
+  showSources(message);
+  const pop = $("info-popover");
+  pop.hidden = false;
+  state.infoAnchor = anchor;
+  placeInfo(anchor);
+  if (focus) highlightSource(focus.number, focus.kind);
+  else pop.scrollTop = 0;
 }
 
-$("sources-close").addEventListener("click", () => $("app").classList.remove("sources-open"));
-$("scrim").addEventListener("click", () => $("app").classList.remove("sources-open", "drawer-open-small"));
+function placeInfo(anchor) {
+  const pop = $("info-popover");
+  const area = $("chat-view").getBoundingClientRect();
+  const rect = anchor.getBoundingClientRect();
+  const width = Math.max(260, Math.min(560, area.width - 24));
+  pop.style.width = `${width}px`;
+  pop.style.left = `${Math.min(Math.max(rect.left - 24, area.left + 12), area.right - width - 12)}px`;
+  // Abre acima do link se couber (ou se houver mais espaço acima); a altura nunca passa da tela.
+  const above = rect.top - area.top - 16;
+  const below = window.innerHeight - rect.bottom - 16;
+  pop.style.maxHeight = "";
+  const natural = Math.min(pop.scrollHeight, window.innerHeight * 0.6);
+  if (above >= Math.min(natural, 240) || above >= below) {
+    pop.style.top = "";
+    pop.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+    pop.style.maxHeight = `${Math.min(above, window.innerHeight * 0.6)}px`;
+  } else {
+    pop.style.bottom = "";
+    pop.style.top = `${rect.bottom + 8}px`;
+    pop.style.maxHeight = `${Math.min(below, window.innerHeight * 0.6)}px`;
+  }
+}
+
+function closeInfo() {
+  $("info-popover").hidden = true;
+  state.infoAnchor = null;
+}
+
+$("info-close").addEventListener("click", closeInfo);
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeInfo(); });
+document.addEventListener("click", (event) => {
+  const pop = $("info-popover");
+  if (!pop.hidden && !pop.contains(event.target) && !event.target.closest(".cite, .meta .link")) closeInfo();
+});
+window.addEventListener("resize", closeInfo);
+$("messages").addEventListener("scroll", () => { if (state.infoAnchor?.isConnected) placeInfo(state.infoAnchor); });
+$("scrim").addEventListener("click", () => $("app").classList.remove("drawer-open-small"));
 
 function highlightSource(number, kind = "source") {
   const key = kind === "web" ? "web" : "source";
@@ -680,7 +731,6 @@ $("composer").addEventListener("submit", async (event) => {
           userBubble.remove();
           for (const message of data.mensagens) messages.append(renderMessage(message));
           state.conversation.messages.push(...data.mensagens);
-          showSources(data.mensagens[data.mensagens.length - 1]);
           messages.scrollTop = messages.scrollHeight;
           loadConversations();
           api("/api/estado").then((s) => showUsage(s.uso)).catch(() => {});
@@ -691,7 +741,7 @@ $("composer").addEventListener("submit", async (event) => {
             message.memorias_criadas = event.criadas;
             const node = document.querySelector(`[data-message="${event.mensagem}"]`);
             node?.replaceWith(renderMessage(message));
-            if (state.sourcesOf?.id === message.id) showSources(message);
+            if (state.sourcesOf?.id === message.id && !$("info-popover").hidden) showSources(message);
           }
           if (event.criadas?.length) {
             toast(`${event.criadas.length} anotação(ões) nova(s) na memória.`);
@@ -716,14 +766,59 @@ $("composer").addEventListener("submit", async (event) => {
 });
 
 /* Envio de documentos */
+const UPLOAD_OK_MS = 6000;
+const queue = { total: 0, done: 0, failed: 0 };
+
+function limitCards() {
+  // No máximo três cartões à vista, os mais recentes; o contador resume o resto.
+  document.querySelectorAll(".upload-card").forEach((card, index) => card.classList.toggle("is-overflow", index >= 3));
+}
+
+function renderQueue() {
+  limitCards();
+  let counter = document.querySelector(".upload-queue");
+  const active = queue.done + queue.failed < queue.total;
+  if (!queue.total || (!active && !queue.failed)) {
+    counter?.remove();
+    if (!active) Object.assign(queue, { total: 0, done: 0, failed: 0 });
+    return;
+  }
+  if (!counter) {
+    counter = el("div", { class: "upload-queue" });
+    $("uploads").prepend(counter);
+  }
+  const failed = queue.failed ? ` · ${queue.failed} com falha` : "";
+  counter.textContent = `${queue.done} de ${queue.total} indexados${failed}`;
+}
+
+function finishCard(view, ok) {
+  if (ok) {
+    queue.done += 1;
+    setTimeout(() => {
+      view.card.classList.add("is-leaving");
+      setTimeout(() => { view.card.remove(); renderQueue(); }, 400);
+    }, UPLOAD_OK_MS);
+  } else {
+    queue.failed += 1;  // falhas ficam até serem fechadas
+  }
+  renderQueue();
+}
+
 function uploadCard(name) {
   const state_ = el("span", { class: "state", text: "Enviando…" });
   const bar = el("span", { class: "bar" }, el("i"));
   const close = el("button", { class: "dismiss", type: "button", "aria-label": "Fechar aviso", text: "×",
-    onclick: () => card.remove() });
+    onclick: () => {
+      if (card.classList.contains("is-fail")) queue.failed = Math.max(0, queue.failed - 1);
+      card.remove();
+      renderQueue();
+    } });
   const card = el("div", { class: "upload-card" },
     el("div", { class: "grow" }, el("div", { class: "name", text: name }), state_), bar, close);
-  $("uploads").append(card);
+  // O mais recente fica no topo; a fila mostra no máximo três cartões e um contador.
+  const counter = document.querySelector(".upload-queue");
+  if (counter) counter.after(card); else $("uploads").prepend(card);
+  limitCards();
   const setProgress = (fraction) => {
     bar.classList.toggle("is-determinate", fraction !== null);
     bar.firstElementChild.style.width = fraction === null ? "" : `${Math.round(fraction * 100)}%`;
@@ -741,8 +836,14 @@ function progressText(job) {
 }
 
 async function uploadFiles(files) {
-  for (const file of files) {
-    if (!/\.(pdf|md|json)$/i.test(file.name)) { toast(`${file.name}: envie PDF, Markdown ou JSON.`); continue; }
+  const accepted = files.filter((file) => {
+    const ok = /\.(pdf|md|json)$/i.test(file.name);
+    if (!ok) toast(`${file.name}: envie PDF, Markdown ou JSON.`);
+    return ok;
+  });
+  queue.total += accepted.length;
+  renderQueue();
+  for (const file of accepted) {
     const view = uploadCard(file.name);
     try {
       const form = new FormData();
@@ -756,6 +857,7 @@ async function uploadFiles(files) {
       view.bar.remove();
       view.card.classList.add("is-fail");
       view.state.textContent = error.message;
+      finishCard(view, false);
     }
   }
 }
@@ -772,6 +874,7 @@ async function pollJob(id, view) {
       if (job.estado === "falhou") {
         view.card.classList.add("is-fail");
         view.state.textContent = `Não foi possível indexar: ${job.erro}`;
+        finishCard(view, false);
         return;
       }
       const r = job.resultado;
@@ -792,6 +895,7 @@ async function pollJob(id, view) {
       state.documents = status.biblioteca.documentos;
       updateLibraryLabel();
       if (!$("library-view").hidden) loadLibrary();
+      finishCard(view, r.status !== "failed");
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -821,9 +925,9 @@ document.addEventListener("drop", (event) => {
 function showView(name) {
   const app = $("app");
   app.classList.toggle("library-mode", name !== "chat");
-  app.classList.remove("sources-open", "drawer-open-small");
+  app.classList.remove("drawer-open-small");
+  closeInfo();
   $("chat-view").hidden = name !== "chat";
-  $("sources").hidden = name !== "chat";
   $("library-view").hidden = name !== "library";
   $("memory-view").hidden = name !== "memory";
   for (const [id, view] of [["nav-chats", "chat"], ["nav-library", "library"], ["nav-memory", "memory"]]) {

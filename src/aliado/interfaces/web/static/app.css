@@ -67,12 +67,12 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .app {
   height: 100vh;
   display: grid;
-  grid-template-columns: var(--rail) var(--drawer) minmax(0, 1fr) var(--sources);
+  grid-template-columns: var(--rail) var(--drawer) minmax(0, 1fr);
   grid-template-rows: 56px minmax(0, 1fr);
-  grid-template-areas: "top top top top" "rail drawer chat sources";
+  grid-template-areas: "top top top" "rail drawer chat";
 }
-.app.drawer-closed { grid-template-columns: var(--rail) 0 minmax(0, 1fr) var(--sources); }
-.app.library-mode { grid-template-areas: "top top top top" "rail drawer library library"; }
+.app.drawer-closed { grid-template-columns: var(--rail) 0 minmax(0, 1fr); }
+.app.library-mode { grid-template-areas: "top top top" "rail drawer library"; }
 
 /* Barra superior */
 .topbar { grid-area: top; display: flex; align-items: center; gap: 10px; padding: 0 16px; min-width: 0;
@@ -228,11 +228,20 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
             background: color-mix(in srgb, var(--accent-soft) 88%, transparent); display: grid; place-items: center;
             font: 20px var(--serif); color: var(--accent-text); z-index: 5; }
 
-/* Painel de fontes */
-.sources { grid-area: sources; border-left: 1px solid var(--border); background: var(--surface); padding: 16px; overflow-y: auto; }
+/* Janela de fontes e memória, aberta sobre a resposta */
+.popover { position: fixed; z-index: 40; max-height: 60vh; overflow-y: auto; padding: 12px 14px;
+           background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px;
+           box-shadow: 0 14px 36px rgba(0, 0, 0, .28); }
+.popover .panel-head { position: sticky; top: -12px; margin: -12px -14px 10px; padding: 10px 14px 8px;
+                       background: var(--surface); border-bottom: 1px solid var(--border); }
+.note-uncited { background: var(--warn-bg); color: var(--warn-text); }
+.recall-item { border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; display: grid; gap: 3px;
+               font-size: 12.5px; }
+.upload-queue { font-size: 12.5px; color: var(--text-soft); }
+.upload-card.is-overflow { display: none; }
+.upload-card.is-leaving { opacity: 0; transition: opacity .4s; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .panel-title { font-size: 12px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--text-faint); margin: 0; }
-.sources-close { display: none; }
 .scrim { display: none; }
 .source-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 10px;
                font-size: 13px; transition: border-color .15s, box-shadow .15s; }
@@ -335,16 +344,14 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 
 /* Telas estreitas: conversas e fontes abrem sobrepostas, sem espremer a resposta. */
 @media (max-width: 1100px) {
-  .app, .app.drawer-closed { grid-template-columns: var(--rail) 0 minmax(0, 1fr) 0; }
-  .app .drawer, .app .sources { display: none; }
-  .app.drawer-open-small .drawer, .app.sources-open .sources {
+  .app, .app.drawer-closed { grid-template-columns: var(--rail) 0 minmax(0, 1fr); }
+  .app .drawer { display: none; }
+  .app.drawer-open-small .drawer {
     display: block; position: fixed; top: 56px; bottom: 0; z-index: 20;
     box-shadow: 0 12px 38px rgba(0, 0, 0, .22); }
   .app.drawer-open-small .drawer { left: var(--rail); width: min(var(--drawer), 80vw); }
-  .app.sources-open .sources { right: 0; width: min(360px, 92vw); }
-  .app.drawer-open-small .scrim, .app.sources-open .scrim {
+  .app.drawer-open-small .scrim {
     display: block; position: fixed; inset: 56px 0 0 var(--rail); z-index: 15; background: rgba(0, 0, 0, .28); }
-  .sources-close { display: grid; }
   .composer-hint, .usage { display: none; }
   .library-body { grid-template-columns: 1fr; }
 }

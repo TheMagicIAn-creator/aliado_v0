@@ -113,7 +113,7 @@ def test_reviewer_validates_types_origins_citations_and_replacements():
     existing = [{"id": "m1", "kind": "decisao", "origin": "feedback", "text": "IGBT 8,9."}]
     notes, _ = review_exchange(execute, question="Q", answer="A", skill="pesquisa-inversores",
                                skill_text="Instruções", sources=sources, existing=existing)
-    assert [n["kind"] for n in notes] == ["preferencia", "fato"]  # só as três primeiras são lidas
+    assert [n["kind"] for n in notes] == ["preferencia", "fato", "decisao", "correcao"]  # fato inventado sai
     assert notes[1]["origin"] == "inferido" and notes[1]["source"]["page"] == 3
     request = calls[0]
     assert request.structured_output and request.task_type == "memoria-revisor"
@@ -164,3 +164,84 @@ def test_memories_enter_context_as_data_with_rules():
     assert contents.index("oi") > rules  # memória antes do histórico e da pergunta
     assert request.metadata["memories"] == ["a" * 32, "b" * 32]
     assert "Memória do AL-IAdo" not in "\n".join(m["content"] for m in prepare_request("Oi").messages)
+
+
+def test_reviewer_accepts_profile_and_reads_up_to_eight_notes():
+    payload = {"anotacoes": [{"tipo": "perfil", "texto": "O usuário se chama Rodolfo.", "origem": "feedback"}] + [
+        {"tipo": "preferencia", "texto": f"Preferência {i}.", "origem": "feedback"} for i in range(9)]}
+    execute, calls = fake_execute(payload)
+    notes, _ = review_exchange(execute, question="Sou o Rodolfo.", answer="Olá, Rodolfo!", skill=None)
+    assert len(notes) == 8
+    assert notes[0] == {"kind": "perfil", "text": "O usuário se chama Rodolfo.", "origin": "feedback", "source": {},
+                        "supersedes": None, "diverges_skill": False}
+    assert "- perfil:" in calls[0].messages[0]["content"]
+
+
+def test_profile_is_global_and_always_recalled(store):
+    profile = store.add(kind="perfil", text="O usuário se chama Rodolfo e é mestrando.", origin="feedback",
+                        skill="pesquisa-inversores")
+    assert profile["skill"] is None
+    store.add(kind="decisao", text="IGBT 8,9e-6/h.", origin="feedback", skill="pesquisa-inversores")
+    assert [m["kind"] for m in store.relevant("Pergunta sem relação", skill="engenharia")] == ["perfil"]
+
+
+def test_conversation_memory_recalls_similar_exchanges_and_forgets_deleted(store):
+    assert store.remember_exchange(conversation_id="c1", message_id="m1", question="Qual a taxa do IGBT?",
+                                   answer="8,9e-6/h no módulo.")
+    assert not store.remember_exchange(conversation_id="c1", message_id="m1", question="x", answer="y")
+    assert not store.remember_exchange(conversation_id="c1", message_id="m3", question=" ", answer="y")
+    store.remember_exchange(conversation_id="c2", message_id="m2", question="Quanto dura o reparo?",
+                            answer="MTTR de 2 h.")
+    recalled = store.recall("E o módulo IGBT?", exclude_conversation="c9")
+    assert [item["message_id"] for item in recalled] == ["m1"] and recalled[0]["question"] == "Qual a taxa do IGBT?"
+    assert store.recall("E o módulo IGBT?", exclude_conversation="c1") == []
+    assert store.forget_conversation("c1") == 1 and store.recall("E o módulo IGBT?") == []
+    assert store.exchange_count() == 1
+
+
+def test_recalled_conversations_enter_context_as_data_and_memory_is_not_denied():
+    recalled = [{"message_id": "r1", "conversation_id": "c1", "question": "Qual o IGBT?", "answer": "8,9e-6/h.",
+                 "created_at": "2026-09-27T10:00:00+00:00"}]
+    request = prepare_request("E o IGBT?", recalled=recalled)
+    contents = [message["content"] for message in request.messages]
+    rules = next(i for i, content in enumerate(contents) if content.startswith("Conversas anteriores:"))
+    assert request.messages[rules]["role"] == "developer"
+    assert json.loads(contents[rules + 1].split("\n", 1)[1]) == [
+        {"data": "2026-09-27", "pergunta": "Qual o IGBT?", "resposta": "8,9e-6/h."}]
+    assert request.metadata["recalled"] == ["r1"]
+    assert "não tem isso anotado" in " ".join(contents[0].split())
+
+
+class ShortEncoder(Encoder):
+    """Como o encoder local: recusa textos longos e oferece a divisão em partes."""
+
+    def split(self, text):
+        words = text.split()
+        return [" ".join(words[i:i + 10]) for i in range(0, len(words), 10)]
+
+    def encode(self, texts):
+        if any(len(text.split()) > 10 for text in texts):
+            raise ValueError("Trecho ou consulta excede 128 tokens; divida o texto.")
+        return super().encode(texts)
+
+
+def test_long_notes_questions_and_exchanges_get_vectors(tmp_path):
+    store = MemoryStore(tmp_path / "memoria", encoder=ShortEncoder())
+    long_note = "O módulo IGBT " + "tem detalhes extensos de operação " * 10
+    note = store.add(kind="decisao", text=long_note, origin="feedback", skill="pesquisa-inversores")
+    long_question = "Explique de novo, com calma e muitos detalhes, tudo sobre o módulo IGBT e a sua taxa"
+    assert [m["id"] for m in store.relevant(long_question, skill="pesquisa-inversores")] == [note["id"]]
+    store.remember_exchange(conversation_id="c1", message_id="m1", question="E o IGBT?",
+                            answer="Resposta longa " * 40)
+    assert [r["message_id"] for r in store.recall(long_question)] == ["m1"]
+
+
+def test_missing_vectors_are_filled_once(tmp_path):
+    root = tmp_path / "memoria"
+    MemoryStore(root).add(kind="decisao", text="IGBT 8,9e-6/h.", origin="feedback")
+    MemoryStore(root).remember_exchange(conversation_id="c1", message_id="m1", question="Taxa do IGBT?", answer="8,9.")
+    store = MemoryStore(root, encoder=ShortEncoder())
+    assert store.recall("módulo IGBT") == []
+    assert store.fill_missing_vectors() == 2 and store.fill_missing_vectors() == 0
+    assert [r["message_id"] for r in store.recall("módulo IGBT")] == ["m1"]
+

@@ -208,6 +208,15 @@ Instalação do zero no Python 3.14, aceite com chamadas reais, README reescrito
 A auditoria antes do commit não encontrou segredos. Consulte a
 [spec 0017](../specs/0017-lancamento.md), o [manifesto](lote-17.json) e a [validação](validacao-lote-17.md).
 
+## Lote 18 — biblioteca, memória, anexos e fontes
+
+Primeiro lote depois da v0.1.0, sem migração de código da origem. Parte dos apontamentos do
+pesquisador no uso real: catálogo e resposta sem citação exibida com aviso no modo biblioteca,
+perfil e memória de conversas, fila de anexos e fontes numa janela sobre a resposta. O aceite
+encontrou e corrigiu anotações longas sem vetor, um defeito que vinha do lote 11. As memórias
+antigas continuam fora do agente. Consulte a [spec 0018](../specs/0018-biblioteca-memoria-anexos.md),
+o [manifesto](lote-18.json) e a [validação](validacao-lote-18.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

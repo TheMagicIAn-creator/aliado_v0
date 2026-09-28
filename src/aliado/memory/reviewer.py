@@ -12,7 +12,7 @@ from collections.abc import Callable
 from aliado.llm.contracts import LLMRequest, LLMResult
 from aliado.memory.store import KINDS, MAX_TEXT
 
-MAX_NOTES = 3
+MAX_NOTES = 8
 MAX_CARD_FACTS = 8
 MAX_CARD_CHARS = 200_000
 
@@ -46,8 +46,11 @@ CARD_SCHEMA = {
     "required": ["resumo", "fatos"],
 }
 
-REVIEW_INSTRUCTIONS = """Você é o revisor de memória do AL-IAdo. Leia a troca e proponha no máximo três
+REVIEW_INSTRUCTIONS = """Você é o revisor de memória do AL-IAdo. Leia a troca e proponha no máximo oito
 anotações duradouras, úteis em conversas futuras. Tipos:
+- perfil: quem é o usuário e o seu contexto (nome, formação, instituição, papel, orientador,
+  prazos, situação da pesquisa ou do projeto). Anote tudo o que ele contar sobre si e sobre o
+  próprio trabalho;
 - preferencia: como o usuário quer as respostas (formato, tom, detalhe);
 - correcao: algo que o usuário corrigiu;
 - fato: informação de um documento ou da web, somente com "citacao" igual a um citation_id

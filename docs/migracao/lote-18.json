@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-28",
+  "batch": "18",
+  "status": "implemented_locally_pending_researcher_commit",
+  "spec": "docs/specs/0018-biblioteca-memoria-anexos.md",
+  "base_commit": "eac1a36",
+  "target_version": "0.2.0 (com o lote 20, aba Ciência)",
+  "decisions": {
+    "uncited_library_answer": "mostrar com aviso e manter no histórico; citação inventada continua bloqueada",
+    "save_everything": "tipo perfil + memória de conversas",
+    "deleted_conversation": "deixa de ser lembrada; anotações que saíram dela ficam",
+    "science_tab": "tudo pela interface; explorador de alarme e detecção rotulado como pós-teste, não canônico (M14)",
+    "split": "lote 18 (biblioteca, memória, interface) e lote 19 (aba Ciência); depois do lote, a busca passou a ser o 19 e a aba Ciência, o 20",
+    "upload_success_card_seconds": 6,
+    "release": "0.2.0 com a aba Ciência (lote 20); commit sem tag ao fim do lote 18",
+    "search_lot": "lote 19: palavras vazias ignoradas e mais peso ao significado, ficha do documento, limite por documento; medição com perguntas de referência; tradução da pergunta fica de fora"
+  },
+  "parameters": {
+    "follow_up_words": 6,
+    "catalog_max_documents": 200,
+    "review_max_notes": 8,
+    "profile_max": 15,
+    "recall_limit": 3,
+    "recall_min_similarity": 0.4,
+    "exchange_question_chars": 500,
+    "exchange_answer_chars": 1500,
+    "upload_visible_cards": 3
+  },
+  "acceptance": {
+    "model": "gemini-3.5-flash-lite",
+    "data_dir": "tmp/lote-18 (temporário, fora do Git)",
+    "library": "data/bibliotecas/principal, 27 documentos, só consulta",
+    "calls": 30,
+    "calls_by_task": {
+      "critical_reasoning": 7,
+      "memoria-revisor": 7,
+      "memoria-ficha": 16
+    },
+    "input_tokens": 53488,
+    "output_tokens": 3896,
+    "web_queries": 0,
+    "criteria": {
+      "catalog_answer_shown_with_warning": true,
+      "short_follow_up_uses_previous_question": true,
+      "profile_recalled_in_new_conversation": true,
+      "conversation_recalled_in_another": true,
+      "deleted_conversation_forgotten": true,
+      "info_popover_within_viewport_and_esc": true,
+      "upload_queue_three_cards_counter_6s": true
+    }
+  },
+  "defects_fixed": [
+    "textos com mais de 128 tokens ficavam sem vetor (erro do encoder engolido); vinha do lote 11; 18 das 236 anotações reais serão preenchidas na próxima abertura",
+    "navegador reaproveitava app.js e app.css antigos; página e /static/ com Cache-Control: no-cache",
+    "janela de fontes passava da borda superior; altura limitada ao espaço disponível",
+    "lista de conversas em janela estreita não abria (constante removida por engano no próprio lote)"
+  ],
+  "search_quality_finding": {
+    "status": "decidido: lote 19",
+    "index_chunks": 13946,
+    "largest_four_documents_share": 0.71,
+    "chunks_containing_de": 2203,
+    "notes": [
+      "a parte lexical junta todas as palavras com OU, inclusive palavras vazias, e favorece documentos no idioma da pergunta",
+      "a parte semântica (encoder multilíngue) cruza idiomas, mas a fusão dá o mesmo peso às duas",
+      "o catálogo só tem o nome do arquivo, sem autor nem ano",
+      "sem limite de trechos por documento"
+    ]
+  },
+  "paid_calls": 30,
+  "validation": {
+    "pytest_passed": 343,
+    "new_tests": 12,
+    "ruff": "passed",
+    "python_versions": [
+      "3.12.14"
+    ],
+    "git_status_matches_manifest": true,
+    "unexpected_changes": [],
+    "previous_hash_method_check_against_lote_17": {
+      "src/aliado/agent.py": true,
+      "tests/test_memory.py": true,
+      "README.md": true,
+      "CHANGELOG.md": true,
+      "AGENTS.md": true,
+      "docs/roteiro-v0.md": true,
+      "docs/migracao/README.md": true
+    },
+    "data_files_tracked": 0
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará o commit, sem tag; a 0.2.0 sai com o lote 20.",
+  "public_files": [
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "7874802c18617926fc377065cfb3384134291ff3bcf29e1569a8786838751767",
+      "previous_sha256": "a406b917a093e3d976da26a78059219face23a5405253374917a21718f5c655e",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/memory/store.py",
+      "sha256": "1336142261f6f7fae70866ca3e4f095a048ae481618bcda4cc8b6e37158800d8",
+      "previous_sha256": "6455433e5f7124c770663115f9ee20fe7888f7d6b12b4d4dbc1ab971532a4e3c",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/memory/reviewer.py",
+      "sha256": "4b537d1dea9c52be8a6ffce0f98a9f67ffd029577672f8e8b65dda997407ff05",
+      "previous_sha256": "5e33e09ae6677ba54622c4eab60ae3a6102ec222a6846b11387488bb34843400",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "1711e9131ffe33e561ceee9a10a4fe877f406dc0cbf1db7c9a374a2f5a39a94b",
+      "previous_sha256": "7cc6ffb321e67df91d32e4677d6b5dcb9545ff5bca1b52ab87efcd5aef1f7455",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "5c5f04424c6ac28b368346fab61359b0f0da194b9640bfdee8f6cbd502e9add3",
+      "previous_sha256": "3c48d97f3a69c627b03fdd366a086f96f6215b191a5267c936b4665d73d3ad2a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "11e2db0fbef732c1b0f0bad3758165f0856a13a374c7cdaae8973c0d902d7c08",
+      "previous_sha256": "f6935094fd1a3136a87667cf074f60933ac74accee88623fc6e4c953c220cfd9",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "160336bc790be746bed790ca817a8918618dcf454746834197b65e0b2f7ea942",
+      "previous_sha256": "741405321c1a6b1f9ecc6fd28bee798124d9769bcba7bb4846b232290923e7dd",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_knowledge.py",
+      "sha256": "bce808d9162c8f3804d8b1d7e4edd0e51a25d4aa61f24064fcb191c7fc3913db",
+      "previous_sha256": "32aed8d05819476bc21c95df4fb8528bcd68a6f6753a89c1581234603ea61822",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_memory.py",
+      "sha256": "06a4f144b2888727795e0a00a29491147e44c7b62677b54196e8a5fa4eb71903",
+      "previous_sha256": "ef98606c1bcac9038ca7d2ba7e37b99f91548647dccde8e3034723a8b12e6c09",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "c6d0f5de791792d113a5ebaabcdaf53a663208b327ca939c3186d503e842bbde",
+      "previous_sha256": "44c3f3fb038bdfae7c80c4be23478da89d726541b3bdc6e564f4e50dfd69ab94",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web_search.py",
+      "sha256": "0cc8db522cc52e5ead7ca8d2ae6f728b4f9b1becaafa656cd0e01093fa474fb9",
+      "previous_sha256": "895154f55f9bf5db8e1d6617af9620d24a8eaea058b96486d7064ecafe6b8a44",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "0db9a4a4952885bbb319a6bb2d96e544b596d99c558fe414dbc5e2fdaa6102d2",
+      "previous_sha256": "58f52372331b11d632250cd861a754c0e9ecb2e63aa3aa49ce99e766b4b3bfdc",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "83f37d45d00af45b7ce59787fa1c03ee1245dd4fe6c1b0122ac206d6bfb9863f",
+      "previous_sha256": "201cd95429206709904a4dde5986b4dc40ec337190735620807b7b5b7798aa41",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "7e640cebee21dbcf6c0f3882e1c645dac05f48af1c74b8ec1a1f8a640b04b169",
+      "previous_sha256": "67861f6e7b640f1dd766e5f2bdaf9778aac7d440c62532c5b9afecdf525de84f",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "17adb555810d5eaadf5324a308bfaa4eae5ec16829f9ef8121a170a2e6af61f8",
+      "previous_sha256": "6ca60f6c3c18a54319e580cd4fb968ab696d0dde0495562eb9d87d5e7beab1c8",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "6ab57234630ddef884e40616123b04ec0c7ae2d097f4f17e3533b7cec7e31b51",
+      "previous_sha256": "7b7e6bee40d2dbb9fb8fa14cba75e5e29d77531ffcea360d3e4480edc0b4eaf6",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0018-biblioteca-memoria-anexos.md",
+      "sha256": "76cf04a30d68ea624fb967641113104f6e7c1e2cac9465d89a31a7741b72b876",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-18.md",
+      "sha256": "cec73078ef268f0cd0ab9b1827b5c0f46121e6075c2b3077bbae65c30f2eb179",
+      "status": "new"
+    }
+  ]
+}

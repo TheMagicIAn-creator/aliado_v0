@@ -122,12 +122,13 @@ def test_library_and_web_together_accept_web_only_but_block_invented_pdf_citatio
     invented = final(stream_agent("A taxa é constante [Kfalso]. Mais."), library=Library([HIT]), web_search=True)
     assert invented.validation_status == "invalid_citations"
     no_web = final(stream_agent("Sem fonte nenhuma.", web=False), library=Library([HIT]), web_search=True)
-    assert no_web.validation_status == "invalid_citations"
+    assert no_web.validation_status == "uncited" and no_web.content == "Sem fonte nenhuma."
 
 
 def test_empty_library_does_not_block_when_web_is_on():
     assert final(stream_agent("Resposta da web."), library=Library([]), web_search=True).provider == "google"
-    assert final(stream_agent("x"), library=Library([])).provider == "local"
+    empty = final(stream_agent("x", web=False), library=Library([]))
+    assert empty.provider == "google" and empty.validation_status == "uncited"
 
 
 def test_usage_log_counts_searches_without_storing_queries(tmp_path):

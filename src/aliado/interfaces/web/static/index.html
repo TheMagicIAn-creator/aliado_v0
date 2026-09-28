@@ -95,16 +95,16 @@
     <div class="dropzone" id="dropzone" hidden><p>Solte para adicionar à biblioteca</p></div>
   </main>
 
-  <aside class="sources" id="sources" aria-label="Fontes">
+  <div class="popover" id="info-popover" role="dialog" aria-label="Fontes e memória desta resposta" hidden>
     <div class="panel-head">
-      <h2 class="panel-title">Fontes desta resposta</h2>
-      <button class="icon-button sources-close" id="sources-close" type="button" aria-label="Fechar fontes">
+      <h2 class="panel-title">Fontes e memória desta resposta</h2>
+      <button class="icon-button" id="info-close" type="button" aria-label="Fechar">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <div id="source-list"><p class="muted">As fontes citadas aparecem aqui. Ligue “Usar biblioteca” para respostas com citações.</p></div>
+    <div id="source-list"></div>
     <div id="memory-panel"></div>
-  </aside>
+  </div>
 
   <section class="library memory" id="memory-view" hidden aria-labelledby="memory-title">
     <header class="library-head">
@@ -125,6 +125,7 @@
       <p class="muted" id="remember-hint">A anotação vale na hora, como uma decisão sua.</p>
       <label class="field">Tipo
         <select id="remember-kind">
+          <option value="perfil">Perfil: quem sou e meu contexto</option>
           <option value="preferencia">Preferência: como quero as respostas</option>
           <option value="decisao">Decisão sobre a pesquisa ou o projeto</option>
           <option value="correcao">Correção de algo errado</option>

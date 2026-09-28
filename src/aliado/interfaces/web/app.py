@@ -96,6 +96,9 @@ class LocalOnly(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "no-referrer")
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            # Conferir a versão a cada carga (barato localmente): uma atualização aparece na hora.
+            response.headers.setdefault("Cache-Control", "no-cache")
         if not request.url.path.endswith("/original"):
             response.headers.setdefault("Content-Security-Policy", CSP)
         return response
@@ -132,6 +135,25 @@ def _usage_totals(path: Path) -> dict:
     return totals
 
 
+def _index_conversations(store: ConversationStore, memory) -> int:
+    """Guarda na memória de conversas as trocas exibidas que ainda não estão lá (conversas antigas)
+    e calcula os vetores que faltam em anotações e trocas antigas."""
+    added = 0
+    for item in store.list():
+        try:
+            messages = store.get(item["id"])["messages"]
+        except ValueError:
+            continue
+        for question, answer in zip(messages, messages[1:]):
+            if (question.get("role"), answer.get("role")) == ("user", "assistant") and \
+                    question.get("in_context", True) and answer.get("in_context", True):
+                added += memory.remember_exchange(
+                    conversation_id=item["id"], message_id=answer["id"], question=question["content"],
+                    answer=answer["content"], skill=question.get("skill"), created_at=answer.get("created_at"))
+    memory.fill_missing_vectors()
+    return added
+
+
 def create_app(settings: WebSettings) -> Starlette:
     store = ConversationStore(settings.data_dir / "conversas")
     uploads = settings.data_dir / "uploads-temporarios"
@@ -139,6 +161,9 @@ def create_app(settings: WebSettings) -> Starlette:
     lock = threading.Lock()
     skills = {item.name: item.description for item in list_skills()}
     aliases = {model["alias"] for model in settings.models}
+    if settings.memory is not None:
+        # Conversas anteriores ao lote 18 entram na memória de conversas uma vez, sem travar a abertura.
+        worker.submit(_index_conversations, store, settings.memory)
 
     async def index(request: Request):
         return FileResponse(STATIC / "index.html")
@@ -161,6 +186,12 @@ def create_app(settings: WebSettings) -> Starlette:
         try:
             if request.method == "DELETE":
                 store.delete(request.path_params["cid"])
+                if settings.memory is not None:
+                    try:
+                        # A conversa apagada deixa de ser relembrada; as anotações dela ficam.
+                        settings.memory.forget_conversation(request.path_params["cid"])
+                    except (OSError, sqlite3.DatabaseError):
+                        pass
                 return JSONResponse({"apagada": True})
             if request.method == "PATCH":
                 body = await request.json()
@@ -206,17 +237,18 @@ def create_app(settings: WebSettings) -> Starlette:
         def events():
             # Gerador síncrono: o Starlette o consome numa thread, sem travar o servidor.
             result = None
-            memories = []
+            memories, recalled = [], []
             if settings.memory is not None:
                 try:
                     memories = settings.memory.relevant(text, skill=memory_skill)
+                    recalled = settings.memory.recall(text, exclude_conversation=cid)
                 except (ValueError, OSError, sqlite3.DatabaseError):
-                    memories = []  # a conversa segue sem memória em vez de falhar
+                    memories, recalled = [], []  # a conversa segue sem memória em vez de falhar
             try:
                 for kind, value in settings.stream(
                         text, model_alias=alias, skill_name=memory_skill,
                         supporting_skill_name=support, library=library, history=history,
-                        memories=memories, web_search=use_web):
+                        memories=memories, web_search=use_web, recalled=recalled):
                     if kind == "texto":
                         yield line({"tipo": "texto", "texto": value})
                     else:
@@ -249,12 +281,24 @@ def create_app(settings: WebSettings) -> Starlette:
                      "web_sources": [dict(s) for s in result.web_sources],
                      "web_queries": list(result.web_queries),
                      "memorias_usadas": [{"id": m["id"], "kind": m["kind"], "origin": m["origin"],
-                                          "text": m["text"]} for m in memories]}
+                                          "text": m["text"]} for m in memories],
+                     "conversas_lembradas": [{"conversation_id": r["conversation_id"],
+                                              "created_at": r["created_at"],
+                                              "question": " ".join(r["question"].split())[:200]}
+                                             for r in recalled]}
             try:
                 stored = store.append(cid, user, reply)
             except ValueError:
                 yield line({"tipo": "erro", "erro": "A conversa foi apagada durante a resposta."})
                 return
+            if in_context and settings.memory is not None:
+                try:
+                    settings.memory.remember_exchange(
+                        conversation_id=cid, message_id=stored["messages"][-1]["id"], question=text,
+                        answer=result.content, skill=memory_skill,
+                        created_at=stored["messages"][-1].get("created_at"))
+                except (OSError, sqlite3.DatabaseError):
+                    pass  # a resposta já foi guardada; a memória de conversas não deve derrubá-la
             yield line({"tipo": "fim", "conversa": {k: stored[k] for k in ("id", "title", "updated_at")},
                         "mensagens": [_view(m) for m in stored["messages"][-2:]]})
             if in_context and settings.memory is not None and settings.reviewer is not None:

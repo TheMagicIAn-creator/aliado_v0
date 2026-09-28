@@ -96,6 +96,28 @@ Progresso atual: **100%**. A soma dos pesos dos lotes concluídos dá o percentu
 - A partir das taxas entram MTBF e falhas esperadas em 1 e 20 anos. A disponibilidade espera uma
   fonte de tempo de reparo.
 
+## Depois da v0.1.0: rumo à 0.2.0
+
+Os lotes partem dos apontamentos do pesquisador no uso real e continuam sendo combinados antes
+de começar. A 0.2.0 sai no fim do lote 20.
+
+| Lote | Entrega | Situação |
+|---|---|---|
+| 18 | Biblioteca com catálogo e resposta sem citação exibida com aviso; memória com perfil e memória de conversas; fila de anexos; fontes numa janela sobre a resposta | Concluído em 28/09/2026, aguardando o commit do pesquisador |
+| 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | A combinar |
+| 20 | Aba Ciência completa: cálculos, FMECA e GPVS pela interface, com gráficos, tabelas e exploradores interativos | A combinar |
+
+### Decisões de 28/09/2026
+
+- Uma resposta sem citação no modo biblioteca aparece com aviso e entra no histórico. Citação inventada continua bloqueada.
+- A memória guarda o **perfil** do pesquisador e **todas as trocas**. Até 3 trocas parecidas de outras conversas entram como contexto.
+- Uma conversa apagada deixa de ser lembrada. As anotações que saíram dela ficam, como decidido em 26/09.
+- A aba Ciência faz tudo pela interface. O explorador de alarme e detecção pode usar o teste e os ensaios com falha, com o rótulo "exploração pós-teste, não canônica (M14)"; os resultados oficiais continuam os da avaliação de 27/09.
+- **A busca vem antes da aba Ciência**, no lote 19. Perguntas em português favorecem documentos em português, e o catálogo não tem autor nem ano; veja a [validação do lote 18](migracao/validacao-lote-18.md).
+  - Entram três correções: ignorar palavras vazias e dar mais peso ao significado, a ficha de cada documento e um limite de trechos por documento.
+  - A tradução da pergunta para o inglês fica de fora, e só volta a ser considerada depois da medição.
+  - A melhora é medida com perguntas de referência, antes e depois.
+
 ## Fica para a v1
 
 Site com domínio e acesso de vários usuários com convite, MCP (M15), roteador de
