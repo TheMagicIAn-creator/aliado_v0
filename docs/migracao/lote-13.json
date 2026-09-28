@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "batch": "13",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0013-gpvs-protocolo-m14.md",
+  "roadmap_progress_percent": 78,
+  "decisions": {
+    "data": "copiar os 16 CSVs para data/gpvs (fora do versionamento), conferidos por SHA-256",
+    "code": "reescrever sem pandas/sklearn e provar reprodução numérica",
+    "temporal_dependence": "verificação só relata; separação de 2 janelas mantida até decisão do pesquisador"
+  },
+  "dataset": {
+    "name": "GPVS-Faults",
+    "doi": "10.17632/n76t439f65.1",
+    "official_zip_sha256": "88cd20c848fee86752870cf9b198eab45568c31355685328dd75aba982bf1a63",
+    "location": "data/gpvs",
+    "in_version_control": false,
+    "files": {
+      "F0L": {
+        "bytes": 32849893,
+        "sha256": "0af0dddf273838ca4e255d99da50f37f86c9bf9e0b343d3175ccc4366accd458"
+      },
+      "F0M": {
+        "bytes": 32111056,
+        "sha256": "3d1ab1fd576c574287097e70bcf4a5b4b1e3b9a7e6043d620d0c958163b53285"
+      },
+      "F1L": {
+        "bytes": 29494147,
+        "sha256": "967132ceb23cebc5e475b4bc2e9a35979e71707cc9a173945bb12f755a882151"
+      },
+      "F1M": {
+        "bytes": 31478790,
+        "sha256": "ead7cdab3792d78f9167dfe44df5af8e791f11aec14be743186a4948749adee9"
+      },
+      "F2L": {
+        "bytes": 32562656,
+        "sha256": "85181f21528bad220d43adaa554c32715e50dc0276be067d62f0b07e72767d28"
+      },
+      "F2M": {
+        "bytes": 32721289,
+        "sha256": "c1f72b9565d62d26f6fe75235b4e1d0b51f1af987bd5de2c8fc5cd18dc08dfeb"
+      },
+      "F3L": {
+        "bytes": 23717045,
+        "sha256": "d1817539f46c8f699abd2d1fc42d5b976a3cea311aee02028d108bdca0eee6b2"
+      },
+      "F3M": {
+        "bytes": 15925490,
+        "sha256": "c9a5fdc0b421e9fe4c4b36ddda4d939a20834dc98cfd80447aae84a3d2a4c153"
+      },
+      "F4L": {
+        "bytes": 32771693,
+        "sha256": "3c1d14f4b4011f5a93b446aab7f3bdfdcc87c173e80ccce1c75dfe0492eeb8c8"
+      },
+      "F4M": {
+        "bytes": 32771582,
+        "sha256": "6e7d836bec1b5f18d88e2dc75c3e4671409e3e356f4e00787a27307d8e984053"
+      },
+      "F5L": {
+        "bytes": 32720605,
+        "sha256": "d502ac4eecb8469074a0b74c0533a3f8596d405eed12fa927e6b34455966c747"
+      },
+      "F5M": {
+        "bytes": 32909670,
+        "sha256": "9c733c063117d62113abb418529dbbdf241e11d9b34ffba55e0586474c2227a3"
+      },
+      "F6L": {
+        "bytes": 32923343,
+        "sha256": "70169cf1eff18483f71ee516bdfb5b9cb3d361d407c1f81c1992e5f4b72af363"
+      },
+      "F6M": {
+        "bytes": 32762347,
+        "sha256": "3b21ec10273724bdd439600605eb336d0633113f19f79b9ee8c77e16fb554d64"
+      },
+      "F7L": {
+        "bytes": 32929561,
+        "sha256": "d098f584d4a5b100e34a8cb83cbde9355de352a3751accd09de93f4f7ee92060"
+      },
+      "F7M": {
+        "bytes": 32776047,
+        "sha256": "cd3e60928d65a2d4a224f1b154107601fe5a86ab14e1b33a8a87fb7ec8457745"
+      }
+    }
+  },
+  "origin_reference": {
+    "repository": "mestrado-utfpr",
+    "head": "21f6ddf",
+    "module": "src/ml/dados_gpvs.py",
+    "copied_code": false,
+    "copied_files": [
+      "dados/processados/features_gpvs_stats.csv -> tests/data/gpvs_estatisticas_referencia.csv"
+    ],
+    "not_transferred": "mapeamento das falhas GPVS para a FMECA (M11)"
+  },
+  "reproduction": {
+    "healthy_windows": 1423,
+    "fault_windows": 9391,
+    "split": [
+      711,
+      209,
+      210,
+      281
+    ],
+    "feature_stats_max_relative_difference": 6.02e-07
+  },
+  "m14_temporal_check": {
+    "criterion": "|ACF| < 0.2 em 90% das variáveis, treino escalado",
+    "decorrelation_lag": {
+      "F0L": 12,
+      "F0M": 12
+    },
+    "current_distance": 3,
+    "sufficient": false,
+    "action": "relatado; decisão do pesquisador antes do lote 15"
+  },
+  "paid_calls": 0,
+  "validation": {
+    "pytest_passed": 295,
+    "ruff": "passed",
+    "untouched_files_checked": 103,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "5b5b0297cee2758b9034e07f2ec09744f75573db39f5fb8e208c5761429505a8",
+      "previous_sha256": "6f6853cb7363cb98029a4b80ff4456731cd3a67f1e5f765b003e1ffa881a5e74",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "60672dddb53940c53ff4e3789aaca15c980af2cea29760f74a81a342bc8a040d",
+      "previous_sha256": "a652f81206943995eabdd06437b421f762ea5a0f494d0a96f88bd1eac2513551",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "77ec9a597f9e72cb511ba50bbbba1d679dbf23e792b783d8d178564f5688bf5c",
+      "previous_sha256": "1a76bdd04c1f058613f9434845dd7d17484f6290b4c362f4e4ebfa2387f02355",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "7b6cbd430e77598192c6a6c1eafaf21d667e27e8d225651e4dbd28bb0097df35",
+      "previous_sha256": "c912b0eec65775feaac4001621e3d3eae5cc979dce3060ad02db9bbaf58fedac",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "6c153d85239dd37dc8d4d655c355c78f62ba6cc9f7a207f54048e3c1ffb4a191",
+      "previous_sha256": "0076678696c6179942d25d5cdc908b0b85fceacf35c9a78acb7a3bd35d8a2c3e",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0013-gpvs-protocolo-m14.md",
+      "sha256": "9867d0164db528726e79dbfb41702fd230b8d7a5eb40976f9d2c344825515121",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-13.md",
+      "sha256": "58fae2f28f869624905b4b920cd057492e186e7c140e759d26424067bd030f61",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/__init__.py",
+      "sha256": "40c298c044617fc47bbb9cf36620cfba0022b8cc3e57f65e3b2a0384c8e4e940",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/protocol.py",
+      "sha256": "bff20a2301d30d411af2839f91b7e5184c2ffb3bbfcb7a8928fd6b29533875d1",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/gpvs.py",
+      "sha256": "ce2360498378f6a70567494104c07a1e0d7a4f6d56f4f7d264d0f39e26dba6c5",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_detection.py",
+      "sha256": "ff6d7f118d54f636ade9df6e8593efc41d859c806bbd009ba2f8c7fcd4bf3976",
+      "status": "new"
+    },
+    {
+      "path": "tests/data/gpvs_estatisticas_referencia.csv",
+      "sha256": "ee0fe4e98a0565a289c3973573ef419eabe6231dc8b063d5fec96ff6aced8f28",
+      "status": "new"
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-26",
+  "batch": "11",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0011-memoria-persistente.md",
+  "roadmap_progress_percent": 68,
+  "decisions": {
+    "annotation": "revisor automático (flash_lite) + 'lembre que' + botão Lembrar",
+    "kinds": [
+      "preferencia",
+      "correcao",
+      "fato",
+      "decisao"
+    ],
+    "origin_rule": "feedback/comando valem na hora; inferido vale marcado e revogável",
+    "conflict_rule": "feedback vence dedução; dedução contra feedback vira conflito; dedução vence dedução",
+    "chat_vs_skill": "decisão explícita do usuário vale e fica 'diverge da skill'; deduções não contrariam skills",
+    "retrieval": "preferências sempre (até 10) + até 8 relevantes por semelhança, filtradas pela skill",
+    "scope": "etiqueta por skill; preferências globais",
+    "transparency": [
+      "aba Memória",
+      "aviso usou/anotações novas na resposta"
+    ],
+    "reading_card": "ao indexar PDF, resumo + até 8 fatos inferidos com página",
+    "conversation_deletion": "não apaga a memória"
+  },
+  "storage": {
+    "path": "data/memoria/memoria.sqlite3",
+    "in_git": false,
+    "deletes_notes": false
+  },
+  "old_memories_imported": false,
+  "real_calls": {
+    "model": "gemini-3.5-flash-lite",
+    "calls": 5,
+    "total_tokens": 2324,
+    "by_task": {
+      "critical_reasoning": [
+        474,
+        645
+      ],
+      "memoria-revisor": [
+        426,
+        423
+      ],
+      "memoria-ficha": [
+        356
+      ]
+    }
+  },
+  "bug_fixed_during_implementation": "conexão SQLite da memória fechava sem commit",
+  "validation": {
+    "pytest_passed": 265,
+    "ruff": "passed",
+    "js_syntax": "node --check",
+    "untouched_files_checked": 87,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "5e35ab327d6a1832bb529a9bcdd1008943b1f485abbbdeb68266a009f6e0e262",
+      "previous_sha256": "d9defe8d83af92d46c63fddd2322db0055b986a36117c9a6110a960e64190b0a",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "e2f7d99ba0eddd20bac586c43650922978bbf9a0aeb6dc1ea6936daff175040c",
+      "previous_sha256": "d1d0c00856cb2a1c5144d142189ea018b2f612540b76338259d460434c3e4571",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "dece8cc0f81ab371fec732aa9d420a45a4edb584b1849aabb8af57b681315e66",
+      "previous_sha256": "359c6b04cd266e93ada6da28b2777516f2a59c6e5732b77526238e7ec2a7c83c",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "0d92d3dc4d3858108dcb5b7742ac43e3b4e9e82c6010bfade862b54629e99797",
+      "previous_sha256": "39be03c7b735a097812d2d8a8ae13d928b8c0f8d49919c8bd0c2db4f00210c93",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "de06b752656559ab572de6b9b4a534aeebd620bcfdedbb8aada18b0f826ff0d6",
+      "previous_sha256": "7868fe7a5d304213a1ab2be1c1352c72566953668947c2dc681ff9a154f1e18a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/memory/__init__.py",
+      "sha256": "cea1474466e9e8b5fe788d209f9ee63310ca0dbcabf3abaa8c29f5c20d011f00",
+      "previous_sha256": "dfb93dfed1ccafe19eb997c85e8db1f2fd60d96d097c41ce30bbfadc0529efed",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "10db522cefe390c98da04a063c8fc6871f22b4a63b98846ca6f2a8a2cfe24675",
+      "previous_sha256": "79c4d282fec2782676029feb45d1de150870713ac046be41912e53d2186ff6e3",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/conversations.py",
+      "sha256": "f1c7644bcce02099e88dabe666f7d01a257d5578364912e7ab3ecd4652c05a85",
+      "previous_sha256": "2aa5a27c73d353b2870f414bf2632a0c10e102d6ee4813caa0ebe1fe37785bf9",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "22d92f149db07855f7589b542707f69777c6db04cbb02cebef98edd1b8dc9ae5",
+      "previous_sha256": "9275602b12446c9eb6cb9d5c704220328329888b997110b66cb02edde0859c8b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "d35d622bcf71ba95f76c94d049c90f3f667e72dfd588d9ad69d89c162581e5db",
+      "previous_sha256": "add648d02da148d9811d0e91fb8a8e0182a8b1bd6b48e5e5eec7892e61ac9e2f",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "5204f0b7752879fdd1b73423cf805dda00b67c5a21ff86489ae1f9ff3f51ad40",
+      "previous_sha256": "3697c900d7b210e8689f0bfb692dbea0ea4560b56578261c7ceab8aa5928a34e",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "ceed9ef916c662c1e0a9a12e0d6b797b0a1afd9bca685b31f82450e1cdc9f716",
+      "previous_sha256": "0b6d830f7c9c6d8b11ab940cdd7ce8d195df936684531b2a4cf25cc5e5d2017c",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/launch.json",
+      "sha256": "f92c27d90435a077885e0d10965c4b60b5f30f90c07fb015e0698c4b71fe6456",
+      "previous_sha256": "e096465f692618a54634503d1557aafbb494144e8814e3b03caa2e8a882cc0bc",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0011-memoria-persistente.md",
+      "sha256": "92172b154ce93850189bb91dd01e154f07faa2a64711337e781f57069095fc2e",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-11.md",
+      "sha256": "49a9855c5f7f7a043b0b89c2f5bb13a7aec0af977135d7426d157a3c3875cf69",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/memory/store.py",
+      "sha256": "50469b9440a563d08f6f40daa178e344e5de1b9588d84c8256f0ec3eceeb8915",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/memory/reviewer.py",
+      "sha256": "a06d3494d8049b7c18faae510fe44dfb453ea1ea3f6e431cac2537de26c6d010",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_memory.py",
+      "sha256": "904766d852e93a59353d827b25022bbeb170a9e6a8e8f4e22421e3611e10b93b",
+      "status": "new"
+    }
+  ]
+}

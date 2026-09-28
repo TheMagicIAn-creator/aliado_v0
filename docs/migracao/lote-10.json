@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-26",
+  "batch": "10",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0010-interface-local.md",
+  "roadmap_progress_percent": 60,
+  "installed_packages": {
+    "starlette": "1.0.0",
+    "uvicorn": "0.47.0",
+    "python-multipart": "0.0.28",
+    "markdown-it-py": "4.2.0",
+    "mdurl": "0.1.2",
+    "source": "PyPI",
+    "approved_by_researcher": true
+  },
+  "vendored": {
+    "name": "KaTeX",
+    "version": "0.17.0",
+    "license": "MIT",
+    "copied_from": "mestrado-utfpr/src/webapp/static/vendor/katex (local, read-only)",
+    "files": [
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/auto-render.min.js",
+        "sha256": "e5372d199bcdae8b4de71d0f7ceba72a4ba12774a27c60a6f1f77d03b3228ee4",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_AMS-Regular.woff2",
+        "sha256": "0cdd387c9590a1a9f9794560022dbb59654a7d86f187aa0c81495ad42d3a7308",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Caligraphic-Bold.woff2",
+        "sha256": "de7701e42cf1f4cf0b766c03fb27977207eee2f4fd5d76fa82188406da43ea4c",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Caligraphic-Regular.woff2",
+        "sha256": "5d53e70ad607c2352162dec9e0923fb54ecdafaccbf604cd8dcf7d00facb989b",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Fraktur-Bold.woff2",
+        "sha256": "74444efd593c005e3f4573b44524704c0af0a937fe911cca9e94068d0d140d3f",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Fraktur-Regular.woff2",
+        "sha256": "51814d270d06ff0255dba0799994fa4d8c84d11f09951d47595f4abb1f3602dc",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Main-Bold.woff2",
+        "sha256": "0f60d1b897938ec918c8ce073092411baf9438f6739465693ff18b0f9d20b021",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Main-BoldItalic.woff2",
+        "sha256": "99cd42a3c072d918f2f44984a807cf7aa16e13545fd0875fc07c6c65f99e715b",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Main-Italic.woff2",
+        "sha256": "97479ca6cce906abc961ecac96faa5f9ca2e61b8e7670d475826bcdee9a7c267",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Main-Regular.woff2",
+        "sha256": "c2342cd8b869e01752a9321dc17213fc40d4d04c79688c1d43f2cf316abd7866",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Math-BoldItalic.woff2",
+        "sha256": "dc47344dbb6cb5b655c8460d561f4df5f501b90c804ad3c6cec65fe322351ab1",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Math-Italic.woff2",
+        "sha256": "7af58c5ec8f132a2ddde9027c6d7814decce4d3b822a11192a42a20e2e973264",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_SansSerif-Bold.woff2",
+        "sha256": "e99ae51144bf1232efcc1bfe5add36262c6866b0faab24fa75740e1b98577a62",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_SansSerif-Italic.woff2",
+        "sha256": "00b26ac825e2095056396e0553b8ac26d3f8ad158c3826e28b4c45b385c4714a",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_SansSerif-Regular.woff2",
+        "sha256": "68e8c73ef42afd3ccec58bf0fba302cce448938e7fc020a5e31f8a952eee1342",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Script-Regular.woff2",
+        "sha256": "036d4e95149b69ff9bcc0cd55771efeb25ffa3947293e69acd78d5ac328c684b",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Size1-Regular.woff2",
+        "sha256": "6b47c40166b6dbe21a5dfca7718413f2147fd2399be1ba605d8ad39cedf25dfe",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Size2-Regular.woff2",
+        "sha256": "d04c54219f9eaec6d4d4fd42dfb28785975a4794d6b2fc71e566b9cd6db842dd",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Size3-Regular.woff2",
+        "sha256": "73d591271b1604960cb10bb90fee021670af7297017e0e98480b332d11f51995",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Size4-Regular.woff2",
+        "sha256": "a4af7d414440a1c1790825cfb700cf9cf43b0f2c4b04f0ebc523011ad9853ec0",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/fonts/KaTeX_Typewriter-Regular.woff2",
+        "sha256": "71d517d67827787cfabdf186914cc3358eda539e37931941f2b2fd4a21f68c0b",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/katex.min.css",
+        "sha256": "3f3b37a6662bc86ced2616032cdbb79dff90284b32160dbb81bd4eded442345a",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/katex.min.js",
+        "sha256": "45fbe318fea878fdc0a111913dc1f87894b2c439360d0228c086ef313f213efc",
+        "matches_origin_copy": true
+      },
+      {
+        "path": "src/aliado/interfaces/web/static/vendor/katex/LICENSE",
+        "sha256": "4313255416487a4a7602f134a7cdd2b33dd9f7e7b41d3af63dc9f785bca425a0",
+        "matches_origin_copy": true
+      }
+    ]
+  },
+  "origin_reference": {
+    "repository": "C:/Users/RODOLFO TORRES/Documents/mestrado-utfpr",
+    "head": "21f6ddf",
+    "used_as": "reference_for_patterns_only",
+    "copied_code": false
+  },
+  "bug_fixed": "Tesseract chamado por caminho relativo falhava no Windows (FileNotFoundError); caminho resolvido.",
+  "real_calls": [
+    {
+      "model": "gemini-3.5-flash-lite",
+      "skill": null,
+      "total_tokens": 453,
+      "via": "web"
+    },
+    {
+      "model": "gemini-3.5-flash-lite",
+      "skill": null,
+      "library": true,
+      "total_tokens": 822,
+      "via": "web-stream",
+      "citations": "citation_ids_verified",
+      "stream_chunks": 6
+    }
+  ],
+  "review_fixes": [
+    "resposta em fluxo contínuo com botão parar",
+    "exclusão para lixeira local",
+    "progresso por página",
+    "painéis sobrepostos em telas estreitas",
+    "sem rolagem horizontal a 319 px"
+  ],
+  "decision": "Apagar uma conversa não apaga a memória gerada a partir dela (lote 11).",
+  "validation": {
+    "pytest_passed": 252,
+    "ruff": "passed",
+    "pip_check": "passed",
+    "untouched_files_checked": 73,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "d9defe8d83af92d46c63fddd2322db0055b986a36117c9a6110a960e64190b0a",
+      "previous_sha256": "fff667ab303d30c33d6e4c8fc6d124020df48f521efb9a0f04c4222b7299f988",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "d1d0c00856cb2a1c5144d142189ea018b2f612540b76338259d460434c3e4571",
+      "previous_sha256": "274adf7c0712c3a7cf25ccddf1e810e8bde136f59fadb819346e067e9c2b7a67",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "359c6b04cd266e93ada6da28b2777516f2a59c6e5732b77526238e7ec2a7c83c",
+      "previous_sha256": "dedb66b5b62acc67ca4e6ef186be583920316e464ade649a6590bd1e8f2521f1",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "39be03c7b735a097812d2d8a8ae13d928b8c0f8d49919c8bd0c2db4f00210c93",
+      "previous_sha256": "12e4f4538812162eed0ae167ff087119cf60f256fc61add2a21387f724b8ac18",
+      "status": "modified"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "0517b7348a11cc77280274ead1f4789688b62f2901dc41ef3a47f374cdadef59",
+      "previous_sha256": "4bcae104c6cc3818447ac8cb5c4f4d12d89f5260b131e27793f455612fa86964",
+      "status": "modified"
+    },
+    {
+      "path": "requirements-dev.lock",
+      "sha256": "d643cd627183c854f36c3f2a86feb4ba6158a544e09989905e19f8581ef2e08d",
+      "previous_sha256": "3aa004a5052fd12e59810fad1eda8a58881c2325ed98da160bb5be48b62bd23f",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "7868fe7a5d304213a1ab2be1c1352c72566953668947c2dc681ff9a154f1e18a",
+      "previous_sha256": "c7ba0782aea055dcbf2ccb377bd7e4caee677889821fb61a3a7fc8c04d9a2afc",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/contracts.py",
+      "sha256": "a4880fdf7bd40777f55907ddc31c48e1d31c97911233d310cabb561d5716fe2b",
+      "previous_sha256": "31dc7b3ad5b1cf84c72c4264e265a77ab7317a0995dcfd683a7cdbc5fc89c0ac",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/library.py",
+      "sha256": "2e4010650924c39f7ba6f1af13d45430386a1f8d74ef3ecce680201917c9f1f4",
+      "previous_sha256": "61fc01e067f859fba8349b928be3f86638006b8d87311090f91c3ef1df162ecc",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/extraction.py",
+      "sha256": "b5b34836eff479c8e3c4d77f223af1d7e76f28f5fe4085e968984c66510c163e",
+      "previous_sha256": "5150f048d1f9ec26dda9e451bfe5b2d5dd1311ef727074767a3f8f79b49944bc",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "0076678696c6179942d25d5cdc908b0b85fceacf35c9a78acb7a3bd35d8a2c3e",
+      "previous_sha256": "769169ac03742df4ae763fa2c6f03e1a4cb743e15adf8231a518313f40c806de",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/__init__.py",
+      "sha256": "f5878fac5ef1ae7617be0ea93db7bc55db801d9c70b17414635f6bb4cbba8938",
+      "previous_sha256": "78a670933ea31bbbe70427a403cfe4d7f9b762faeb4b09448f7e4bb292ae0332",
+      "status": "modified"
+    },
+    {
+      "path": "tests/conftest.py",
+      "sha256": "3ea841bc21817bd1ef74621c7282e35af677eda54b19723a50cb93c3c21060ba",
+      "previous_sha256": "55cb8ccd6303cb0b00ac2c6c862ca24ad4d9da476e2829478095ad84c9fb2d8e",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_knowledge.py",
+      "sha256": "20e54159ec0441bc0f8bf0796a033fdead1dcd4c4b6ca52e0d20b334eb74b357",
+      "previous_sha256": "c3b11a3f4bbd60cb372eb05f12ba6f933b655adb1cdc516c5ae162d289e840ec",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_skills_agent.py",
+      "sha256": "0834b26604bdef304842797b627af2a06aed5aa9fa44af0a636e60271ce3d10a",
+      "previous_sha256": "3b28163e436147d7f26fa71454782a50eed536760ea89347a7107e15c86c051d",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/providers/gemini.py",
+      "sha256": "eefd733a73dd37ac7ab522f8b200f319166d291335d415a8d5a3b0a96d35bdf7",
+      "previous_sha256": "dc7435c71c34adde88d1123f76c4206469163efdbf83a9127a8a71662c91a75c",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_providers.py",
+      "sha256": "9fd398f52e169dc2b99ffa8ae7428bbbdcd341f2dd7a76c27a0f8fafef41a1eb",
+      "previous_sha256": "773ff3198de9707144a825e1df67762a0d917d24947599e58c4531cfdd057f27",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0010-interface-local.md",
+      "sha256": "69aca09381afdb576b0d4cc3b3f8c233d2e552f9ac3576f5cbce53a44870cc9b",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-10.md",
+      "sha256": "499a03494547b90193b98eba3a266f97fe7ea4de889786c86684624e5ac96f38",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "0b6d830f7c9c6d8b11ab940cdd7ce8d195df936684531b2a4cf25cc5e5d2017c",
+      "status": "new"
+    },
+    {
+      "path": ".claude/launch.json",
+      "sha256": "e096465f692618a54634503d1557aafbb494144e8814e3b03caa2e8a882cc0bc",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "79c4d282fec2782676029feb45d1de150870713ac046be41912e53d2186ff6e3",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/conversations.py",
+      "sha256": "2aa5a27c73d353b2870f414bf2632a0c10e102d6ee4813caa0ebe1fe37785bf9",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/rendering.py",
+      "sha256": "435d9b34bcefcaff53fc7fcf112fa8f27e856ce7a6d4ac291b86d78367806a17",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "9275602b12446c9eb6cb9d5c704220328329888b997110b66cb02edde0859c8b",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "add648d02da148d9811d0e91fb8a8e0182a8b1bd6b48e5e5eec7892e61ac9e2f",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "3697c900d7b210e8689f0bfb692dbea0ea4560b56578261c7ceab8aa5928a34e",
+      "status": "new"
+    }
+  ]
+}

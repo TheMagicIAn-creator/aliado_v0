@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-25",
+  "batches": [
+    4,
+    5,
+    6
+  ],
+  "state": "implemented_locally_for_user_review",
+  "source_inspection": {
+    "head": "21f6ddffb71d6082fd7e6a729c50636d6d85d4cb",
+    "clean": true,
+    "changed_by_assistant": false,
+    "files": [
+      {
+        "path": "src/conhecimento/embeddings.py",
+        "sha256": "f468ad74c750cc0d8ae6e1fe32784e67420fe1f72984351ff79063fe91e4d088",
+        "treatment": "reference_only_no_verbatim_copy"
+      },
+      {
+        "path": "src/conhecimento/processador_pdf.py",
+        "sha256": "53b3313e394cd5728c5a4ef27a0197bf4f8c6d7aa14f9444c3aef10a7f4ae9ab",
+        "treatment": "reference_only_no_verbatim_copy"
+      }
+    ]
+  },
+  "history": "Manifestos dos lotes 01–03 preservados. O baseline da retomada já continha implementação parcial; este registro descreve a entrega final dos lotes 04–06.",
+  "implementation": {
+    "knowledge": "Nova composição; reutiliza modelo ONNX, pooling e princípio de busca híbrida inspecionados na origem, sem Chroma ou restauração do corpus.",
+    "memory": "Revisão privada derivada; sem implementação ou ativação de memória persistente.",
+    "science": "Implementação geral nova das fórmulas e contratos aprovados; sem parâmetros físicos da origem."
+  },
+  "encoder": {
+    "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "hashes": {
+      "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
+      "onnx/model_quint8_avx2.onnx": "98a01d88b7de996cdea58c32ca71208c09968d143798814b2ea09d3439dc334f"
+    }
+  },
+  "ocr": {
+    "engine": "5.5.3.20260724",
+    "languages": [
+      "por",
+      "eng"
+    ],
+    "source": "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.3/tesseract-ocr-w64-setup-5.5.3.20260724.exe",
+    "archive_sha256": "bee9e3434bd94fd65387d9be28cd467a41f61b1275383b55b0f59a1331270ae4",
+    "tesseract_sha256": "c66f0f12ed76f6aa455dac97684bbc86756d6a732380bee09122454cfda3f420",
+    "language_hashes": {
+      "por": "c4932b937207a9514b7514d518b931a99938c02a28a5a5a553f8599ed58b7deb",
+      "eng": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    },
+    "distribution": "local_ignored_not_in_wheel"
+  },
+  "decisions": {
+    "files_reviewed": 30,
+    "consolidation_errors": 2,
+    "proposed_refinements": 3,
+    "existing_approved_decisions": 16,
+    "existing_pending_decisions": 0,
+    "refinements_pending": 3,
+    "active_memories": 0
+  },
+  "validation": {
+    "pytest_passed": 160,
+    "ruff": "passed",
+    "pip_check": "passed",
+    "skills": "passed",
+    "real_ocr_and_encoder": "synthetic_smoke_passed",
+    "wheel": {
+      "wheel": "dist/lotes-04-06/aliado-0.1.0-py3-none-any.whl",
+      "sha256": "d7d504628f38c563a69a317c34e7c1ed28dde32e882da0f90d963aa7493b5fd2",
+      "matched_source_files": 28,
+      "no_private_state": true,
+      "isolated_preparation_passed": true
+    }
+  },
+  "private_configuration": {
+    "env_preserved": true,
+    "example_sanitized": true,
+    "model_ids_pending": true,
+    "secrets_in_manifest": false
+  },
+  "git_actions_by_assistant": [],
+  "scientific_experiments_executed": false,
+  "public_files": [
+    {
+      "path": ".env.example",
+      "sha256": "3826a112c1ed8c829cc002ea6427e32bfb27c1acfb9f50ddd7217bd1016dea95",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "0bd4bcb4eae3561e50c365d7367d4c916c640d697ee8960a4e19f41fc2337e49",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "README.md",
+      "sha256": "6537bff669e02ae6793b74efbd68b0b125c0a51f76dd091ae56a7b094255d3c1",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "docs/arquitetura/modulos.md",
+      "sha256": "6b832b8418a92040f94ec59a7edba2cc6b38f5d969f4af47832eebfd12627c9b",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "docs/biblioteca/uso.md",
+      "sha256": "19f6169350578edce4a926d737858283dcd78ee40d989d9d14c8eee1f0f4e490",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/ciencia/confiabilidade.md",
+      "sha256": "bd950526ea127c257eb92d050e8aa3c2d9189502423ab8d362e7b6b28709f8a4",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/ciencia/exemplo-sintetico.json",
+      "sha256": "add47bc32e8c066c0f880c2a42232e27df53e35cab56426f6ea8621743f68529",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/ciencia/procedimentos.md",
+      "sha256": "52408ac9a5202ca772e83db007f187fde66d4d6a7bf27c4d30b7b244ef948229",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "3fb4a0b18fc3b3e6f7f182ec4beafee37ef559875190316a615254bf7d100c96",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "docs/migracao/aprendizados-lote-05.md",
+      "sha256": "20413ed2b6c6a326f7674609e358ec63764b0b719ca57dfb349f028286d99c1b",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/migracao/revisao-dos-lotes.md",
+      "sha256": "6a10d09a7bc2a2a6fa15ce9a84a6aef65813b301e9499642a5af1f3d628fac89",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "docs/migracao/validacao-lotes-04-06.md",
+      "sha256": "9b60ad75b7906c353012a4d73ea615c52fef72752a977a877c0b620bd985c2aa",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/specs/0004-biblioteca-documental.md",
+      "sha256": "14e3d0a5b69d243fdbc3dde5509f46dc084c955f30fc042eda81990d14391bf2",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/specs/0005-aprendizados.md",
+      "sha256": "8a5354afa08d6a6bc420c51502f573308dec8f6d7dc9c3e6b44551fb70faf23e",
+      "baseline_status": "new"
+    },
+    {
+      "path": "docs/specs/0006-ciencia-geral.md",
+      "sha256": "cb1089f921ca6fac44a15c48ac633c30215dd8a57b7704540f917a706b68bf72",
+      "baseline_status": "new"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "4bcae104c6cc3818447ac8cb5c4f4d12d89f5260b131e27793f455612fa86964",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "requirements-dev.lock",
+      "sha256": "3aa004a5052fd12e59810fad1eda8a58881c2325ed98da160bb5be48b62bd23f",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "3cb2c063c0f47673455730b253b8dd25594a71db772b9d8855f66c9d084f4969",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "2bfb11164feb0c954f5990335eb33a458057476ecacae2511db8634745ec155a",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/knowledge/__init__.py",
+      "sha256": "a8f1e9cc93df7113caa078a5241c9a7be3035968655a9783a8dbd5e1e7ddad3a",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/knowledge/embeddings.py",
+      "sha256": "5719b85ccc845287f58ef4cd26f2e726aafd317f680c7f1d2f553f2d17bdaaf2",
+      "baseline_status": "new"
+    },
+    {
+      "path": "src/aliado/knowledge/extraction.py",
+      "sha256": "5150f048d1f9ec26dda9e451bfe5b2d5dd1311ef727074767a3f8f79b49944bc",
+      "baseline_status": "new"
+    },
+    {
+      "path": "src/aliado/knowledge/library.py",
+      "sha256": "61fc01e067f859fba8349b928be3f86638006b8d87311090f91c3ef1df162ecc",
+      "baseline_status": "new"
+    },
+    {
+      "path": "src/aliado/llm/providers/gemini.py",
+      "sha256": "7f1220b27faa8ad02ba55a478581300f1bdc7761d4aa96df40ff2f2a1ab5b31a",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/llm/providers/openai.py",
+      "sha256": "741c7ba332056a0dd1101ff71b3856139e1c1d175021fea21fe6862f39132cf6",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/science/__init__.py",
+      "sha256": "2f71a480ef53e9d04b2006ea685538fb94ee83cb255e399fa18ccfe68801b529",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/science/ram.py",
+      "sha256": "2aff9d80729181ac935cce5b558668f9fed37ac043ee198216b34c2f7749c566",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "src/aliado/skills/builtin/confiabilidade/SKILL.md",
+      "sha256": "19ba4ad6e31502d1d9459062d8e376d791a51b59b0af9cfdcea66fb6bfc20d60",
+      "baseline_status": "new"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "sha256": "888a6a0a13317c87f4f357aa0bea8ffd15a5fc95cafcb51921908c6786198be9",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "tests/test_knowledge.py",
+      "sha256": "c3b11a3f4bbd60cb372eb05f12ba6f933b655adb1cdc516c5ae162d289e840ec",
+      "baseline_status": "new"
+    },
+    {
+      "path": "tests/test_science.py",
+      "sha256": "f0d19b67876e7698054e8b1e20c7aa03dfe3b937fc97106928754b608fb51925",
+      "baseline_status": "new"
+    },
+    {
+      "path": "tests/test_skills_agent.py",
+      "sha256": "ae9a5f375df95039ca429f5429ccec4d067d2b50cf164b08b5e903c46b64c4f7",
+      "baseline_status": "updated_or_resumed"
+    },
+    {
+      "path": "tests/test_structured_validation.py",
+      "sha256": "77ba22a0ba9104e7e094752a4af59d32be9efd08107ab7c5014486a0be2fe84b",
+      "baseline_status": "updated_or_resumed"
+    }
+  ]
+}

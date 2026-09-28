@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "batch": "16",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0016-fmeca.md",
+  "roadmap_progress_percent": 96,
+  "decisions": {
+    "occurrence_and_npr": "NPR das notas da fonte; leitura pelas taxas separada, sem nota agregada",
+    "severity_detection": "S e D da fonte; detectores não os alteram (M09); sem menção ao GPVS (M11)",
+    "ccb": "herda as notas do item PCB da fonte, a reconferir no PDF",
+    "repairs": "MTBF e falhas esperadas pelas taxas; sem disponibilidade até haver fonte de MTTR"
+  },
+  "origin_reference": {
+    "repository": "mestrado-utfpr",
+    "head": "21f6ddf",
+    "document": "docs/fmeca.md",
+    "copied_code": false,
+    "copied_values": "S, O e D de quatro itens, atribuídos a Cristaldi, Khalil e Soulatiantork (2017), Tab. 6",
+    "not_transferred": "itens sensor/realimentação e controle; mapeamento para o GPVS (M11)"
+  },
+  "fmeca": {
+    "location": "data/resultados/fmeca-001",
+    "in_version_control": false,
+    "npr": {
+      "ccb": 168,
+      "contatores": 150,
+      "igbt": 63,
+      "ventiladores": 48
+    },
+    "rate_order": [
+      "ccb",
+      "ventiladores",
+      "igbt",
+      "contatores"
+    ],
+    "discordant_pairs": [
+      [
+        "contatores",
+        "ccb"
+      ],
+      [
+        "contatores",
+        "igbt"
+      ],
+      [
+        "contatores",
+        "ventiladores"
+      ]
+    ]
+  },
+  "paid_calls": 0,
+  "validation": {
+    "pytest_passed": 331,
+    "ruff": "passed",
+    "untouched_files_checked": 122,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "5985e65c4c4f1b25544cbd4cc41b560b4691cdba08192de1554b92620655ee05",
+      "previous_sha256": "b1f867e065074a939daeffc7d7509d17858fac29a42868d1332157067e08fa71",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "c5c62dcec7ea8529c5e48a8d99c9d94064b0f671ae40a03abc0fd8fb7b1135fe",
+      "previous_sha256": "fe08ba69512769878f11a812e4151b163b0d012b6d50b0582da95b2a089745c8",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "9fd707d59bb3a460634011b3c2a42d823a526fe5cd1877bbfb28a4227f3e9b43",
+      "previous_sha256": "4d5f72f5a2a25885745393191e28b01c255320fd700c6ff39b58b1716b09de37",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "7508ad379bb6e4e236a781861f71d906aa905d3247a9bb062621c451723c4fae",
+      "previous_sha256": "fe8baf6031273f4f2736654bc6d69742f03fedcaa9a4d7976ead5a308b0f3658",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "38ecb160df73f1bfbbff76429099fd9299877ce7c694e98ca36312e2945abcfe",
+      "previous_sha256": "94b7582ea77936f3da6dc3a0f8445ea614e99b3af55550445916bc53f4c0f9fa",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "sha256": "52a069d6578cd4849dbaa9abad6224a53742296b8603296d75c51560a4d9474c",
+      "previous_sha256": "575e7f99cb519b1d881854bafdeb10c19d868c2001265af6b3c54189b340e0bd",
+      "status": "modified"
+    },
+    {
+      "path": "docs/ciencia/confiabilidade.md",
+      "sha256": "f3370b9cba545a804e8a3647dfd7a67aec9ccb87cb92c9d58b9dc03a1ff71dac",
+      "previous_sha256": "d42f8b7d106bd4de07832f4a510f94130f8c944bb93d4a520d918408b0feb79a",
+      "status": "modified"
+    },
+    {
+      "path": "docs/ciencia/procedimentos.md",
+      "sha256": "07ea86bfd6f6eac88828a44429bdba5b1527f790d417d3a72416ca920b825901",
+      "previous_sha256": "52408ac9a5202ca772e83db007f187fde66d4d6a7bf27c4d30b7b244ef948229",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0016-fmeca.md",
+      "sha256": "49cd9297aa30ddf995ff9954999de5a098b1e8328a5a704aa5cbb0366b3a1dad",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-16.md",
+      "sha256": "a633ac51982abadfc5dae03d78e43f1f357c2b12d930c84f476df3c871c22f13",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/fmeca.json",
+      "sha256": "1260b7c71033802332f06c02379c1739db206912597e4a899cdaec909828d862",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/fmeca.py",
+      "sha256": "eefa79d29355052275c4db7348d748b9c8c33987145c42d2a42de52f3e01d20b",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_fmeca.py",
+      "sha256": "de7adfab948b9489629151999f167f9727bfae539d74147271341e40ae9fce20",
+      "status": "new"
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AL-IAdo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f6e56'/%3E%3Ctext x='16' y='21' font-family='Georgia,serif' font-size='15' text-anchor='middle' fill='%23e1f5ee'%3EAL%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="/static/vendor/katex/katex.min.js"></script>
+  <script defer src="/static/vendor/katex/auto-render.min.js"></script>
+  <script defer src="/static/app.js"></script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <button class="brand" id="brand" type="button" aria-label="Voltar à conversa">
+      <span class="brand-mark" aria-hidden="true">AL</span>
+      <span class="brand-name">AL-IAdo</span>
+    </button>
+    <label class="chip chip-skill" title="Especialização usada nas respostas">
+      <span class="chip-dot" aria-hidden="true"></span>
+      <select id="skill" aria-label="Skill"></select>
+    </label>
+    <button class="chip chip-toggle" id="support" type="button" aria-pressed="false"
+            title="Apoio da skill geral de confiabilidade">+ confiabilidade</button>
+    <div class="topbar-spacer"></div>
+    <span class="usage" id="usage" title="Tokens usados hoje e no total"></span>
+    <label class="model" title="Modelo do Gemini">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+      <select id="model" aria-label="Modelo"></select>
+    </label>
+    <button class="icon-button" id="theme" type="button" aria-label="Alternar tema claro ou escuro">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13.5A8 8 0 1 1 10.5 4a6.5 6.5 0 0 0 9.5 9.5z"/></svg>
+    </button>
+  </header>
+
+  <nav class="rail" aria-label="Seções">
+    <button class="rail-item is-active" id="nav-chats" type="button" aria-expanded="true" title="Conversas">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>
+      <span class="rail-label">Conversas</span></button>
+    <button class="rail-item" id="nav-library" type="button" title="Biblioteca">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16.5 5.5l3.6.9-3.3 13.6-3.6-.9z"/></svg>
+      <span class="rail-label">Biblioteca</span></button>
+    <button class="rail-item is-soon" type="button" title="Ciência: lotes 13 a 15" aria-disabled="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8M20 16v-3"/></svg>
+      <span class="rail-label">Ciência</span></button>
+    <button class="rail-item" id="nav-memory" type="button" title="Memória">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg>
+      <span class="rail-label">Memória</span><span class="rail-badge" id="memory-badge" hidden></span></button>
+  </nav>
+
+  <aside class="drawer" id="drawer" aria-label="Conversas">
+    <button class="new-chat" id="new-chat" type="button">+ Nova conversa</button>
+    <ul class="chat-list" id="chat-list"></ul>
+  </aside>
+
+  <main class="chat" id="chat-view">
+    <div class="messages" id="messages" aria-live="polite">
+      <section class="welcome" id="welcome">
+        <p class="welcome-kicker">Pesquisa e engenharia</p>
+        <h1 class="welcome-title">Em que vamos trabalhar hoje?</h1>
+        <p class="welcome-text">Pergunte, peça uma revisão ou solte um PDF aqui para ele entrar na biblioteca.
+          As respostas citam as páginas dos seus documentos quando a biblioteca está ligada.</p>
+        <div class="welcome-suggestions" id="suggestions"></div>
+      </section>
+    </div>
+    <div class="uploads" id="uploads"></div>
+    <form class="composer" id="composer">
+      <textarea id="question" rows="1" placeholder="Pergunte ou solte um PDF para a biblioteca"
+                aria-label="Mensagem"></textarea>
+      <div class="composer-bar">
+        <button class="icon-button" id="attach" type="button" aria-label="Enviar documento para a biblioteca"
+                title="PDF, Markdown ou JSON">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 11-8.2 8.2a5 5 0 0 1-7-7L13 4a3.4 3.4 0 0 1 4.9 4.9l-8.2 8.2a1.7 1.7 0 0 1-2.4-2.4L15 7"/></svg>
+        </button>
+        <input type="file" id="file" accept=".pdf,.md,.json" hidden multiple>
+        <label class="switch" title="Responder citando apenas trechos da biblioteca">
+          <input type="checkbox" id="use-library">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span id="library-label">Usar biblioteca</span>
+        </label>
+        <label class="switch" title="Permite ao Gemini pesquisar na web; a busca pode ter custo à parte">
+          <input type="checkbox" id="use-web">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>Buscar na web</span>
+        </label>
+        <span class="composer-hint">Enter envia · Shift+Enter quebra linha</span>
+        <button class="send" id="send" type="submit" aria-label="Enviar">
+          <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+          <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
+        </button>
+      </div>
+    </form>
+    <div class="dropzone" id="dropzone" hidden><p>Solte para adicionar à biblioteca</p></div>
+  </main>
+
+  <aside class="sources" id="sources" aria-label="Fontes">
+    <div class="panel-head">
+      <h2 class="panel-title">Fontes desta resposta</h2>
+      <button class="icon-button sources-close" id="sources-close" type="button" aria-label="Fechar fontes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div id="source-list"><p class="muted">As fontes citadas aparecem aqui. Ligue “Usar biblioteca” para respostas com citações.</p></div>
+    <div id="memory-panel"></div>
+  </aside>
+
+  <section class="library memory" id="memory-view" hidden aria-labelledby="memory-title">
+    <header class="library-head">
+      <div>
+        <h1 id="memory-title">Memória</h1>
+        <p class="muted">O que o AL-IAdo aprendeu nas conversas e nos documentos. Nada é apagado:
+          correções e edições criam versões novas, e o histórico fica guardado.</p>
+      </div>
+      <button class="primary" id="memory-add" type="button">Nova anotação</button>
+    </header>
+    <div class="filters" id="memory-filters" role="tablist" aria-label="Filtrar anotações"></div>
+    <ul class="memory-list" id="memory-list"></ul>
+  </section>
+
+  <dialog class="dialog" id="remember-dialog" aria-labelledby="remember-title">
+    <form method="dialog" id="remember-form">
+      <h2 id="remember-title">Lembrar</h2>
+      <p class="muted" id="remember-hint">A anotação vale na hora, como uma decisão sua.</p>
+      <label class="field">Tipo
+        <select id="remember-kind">
+          <option value="preferencia">Preferência: como quero as respostas</option>
+          <option value="decisao">Decisão sobre a pesquisa ou o projeto</option>
+          <option value="correcao">Correção de algo errado</option>
+          <option value="fato">Fato</option>
+        </select>
+      </label>
+      <label class="field">Texto
+        <textarea id="remember-text" rows="4" maxlength="600" required
+                  placeholder="Prefiro respostas com no máximo três parágrafos."></textarea>
+      </label>
+      <p class="field-error" id="remember-error" hidden>Escreva o que devo lembrar.</p>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" id="remember-cancel">Cancelar</button>
+        <button class="primary" type="submit" id="remember-save">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <section class="library" id="library-view" hidden aria-labelledby="library-title">
+    <header class="library-head">
+      <div>
+        <h1 id="library-title">Biblioteca</h1>
+        <p class="muted">Cada documento guarda o original, a extração em Markdown e os trechos indexados.</p>
+      </div>
+      <button class="primary" id="library-add" type="button">Adicionar documento</button>
+    </header>
+    <div class="library-body">
+      <ul class="doc-list" id="doc-list"></ul>
+      <article class="doc-viewer" id="doc-viewer">
+        <p class="muted">Escolha um documento para ver a versão em Markdown.</p>
+      </article>
+    </div>
+  </section>
+  <div class="scrim" id="scrim" aria-hidden="true"></div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

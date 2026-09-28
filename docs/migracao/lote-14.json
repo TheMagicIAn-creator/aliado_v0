@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "batch": "14",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0014-autoencoders-limiar.md",
+  "roadmap_progress_percent": 86,
+  "decisions": {
+    "purge": "11 janelas (distância 12, critério do M14 cumprido); 2 janelas só para conferir a reprodução",
+    "score_threshold": "k=5 e p99 na calibração; sensibilidade k ∈ {5, 10, 20} fixada antes da avaliação e só relatada",
+    "models": "como na origem: Denso 24-16-8-16-24 e AE-LSTM sem atenção; sementes 13, 29, 42, 71, 101 (referência 42)",
+    "pytorch": "torch 2.12.0 só CPU, do PyPI, com SHA-256 conferido"
+  },
+  "dependency": {
+    "package": "torch",
+    "version": "2.12.0+cpu",
+    "source": "PyPI",
+    "wheel": "torch-2.12.0-cp312-cp312-win_amd64.whl",
+    "wheel_sha256": "8b958caff4a14d3a3b0b2dfc6a378f64dda9728a9dad28c08a0db9ce4dafb549",
+    "extra": "ml"
+  },
+  "origin_reference": {
+    "repository": "mestrado-utfpr",
+    "head": "21f6ddf",
+    "modules": [
+      "src/ml/modelos_autoencoder.py",
+      "src/ml/treino_comparacao.py"
+    ],
+    "copied_code": false,
+    "read_only_artifacts": [
+      "artefatos/modelos/ae_denso",
+      "artefatos/modelos/ae_lstm"
+    ],
+    "copied_values": "tests/data/gpvs_modelos_referencia.json (limiares, épocas, perdas, parâmetros e hash dos pesos)",
+    "not_transferred": "AE-LSTM com atenção (exploratório na origem); scaler em pickle"
+  },
+  "reproduction": {
+    "purge": 2,
+    "seed": 42,
+    "bit_exact_weights": true,
+    "identical_loss_history": true,
+    "dense": {
+      "threshold": 3.461894989013672,
+      "best_epoch": 111,
+      "epochs": 131
+    },
+    "lstm": {
+      "threshold": 17.381608963012695,
+      "best_epoch": 141,
+      "epochs": 150
+    }
+  },
+  "canonical_run": {
+    "location": "data/resultados/gpvs-modelos-001",
+    "in_version_control": false,
+    "config_sha256": "09b7ed243bf2abdd87ee0fde03d2279fcb557a89357d387698daafe153934554",
+    "split": {
+      "train": 711,
+      "validation": 191,
+      "calibration": 192,
+      "test": 263
+    },
+    "m14_check": {
+      "lag_necessario": 12,
+      "distancia_entre_blocos": 12,
+      "suficiente": true
+    },
+    "thresholds_reference_seed": {
+      "denso": 3.7021644115448,
+      "lstm": 17.381608963012695
+    },
+    "stability": {
+      "denso": {
+        "limiar_min": 3.144629955291748,
+        "limiar_mediana": 3.5103249549865723,
+        "limiar_max": 3.792628526687622,
+        "melhor_epoca_min": 115,
+        "melhor_epoca_max": 144
+      },
+      "lstm": {
+        "limiar_min": 17.381608963012695,
+        "limiar_mediana": 20.188190460205078,
+        "limiar_max": 22.676660537719727,
+        "melhor_epoca_min": 132,
+        "melhor_epoca_max": 149
+      }
+    },
+    "rerun_identical_weights": true,
+    "sealed": "teste saudável e ensaios com falha não pontuados até o lote 15"
+  },
+  "paid_calls": 0,
+  "validation": {
+    "pytest_passed": 309,
+    "ruff": "passed",
+    "untouched_files_checked": 105,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "8cf63af528e62231b759c5a9c16c39908e7112596f4e59c68a3c3b68d04c4720",
+      "previous_sha256": "5b5b0297cee2758b9034e07f2ec09744f75573db39f5fb8e208c5761429505a8",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "f4ed98547b1efc26cb2b814216b269d2c4bcb6c478cd6989f813fc587b1cbd4f",
+      "previous_sha256": "60672dddb53940c53ff4e3789aaca15c980af2cea29760f74a81a342bc8a040d",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "f48b1ad259a893bf390eff29f2baf517048c9fdebf3e7b9a45e1ef486a397050",
+      "previous_sha256": "77ec9a597f9e72cb511ba50bbbba1d679dbf23e792b783d8d178564f5688bf5c",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "f6f64c09697d20744e661e6453433fb8ba19f96d13d71bc20c354188693bdcf4",
+      "previous_sha256": "7b6cbd430e77598192c6a6c1eafaf21d667e27e8d225651e4dbd28bb0097df35",
+      "status": "modified"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "a0a28ab086fb07701aed30fbbf95e7681f4de0efecb962ef07e51f7125257207",
+      "previous_sha256": "0517b7348a11cc77280274ead1f4789688b62f2901dc41ef3a47f374cdadef59",
+      "status": "modified"
+    },
+    {
+      "path": "requirements-dev.lock",
+      "sha256": "d97bb4f89507d859c5cae368cf6c68801b35dcae1c0e6746ba47627450d6a6bb",
+      "previous_sha256": "d643cd627183c854f36c3f2a86feb4ba6158a544e09989905e19f8581ef2e08d",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "c245fda06a080de6b2c2ec36a88853233db70c74d8f1076998c0a40751bd2c16",
+      "previous_sha256": "6c153d85239dd37dc8d4d655c355c78f62ba6cc9f7a207f54048e3c1ffb4a191",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/__init__.py",
+      "sha256": "80c2c32e808d54e162782aa5d851875a3fe346e578fd58f8865b332e2e973713",
+      "previous_sha256": "40c298c044617fc47bbb9cf36620cfba0022b8cc3e57f65e3b2a0384c8e4e940",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/gpvs.py",
+      "sha256": "d60ada5e984f855c21aa0dfc7a93a744bf19d17268a01a4c584a1efd2bd46df5",
+      "previous_sha256": "ce2360498378f6a70567494104c07a1e0d7a4f6d56f4f7d264d0f39e26dba6c5",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_detection.py",
+      "sha256": "6ab5c48de74a27487421181bdfd8f04fc13d394d602541405098c38cbb831041",
+      "previous_sha256": "ff6d7f118d54f636ade9df6e8593efc41d859c806bbd009ba2f8c7fcd4bf3976",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0014-autoencoders-limiar.md",
+      "sha256": "7086dfe7b3ac2632f2c65a16c52777ed37689d2661669cfd8ecd5a87f0a74f61",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-14.md",
+      "sha256": "388ba8fe7414f7966fa48216b82141d5ca709183f0b64135da073cdc54306841",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/threshold.py",
+      "sha256": "e9bfc53801364ced564732823b3ee68c0e987c4d4af399a29fa7254818c277bd",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/models.py",
+      "sha256": "f284c9dd3dc82321f0c9b9a944792e0039f50a8c2b21887ccdadb7762ce4724c",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/training.py",
+      "sha256": "dbcdbf3d4aa7e27801524ef099423ade92e22038d0512feae4151ea5c6f40372",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_detection_threshold.py",
+      "sha256": "49112c45d405f730ade8013bf7fc7b55f140da88d1118e0cd20f23d4a4f066ca",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_detection_training.py",
+      "sha256": "8a8b865924cf2cf7a0df7597119dedb7a3b815aa302ca97407a4b1ea398aa065",
+      "status": "new"
+    },
+    {
+      "path": "tests/data/gpvs_modelos_referencia.json",
+      "sha256": "8ea9e76b412e8b401f60cf975f608c64ea7ccce1ce2217094c2b730150e942ed",
+      "status": "new"
+    }
+  ]
+}

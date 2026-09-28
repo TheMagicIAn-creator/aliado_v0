@@ -1,0 +1,33 @@
+{
+  "name": "Contatores CA/CC — 8.760 h/ano de calendário",
+  "kind": "exponential",
+  "time_unit": "year",
+  "time_base": {
+    "rate_unit": "h",
+    "hours_per_year": 8760,
+    "basis": "calendar"
+  },
+  "parameters": {
+    "rate": 8.31e-06
+  },
+  "times": [
+    0,
+    1,
+    5,
+    10,
+    15,
+    20
+  ],
+  "sources": [
+    "Gallardo-Saavedra et al. (2019), via Sarquis Filho et al. (2020), Tabela III, p. 3; valor secundário, original não consultado.",
+    "Categoria 'Contactor', sem separação CA/CC; um item por decisão do pesquisador em 25/09/2026.",
+    "Valor conforme registro de 13/09/2026; tabela e página não reconferidas no PDF neste lote."
+  ],
+  "assumptions": [
+    "Taxa de falha constante (vida exponencial), sem mortalidade infantil nem desgaste.",
+    "Componente analisado isoladamente, sem topologia de sistema, reparo ou substituição.",
+    "8.760 h/ano de calendário: a taxa incide em todas as horas do ano, cenário mais conservador.",
+    "Não se sabe se a taxa bibliográfica se refere a horas de operação ou de calendário; por isso há dois cenários.",
+    "Horizonte de 20 anos (M12)."
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-26",
+  "batch": "09",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0009-gemini-uso-real.md",
+  "roadmap": "docs/roteiro-v0.md",
+  "roadmap_progress_percent": 50,
+  "models": {
+    "flash": "gemini-3.8-flash",
+    "flash_lite": "gemini-3.5-flash-lite",
+    "listed_for_key": 44,
+    "sdk": "google-genai 1.75.0"
+  },
+  "private_configuration": {
+    "env_lines_changed": [
+      "AL_IADO_GEMINI_MODEL_FLASH",
+      "AL_IADO_GEMINI_MODEL_FLASH_LITE"
+    ],
+    "secrets_in_manifest": false,
+    "backup": "tmp/lote-09-env-antes.bak"
+  },
+  "real_calls": [
+    {
+      "model": "gemini-3.5-flash-lite",
+      "skill": null,
+      "input_tokens": 391,
+      "output_tokens": 58,
+      "reasoning_tokens": null,
+      "total_tokens": 449
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "skill": "pesquisa-inversores",
+      "input_tokens": 3173,
+      "output_tokens": 262,
+      "reasoning_tokens": 541,
+      "total_tokens": 3976
+    }
+  ],
+  "usage_log": {
+    "path": "data/uso/chamadas.jsonl",
+    "in_git": false,
+    "stores_conversation_text": false
+  },
+  "review_adjustments": [
+    "Instrução geral: pergunta sobre próximos passos só quando pedido planejamento ou decisão necessária.",
+    "Trava Git: comandos sem 'git' liberados sem análise; retirar se voltar a causar atrasos."
+  ],
+  "validation": {
+    "pytest_passed": 227,
+    "ruff": "passed",
+    "untouched_lote08_files_checked": 75,
+    "untouched_lote08_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "274adf7c0712c3a7cf25ccddf1e810e8bde136f59fadb819346e067e9c2b7a67",
+      "previous_sha256": "ae5b52d80dd4286cc3703088d64163f3325304512459a1dab2befb07a07cc87d",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "fff667ab303d30c33d6e4c8fc6d124020df48f521efb9a0f04c4222b7299f988",
+      "previous_sha256": "46c06da9c265d9f91028bcefbdced37425d27206e5e48be7a9ed2de48c40409f",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "dedb66b5b62acc67ca4e6ef186be583920316e464ade649a6590bd1e8f2521f1",
+      "previous_sha256": "e0c241246a321c91fb85bf0eaac9860bb27bf64ce7f31e0da0baabffaf88b06f",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/contracts.py",
+      "sha256": "31dc7b3ad5b1cf84c72c4264e265a77ab7317a0995dcfd683a7cdbc5fc89c0ac",
+      "previous_sha256": "ae909d831b987b82875a68b0c9a17d139b93cd8b5b02608bf2757b8195ee47d7",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/providers/gemini.py",
+      "sha256": "dc7435c71c34adde88d1123f76c4206469163efdbf83a9127a8a71662c91a75c",
+      "previous_sha256": "7f1220b27faa8ad02ba55a478581300f1bdc7761d4aa96df40ff2f2a1ab5b31a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "769169ac03742df4ae763fa2c6f03e1a4cb743e15adf8231a518313f40c806de",
+      "previous_sha256": "2bfb11164feb0c954f5990335eb33a458057476ecacae2511db8634745ec155a",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_providers.py",
+      "sha256": "773ff3198de9707144a825e1df67762a0d917d24947599e58c4531cfdd057f27",
+      "previous_sha256": "fac55c8fa8ec295116f6a5166570e46f7d48cc33bd94e7464f4d3b5da9eccc4b",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_skills_agent.py",
+      "sha256": "3b28163e436147d7f26fa71454782a50eed536760ea89347a7107e15c86c051d",
+      "previous_sha256": "49cfd7beea84f60ae053427fb04c16b8d5bf4d4255e748c3adc7d01a758075e6",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "c7ba0782aea055dcbf2ccb377bd7e4caee677889821fb61a3a7fc8c04d9a2afc",
+      "previous_sha256": "3cb2c063c0f47673455730b253b8dd25594a71db772b9d8855f66c9d084f4969",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/hooks/check_git_command.py",
+      "sha256": "481c3f54f0b8d374e7aba51bac519645f9ab3c1aa49968ea0614070f7587c16a",
+      "previous_sha256": "73d31afeb31eb668c0ee33577c6060ac14d2493206e0e12cfae218b1bf6ca368",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_git_hook.py",
+      "sha256": "20750d7f54fdec5a52e32ec86bf9700cd7c1c6dc952c494e50bd1f8187af87f6",
+      "previous_sha256": "660ee77bd8bf450daae6f09987988d7749b34b9b2998ed8ed0d67cb0c1d17432",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "12e4f4538812162eed0ae167ff087119cf60f256fc61add2a21387f724b8ac18",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0009-gemini-uso-real.md",
+      "sha256": "ec38a364dfa26267ea4143f93c12ff7fd2b6d0e0294b60d511c817f6f318cc6e",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-09.md",
+      "sha256": "a14092c4e3f51a23f447da38e43cb9aa63a0b45fc7231371740c54337872e265",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/llm/usage_log.py",
+      "sha256": "c0d086abba457f153f7c2e5a83a31b3c9e47735263bfd2e6d930510d970053ba",
+      "status": "new"
+    }
+  ]
+}

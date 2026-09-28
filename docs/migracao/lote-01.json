@@ -1,0 +1,79 @@
+{
+  "batch": "01",
+  "source_repository": "https://github.com/TheMagicIAn-creator/mestrado-utfpr",
+  "source_ref": "main",
+  "source_commit": "55c44df6bda807b73c4ac3762f0a89734633d384",
+  "files": [
+    {
+      "source": "src/conhecimento/contratos_llm.py",
+      "source_sha256": "ae909d831b987b82875a68b0c9a17d139b93cd8b5b02608bf2757b8195ee47d7",
+      "destination": "src/aliado/llm/contracts.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "src/conhecimento/provedores/base.py",
+      "source_sha256": "e4986ba9acd3fe05027eac1f58591974e761f4763a678894668a016344522553",
+      "destination": "src/aliado/llm/providers/base.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "src/conhecimento/provedores/registry.py",
+      "source_sha256": "72fea74c9a1b9a247117fa51ec0d7b20689ec185fcb5c0a54985fdf9d4da711e",
+      "destination": "src/aliado/llm/providers/registry.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "src/conhecimento/provedores/gateway.py",
+      "source_sha256": "861e9cbe4e7f4ef20511212ab7f08cfaab7cedf6290782a7063dd2b5e88ad935",
+      "destination": "src/aliado/llm/providers/gateway.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "src/conhecimento/provedores/openai.py",
+      "source_sha256": "d18edcbb51c5332ac5c1647f6da3f92dab9251a4c9c3a4b5feb982c0a9dd24a3",
+      "destination": "src/aliado/llm/providers/openai.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "tests/test_contratos_llm.py",
+      "source_sha256": "0738da3e71af7967c5dfd98b185e5dc8c82c43ee56e1ad38da61c943d142bff1",
+      "destination": "tests/test_contracts.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "tests/test_provider_gateway.py",
+      "source_sha256": "bd8b8b09127357b3f74685e11b26ae6f1e03de9cd670e76b16f37114a0ce18b3",
+      "destination": "tests/test_gateway.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "tests/test_openai_provider.py",
+      "source_sha256": "f334d54a6f50083f907f42e4ca3e5a345072d6b7e8743df04cbc608e0a7840d3",
+      "destination": "tests/test_providers.py",
+      "adaptation": "Imports realocados para o pacote aliado; ajustes específicos descritos no mapa de migração."
+    },
+    {
+      "source": "src/conhecimento/provedores/gemini.py",
+      "source_sha256": "6070f027f8c14787b6d1a0c38c6c26383935213c4869a741ddc848dec3447b09",
+      "destination": "src/aliado/llm/providers/gemini.py",
+      "adaptation": "Adapter GeminiProvider extraído e simplificado; contexto e papéis preservados; sem fachada legada, dotenv automático ou fallback implícito."
+    }
+  ],
+  "user_documents": [
+    {
+      "name": "AL-IAdo_registro_de_decisoes_2026-09-13.md",
+      "sha256": "e63359a1e9ae1b6b41b24ecc50ca04a698a5f8e98cebe8e43258fabafdbe5b73",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/decisoes-2026-09-13.md"
+    }
+  ],
+  "excluded": [
+    ".env",
+    "dados/",
+    "literatura/",
+    "base_conhecimento/",
+    "notas/",
+    "artefatos/",
+    "resultados/",
+    ".git/"
+  ]
+}

@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aliado"
+version = "0.1.0"
+description = "AL-IAdo: agente modular para pesquisa e engenharia"
+requires-python = ">=3.12"
+dependencies = ["PyYAML>=6,<7", "python-dotenv>=1,<2"]
+
+[project.optional-dependencies]
+llm = ["openai>=1.68,<4", "google-genai>=1,<2"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1", "build>=1,<2"]
+knowledge = ["pypdf>=6,<7", "pypdfium2>=4,<6", "Pillow>=11,<13", "numpy>=2,<3", "onnxruntime>=1.20,<2", "tokenizers>=0.21,<1", "huggingface-hub>=0.30,<2"]
+science = ["matplotlib>=3.9,<4"]
+web = ["starlette>=1,<2", "uvicorn>=0.47,<1", "python-multipart>=0.0.28,<1", "markdown-it-py>=4,<5"]
+# Versão da origem: a mesma semente reproduz os mesmos pesos (lote 14).
+ml = ["numpy>=2,<3", "torch==2.12.0"]
+
+[project.scripts]
+aliado = "aliado.cli:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"aliado.skills" = ["builtin/*/SKILL.md", "builtin/*/references/*.md"]
+"aliado.interfaces.web" = ["static/*.html", "static/*.css", "static/*.js",
+                           "static/vendor/katex/*.js", "static/vendor/katex/*.css",
+                           "static/vendor/katex/LICENSE", "static/vendor/katex/fonts/*.woff2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]

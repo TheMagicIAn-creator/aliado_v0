@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "batch": "15",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0015-avaliacao-m13.md",
+  "roadmap_progress_percent": 92,
+  "decisions": {
+    "epochs": "a validação decide a parada (paciência 20, teto de segurança 2000); revisão registrada na spec 0014",
+    "alarm_rule": "3 janelas seguidas; grade {1, 2, 3, 5} só relatada",
+    "false_alarm_segments": "teste saudável e pré-falha, separados, e limite superior combinado",
+    "metrics": "principais físicas; as da origem como secundárias descritivas",
+    "uncertainty": "bootstrap em blocos de 12 janelas; limite exato de Poisson para alarmes",
+    "seeds": "semente 42 como referência, faixa das 5 ao lado",
+    "comparison": "pareada por ensaio, por objetivo, sem vencedor geral (M13)"
+  },
+  "lot14_revision": {
+    "canonical_training": "data/resultados/gpvs-modelos-002",
+    "config_sha256": "be9e54fa5d2100814908d3178a6f2aa9073cd494a12de23d1552a702f36a73d8",
+    "previous_canonical_preserved": "data/resultados/gpvs-modelos-001"
+  },
+  "origin_reference": {
+    "repository": "mestrado-utfpr",
+    "head": "21f6ddf",
+    "modules": [
+      "src/ml/avaliacao_comparativa.py",
+      "src/ml/estatistica_comparacao.py"
+    ],
+    "copied_code": false,
+    "read_only_results": [
+      "resultados/comparacao/e3_escores_referencia.csv",
+      "resultados/comparacao/e3_metricas_por_ensaio.csv"
+    ],
+    "copied_values": "tests/data/gpvs_avaliacao_referencia.json",
+    "not_transferred": "ablação temporal e varredura de detectabilidade (a_det, Weibull)"
+  },
+  "reproduction": {
+    "windows_compared": 14064,
+    "max_relative_score_difference": 1.71e-07,
+    "window_metrics_pairs": 28,
+    "window_metrics_identical": true
+  },
+  "canonical_evaluation": {
+    "location": "data/resultados/gpvs-avaliacao-001",
+    "in_version_control": false,
+    "config_sha256": "ce8b06e483a0270dc2002714c7c3afa79406976255b8bd9b8a429b3a5bbdc2fc",
+    "test_consulted_on": "2026-09-27",
+    "detected": {
+      "denso": 10,
+      "lstm": 8
+    },
+    "false_alarms_upper_per_hour_52s": {
+      "denso": 206.5230981385363,
+      "lstm": 327.0377684068571
+    },
+    "comparison": {
+      "alarmes_pre_falha": "sem diferença clara",
+      "especificidade": "sem diferença clara",
+      "detectado": "sem diferença clara",
+      "sensibilidade": "sem diferença clara",
+      "atraso_ms": "sem diferença clara"
+    },
+    "finding": "os dois modelos disparam no mesmo ciclo, 0,05 a 3,8 s após o meio nominal; o atraso reflete onde a falha se manifesta no registro"
+  },
+  "paid_calls": 0,
+  "validation": {
+    "pytest_passed": 320,
+    "ruff": "passed",
+    "untouched_files_checked": 111,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "b1f867e065074a939daeffc7d7509d17858fac29a42868d1332157067e08fa71",
+      "previous_sha256": "8cf63af528e62231b759c5a9c16c39908e7112596f4e59c68a3c3b68d04c4720",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "fe08ba69512769878f11a812e4151b163b0d012b6d50b0582da95b2a089745c8",
+      "previous_sha256": "f4ed98547b1efc26cb2b814216b269d2c4bcb6c478cd6989f813fc587b1cbd4f",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "4d5f72f5a2a25885745393191e28b01c255320fd700c6ff39b58b1716b09de37",
+      "previous_sha256": "f48b1ad259a893bf390eff29f2baf517048c9fdebf3e7b9a45e1ef486a397050",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "fe8baf6031273f4f2736654bc6d69742f03fedcaa9a4d7976ead5a308b0f3658",
+      "previous_sha256": "f6f64c09697d20744e661e6453433fb8ba19f96d13d71bc20c354188693bdcf4",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "94b7582ea77936f3da6dc3a0f8445ea614e99b3af55550445916bc53f4c0f9fa",
+      "previous_sha256": "c245fda06a080de6b2c2ec36a88853233db70c74d8f1076998c0a40751bd2c16",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/__init__.py",
+      "sha256": "568666193a983ff97f197b08049b5e00d6891dc6f1b0220540c0b3c2eaeedeec",
+      "previous_sha256": "80c2c32e808d54e162782aa5d851875a3fe346e578fd58f8865b332e2e973713",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/models.py",
+      "sha256": "76c6f5e3934678c6cb633efafef162c8506e2daa6dba0aa30b5f98b16bff745c",
+      "previous_sha256": "f284c9dd3dc82321f0c9b9a944792e0039f50a8c2b21887ccdadb7762ce4724c",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/training.py",
+      "sha256": "cdf68f21e5a670333fb502473de2b3fc5140b84ddd3651df82c544619ba3c05e",
+      "previous_sha256": "dbcdbf3d4aa7e27801524ef099423ade92e22038d0512feae4151ea5c6f40372",
+      "status": "modified"
+    },
+    {
+      "path": "tests/conftest.py",
+      "sha256": "8b6482d1db266659c399f22db6b306a784cd6734d7084e975d01d3c33b8a0436",
+      "previous_sha256": "3ea841bc21817bd1ef74621c7282e35af677eda54b19723a50cb93c3c21060ba",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_detection_training.py",
+      "sha256": "9e16bc58d64fff713315101de97d077a2956a91553cd3df3c85375b01fd44ce5",
+      "previous_sha256": "8a8b865924cf2cf7a0df7597119dedb7a3b815aa302ca97407a4b1ea398aa065",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0014-autoencoders-limiar.md",
+      "sha256": "b421d97a07f71a3d65eb4560fa1df560127697153f389cfa901872fb89a4295a",
+      "previous_sha256": "7086dfe7b3ac2632f2c65a16c52777ed37689d2661669cfd8ecd5a87f0a74f61",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-14.md",
+      "sha256": "6c3bc1328c6db5735fee6b9328905a7ae4c7b88acde54abf4cc2d403afe0c162",
+      "previous_sha256": "388ba8fe7414f7966fa48216b82141d5ca709183f0b64135da073cdc54306841",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0015-avaliacao-m13.md",
+      "sha256": "fcdced4b2a637f921539fad97abac049f8723ab66011045222e941a614dc0a78",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-15.md",
+      "sha256": "f651f5495b0d75c60b8df5f181983d65e65ac5a5ff45cc940ae5ee1d573f813b",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/metrics.py",
+      "sha256": "31e53d879bf422ceeabb4764fc9e3e34a999cbed82ee1a1bf330f3fbb2c77d70",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/evaluation.py",
+      "sha256": "a8d882c16d248b4561bf712794032cddc2506d64a3e2114365028d9c31cb28fa",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_detection_metrics.py",
+      "sha256": "2497b4b1dabbf281456ad8667220b8216b1005d68c79cc8d4e522c9062bc95e2",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_detection_evaluation.py",
+      "sha256": "975a505e4d4ef1d11ec019bb2af3022437361c85549697ed2944e4b9ccaec136",
+      "status": "new"
+    },
+    {
+      "path": "tests/data/gpvs_avaliacao_referencia.json",
+      "sha256": "be4ad4ea6398886be44b8059604cca945a414a991687eff579e4e607cdb1a200",
+      "status": "new"
+    }
+  ]
+}

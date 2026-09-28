@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "batch": "12",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0012-busca-web.md",
+  "roadmap_progress_percent": 72,
+  "decisions": {
+    "when": "interruptor 'Buscar na web' por pergunta; ligado, o Gemini decide se busca",
+    "self_correction": [
+      "botão 'Conferir na web' por anotação",
+      "revisor anota fatos da web com link"
+    ],
+    "library_and_web": "juntas; cada afirmação com fonte; citação de PDF inventada bloqueia",
+    "excluded_domains": "nenhum por ora"
+  },
+  "provider_feature": "Gemini grounding (google_search), sem combinar com saída JSON estruturada",
+  "usage_log": "conta buscas (web_queries) sem guardar o texto das consultas",
+  "fix_during_validation": "instrução da web passou a proibir lista de fontes no texto e pedir fontes primárias",
+  "real_calls": {
+    "model": "gemini-3.5-flash-lite",
+    "calls": 5,
+    "total_tokens": 2856,
+    "web_queries": 4,
+    "by_task": {
+      "critical_reasoning": [
+        682,
+        754
+      ],
+      "memoria-revisor": [
+        554,
+        593
+      ],
+      "memoria-conferencia": [
+        273
+      ]
+    }
+  },
+  "validation": {
+    "pytest_passed": 280,
+    "ruff": "passed",
+    "js_syntax": "node --check",
+    "untouched_files_checked": 88,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits somente com a v0 concluída.",
+  "public_files": [
+    {
+      "path": "README.md",
+      "sha256": "6f6853cb7363cb98029a4b80ff4456731cd3a67f1e5f765b003e1ffa881a5e74",
+      "previous_sha256": "5e35ab327d6a1832bb529a9bcdd1008943b1f485abbbdeb68266a009f6e0e262",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "a652f81206943995eabdd06437b421f762ea5a0f494d0a96f88bd1eac2513551",
+      "previous_sha256": "e2f7d99ba0eddd20bac586c43650922978bbf9a0aeb6dc1ea6936daff175040c",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "1a76bdd04c1f058613f9434845dd7d17484f6290b4c362f4e4ebfa2387f02355",
+      "previous_sha256": "dece8cc0f81ab371fec732aa9d420a45a4edb584b1849aabb8af57b681315e66",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "c912b0eec65775feaac4001621e3d3eae5cc979dce3060ad02db9bbaf58fedac",
+      "previous_sha256": "0d92d3dc4d3858108dcb5b7742ac43e3b4e9e82c6010bfade862b54629e99797",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "2abbcd8f5d7ecd3fb4979ff8f793c5190182079097c12b35cd6937963ec97c8c",
+      "previous_sha256": "de06b752656559ab572de6b9b4a534aeebd620bcfdedbb8aada18b0f826ff0d6",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/contracts.py",
+      "sha256": "db96933083d852e80a5ef94bf77737f8bd8dd0ea08721d0ef448823a1321288e",
+      "previous_sha256": "a4880fdf7bd40777f55907ddc31c48e1d31c97911233d310cabb561d5716fe2b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/providers/gemini.py",
+      "sha256": "be864b644ab9faebf83cc5693c567a37ec2898a0db0102c3249b3336b348f2e9",
+      "previous_sha256": "eefd733a73dd37ac7ab522f8b200f319166d291335d415a8d5a3b0a96d35bdf7",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/providers/gateway.py",
+      "sha256": "d564bc32a798d906f270305b4dc3e0f1d3075d715f6f312a12ac2c21f192ffbb",
+      "previous_sha256": "cec38aefad6325eac24108cce857b5376cde64d8a9d7b024ae6aba161ad2c748",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/usage_log.py",
+      "sha256": "3964de5b05b94dc9335bcf740d47328297342647364d32a794f7c2f44113c04e",
+      "previous_sha256": "c0d086abba457f153f7c2e5a83a31b3c9e47735263bfd2e6d930510d970053ba",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/memory/reviewer.py",
+      "sha256": "7de7888b8d7d09fc855058ed7c999effe6a5f8a7e3d4da40ae69065d72028476",
+      "previous_sha256": "a06d3494d8049b7c18faae510fe44dfb453ea1ea3f6e431cac2537de26c6d010",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "7cc6ffb321e67df91d32e4677d6b5dcb9545ff5bca1b52ab87efcd5aef1f7455",
+      "previous_sha256": "10db522cefe390c98da04a063c8fc6871f22b4a63b98846ca6f2a8a2cfe24675",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/rendering.py",
+      "sha256": "e8b3298a6331e407cdc449e60d8b15ec7c331cce327c2b48f3710f0e03dbc603",
+      "previous_sha256": "435d9b34bcefcaff53fc7fcf112fa8f27e856ce7a6d4ac291b86d78367806a17",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "163563001a40b5c0c0689228109432c11ae2fbc199b8dd94422b0b2279f614a1",
+      "previous_sha256": "22d92f149db07855f7589b542707f69777c6db04cbb02cebef98edd1b8dc9ae5",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "ec92b6f4778a528eeb7d6d066894dc3d0c9c4ed4ed27777ac40cdb15ab1fa29f",
+      "previous_sha256": "d35d622bcf71ba95f76c94d049c90f3f667e72dfd588d9ad69d89c162581e5db",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "b9511cf41f2e49556b1cd225ee984d9d6e2000a05bb946646263cca4a001fa54",
+      "previous_sha256": "5204f0b7752879fdd1b73423cf805dda00b67c5a21ff86489ae1f9ff3f51ad40",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "44c3f3fb038bdfae7c80c4be23478da89d726541b3bdc6e564f4e50dfd69ab94",
+      "previous_sha256": "ceed9ef916c662c1e0a9a12e0d6b797b0a1afd9bca685b31f82450e1cdc9f716",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/launch.json",
+      "sha256": "eef4122ce42562a36d198cc54a03547eda71592fe7f42f7ae859c72a23ae7b65",
+      "previous_sha256": "f92c27d90435a077885e0d10965c4b60b5f30f90c07fb015e0698c4b71fe6456",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0012-busca-web.md",
+      "sha256": "b49dab299dcf1da3011ebe0bfd9527cc50615fb61233d30414780b92df55527a",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-12.md",
+      "sha256": "471a9e0054766b41881c635c291d650c773d2ceddbce09ef9a237cecd6db16cc",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_web_search.py",
+      "sha256": "9db898feead9f6ceafdf8a6864e3550174842d3e88aa8f685642c28b836d3764",
+      "status": "new"
+    }
+  ]
+}

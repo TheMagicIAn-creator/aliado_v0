@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-25",
+  "batch": "07",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0007-decisoes-cenarios-skills.md",
+  "decisions": {
+    "A01": "approved_as_service_correction",
+    "A02": "not_transferred",
+    "A03": "not_transferred",
+    "igbt_rate_per_h": 8.9e-06,
+    "contactors": {
+      "representation": "single_item",
+      "rate_per_h": 8.31e-06
+    },
+    "time_bases_hours_per_year": {
+      "operation": 4015,
+      "calendar": 8760
+    },
+    "topology": "per_component_only",
+    "agent_guidance": "no_new_markdown_existing_skills_edited"
+  },
+  "rates_source": "src/aliado/skills/builtin/pesquisa-inversores/references/decisoes-2026-09-13.md",
+  "rates_reverified_in_pdfs": false,
+  "source_code_copied": false,
+  "persistent_memories_activated": 0,
+  "claude_code": {
+    "skills": [
+      {
+        "name": "karpathy-guidelines",
+        "installed_path": ".claude/skills/karpathy-guidelines",
+        "source": ".agents/skills/karpathy-guidelines",
+        "provenance": "docs/migracao/skills-desenvolvimento.json",
+        "modified": false,
+        "files": [
+          {
+            "path": ".claude/skills/karpathy-guidelines/SKILL.md",
+            "sha256": "6e22cc54cb02a5e98ae42d06d9d7292db0c1b43894831b32879beb0166b2aea7",
+            "matches_agents_copy": true
+          }
+        ]
+      },
+      {
+        "name": "verification-before-completion",
+        "installed_path": ".claude/skills/verification-before-completion",
+        "source": ".agents/skills/verification-before-completion",
+        "provenance": "docs/migracao/skills-desenvolvimento.json",
+        "modified": false,
+        "files": [
+          {
+            "path": ".claude/skills/verification-before-completion/LICENSE",
+            "sha256": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+            "matches_agents_copy": true
+          },
+          {
+            "path": ".claude/skills/verification-before-completion/SKILL.md",
+            "sha256": "2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3",
+            "matches_agents_copy": true
+          }
+        ]
+      },
+      {
+        "name": "doc-coauthoring",
+        "installed_path": ".claude/skills/doc-coauthoring",
+        "source": ".agents/skills/doc-coauthoring",
+        "provenance": "docs/migracao/skills-desenvolvimento.json",
+        "modified": false,
+        "files": [
+          {
+            "path": ".claude/skills/doc-coauthoring/SKILL.md",
+            "sha256": "2e47d78846faeea4a56e9809c52700087a15a2155a3f293a3efbaded81398ef4",
+            "matches_agents_copy": true
+          }
+        ]
+      },
+      {
+        "name": "grill-me",
+        "installed_path": ".claude/skills/grill-me",
+        "repository": "https://github.com/mattpocock/skills",
+        "commit": "c55ee46073ed923f86ce59a5eb3b6d895095d1b7",
+        "source_path": "skills/productivity/grill-me",
+        "license": {
+          "declaration": "MIT",
+          "evidence": "GitHub license API for the repository"
+        },
+        "method": "raw.githubusercontent.com at the pinned commit, read in full before installation",
+        "modified": false,
+        "files": [
+          {
+            "path": ".claude/skills/grill-me/agents/openai.yaml",
+            "sha256": "c061e39c3e0f9d865fb1b97556d485704af2a8a58f4b8221a8917a5c2074a32b"
+          },
+          {
+            "path": ".claude/skills/grill-me/SKILL.md",
+            "sha256": "caaf8b8de1684f96e26b28f3c29189db5c89cce4b73e1c93d86164f66ef88637"
+          }
+        ]
+      },
+      {
+        "name": "grilling",
+        "installed_path": ".claude/skills/grilling",
+        "repository": "https://github.com/mattpocock/skills",
+        "commit": "c55ee46073ed923f86ce59a5eb3b6d895095d1b7",
+        "source_path": "skills/productivity/grilling",
+        "license": {
+          "declaration": "MIT",
+          "evidence": "GitHub license API for the repository"
+        },
+        "method": "raw.githubusercontent.com at the pinned commit, read in full before installation",
+        "modified": false,
+        "files": [
+          {
+            "path": ".claude/skills/grilling/agents/openai.yaml",
+            "sha256": "1411d7df7d99b7e621a1ff8283c8133cc2464be63d064e52d8ce169c6800ee9b"
+          },
+          {
+            "path": ".claude/skills/grilling/SKILL.md",
+            "sha256": "10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2"
+          }
+        ]
+      },
+      {
+        "name": "git-guardrails-claude-code",
+        "installed_path": ".claude/skills/git-guardrails-claude-code",
+        "repository": "https://github.com/mattpocock/skills",
+        "commit": "c55ee46073ed923f86ce59a5eb3b6d895095d1b7",
+        "source_path": "skills/misc/git-guardrails-claude-code",
+        "license": {
+          "declaration": "MIT",
+          "evidence": "GitHub license API for the repository"
+        },
+        "method": "raw.githubusercontent.com at the pinned commit, read in full before installation",
+        "modified": false,
+        "files": [
+          {
+            "path": ".claude/skills/git-guardrails-claude-code/agents/openai.yaml",
+            "sha256": "d53cd783fc0ac208dec9a4c267989284384785aab6422dccdaed42f9e40243ec"
+          },
+          {
+            "path": ".claude/skills/git-guardrails-claude-code/scripts/block-dangerous-git.sh",
+            "sha256": "234922b83c0a1737ee7300806c21ac0f389b07aaeb65c2d71ccedafbc5e1ea4b"
+          },
+          {
+            "path": ".claude/skills/git-guardrails-claude-code/SKILL.md",
+            "sha256": "69b291d655626a01602b998a1836fcb93c058ede68dfafddfd71e87f17074764"
+          }
+        ]
+      }
+    ],
+    "hook": {
+      "settings": ".claude/settings.json",
+      "event": "PreToolUse",
+      "matcher": "Bash|PowerShell",
+      "script": ".claude/hooks/block-dangerous-git.sh",
+      "upstream_script": ".claude/skills/git-guardrails-claude-code/scripts/block-dangerous-git.sh",
+      "adaptation": "jq ausente: a linha que lia tool_input.command foi trocada pela verificação do JSON bruto (bloqueia na dúvida)."
+    }
+  },
+  "private_review_updated": {
+    "path": "data/memory-review/lote-05/",
+    "baseline_copy": "tmp/lote-07/baseline-memory-review/",
+    "in_git": false
+  },
+  "validation": {
+    "pytest_passed": 174,
+    "ruff": "passed",
+    "scenarios_run": 8,
+    "hook_live_block_confirmed": true,
+    "wheel_built": false,
+    "untouched_previous_files_match": true
+  },
+  "git_actions_by_assistant": [],
+  "public_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "6d51f8691b278cb9a97f62276f29468a754a77454b457d0a850b6bcb869eef1a",
+      "previous_sha256": "0bd4bcb4eae3561e50c365d7367d4c916c640d697ee8960a4e19f41fc2337e49",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "843a4ca3f6118708c827ecee8505815007444f6f1f952c6fca18c97e79bf6afd",
+      "previous_sha256": "6537bff669e02ae6793b74efbd68b0b125c0a51f76dd091ae56a7b094255d3c1",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/ram.py",
+      "sha256": "b098923c95d0c9452ae469830deb9cb5fbfe8db1a0f9fa3591fa01c14b223b7a",
+      "previous_sha256": "2aff9d80729181ac935cce5b558668f9fed37ac043ee198216b34c2f7749c566",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/confiabilidade/SKILL.md",
+      "sha256": "0b0b044625aa7f34a1ad86a704b5ea05be04482d9151df1f34d1ea1817e423fb",
+      "previous_sha256": "19ba4ad6e31502d1d9459062d8e376d791a51b59b0af9cfdcea66fb6bfc20d60",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "sha256": "575e7f99cb519b1d881854bafdeb10c19d868c2001265af6b3c54189b340e0bd",
+      "previous_sha256": "888a6a0a13317c87f4f357aa0bea8ffd15a5fc95cafcb51921908c6786198be9",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_science.py",
+      "sha256": "0e11dd3c832626ae0ba630caf137973503c5b0ab90b9775d3d2d5af616eecb3c",
+      "previous_sha256": "f0d19b67876e7698054e8b1e20c7aa03dfe3b937fc97106928754b608fb51925",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_skills_agent.py",
+      "sha256": "49cfd7beea84f60ae053427fb04c16b8d5bf4d4255e748c3adc7d01a758075e6",
+      "previous_sha256": "ae9a5f375df95039ca429f5429ccec4d067d2b50cf164b08b5e903c46b64c4f7",
+      "status": "modified"
+    },
+    {
+      "path": "docs/ciencia/confiabilidade.md",
+      "sha256": "a14bd560671ae2f7a6b6719fc2c32f23cb53e23cca7f59bb210a1c8d50db74d6",
+      "previous_sha256": "bd950526ea127c257eb92d050e8aa3c2d9189502423ab8d362e7b6b28709f8a4",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "a32eb0cac9eeea1ffe94033c0f612ec2928b1167c9f577e56939f3c970fb98be",
+      "previous_sha256": "3fb4a0b18fc3b3e6f7f182ec4beafee37ef559875190316a615254bf7d100c96",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/skills-desenvolvimento.md",
+      "sha256": "cdf68ff5432b85cd1efa9bf7ae2b6f8697dacb034e25e412fa1814e93857d894",
+      "previous_sha256": "e54f4ec3d49dd81b51439f4b5259ba6b4ded176928701a652b3024b09ddd4760",
+      "status": "modified"
+    },
+    {
+      "path": "docs/specs/0007-decisoes-cenarios-skills.md",
+      "sha256": "e06c7b3855177cc7d27b796b7ca30a7a23aba864b5795ac85044343d899701d7",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-07.md",
+      "sha256": "826f8462d607b7a91afa62b0337368924183d11c16fab8e7be1abe7ba84ee05c",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ccb-calendario.json",
+      "sha256": "4824bbbbaa6c68229271dc2eba73cbc5a246812ce47d44ea21a4a785b00cb541",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ccb-operacao.json",
+      "sha256": "28e8d29ee471910ef74cf89606af7c74e4b37fd288c6405c8f80ec6d1de91ae9",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/contatores-calendario.json",
+      "sha256": "0ef77a929610b18067db6cbd203e64749cffeb983576d90ccd437a41efdc11cb",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/contatores-operacao.json",
+      "sha256": "3ddfa730c6af8af68476a8b3cd6e1ba46995396c4aeeb76d74ec0603aaa06c7d",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/igbt-calendario.json",
+      "sha256": "285eaea3ade2a720008206821dd3584b031c8a613e57a53a9a8782083fc2248b",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/igbt-operacao.json",
+      "sha256": "bd918ca38ec4a95c9c9e1f3b01f38ceb1b7601460aa14caecabf9aff108fe95c",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ventiladores-calendario.json",
+      "sha256": "c9fbd72e7e7bc1e22783a1127f90c96fd0073f08c178444fde7a786277ce3f7e",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ventiladores-operacao.json",
+      "sha256": "b28958e1ebf0c8ead4ceff753291bbd76ecbb8b9a0c337f6a7ccfd37a9bb958a",
+      "status": "new"
+    },
+    {
+      "path": ".claude/settings.json",
+      "sha256": "11df049bacd4fc869e394460ef3003f2eee15b1e06a901e3bb017a6b3041d37a",
+      "status": "new"
+    },
+    {
+      "path": ".claude/hooks/block-dangerous-git.sh",
+      "sha256": "ff8a3f1b86447eb691175d6512c9855a57c879731f901751a0526388fb97273b",
+      "status": "new"
+    }
+  ]
+}

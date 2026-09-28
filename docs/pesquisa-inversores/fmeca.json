@@ -1,0 +1,57 @@
+{
+  "nome": "FMECA dos inversores fotovoltaicos — quatro grupos",
+  "decidida_em": "2026-09-27",
+  "criterio": "Notas ordinais de 1 a 10 no critério da IEC 60812; NPR = S × O × D, calculado.",
+  "fonte_notas": "Cristaldi, Khalil e Soulatiantork (2017), Acta IMEKO, Tabela 6 (levantamento de campo).",
+  "horizontes_anos": [1, 20],
+  "itens": [
+    {
+      "id": "ccb",
+      "nome": "Placa de controle e comunicação (CCB)",
+      "item_na_fonte": "PCB",
+      "S": 7,
+      "O": 4,
+      "D": 6,
+      "cenarios": ["cenarios/ccb-operacao.json", "cenarios/ccb-calendario.json"],
+      "ressalvas": [
+        "A CCB herda as notas do item \"PCB\" da fonte (decisão de 27/09/2026); reconferir a correspondência no PDF quando ele entrar no acervo."
+      ]
+    },
+    {
+      "id": "contatores",
+      "nome": "Contatores CA/CC",
+      "item_na_fonte": "Contatores CA/CC",
+      "S": 6,
+      "O": 5,
+      "D": 5,
+      "cenarios": ["cenarios/contatores-operacao.json", "cenarios/contatores-calendario.json"],
+      "ressalvas": []
+    },
+    {
+      "id": "igbt",
+      "nome": "Módulo IGBT",
+      "item_na_fonte": "IGBT",
+      "S": 3,
+      "O": 3,
+      "D": 7,
+      "cenarios": ["cenarios/igbt-operacao.json", "cenarios/igbt-calendario.json"],
+      "ressalvas": []
+    },
+    {
+      "id": "ventiladores",
+      "nome": "Ventiladores de refrigeração",
+      "item_na_fonte": "Ventiladores de refrigeração",
+      "S": 4,
+      "O": 3,
+      "D": 4,
+      "cenarios": ["cenarios/ventiladores-operacao.json", "cenarios/ventiladores-calendario.json"],
+      "ressalvas": []
+    }
+  ],
+  "ressalvas": [
+    "Notas conforme o documento da origem (mestrado-utfpr, docs/fmeca.md, commit 21f6ddf); não reconferidas no PDF de Cristaldi et al. (2017), que ainda não está no acervo.",
+    "S, O e D refletem a percepção do levantamento de campo da fonte; não são medidas físicas.",
+    "A ocorrência O não é recalculada a partir das taxas decididas (decisão de 27/09/2026): notas e taxas vêm de fontes e populações diferentes e ficam em leituras separadas.",
+    "S, O e D são os da fonte; métricas de detectores não os alteram (M09), e a FMECA é independente do GPVS (M11)."
+  ]
+}

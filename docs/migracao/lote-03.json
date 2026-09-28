@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-22",
+  "batch": "03",
+  "status": "implemented_locally_pending_result_review",
+  "spec": "docs/specs/0003-diretrizes-aprovadas.md",
+  "basis": "User-approved migration decisions M01-M16, curated without private evidence or conversation transcripts.",
+  "historical_source_commit": "55c44df6bda807b73c4ac3762f0a89734633d384",
+  "m14_reference_inspection_commit": "2743c7318edfb44447446606ca47aa5d5e9ed372",
+  "source_code_copied": false,
+  "persistent_memories_activated": 0,
+  "decisions": [
+    {
+      "id": "M01",
+      "title": "Modularidade",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M02",
+      "title": "Cálculo separado da interpretação",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M03",
+      "title": "Rastreabilidade",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M04",
+      "title": "Participação do pesquisador",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M05",
+      "title": "Rigor e limites da evidência",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M06",
+      "title": "Dados de entrada e resultados separados",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M07",
+      "title": "Qualidade antes de incorporação",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M08",
+      "title": "Pré-condições da execução",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    },
+    {
+      "id": "M09",
+      "title": "Detecção e risco físico são conceitos distintos",
+      "status": "approved",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "treatment": "approved_text_preserved"
+    },
+    {
+      "id": "M10",
+      "title": "Prioridade do contator CA por NPR",
+      "status": "approved",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "treatment": "approved_text_preserved"
+    },
+    {
+      "id": "M11",
+      "title": "Recorte de componentes e experimentos",
+      "status": "approved",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "treatment": "approved_text_preserved"
+    },
+    {
+      "id": "M12",
+      "title": "RUL, Weibull e eixo de tempo",
+      "status": "approved",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "treatment": "approved_text_preserved"
+    },
+    {
+      "id": "M13",
+      "title": "Objetivo e métricas de avaliação",
+      "status": "approved",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "treatment": "approved_text_preserved"
+    },
+    {
+      "id": "M14",
+      "title": "Partições, calibração e limiar",
+      "status": "approved",
+      "destination": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "treatment": "approved_text_preserved"
+    },
+    {
+      "id": "M15",
+      "title": "MCP e integrações",
+      "status": "approved",
+      "destination": "docs/arquitetura/modulos.md",
+      "treatment": "architectural_decision_no_integration"
+    },
+    {
+      "id": "M16",
+      "title": "Persona e capacidades",
+      "status": "approved",
+      "destination": "src/aliado/agent.py",
+      "treatment": "adapted_to_current_text_only_capabilities"
+    }
+  ],
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "change": "modified",
+      "sha256": "cad8c10bf2f75579e1ba71f751220315cd2e5693deef2ed82372ac41979ff730"
+    },
+    {
+      "path": "docs/arquitetura/modulos.md",
+      "change": "modified",
+      "sha256": "37e44aa9dc590a532b3499a3cc3b9b0f34121d6099fb8514ef27a7753602a188"
+    },
+    {
+      "path": "docs/ciencia/procedimentos.md",
+      "change": "modified",
+      "sha256": "a7173ca95ad9151f1d08613f2ddb6e04a79fc71c9a8abf47c464631281636951"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "change": "modified",
+      "sha256": "5fddd76f5ae1e7c787ceadd133ef2d9f9c9f2e12c7855150b6f8cdc64e68b35c"
+    },
+    {
+      "path": "docs/migracao/revisao-dos-lotes.md",
+      "change": "modified",
+      "sha256": "d5bb4e5a320edcffc671ed375cafffaab9824f414fc3d64ebbb0b7780b2e985f"
+    },
+    {
+      "path": "docs/specs/0003-diretrizes-aprovadas.md",
+      "change": "modified",
+      "sha256": "885ce90a234618dcf96abba6aa12142dd366809c55c8d63c890ac7923c462356"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "change": "modified",
+      "sha256": "2a52cf6113d4523727f8d51277cabafa36214020233b6f419d5e1f3643bd1428"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "change": "modified",
+      "sha256": "a8006327913277ffa04286bb7d7ffa0efe2cf7cdbf018dec2dda3265e50817ef"
+    },
+    {
+      "path": "tests/test_migration.py",
+      "change": "modified",
+      "sha256": "8c3a8edf200e0b16a0e1872231afa01be1325c96846a40732920a0ce1e10520b"
+    },
+    {
+      "path": "tests/test_skills_agent.py",
+      "change": "modified",
+      "sha256": "20ff868ec391ccd932e0ce7729141e5df7ac419a9dc73030fe5aa5fb5f199e80"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "change": "added",
+      "sha256": "4c97284ab6388e89c94e42b232d22ebe0233a70809c9980e478dce0c6bbd6ed8"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-03.md",
+      "change": "added",
+      "sha256": "930fff25198cf4103096085e4c4c1679203a4050e6db28ca43637faa7fce9510"
+    }
+  ],
+  "manifest_self_hash": "Excluded to avoid a self-referential hash; this manifest is the third added file.",
+  "preserved_history": {
+    "path": "src/aliado/skills/builtin/pesquisa-inversores/references/decisoes-2026-09-13.md",
+    "sha256": "e63359a1e9ae1b6b41b24ecc50ca04a698a5f8e98cebe8e43258fabafdbe5b73",
+    "packaged": true,
+    "automatically_loaded": false
+  },
+  "validation": "docs/migracao/validacao-lote-03.md",
+  "wheel": {
+    "path": "tmp/lote-03/dist/aliado-0.1.0-py3-none-any.whl",
+    "sha256": "8032fb970327363900fb419c1fc2e34ac7c4a8e6286915b6738eab603a6f954f",
+    "entries": 28
+  }
+}

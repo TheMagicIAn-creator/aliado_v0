@@ -1,0 +1,25 @@
+{
+  "fonte": "mestrado-utfpr@21f6ddf, artefatos/modelos/*/contrato.json e modelo.pt (semente 42, separação 2)",
+  "modelos": {
+    "denso": {
+      "limiar": 3.461894989013672,
+      "posicao": 208,
+      "n_calibracao": 210,
+      "melhor_epoca": 111,
+      "epocas": 131,
+      "perda_validacao_minima": 0.2557632625102997,
+      "parametros": 1088,
+      "pesos_sha256": "a590493665380a7edc2009baa9da9c510f0beaa860ecdb7ef1b17ef9b8b96cf8"
+    },
+    "lstm": {
+      "limiar": 17.381608963012695,
+      "posicao": 208,
+      "n_calibracao": 210,
+      "melhor_epoca": 141,
+      "epocas": 150,
+      "perda_validacao_minima": 0.6537104845046997,
+      "parametros": 17216,
+      "pesos_sha256": "b5e1387ee4528e50ea98106f9e698c5bd9cb86a1a492e60cf6f3cb068a7d6daf"
+    }
+  }
+}

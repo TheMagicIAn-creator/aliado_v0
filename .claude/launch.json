@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aliado-web-teste",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "aliado", "web", "--env-file", ".env", "--porta", "8765", "--sem-navegador",
+                      "--dados", "tmp/lote-12/dados", "--biblioteca", "tmp/lote-12/biblioteca"],
+      "port": 8765,
+      "url": "http://127.0.0.1:8765"
+    }
+  ]
+}

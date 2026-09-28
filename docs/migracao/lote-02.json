@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "lot": "02",
+  "date": "2026-09-15",
+  "scope": "module_preparation_and_private_triage_only",
+  "source_repository": "https://github.com/TheMagicIAn-creator/mestrado-utfpr",
+  "source_commit": "55c44df6bda807b73c4ac3762f0a89734633d384",
+  "source_hash_semantics": "Git blob SHA-1 and SHA-256 of exact bytes at the pinned source commit, not of adapted destination files.",
+  "code_inspected": [
+    {
+      "path": "src/conhecimento/ferramentas.py",
+      "git_blob": "18d6d3e3f01194d84b9f8b95b779411b9ded90fe",
+      "sha256": "15671a5a825eb337c5d9725274c091cb6abf11f206c065f46d23802c7628c950",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/conhecimento/ferramentas_academicas.py",
+      "git_blob": "fbcbcd59190e9932e60f4786ae32a64a2e1e2107",
+      "sha256": "d706e1811f696102c4f59fa2437a3b0a1082a760006c354cffa5004de0379291",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/conhecimento/memoria_persistente.py",
+      "git_blob": "9cef1714dd100ff564371236faeb361b027311cd",
+      "sha256": "04208e1fa12125fae3f42a9b8dfa58c5d58825c287bb0578b9faac0a76578876",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/conhecimento/consolidar_memoria.py",
+      "git_blob": "cc63b5940b8364dd5da9c559aac02871035b2133",
+      "sha256": "57664b0f4f41f80ca1167383196b94402366a191cfe3480c9b54fc8870c4ed8c",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/conhecimento/base_runtime.py",
+      "git_blob": "9e27b340f349f874d894b46e5287ea96947cb3e0",
+      "sha256": "d9fe82800255a9bd59ca3ea045c16fa234ae4e10cf289ae5cb54655100be95a3",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/conhecimento/indexador.py",
+      "git_blob": "8023ead353cc2ac4be9d816a1b1dd857727d4d1c",
+      "sha256": "6ea91bfbeec03ebf41be9af4a4c08e3c7443de77b89080f807dd03472b37f140",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/webapp/library_service.py",
+      "git_blob": "5b16e073bf53ae547c4917ac013dcd44584e1322",
+      "sha256": "fb59816e5507e75910c6fa873fe2c6aa93d2c4b5568a3bc9e63829a85afc99d5",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/ml/pipeline.py",
+      "git_blob": "68f8fc5859f678d7d52754d18f122fe55711ba2c",
+      "sha256": "18921bd236b2c4262eba9bb9a15e6bb36dc20a17167186672676b1d4091bef9b",
+      "use": "inspection_only"
+    },
+    {
+      "path": "src/ml/confiabilidade_componentes.py",
+      "git_blob": "2193339798fb635b0b92fdb3f00e7cf3ca7378c1",
+      "sha256": "99c2151e90b793df7e3c9d024ee513d85fd4456af5b43cc8557fc084f46c94c0",
+      "use": "inspection_only"
+    }
+  ],
+  "memory_inventory": [
+    {
+      "path": "notas/memorias/2026-05-18_consolidado.md",
+      "git_blob": "a796abef4f637bea8dbb2400bfcc8fb524095205",
+      "sha256": "30c2fbd21ef2a689e59a5c6cbe5067d8d3150ebc8609501ac100f7588851afff",
+      "lines": 116,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-20_consolidado.md",
+      "git_blob": "c9275e3b88e93af188d0ae55889ad48be8fb2590",
+      "sha256": "3b1e3e6b85fc9d983cb27bbb5b36a85c6e50a4dfa34456256727245dfda3151a",
+      "lines": 54,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-23_consolidado.md",
+      "git_blob": "614d9273844e82bc8f9b4a91efc02aafa0deb3ca",
+      "sha256": "49cb8d7f4f7b3e80b20609f331abab76427715f7218185b988064fab83d67c64",
+      "lines": 92,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-24_consolidado.md",
+      "git_blob": "33934348bd83f6d9b33bb9ebabab6dc3cf88da07",
+      "sha256": "82d8dd1758bc46a496e1f95c941679359dd4a59c39945b881022e0df9e77f184",
+      "lines": 82,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-25_consolidado.md",
+      "git_blob": "e7b1caa6bd637412d829fdd40481990392011a5d",
+      "sha256": "3f271a74d338b5e634e4ad9a34a5d4dee4070aa6d70dc15d664015c6175b37e3",
+      "lines": 175,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-26_consolidado.md",
+      "git_blob": "fdd6a7dd392dc7fd4c9a9e166dd3d70dd9d46701",
+      "sha256": "fc730b4f8bdc0eb7b9da2ad1dc2a07b0ed4fabc42e6b4c85dca0adb479d50c7b",
+      "lines": 17,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-28_consolidado.md",
+      "git_blob": "daade4c6ab492fbf201a0d6c88fe8d0c090914fe",
+      "sha256": "00e586ab87f238df2bbc03596d305334aac9b4137c5677eef8828e6a685d3261",
+      "lines": 231,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-29_consolidado.md",
+      "git_blob": "4eb457bd07d8c145e93ede536138d31bbf416211",
+      "sha256": "edb658b6668b0c3f598cef7003fcf2a3f6df2608611b9e37b326ef0e9e966ff4",
+      "lines": 223,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-05-30_consolidado.md",
+      "git_blob": "67079ad50a865a2dcffb2d8049ff6094ead1ee2a",
+      "sha256": "2165fd810476a58f8008237e2fa9e333382f3306926c96d6ba908e7169d0d076",
+      "lines": 268,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-06-02_consolidado.md",
+      "git_blob": "d18ec26ae1b3c02e74142ddd181b36f2218e0b35",
+      "sha256": "61010f5ed53918b534448852f327103b7346b49ac2c6efa093df1e7c34c6891a",
+      "lines": 17,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-06-17_consolidado.md",
+      "git_blob": "b88d903dfc3b41d8b36cd463b69829994064b5d3",
+      "sha256": "08a7194116ee60847d97a5511e651bfea3d22683fcd5addbceb3191031a26bd6",
+      "lines": 180,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-09_consolidado.md",
+      "git_blob": "777e6f320be37bcf2d72c53371060aeae07a6c9d",
+      "sha256": "59be723e15ba2b57cc058bfeadf1a423e37ee69c1e6d5e28782d6393441537fd",
+      "lines": 176,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-16_consolidado.md",
+      "git_blob": "9d9622072948feb1ed0625a922bffdbab15915f9",
+      "sha256": "bde0bb0fed4925e88aad2cf71d1d72ed1d0fb19773a81a0620030f112e08f184",
+      "lines": 112,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-20_consolidado.md",
+      "git_blob": "376c2991edbe4fba7dcd5e0ed826b1599c997e43",
+      "sha256": "4243056b98068345e4bf451b5736d9cca2b9a990e8b697c139610731637ef3ea",
+      "lines": 164,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-22_12-01-44_consolidado.md",
+      "git_blob": "a140b65f34050223b67d48ba5e602017b85fd605",
+      "sha256": "4cee2bf2007e4cf67e706dcb1d8393b2b33813a8a3287c400cc5e40668262ac5",
+      "lines": 138,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-22_12-03-17_consolidado.md",
+      "git_blob": "97b803b459bae994453eeae001d5f72216377980",
+      "sha256": "0541b6cf5cee7fc2bd3f91d4bf5a9fe5756d77d849f465295206b6a9256ca0f9",
+      "lines": 138,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-22_12-19-01_consolidado.md",
+      "git_blob": "3c87fd950feb13a3b1fed790a04f5e19eeaa596c",
+      "sha256": "addeb75f33719bd26fefaf224f57c56c892543948847230c567cb2c0ec27cea0",
+      "lines": 141,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-22_18-11-53_consolidado.md",
+      "git_blob": "7d18b10f2aab2bce4a2617c6e49e1cd123bd5b35",
+      "sha256": "11f70736e917fc0e28dd7ade72cc34ed09c1d8b2f262965c8ad3861403df7605",
+      "lines": 140,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-22_18-16-58_consolidado.md",
+      "git_blob": "3c55617238e2f1f8b5aacf8a5b903f8c5082d0ad",
+      "sha256": "975e445b38fa5623461eec82c87b56e53b6d54948702a5b6ce461ecd8536a99f",
+      "lines": 139,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-22_20-11-13_consolidado.md",
+      "git_blob": "692043abf4f901d39156f265355ed2c3a4923482",
+      "sha256": "b7f39c51d719187f0d5c180c49c9546b0e04427cfcd6dd70cb2a0e4ea55a6d23",
+      "lines": 143,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-23_14-51-31_consolidado.md",
+      "git_blob": "7ffb7d91517ffb922dc8b152c1f499c6302a3328",
+      "sha256": "830754a66a06a5532d54a698623be96973f1cd828149682766497f50eb86ef71",
+      "lines": 141,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-23_21-32-38_consolidado.md",
+      "git_blob": "bb4ce93c026815f46c013ca5e3fb1896f23a0f59",
+      "sha256": "2a43a629d1c21545ea0ba8b224fec2dc42aca105048324e975cfbfdcc7e5765f",
+      "lines": 116,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-27_23-04-14_consolidado.md",
+      "git_blob": "01ca61732ee506697336ae62ff1330f4860e6189",
+      "sha256": "91a801e705bc2e27c545c3d51141c4dfa49fe1d10651fece983c0543c5a67266",
+      "lines": 103,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-27_23-13-51_consolidado.md",
+      "git_blob": "315affed38844806e81247f3104888c074ab4db6",
+      "sha256": "a3fb2f8a07909725002ad8ccb58fa559ea3139c2a2b29d161f4f7556f518ea62",
+      "lines": 114,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-28_13-40-07_consolidado.md",
+      "git_blob": "b4843ccd197f0256e58e59d3239518ddbdd0fb68",
+      "sha256": "122153da1d17a24368e3ba64f54f4a2e624228506eda8b6ad361cbf232ac62dc",
+      "lines": 116,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-07-29_13-33-49_consolidado.md",
+      "git_blob": "280a0c760c2db14196e667840e6c7cbd3ab40545",
+      "sha256": "bebffc1aa335cc5533cd0830bc00a5e90be27ec55911c5406729cc02ce4f3d6e",
+      "lines": 115,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-08-04_22-01-09_consolidado.md",
+      "git_blob": "e9346e9130e2969e3b6ff6f3ad8f0dd2559d520a",
+      "sha256": "771ac53f9eb20bb0619e0bf277bb4967bfdacaf9000d22db291d964805c07589",
+      "lines": 137,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/2026-08-06_21-51-14_consolidado.md",
+      "git_blob": "ecab5de40011d73dd9b8babe6d8e736d9c86b62f",
+      "sha256": "16340e7dca8b0c1ce6286ab59e39b32bf01bdce29ad4c0548ebef91056bfe18b",
+      "lines": 144,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/agentes/memoria_validada.json",
+      "git_blob": "d309bdd1b585d27b08f1c86e7184c707cc3a7fff",
+      "sha256": "10f8cb51b21002760547293866ac7c60430286ad8a6bddcc5138551a79974cd1",
+      "lines": 20,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    },
+    {
+      "path": "notas/memorias/resultados-fase5-ml.md",
+      "git_blob": "c2cd6ae52e2ca5e63cc906a943cd46cb09699d84",
+      "sha256": "06746dc8111a8f1cd052f88f17f213458aeebe9f8fa37ece0d17a72859925198",
+      "lines": 78,
+      "use": "private_inspection_only",
+      "runtime_imported": false
+    }
+  ],
+  "registered_tools": [
+    {
+      "name": "executar_comparacao_autoencoders",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 43,
+      "disposition": "future_scientific_code",
+      "runtime_transferred": false
+    },
+    {
+      "name": "gerar_confiabilidade",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 51,
+      "disposition": "future_scientific_code",
+      "runtime_transferred": false
+    },
+    {
+      "name": "executar_pipeline_cientifico",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 58,
+      "disposition": "deferred",
+      "runtime_transferred": false
+    },
+    {
+      "name": "consultar_resultados",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 65,
+      "disposition": "future_scientific_code",
+      "runtime_transferred": false
+    },
+    {
+      "name": "consultar_comparacao_autoencoders",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 72,
+      "disposition": "future_scientific_code",
+      "runtime_transferred": false
+    },
+    {
+      "name": "consultar_status_pipeline",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 79,
+      "disposition": "future_scientific_code",
+      "runtime_transferred": false
+    },
+    {
+      "name": "limpar_resultados_ml",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 83,
+      "disposition": "deferred",
+      "runtime_transferred": false
+    },
+    {
+      "name": "adicionar_anexo_biblioteca",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 90,
+      "disposition": "general_service",
+      "runtime_transferred": false
+    },
+    {
+      "name": "registrar_no_cerebro",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 97,
+      "disposition": "general_service",
+      "runtime_transferred": false
+    },
+    {
+      "name": "buscar_web",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 104,
+      "disposition": "general_service",
+      "runtime_transferred": false
+    },
+    {
+      "name": "listar_base_bibliografica",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 108,
+      "disposition": "general_service",
+      "runtime_transferred": false
+    },
+    {
+      "name": "consultar_datasets",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 112,
+      "disposition": "markdown_guidance",
+      "runtime_transferred": false
+    },
+    {
+      "name": "comparar_abordagens_ml",
+      "source_path": "src/conhecimento/ferramentas.py",
+      "source_line": 116,
+      "disposition": "markdown_guidance",
+      "runtime_transferred": false
+    }
+  ],
+  "counts": {
+    "memory_files": 30,
+    "registered_tools": 13,
+    "tool_dispositions": {
+      "general_service": 4,
+      "markdown_guidance": 2,
+      "future_scientific_code": 5,
+      "deferred": 2
+    },
+    "runtime_memories": 0,
+    "runtime_tools_transferred": 0
+  },
+  "private_review": {
+    "directory": "data/memory-review/",
+    "artifacts": [
+      "README.md",
+      "lote-02.json",
+      "grupo-01.md",
+      "grupo-02.md",
+      "grupo-03.md",
+      "grupo-04.md"
+    ],
+    "versioned": false,
+    "packaged": false,
+    "runtime_loaded": false,
+    "human_review": "pending"
+  },
+  "baseline": {
+    "kind": "local_snapshot_before_lot_02_not_git_commit",
+    "files_sha256": {
+      ".agents/skills/doc-coauthoring/SKILL.md": "2e47d78846faeea4a56e9809c52700087a15a2155a3f293a3efbaded81398ef4",
+      ".agents/skills/karpathy-guidelines/SKILL.md": "6e22cc54cb02a5e98ae42d06d9d7292db0c1b43894831b32879beb0166b2aea7",
+      ".agents/skills/verification-before-completion/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
+      ".agents/skills/verification-before-completion/SKILL.md": "2befe7fc55bcadaa3d97dd9e8efeb633d2561c0ebe74c5a8b17c4d9e7e4520b3",
+      ".env.example": "999c33205ca69e450423781048b0f35343007ed710b22045ed61ed05bcfb080f",
+      ".gitattributes": "6107ac725f6632426f42574e0e9fb37de74e44a5e6868110e3ca7e5dc8e706de",
+      ".gitignore": "55f8ea3cfbb86fe08e75b1b7b521aede74786592fd5c8a1f0e50341034344072",
+      "AGENTS.md": "46f2cf794b5bac84fe173885537e5f4770a48f5c36380fcffccc46a761e7ee40",
+      "README.md": "9f1845a6bd8245b855c86aab86ee821f2244c52396b6308a0b77ac683328d048",
+      "docs/migracao/README.md": "76a3bdab47aa3e737518e36731dc67500b84f7450a8a2435c4161bb76925b0ba",
+      "docs/migracao/lote-01.json": "0968cdec079f3414d4d8e042d3daa2c0d15f9234fb3f9e51be35803cd91d71bb",
+      "docs/migracao/skills-desenvolvimento.json": "1b79b3bb549d69393c1aa4c83476532d033bbae6aef9515fc12ee7ccf66f6df0",
+      "docs/migracao/skills-desenvolvimento.md": "e54f4ec3d49dd81b51439f4b5259ba6b4ded176928701a652b3024b09ddd4760",
+      "docs/migracao/validacao-lote-01.md": "0ceb388a5f17faad3c48a54ca09a35d4e6a7937879f11667d2b8ad8c035dcb63",
+      "docs/specs/0001-fundacao.md": "d23f6db25c33fc6cabb07451d2a0a8347820d6028e90d48029527c5868e4db83",
+      "pyproject.toml": "615af7b2b5f1eaa9608cb7607cccd98abe960fd596dfb3f4ea490d9085359c4a",
+      "requirements-dev.lock": "c4b541601a0722fb77e0fe6ef12b3077d621c9f5029841ab2abc272291e8e9d7",
+      "src/aliado/__init__.py": "4c7cc7bfe5749b1d7cb93926e931dd5c251ae7a77739db85629dcd7ecb2d65ba",
+      "src/aliado/__main__.py": "5296e4780dd02c469eadbafea40d85944b548d8877c3ed3300699815de809a88",
+      "src/aliado/agent.py": "74db286369c22ff376723078eb7e4ec850618337aed66a28476d46f9e5d044fc",
+      "src/aliado/cli.py": "ca6323c3b4f1b156fe170b3286fab63fc5f6d13d0f56d31743efb00dc76c1e3f",
+      "src/aliado/llm/__init__.py": "6bc3773f1199806116a584ddb6bf6a22ecf900e12769106daf4b58aa4f20d461",
+      "src/aliado/llm/contracts.py": "ae909d831b987b82875a68b0c9a17d139b93cd8b5b02608bf2757b8195ee47d7",
+      "src/aliado/llm/providers/__init__.py": "e26a7d3fc04137e67eecd21fafccdb2a6eeda7656ff2324154271efe4ee2469c",
+      "src/aliado/llm/providers/base.py": "e874bc74422fe202c7d3a8cc7b01731eaaf5d02e64b5e0b753b84929e3e049e5",
+      "src/aliado/llm/providers/gateway.py": "cec38aefad6325eac24108cce857b5376cde64d8a9d7b024ae6aba161ad2c748",
+      "src/aliado/llm/providers/gemini.py": "56bb709c1e0a4138fd5944d156ce86c532e754de86159ca6e882d76ef142c6ee",
+      "src/aliado/llm/providers/openai.py": "201d30f7058443908386451f84e4cc607b9ec043f2e3ed8679795746c12cbf8f",
+      "src/aliado/llm/providers/registry.py": "96bc8480848b04707f645e584058b333a333bb8cb0186fd655b9982fd297a7d4",
+      "src/aliado/skills/__init__.py": "301e6570b2321a22d29e39e712554f5a71f45f91a125a994a2a44fb2e4c20ef3",
+      "src/aliado/skills/builtin/engenharia/SKILL.md": "6f1cfb20c580b8eef8615f113a8b0ce94f958ad07d2e7274909a9f08f567bc79",
+      "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md": "7a415d429625e66d403ba19b8dd79ec435e3dec2bcf749b018d82574d9f783ef",
+      "src/aliado/skills/builtin/pesquisa-inversores/references/decisoes-2026-09-13.md": "e63359a1e9ae1b6b41b24ecc50ca04a698a5f8e98cebe8e43258fabafdbe5b73",
+      "src/aliado/skills/library.py": "1e2aea2b7bed75439e355d25e8a5bf5cba7f08976d8894c4590228692a3596cf",
+      "tests/conftest.py": "55cb8ccd6303cb0b00ac2c6c862ca24ad4d9da476e2829478095ad84c9fb2d8e",
+      "tests/test_contracts.py": "236e9ca4dc0ff84a6b74edfc74e3acd8ef59acea6c8dd9675a577fbce9b2a903",
+      "tests/test_gateway.py": "071bf1fb8d8f60500ccb6cacbbae4cb7a62d1019e605cc805cb5a1759fb04876",
+      "tests/test_migration.py": "65250c4b475a0b5abab4b482e25bc0069f3bcbd0d3f03a52849e95b4f069c80a",
+      "tests/test_providers.py": "fac55c8fa8ec295116f6a5166570e46f7d48cc33bd94e7464f4d3b5da9eccc4b",
+      "tests/test_skills_agent.py": "f3b83bf01b11a9f64184c90a7001d93b4599a677edff99d6a088302cb01967b7"
+    }
+  },
+  "destination_changes": {
+    "created": [
+      "docs/arquitetura/modulos.md",
+      "docs/ciencia/procedimentos.md",
+      "docs/migracao/ferramentas-lote-02.md",
+      "docs/migracao/lote-02.json",
+      "docs/migracao/revisao-dos-lotes.md",
+      "docs/migracao/validacao-lote-02.md",
+      "docs/specs/0002-preparacao-triagem.md",
+      "src/aliado/interfaces/__init__.py",
+      "src/aliado/interfaces/web/__init__.py",
+      "src/aliado/knowledge/__init__.py",
+      "src/aliado/memory/__init__.py",
+      "src/aliado/science/__init__.py"
+    ],
+    "adapted": [
+      "AGENTS.md",
+      "README.md",
+      "docs/migracao/README.md",
+      "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "tests/test_migration.py"
+    ],
+    "deleted": []
+  },
+  "acceptance_record": "docs/migracao/validacao-lote-02.md"
+}

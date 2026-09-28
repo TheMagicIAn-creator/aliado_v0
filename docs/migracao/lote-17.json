@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-27",
+  "batch": "17",
+  "status": "implemented_locally_pending_researcher_commit",
+  "spec": "docs/specs/0017-lancamento.md",
+  "roadmap_progress_percent": 100,
+  "decisions": {
+    "install": "completa: clone simulado, encoder baixado de novo pela rede, Tesseract existente",
+    "python": "3.14 do PATH, como o README instrui nesta máquina",
+    "acceptance": "chamadas reais ao gemini-3.5-flash-lite na interface da instalação limpa",
+    "guide": "README reescrito como guia de uso; histórico nas specs e no mapa de migração"
+  },
+  "clean_install": {
+    "python": "3.14.6",
+    "files": 184,
+    "pytest_passed": 331,
+    "ruff": "passed",
+    "encoder_download": "cache vazio, 14 min 37 s, hashes iguais ao existente",
+    "bit_exact_reproduction_on_python_3_14": true
+  },
+  "acceptance": {
+    "model": "gemini-3.5-flash-lite",
+    "calls": 13,
+    "input_tokens": 34428,
+    "output_tokens": 853,
+    "web_queries": 2,
+    "criteria": {
+      "pdf_page_citation": true,
+      "memory_across_conversations_and_superseded": true,
+      "web_search_with_sources": true
+    }
+  },
+  "defects_fixed": [
+    ".gitignore: data/ excluía tests/data/ (arquivos de referência dos testes do GPVS); agora /data/",
+    "contexto de memória levava o id interno das anotações, copiado pelo modelo para a resposta; removido"
+  ],
+  "wheel": {
+    "path": "dist/v0.1.0/aliado-0.1.0-py3-none-any.whl",
+    "sha256": "4f52f2033b42d8842b932add62feee4211be446e4db8782c19fe8e525d943729",
+    "files": 75,
+    "installed_and_smoke_tested": true
+  },
+  "pre_commit_audit": {
+    "files": 184,
+    "secrets_found": 0,
+    "env_file_included": false,
+    "personal_path": [
+      "docs/migracao/lote-10.json (preservado; decisão do pesquisador)"
+    ]
+  },
+  "paid_calls": 13,
+  "validation": {
+    "pytest_passed": 331,
+    "ruff": "passed",
+    "python_versions": [
+      "3.12.14",
+      "3.14.6"
+    ],
+    "untouched_files_checked": 126,
+    "untouched_files_match": true,
+    "mismatch": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará os commits e a tag v0.1.0.",
+  "public_files": [
+    {
+      "path": ".gitignore",
+      "sha256": "71c30df31a4c41ece1fd520637c3a106cfdb681ee94540b06f8d965462374fd5",
+      "previous_sha256": null,
+      "status": "modified"
+    },
+    {
+      "path": ".env.example",
+      "sha256": "ab029054bc34e6649d36578a6262b632ed587c45c48b46d36729f13963710949",
+      "previous_sha256": "3826a112c1ed8c829cc002ea6427e32bfb27c1acfb9f50ddd7217bd1016dea95",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "58f52372331b11d632250cd861a754c0e9ecb2e63aa3aa49ce99e766b4b3bfdc",
+      "previous_sha256": "5985e65c4c4f1b25544cbd4cc41b560b4691cdba08192de1554b92620655ee05",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "67861f6e7b640f1dd766e5f2bdaf9778aac7d440c62532c5b9afecdf525de84f",
+      "previous_sha256": "c5c62dcec7ea8529c5e48a8d99c9d94064b0f671ae40a03abc0fd8fb7b1135fe",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "7b7e6bee40d2dbb9fb8fa14cba75e5e29d77531ffcea360d3e4480edc0b4eaf6",
+      "previous_sha256": "9fd707d59bb3a460634011b3c2a42d823a526fe5cd1877bbfb28a4227f3e9b43",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "6ca60f6c3c18a54319e580cd4fb968ab696d0dde0495562eb9d87d5e7beab1c8",
+      "previous_sha256": "7508ad379bb6e4e236a781861f71d906aa905d3247a9bb062621c451723c4fae",
+      "status": "modified"
+    },
+    {
+      "path": "docs/biblioteca/uso.md",
+      "sha256": "b4a4e040272ef46e9eb93945e7f9c2aa6b8874c35e51b13d22df6a69b29f7456",
+      "previous_sha256": "19f6169350578edce4a926d737858283dcd78ee40d989d9d14c8eee1f0f4e490",
+      "status": "modified"
+    },
+    {
+      "path": "requirements-dev.lock",
+      "sha256": "928ea3a8573a111d266b47a5ee014bb942470cbc6681a5ba074bb5f901be775e",
+      "previous_sha256": "d97bb4f89507d859c5cae368cf6c68801b35dcae1c0e6746ba47627450d6a6bb",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "a406b917a093e3d976da26a78059219face23a5405253374917a21718f5c655e",
+      "previous_sha256": "2abbcd8f5d7ecd3fb4979ff8f793c5190182079097c12b35cd6937963ec97c8c",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_memory.py",
+      "sha256": "ef98606c1bcac9038ca7d2ba7e37b99f91548647dccde8e3034723a8b12e6c09",
+      "previous_sha256": "904766d852e93a59353d827b25022bbeb170a9e6a8e8f4e22421e3611e10b93b",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "201cd95429206709904a4dde5986b4dc40ec337190735620807b7b5b7798aa41",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0017-lancamento.md",
+      "sha256": "1a4dfa9b780587fb2109c5e8b9fa227b56e8393879a267d25465f94511bd822b",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-17.md",
+      "sha256": "bc0234a50a2d05abf1037553a353847eec76223dfdc085ed6d1e9ce7b53ded0b",
+      "status": "new"
+    }
+  ]
+}
