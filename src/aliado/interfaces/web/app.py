@@ -28,6 +28,7 @@ from starlette.staticfiles import StaticFiles
 
 from aliado.interfaces.web.conversations import ConversationStore
 from aliado.interfaces.web.rendering import render_markdown
+from aliado.knowledge.metadata import reference
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.usage_log import record_usage
 from aliado.skills.library import list_skills, load_skill
@@ -71,6 +72,8 @@ class WebSettings:
     card_maker: Callable[..., tuple[list[dict], object]] | None = None
     # Busca na web (lote 12): conferência de uma anotação; devolve (veredito, resultado).
     checker: Callable[[dict], tuple[dict, object]] | None = None
+    # Ficha do documento (lote 19): (título=, text=) -> (ficha conferida, resultado).
+    card_extractor: Callable[..., tuple[dict, object]] | None = None
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -348,11 +351,25 @@ def create_app(settings: WebSettings) -> Starlette:
             return []
         return settings.library_factory().documents()
 
+    def _document_card(library_, title: str) -> dict:
+        """Ficha do documento pelo Flash-Lite, conferida no texto; grava mesmo vazia (tentativa feita)."""
+        card, card_result = settings.card_extractor(title=title, text=library_.opening_text(title))
+        try:
+            record_usage(card_result, settings.usage_log)
+        except OSError:
+            pass
+        library_.set_card(title, card, edited=False)
+        return card
+
     async def library(request: Request):
         if request.method == "GET":
-            documents = await run_in_threadpool(_documents)
-            return JSONResponse([{k: d[k] for k in ("id", "title", "version", "status", "issues",
-                                                    "created_at")} for d in documents])
+            def listing():
+                library_ = settings.library_factory()
+                pending = set(library_.titles_without_card()) if settings.card_extractor else set()
+                return [{k: d.get(k) for k in ("id", "title", "version", "status", "issues", "created_at",
+                                               "ficha", "ficha_origem", "referencia")}
+                        | {"ficha_pendente": d["title"] in pending} for d in _documents()]
+            return JSONResponse(await run_in_threadpool(listing))
         form = await request.form(max_files=1, max_fields=3)
         upload = form.get("arquivo")
         if upload is None or not getattr(upload, "filename", None):
@@ -401,9 +418,21 @@ def create_app(settings: WebSettings) -> Starlette:
                 shutil.rmtree(folder, ignore_errors=True)
             if (outcome["estado"] == "concluido" and not result.get("duplicate")
                     and result.get("status") in {"ready", "partial"}):
+                outcome["resultado"] |= document_card(library_, result)
                 outcome["resultado"] |= reading_card(library_, result)
             with lock:
                 settings.jobs[job].update(outcome)
+
+        def document_card(library_, result: dict) -> dict:
+            """Ficha do documento (título, autores, ano e DOI); só na primeira versão de um título."""
+            if settings.card_extractor is None or result["title"] not in library_.titles_without_card():
+                return {}
+            progress("ficha do documento", 0, 1)
+            try:
+                card = _document_card(library_, result["title"])
+            except (ProviderError, ValueError, OSError, KeyError, TypeError):
+                return {"aviso_ficha_documento": "A ficha do documento não pôde ser criada agora."}
+            return {"referencia": reference(card)}
 
         def reading_card(library_, result: dict) -> dict:
             """Ficha de leitura na memória: fatos inferidos com página, depois da indexação."""
@@ -517,13 +546,52 @@ def create_app(settings: WebSettings) -> Starlette:
         return JSONResponse(verdict | {"criada": _memory_view(created) if created else None,
                                        "buscas": len(result.web_queries)})
 
+    async def complete_cards(request: Request):
+        """Fichas dos documentos que nunca tiveram uma: uma chamada ao Flash-Lite por documento."""
+        if settings.card_extractor is None:
+            return _error("A ficha do documento não está configurada.")
+        library_ = settings.library_factory()
+        titles = await run_in_threadpool(library_.titles_without_card)
+        job = uuid.uuid4().hex
+        with lock:
+            settings.jobs[job] = {"estado": "processando", "etapa": "fichas", "atual": 0, "total": len(titles)}
+
+        def run():
+            counts = {"fichas": 0, "sem_dados": 0, "falhas": 0}
+            for index, title in enumerate(titles, 1):
+                try:
+                    counts["fichas" if _document_card(library_, title) else "sem_dados"] += 1
+                except (ProviderError, ValueError, OSError, KeyError, TypeError):
+                    counts["falhas"] += 1  # sem registro gravado: a próxima rodada tenta de novo
+                with lock:
+                    settings.jobs[job]["atual"] = index
+            with lock:
+                settings.jobs[job].update({"estado": "concluido", "resultado": counts})
+
+        worker.submit(run)
+        return JSONResponse({"tarefa": job, "total": len(titles)}, 202)
+
+    async def edit_card(request: Request):
+        body = await request.json()
+        if not isinstance(body, dict):
+            return _error("Pedido inválido.")
+        library_ = settings.library_factory()
+        try:
+            files = await run_in_threadpool(library_.document_files, request.path_params["doc"])
+            saved = await run_in_threadpool(lambda: library_.set_card(files["title"], body, edited=True))
+        except ValueError as exc:
+            return _error(str(exc), 404)
+        return JSONResponse(saved)
+
     async def job_status(request: Request):
         with lock:
             job = settings.jobs.get(request.path_params["job"])
         return JSONResponse(job) if job else _error("Tarefa não encontrada.", 404)
 
     async def document(request: Request):
-        if request.path_params["kind"] not in {"original", "markdown"}:
+        if request.path_params["kind"] == "ficha" and request.method == "POST":
+            return await edit_card(request)
+        if request.path_params["kind"] not in {"original", "markdown"} or request.method != "GET":
             return _error("Recurso não encontrado.", 404)
         try:
             files = await run_in_threadpool(settings.library_factory().document_files,
@@ -545,7 +613,8 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/conversas/{cid}/mensagens", message, methods=["POST"]),
         Route("/api/biblioteca", library, methods=["GET", "POST"]),
         Route("/api/biblioteca/tarefas/{job}", job_status),
-        Route("/api/biblioteca/{doc}/{kind:str}", document),
+        Route("/api/biblioteca/fichas", complete_cards, methods=["POST"]),
+        Route("/api/biblioteca/{doc}/{kind:str}", document, methods=["GET", "POST"]),
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
         Route("/api/memoria/{mid}/{acao}", memory_action, methods=["GET", "POST"]),
         Mount("/static", StaticFiles(directory=STATIC), name="static"),
@@ -560,6 +629,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int) -> WebSett
     from aliado.agent import Agent
     from aliado.knowledge.embeddings import LocalEncoder
     from aliado.knowledge.library import DocumentLibrary
+    from aliado.knowledge.metadata import extract_card
     from aliado.llm.providers.gateway import build_default_gateway
     from aliado.memory.reviewer import check_memory, reading_card, review_exchange
     from aliado.memory.store import MemoryStore
@@ -587,4 +657,5 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int) -> WebSett
                        models=models, library_factory=lambda: library, memory=memory,
                        reviewer=lambda **kwargs: review_exchange(execute, **kwargs),
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
-                       checker=lambda memory_: check_memory(execute, memory_))
+                       checker=lambda memory_: check_memory(execute, memory_),
+                       card_extractor=lambda **kwargs: extract_card(execute, **kwargs))

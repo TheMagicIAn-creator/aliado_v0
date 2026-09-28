@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-28",
+  "batch": "19",
+  "status": "implemented_locally_pending_researcher_commit",
+  "spec": "docs/specs/0019-qualidade-da-busca.md",
+  "base_commit": "f23855d",
+  "target_version": "0.2.0 (com o lote 20, aba Ciência)",
+  "decisions": {
+    "order": "busca antes da aba Ciência (lote 20)",
+    "fixes": "palavras vazias e peso ao significado; ficha do documento; limite por documento",
+    "query_translation": "fora; reconsiderar depois da medição",
+    "measurement": "perguntas de referência propostas pelo assistente e aprovadas pelo pesquisador",
+    "real_library_cards": "preenchidas no aceite, depois de cópia de segurança do catálogo"
+  },
+  "search_settings_fixed_before_measuring": {
+    "palavras_vazias": "português e inglês",
+    "rrf_k": 60,
+    "peso_significado": 1.0,
+    "peso_palavras": 0.5,
+    "peso_documento_citado": 1.0,
+    "por_documento": 2,
+    "por_documento_citado": 4
+  },
+  "reference_questions": {
+    "path": "data/avaliacao-busca/perguntas.json (fora do Git)",
+    "count": 16,
+    "pt": 8,
+    "en": 8,
+    "author": 4,
+    "cross_language": 10
+  },
+  "measurement": {
+    "busca-antes-lote-19": {
+      "geral": {
+        "perguntas": 16,
+        "acertos": 12,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.661,
+        "documentos_distintos_medio": 2.56
+      },
+      "autor": {
+        "perguntas": 4,
+        "acertos": 3,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.396,
+        "documentos_distintos_medio": 3.75
+      },
+      "conteudo": {
+        "perguntas": 12,
+        "acertos": 9,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.75,
+        "documentos_distintos_medio": 2.17
+      },
+      "outro_idioma": {
+        "perguntas": 10,
+        "acertos": 6,
+        "taxa_de_acerto": 0.6,
+        "mrr": 0.533,
+        "documentos_distintos_medio": 2.8
+      }
+    },
+    "busca-lote-19-sem-fichas": {
+      "geral": {
+        "perguntas": 16,
+        "acertos": 12,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.656,
+        "documentos_distintos_medio": 4.31
+      },
+      "autor": {
+        "perguntas": 4,
+        "acertos": 3,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.375,
+        "documentos_distintos_medio": 4.75
+      },
+      "conteudo": {
+        "perguntas": 12,
+        "acertos": 9,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.75,
+        "documentos_distintos_medio": 4.17
+      },
+      "outro_idioma": {
+        "perguntas": 10,
+        "acertos": 6,
+        "taxa_de_acerto": 0.6,
+        "mrr": 0.525,
+        "documentos_distintos_medio": 4.3
+      }
+    },
+    "busca-depois-lote-19": {
+      "geral": {
+        "perguntas": 16,
+        "acertos": 13,
+        "taxa_de_acerto": 0.812,
+        "mrr": 0.781,
+        "documentos_distintos_medio": 3.75
+      },
+      "autor": {
+        "perguntas": 4,
+        "acertos": 4,
+        "taxa_de_acerto": 1.0,
+        "mrr": 0.875,
+        "documentos_distintos_medio": 2.5
+      },
+      "conteudo": {
+        "perguntas": 12,
+        "acertos": 9,
+        "taxa_de_acerto": 0.75,
+        "mrr": 0.75,
+        "documentos_distintos_medio": 4.17
+      },
+      "outro_idioma": {
+        "perguntas": 10,
+        "acertos": 7,
+        "taxa_de_acerto": 0.7,
+        "mrr": 0.7,
+        "documentos_distintos_medio": 3.9
+      }
+    }
+  },
+  "remaining_misses": [
+    "P4",
+    "P8",
+    "E8"
+  ],
+  "acceptance": {
+    "model": "gemini-3.5-flash-lite",
+    "data_dir": "tmp/lote-19/dados (temporário, fora do Git)",
+    "library": "data/bibliotecas/principal, 27 documentos",
+    "catalog_backup": "tmp/lote-19/backup/catalog.sqlite3 (sha256 d2c91f6bfb0bb0db5e290b20cb2866b7be317cff1c971d6fce7ff2e073ba7a3d)",
+    "cards": {
+      "filled": 27,
+      "of": 27,
+      "first_round": 25,
+      "provider_errors_retried": 5
+    },
+    "calls_logged": 35,
+    "calls_by_task": {
+      "biblioteca-ficha": 29,
+      "critical_reasoning": 3,
+      "memoria-revisor": 3
+    },
+    "input_tokens": 79488,
+    "output_tokens": 3691,
+    "web_queries": 0,
+    "criteria": {
+      "baschel_question_cites_right_article": true,
+      "portuguese_question_answered_by_english_article": true,
+      "catalog_question_answered_from_cards": true,
+      "card_shown_and_editable_in_library_tab": true
+    },
+    "for_researcher_review": [
+      "energies-15-01082-v2.pdf: ficha com o título da linha de citação, não o do cabeçalho"
+    ]
+  },
+  "defects_fixed": [
+    "erro de servidor do Gemini com glifos /gid… de PDFs da MDPI; removidos antes do envio; falha não grava e fica pendente",
+    "nome inteiro em maiúsculas tratado como instituição na referência curta",
+    "guia da biblioteca dizia que a ausência de trechos evitava a chamada ao provedor (desatualizado desde o lote 18)"
+  ],
+  "real_library_after": {
+    "documents": 27,
+    "runs": 27,
+    "chunks": 13946,
+    "unchanged_except_new_table": "document_cards",
+    "verify_issues": "2 extrações parciais já conhecidas (Lafraia e guia da NASA)"
+  },
+  "paid_calls_logged": 35,
+  "validation": {
+    "pytest_passed": 354,
+    "new_tests": 11,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ],
+    "git_status_matches_manifest": true,
+    "unexpected_changes": [],
+    "previous_hash_method_check_against_lote_18": {
+      "src/aliado/agent.py": true,
+      "src/aliado/interfaces/web/app.py": true,
+      "src/aliado/interfaces/web/static/app.js": true,
+      "src/aliado/interfaces/web/static/app.css": true,
+      "src/aliado/interfaces/web/static/index.html": true,
+      "README.md": true,
+      "CHANGELOG.md": true,
+      "AGENTS.md": true,
+      "docs/roteiro-v0.md": true,
+      "docs/migracao/README.md": true
+    }
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador fará o commit; a 0.2.0 sai com o lote 20.",
+  "public_files": [
+    {
+      "path": "src/aliado/knowledge/library.py",
+      "sha256": "c930e7cc1f9289225fc04913b6c8f6f1e1b1757b7863cd402a03f9561d13c37e",
+      "previous_sha256": "2e4010650924c39f7ba6f1af13d45430386a1f8d74ef3ecce680201917c9f1f4",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "8fdcd7dd8ee377a57c3a1862f80c28a5a43526076fd9c5cd2320188f74a2e7e3",
+      "previous_sha256": "7874802c18617926fc377065cfb3384134291ff3bcf29e1569a8786838751767",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "fdd25aa571cc2025ff18f9f86b2ea761d107e3466ac6710a4524d3406823801e",
+      "previous_sha256": "38ecb160df73f1bfbbff76429099fd9299877ce7c694e98ca36312e2945abcfe",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "168c006d1168641b1136286dacba0f932b418482855499e884c9763f4bc18204",
+      "previous_sha256": "1711e9131ffe33e561ceee9a10a4fe877f406dc0cbf1db7c9a374a2f5a39a94b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "8c5297cbaef22c199db9d60b4413a61331f27027547e31b2af847f22fafafb84",
+      "previous_sha256": "5c5f04424c6ac28b368346fab61359b0f0da194b9640bfdee8f6cbd502e9add3",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "01fa23338ca8fc3ea4e764562d6ef57d060aaa76d0f686030cfe2056f8df102f",
+      "previous_sha256": "11e2db0fbef732c1b0f0bad3758165f0856a13a374c7cdaae8973c0d902d7c08",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "b3f73acb6dfa88447354c49d920ac2e519a14cb378c74498787cb6c18356d578",
+      "previous_sha256": "160336bc790be746bed790ca817a8918618dcf454746834197b65e0b2f7ea942",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/launch.json",
+      "sha256": "201df10ae7ef065f2c67cfdcd4d69311f73a66103022c43daa54a5b9beedea28",
+      "previous_sha256": "eef4122ce42562a36d198cc54a03547eda71592fe7f42f7ae859c72a23ae7b65",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "11d855f0be75b6c8c1cf2e4325d91eb4361e32b40889528ce6f5faa6a8b4b042",
+      "previous_sha256": "0db9a4a4952885bbb319a6bb2d96e544b596d99c558fe414dbc5e2fdaa6102d2",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "17ce7c07283d96bc9d277d3337a25627e7dac98263660847898fa3c6a1d2acea",
+      "previous_sha256": "83f37d45d00af45b7ce59787fa1c03ee1245dd4fe6c1b0122ac206d6bfb9863f",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "b0536ee09c7d24ade125f5aca4eb2b3f2bcab6868c5413c969b26fcd4624be59",
+      "previous_sha256": "7e640cebee21dbcf6c0f3882e1c645dac05f48af1c74b8ec1a1f8a640b04b169",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "f0a3d234e9e3d6f431a8908cc62c7c95c5e29b6d66216bf3b980e5562c1eb809",
+      "previous_sha256": "17adb555810d5eaadf5324a308bfaa4eae5ec16829f9ef8121a170a2e6af61f8",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "c09f0174fde3655fb259d337d1fec9e1b19615aa408b9ff6985fa780db7620e0",
+      "previous_sha256": "6ab57234630ddef884e40616123b04ec0c7ae2d097f4f17e3533b7cec7e31b51",
+      "status": "modified"
+    },
+    {
+      "path": "docs/biblioteca/uso.md",
+      "sha256": "f00d41e9ca3edf480666f29320a451c4bb5da725fd19dcf00ce1705d45810d7f",
+      "previous_sha256": "b4a4e040272ef46e9eb93945e7f9c2aa6b8874c35e51b13d22df6a69b29f7456",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/evaluation.py",
+      "sha256": "6199a3c125e318926fb5f7e9b5046af029d0f66a8164554cc79ae5aba7899af4",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/knowledge/metadata.py",
+      "sha256": "101dcaf0b1e6710f6261e4a6da9acf01e6f0e8bf48c2f83471efaebbfea14299",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/knowledge/stopwords.py",
+      "sha256": "cb6fcb3850e0cd413c4d550fea3245c1d1307242bec232c03bd0f9660bb9be5d",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_search_quality.py",
+      "sha256": "3b9e4fdce974fbebd4c8db2c556e05d8bdee90809702021ff33e41e871eefe99",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0019-qualidade-da-busca.md",
+      "sha256": "b1ee4f2e870602d314567c25092b47e03fbf257eec20453be31a250a3e679649",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-19.md",
+      "sha256": "b6932c5d6e483b078b86178c3f945cd881686e1255b23333144f06b36a933080",
+      "status": "new"
+    }
+  ]
+}

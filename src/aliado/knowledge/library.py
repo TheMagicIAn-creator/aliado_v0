@@ -8,12 +8,28 @@ import math
 import re
 import sqlite3
 import uuid
+from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
 from aliado.knowledge.embeddings import LocalEncoder
 from aliado.knowledge.extraction import extract_document
+from aliado.knowledge.metadata import MAX_CHARS, clean_card, named_documents, reference
+from aliado.knowledge.stopwords import STOPWORDS, plain
+
+# Busca híbrida (lote 19). Valores fixados antes da medição com as perguntas de referência:
+# a parte por palavras ignora palavras vazias e pesa a metade da parte por significado, e cada
+# documento ocupa no máximo 2 dos resultados (4 se a pergunta o cita pelo autor ou pelo título).
+SEARCH_SETTINGS = {
+    "palavras_vazias": "português e inglês",
+    "rrf_k": 60,
+    "peso_significado": 1.0,
+    "peso_palavras": 0.5,
+    "peso_documento_citado": 1.0,
+    "por_documento": 2,
+    "por_documento_citado": 4,
+}
 
 
 def _hash(data: bytes) -> str:
@@ -22,6 +38,22 @@ def _hash(data: bytes) -> str:
 
 def _json(value) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+
+
+def _diverse(candidates: list[tuple[float, dict]], limit: int, named: set[str]) -> list[tuple[float, dict]]:
+    """Os melhores candidatos com teto por documento; só completa além do teto se faltar candidato."""
+    chosen, spare, per_document = [], [], Counter()
+    for pair in candidates:
+        title = pair[1]["title"]
+        cap = SEARCH_SETTINGS["por_documento_citado" if title in named else "por_documento"]
+        if per_document[title] < cap:
+            per_document[title] += 1
+            chosen.append(pair)
+            if len(chosen) == limit:
+                return chosen
+        elif len(spare) < limit:
+            spare.append(pair)
+    return sorted(chosen + spare[:limit - len(chosen)], key=lambda pair: (-pair[0], pair[1]["id"]))
 
 
 def _vector(values) -> list[float]:
@@ -69,6 +101,10 @@ class DocumentLibrary:
                         method TEXT NOT NULL, vector TEXT NOT NULL);
                     CREATE VIRTUAL TABLE IF NOT EXISTS chunk_fts USING fts5(
                         id UNINDEXED, text, tokenize='unicode61 remove_diacritics 2');
+                    -- Lote 19: ficha por documento lógico; a edição do usuário vale sobre a
+                    -- inferida, que continua guardada.
+                    CREATE TABLE IF NOT EXISTS document_cards (
+                        title TEXT PRIMARY KEY, inferred TEXT, edited TEXT, updated_at TEXT NOT NULL);
                     PRAGMA user_version=1;
                 """)
             elif connection.execute("PRAGMA user_version").fetchone()[0] != 1:
@@ -83,13 +119,78 @@ class DocumentLibrary:
             raise ValueError("Caminho fora da biblioteca documental.")
         return path
 
+    @property
+    def search_settings(self) -> dict:
+        return dict(SEARCH_SETTINGS)
+
     def documents(self) -> list[dict]:
         if not (self.root / "catalog.sqlite3").exists():
             return []
         with self._connect() as db:
             rows = db.execute("""SELECT d.*, r.status, r.issues FROM documents d
                 JOIN runs r ON d.active_run=r.id ORDER BY d.title, d.version""").fetchall()
-        return [{**dict(row), "issues": json.loads(row["issues"])} for row in rows]
+        cards = self.cards()
+        return [{**dict(row), "issues": json.loads(row["issues"])}
+                | {key: cards.get(row["title"], {}).get(key) for key in ("ficha", "ficha_origem", "referencia")}
+                for row in rows]
+
+    def cards(self) -> dict[str, dict]:
+        """Fichas por documento lógico: a edição do usuário vale sobre a inferida."""
+        if not (self.root / "catalog.sqlite3").exists():
+            return {}
+        with self._connect() as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE name='document_cards'").fetchone():
+                return {}  # catálogo anterior ao lote 19, ainda sem fichas
+            rows = db.execute("SELECT * FROM document_cards").fetchall()
+        cards = {}
+        for row in rows:
+            edited = json.loads(row["edited"]) if row["edited"] is not None else None
+            card = edited if edited is not None else json.loads(row["inferred"] or "{}")
+            if card:
+                cards[row["title"]] = {"ficha": card, "ficha_origem": "sua" if edited is not None else "inferida",
+                                       "referencia": reference(card)}
+        return cards
+
+    def titles_without_card(self) -> list[str]:
+        """Documentos que nunca tiveram ficha tentada; uma tentativa vazia não se repete sozinha."""
+        titles = list(dict.fromkeys(document["title"] for document in self.documents()))
+        if not titles:
+            return []
+        with self._connect() as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE name='document_cards'").fetchone():
+                return titles
+            tried = {row["title"] for row in db.execute("SELECT title FROM document_cards")}
+        return [title for title in titles if title not in tried]
+
+    def set_card(self, title: str, card: dict, *, edited: bool) -> dict:
+        """Grava a ficha inferida ou a sua edição, sem apagar a outra."""
+        if not any(document["title"] == title for document in self.documents()):
+            raise ValueError("Documento não encontrado na biblioteca.")
+        column = "edited" if edited else "inferred"
+        with self._connect(create=True) as db, db:
+            db.execute(f"""INSERT INTO document_cards (title, {column}, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT(title) DO UPDATE SET {column}=excluded.{column}, updated_at=excluded.updated_at""",
+                       (title, json.dumps(clean_card(card), ensure_ascii=False),
+                        datetime.now(timezone.utc).isoformat()))
+        return self.cards().get(title, {"ficha": {}, "ficha_origem": "sua" if edited else "inferida",
+                                        "referencia": None})
+
+    def opening_text(self, title: str, limit: int = MAX_CHARS) -> str:
+        """Começo do texto extraído da versão ativa, de onde a ficha é tirada e conferida."""
+        if not (self.root / "catalog.sqlite3").exists():
+            raise ValueError("Documento não encontrado na biblioteca.")
+        with self._connect() as db:
+            row = db.execute("""SELECT r.json_path FROM documents d JOIN runs r ON r.id=d.active_run
+                WHERE d.title=? ORDER BY d.version DESC LIMIT 1""", (title,)).fetchone()
+        if row is None:
+            raise ValueError("Documento não encontrado na biblioteca.")
+        sections = json.loads(self._path(row["json_path"]).read_text(encoding="utf-8"))["sections"]
+        text = ""
+        for section in sections:
+            text += section["text"] + "\n"
+            if len(text) >= limit:
+                break
+        return text[:limit]
 
     def add(self, source: str | Path, *, title: str | None = None,
             force_ocr=False, reprocess=False, progress=None) -> dict:
@@ -218,6 +319,8 @@ class DocumentLibrary:
             raise ValueError("Consulta vazia ou limite fora de 1–20.")
         if not (self.root / "catalog.sqlite3").exists():
             return []
+        cards = self.cards()
+        named = named_documents(query, cards)
         with self._connect() as db:
             rows = db.execute("""SELECT c.*, d.id AS document_id, d.title, d.version, d.sha256, d.original,
                     r.encoder, r.status FROM chunks c JOIN runs r ON c.run_id=r.id
@@ -228,7 +331,9 @@ class DocumentLibrary:
                 return []
             if any(row["encoder"] != self.encoder.fingerprint for row in rows):
                 raise ValueError("Encoder do índice mudou; reprocesse os documentos antes da busca.")
-            words = list(dict.fromkeys(re.findall(r"[^\W_]+", query, re.UNICODE)))[:40]
+            # Palavras vazias ("de", "the", "segundo") puxariam qualquer texto no mesmo idioma.
+            words = [word for word in dict.fromkeys(re.findall(r"[^\W_]+", query, re.UNICODE))
+                     if plain(word) not in STOPWORDS][:40]
             lexical = db.execute("""SELECT id FROM chunk_fts WHERE chunk_fts MATCH ? ORDER BY bm25(chunk_fts)""",
                                  (" OR ".join('"' + word + '"' for word in words),)).fetchall() if words else []
         query_parts = self.encoder.split(query)
@@ -244,22 +349,28 @@ class DocumentLibrary:
             semantic.append((row["id"], sum(a * b for a, b in zip(q, vector))))
         semantic.sort(key=lambda pair: (-pair[1], pair[0]))
         scores = dict(semantic)
-        active_ids = {row["id"] for row in rows}
-        lexical_ids = [row["id"] for row in lexical if row["id"] in active_ids]
+        titles = {row["id"]: row["title"] for row in rows}
+        lexical_ids = [row["id"] for row in lexical if row["id"] in titles]
         lexical_ranks = {key: rank for rank, key in enumerate(lexical_ids, 1)}
         semantic_ranks = {key: rank for rank, (key, _) in enumerate(semantic, 1)}
+        # Documento citado pelo autor ou pelo título: seus trechos formam uma terceira lista.
+        named_ranks = {key: rank for rank, key in enumerate(
+            (key for key, _ in semantic if titles[key] in named), 1)}
+        k, weights = SEARCH_SETTINGS["rrf_k"], SEARCH_SETTINGS
         candidates = []
         for row in rows:
             key = row["id"]
-            if key not in lexical_ranks and scores[key] < min_similarity:
+            if key not in lexical_ranks and key not in named_ranks and scores[key] < min_similarity:
                 continue
-            score = 1 / (60 + semantic_ranks[key])
+            score = weights["peso_significado"] / (k + semantic_ranks[key])
             if key in lexical_ranks:
-                score += 1 / (60 + lexical_ranks[key])
+                score += weights["peso_palavras"] / (k + lexical_ranks[key])
+            if key in named_ranks:
+                score += weights["peso_documento_citado"] / (k + named_ranks[key])
             candidates.append((score, row))
         candidates.sort(key=lambda pair: (-pair[0], pair[1]["id"]))
         hits, checked = [], set()
-        for score, row in candidates[:limit]:
+        for score, row in _diverse(candidates, limit, named):
             original = self._path(row["original"])
             if original not in checked:
                 if not original.is_file() or _hash(original.read_bytes()) != row["sha256"]:
@@ -269,7 +380,8 @@ class DocumentLibrary:
                          "title": row["title"], "version": row["version"],
                          "sha256": row["sha256"], "original": str(original), "locator": row["locator"],
                          "page": row["page"], "method": row["method"], "status": row["status"],
-                         "text": row["text"], "score": score, "similarity": scores[row["id"]]})
+                         "text": row["text"], "score": score, "similarity": scores[row["id"]],
+                         "referencia": cards.get(row["title"], {}).get("referencia")})
         return hits
 
     def verify(self) -> dict:

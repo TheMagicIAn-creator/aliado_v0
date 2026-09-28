@@ -572,7 +572,8 @@ function showSources(message) {
     }
     return el("div", { class: "source-card", "data-source": String(number) },
       el("div", { class: "source-head" }, el("span", { class: "cite", text: String(number) }),
-        el("span", { class: "source-title", title: source.title, text: source.title })),
+        el("span", { class: "source-title", title: source.title,
+          text: source.referencia ? `${source.referencia} · ${source.title}` : source.title })),
       el("div", { class: "source-loc", text: [`v${source.version}`, where, ...flags].filter(Boolean).join(" · ") }),
       el("p", { class: "source-text", text: source.text }),
       actions);
@@ -958,12 +959,85 @@ async function loadLibrary(selectId) {
     return el("li", {}, el("button", { class: "doc-item", type: "button", "data-doc": doc.id,
       onclick: () => showDocument(doc) },
       el("span", { class: "doc-title", text: doc.title }),
+      ...(doc.referencia ? [el("span", { class: "doc-ref", text: doc.referencia })] : []),
       el("span", { class: "doc-meta" }, el("span", { class: `badge ${badge}`, text: label }),
         el("span", { text: `v${doc.version}` }), el("span", { text: relativeDate(doc.created_at) }))));
   }));
+  const pending = documents.filter((doc) => doc.ficha_pendente).length;
+  $("library-cards").hidden = !pending;
+  $("library-cards").textContent = `Completar fichas (${pending})`;
+  $("library-cards").dataset.pending = String(pending);
   const chosen = documents.find((doc) => doc.id === selectId);
   if (chosen) showDocument(chosen);
 }
+
+/* Ficha do documento (lote 19): título, autores, ano e DOI, inferidos e editáveis. */
+function cardBox(doc) {
+  const card = doc.ficha || {};
+  const rows = [["Título", card.titulo], ["Autores", (card.autores || []).join("; ")], ["Ano", card.ano], ["DOI", card.doi]];
+  const origin = !doc.ficha ? "sem ficha" : doc.ficha_origem === "sua" ? "sua" : "inferida: confira no original";
+  const box = el("section", { class: "doc-card" },
+    el("div", { class: "doc-card-head" }, el("h2", { class: "panel-title", text: "Ficha do documento" }),
+      el("span", { class: "muted", text: origin }),
+      el("button", { class: "link", type: "button", text: "Editar", onclick: () => box.replaceWith(cardForm(doc)) })),
+    el("dl", {}, ...rows.flatMap(([label, value]) => [el("dt", { text: label }), el("dd", { text: value ? String(value) : "—" })])));
+  return box;
+}
+
+function cardForm(doc) {
+  const card = doc.ficha || {};
+  const input = (label, value, name) => el("label", { class: "field" }, label,
+    el("input", { name, value: value == null ? "" : String(value) }));
+  const form = el("form", { class: "doc-card" },
+    el("h2", { class: "panel-title", text: "Editar ficha" }),
+    input("Título", card.titulo, "titulo"),
+    input("Autores, separados por ponto e vírgula", (card.autores || []).join("; "), "autores"),
+    input("Ano", card.ano, "ano"),
+    input("DOI", card.doi, "doi"),
+    el("div", { class: "dialog-actions" },
+      el("button", { class: "secondary", type: "button", text: "Cancelar", onclick: () => form.replaceWith(cardBox(doc)) }),
+      el("button", { class: "primary", type: "submit", text: "Salvar" })));
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(form));
+    try {
+      const saved = await api(`/api/biblioteca/${doc.id}/ficha`, { method: "POST", json: data });
+      Object.assign(doc, saved);
+      form.replaceWith(cardBox(doc));
+      loadLibrary();
+    } catch (error) {
+      toast(error.message);
+    }
+  });
+  return form;
+}
+
+$("library-cards").addEventListener("click", async () => {
+  const pending = Number($("library-cards").dataset.pending || 0);
+  if (!pending || !window.confirm(`Criar a ficha de ${pending} documento(s)?\n\nSão ${pending} chamada(s) ao modelo ` +
+    "mais barato. O título, os autores, o ano e o DOI só entram se aparecerem no texto do documento.")) return;
+  const button = $("library-cards");
+  button.disabled = true;
+  try {
+    const job = await api("/api/biblioteca/fichas", { method: "POST" });
+    for (;;) {
+      const status = await api(`/api/biblioteca/tarefas/${job.tarefa}`);
+      button.textContent = `Fichas: ${status.atual || 0} de ${status.total}`;
+      if (status.estado === "concluido") {
+        const r = status.resultado;
+        toast(`${r.fichas} ficha(s) criada(s)` + (r.sem_dados ? `, ${r.sem_dados} sem dados no texto` : "") +
+          (r.falhas ? `, ${r.falhas} com falha` : "") + ".");
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+    loadLibrary();
+  }
+});
 
 async function showDocument(doc) {
   document.querySelectorAll(".doc-item").forEach((item) => item.classList.toggle("is-current", item.dataset.doc === doc.id));
@@ -978,7 +1052,7 @@ async function showDocument(doc) {
     viewer.replaceChildren(
       el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: "Extração em Markdown · confira fórmulas, tabelas e OCR no original" }),
         el("a", { class: "link", href: `/api/biblioteca/${doc.id}/original`, target: "_blank", rel: "noopener", text: "Abrir original" })),
-      ...(issues ? [issues] : []), body);
+      cardBox(doc), ...(issues ? [issues] : []), body);
   } catch (error) {
     viewer.replaceChildren(el("p", { class: "muted", text: error.message }));
   }

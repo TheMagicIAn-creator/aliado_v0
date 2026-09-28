@@ -62,6 +62,22 @@ Página significa posição física no PDF, iniciando em 1; pode diferir da nume
 impressa. Markdown usa linhas, JSON usa caminhos JSON Pointer. Não se inventam
 autor, DOI ou título bibliográfico a partir do nome do arquivo.
 
+## Ficha do documento
+
+Desde o lote 19, cada documento pode ter uma ficha com título, autores, ano e DOI.
+- Na interface, o modelo mais barato lê o começo do texto extraído ao indexar. Para
+  os documentos antigos, há o botão **Completar fichas** na aba Biblioteca.
+- O código confere cada campo no próprio texto: título e sobrenomes precisam
+  aparecer nele, o DOI precisa ter o formato certo e o ano precisa ser plausível. O
+  que não passa fica em branco.
+- A ficha fica marcada "inferida" até ser editada na aba Biblioteca. A edição vale
+  sobre a inferida, que continua guardada.
+- A ficha entra no catálogo enviado ao modelo e nas fontes da resposta, como
+  "Baschel et al., 2018". Uma pergunta que cita o autor, o título ou o DOI puxa os
+  trechos daquele documento.
+- Uma falha do provedor não grava nada, e o documento continua pendente para uma
+  nova tentativa.
+
 `verificar` confere hashes dos originais e artefatos, trechos, vetores e índice
 lexical. Processamentos antigos continuam auditáveis. Fórmulas, tabelas, colunas
 e figuras não são interpretadas com garantia; compare com o original.
@@ -75,16 +91,35 @@ conferidos. Trechos têm até 110 tokens, sobreposição de 20, sem atravessar s
 ou página; consultas longas combinam os vetores de seus trechos.
 
 BM25/FTS5 e cosseno são combinados por soma de posições recíprocas, constante 60.
-Sem coincidência lexical, exige-se cosseno de pelo menos 0,30: é uma heurística
-inicial de recuperação, sem validação no novo acervo, não um limiar científico.
-Índices de processamento antigo não entram no ranqueamento lexical ativo.
-Os vetores ficam no SQLite; a comparação é exaustiva e adequada ao acervo inicial.
-Escala e qualidade deverão ser medidas quando as referências forem fornecidas.
+Os parâmetros abaixo são do lote 19 e foram fixados antes da medição:
+- a busca por palavras ignora palavras vazias em português e em inglês ("de",
+  "segundo", "the") e pesa metade da busca por significado;
+- um documento citado na pergunta pela ficha forma uma terceira lista, com peso 1;
+- cada documento ocupa no máximo 2 dos resultados (4 se for citado), e o limite só
+  é passado quando faltam candidatos de outros documentos.
+
+Sem coincidência lexical nem citação, exige-se cosseno de pelo menos 0,30: é uma
+heurística de recuperação, não um limiar científico. Índices de processamento antigo
+não entram no ranqueamento lexical ativo. Os vetores ficam no SQLite, e a comparação
+é exaustiva, adequada ao acervo atual.
+
+A qualidade é medida com perguntas de referência, cada uma com o documento
+esperado, escolhido pelo conteúdo. As perguntas ficam fora do Git, porque descrevem
+o acervo:
+
+```powershell
+.\.venv\Scripts\python.exe -m aliado biblioteca avaliar --biblioteca data/bibliotecas/principal --saida data/resultados/busca-001
+```
+
+O relatório dá, por idioma, por tipo de pergunta e por cruzamento de idioma, o
+número de acertos entre os 6 resultados, a posição do primeiro acerto (MRR) e os
+documentos distintos.
 
 A resposta recebe fontes locais reais. O verificador bloqueia ausência de
 identificadores e identificadores desconhecidos; **não prova** que o texto gerado
 interpretou corretamente a fonte nem impede toda referência inventada em prosa.
-Ausência de trechos evita a chamada ao provedor. Documentos são dados de consulta,
+Desde o lote 18, sem trecho recuperado o modelo é chamado assim mesmo, com o aviso de
+que nada foi encontrado, e a resposta sem citação aparece marcada. Documentos são dados de consulta,
 não instruções; o agente não possui ferramentas autônomas de execução neste fluxo.
 
 O isolamento atual é por diretório escolhido pelo usuário, não uma fronteira de

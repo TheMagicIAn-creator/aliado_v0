@@ -41,9 +41,12 @@ def main(argv: list[str] | None = None) -> int:
     library_commands = library.add_subparsers(dest="operation", required=True)
     model = library_commands.add_parser("preparar-modelo", help="Baixa o encoder local de revisão fixa")
     model.add_argument("--diretorio", type=Path)
-    for name in ("adicionar", "listar", "buscar", "verificar"):
+    for name in ("adicionar", "listar", "buscar", "verificar", "avaliar"):
         operation = library_commands.add_parser(name)
         operation.add_argument("--biblioteca", type=Path, required=True)
+        if name == "avaliar":  # mede a busca com perguntas de referência (lote 19)
+            operation.add_argument("--perguntas", type=Path, default=Path("data/avaliacao-busca/perguntas.json"))
+            operation.add_argument("--saida", type=Path, help="Pasta nova para guardar o relatório")
         if name == "adicionar":
             operation.add_argument("arquivo", type=Path)
             operation.add_argument("--titulo", help="Identificador lógico; reutilize para novas versões")
@@ -105,6 +108,18 @@ def main(argv: list[str] | None = None) -> int:
                     payload = library.documents()
                 elif args.operation == "buscar":
                     payload = library.search(args.consulta, limit=args.limite)
+                elif args.operation == "avaliar":
+                    from aliado.knowledge.evaluation import (
+                        evaluate_search,
+                        export_evaluation,
+                        load_questions,
+                    )
+
+                    if args.saida is not None and args.saida.exists():
+                        raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
+                    payload = evaluate_search(library, load_questions(args.perguntas))
+                    if args.saida is not None:
+                        payload = export_evaluation(payload, args.saida)
                 else:
                     payload = library.verify()
             print(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False))

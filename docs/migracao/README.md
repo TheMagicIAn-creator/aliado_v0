@@ -217,6 +217,19 @@ encontrou e corrigiu anotações longas sem vetor, um defeito que vinha do lote 
 antigas continuam fora do agente. Consulte a [spec 0018](../specs/0018-biblioteca-memoria-anexos.md),
 o [manifesto](lote-18.json) e a [validação](validacao-lote-18.md).
 
+## Lote 19 — qualidade da busca da biblioteca
+
+Não houve migração de código da origem. O lote trouxe:
+- palavras vazias ignoradas na busca por palavras e mais peso ao significado;
+- limite de trechos por documento;
+- a ficha de cada documento (título, autores, ano e DOI), conferida no próprio texto.
+
+A medição usa 16 perguntas de referência, que ficam fora do Git: os acertos passaram de 12
+para 13, com o ganho vindo das perguntas que citam o autor. As 27 fichas da biblioteca real
+foram preenchidas depois de uma cópia de segurança do catálogo, que só ganhou uma tabela.
+Consulte a [spec 0019](../specs/0019-qualidade-da-busca.md), o [manifesto](lote-19.json) e a
+[validação](validacao-lote-19.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

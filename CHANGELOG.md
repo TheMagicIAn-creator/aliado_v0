@@ -5,10 +5,14 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Lote 18, a partir dos apontamentos do pesquisador no uso real. A versão 0.2.0 sai com a aba
-Ciência (lote 20), depois da busca (lote 19). Detalhes na [spec 0018](docs/specs/0018-biblioteca-memoria-anexos.md).
+Lotes 18 e 19, a partir dos apontamentos do pesquisador no uso real. A versão 0.2.0 sai com a
+aba Ciência (lote 20). Detalhes nas specs [0018](docs/specs/0018-biblioteca-memoria-anexos.md)
+e [0019](docs/specs/0019-qualidade-da-busca.md).
 
 ### Adicionado
+
+- **Ficha do documento:** título, autores, ano e DOI, lidos do começo do texto pelo modelo mais barato e conferidos no próprio texto. A ficha fica marcada "inferida" até você editá-la. O botão **Completar fichas** cria as que faltam. As fontes e o catálogo mostram "Baschel et al., 2018", e "segundo Baschel" acha o artigo.
+- **Medição da busca:** `aliado biblioteca avaliar` mede, com perguntas de referência, os acertos, a posição e a diversidade dos resultados.
 
 - **Perfil na memória:** o que você conta sobre si (nome, instituição, pesquisa) vale em todas as conversas. O revisor guarda até 8 anotações por troca.
 - **Memória de conversas:** cada troca fica guardada no computador, e até 3 trocas de outras conversas, parecidas com o assunto, entram como contexto. As conversas que já existiam são indexadas na primeira abertura.
@@ -17,6 +21,10 @@ Ciência (lote 20), depois da busca (lote 19). Detalhes na [spec 0018](docs/spec
 
 ### Alterado
 
+- **Busca da biblioteca:**
+  - a parte por palavras ignora palavras vazias em português e em inglês e pesa metade da parte por significado;
+  - cada documento ocupa no máximo 2 dos 6 resultados (4 se for citado na pergunta).
+  - Nas 16 perguntas de referência, os acertos passaram de 12 para 13 e o MRR, de 0,66 para 0,78.
 - **Resposta sem citação** no modo biblioteca: aparece com o aviso "Esta resposta não cita trechos dos seus documentos" e entra no histórico. Citação inventada continua bloqueada.
 - **Fontes e memória** abrem numa janela sobre a resposta, que fecha com Esc ou com um clique fora. O painel lateral saiu.
 - **Anexos:** fila de até 3 cartões com contador; os que dão certo somem em 6 s.

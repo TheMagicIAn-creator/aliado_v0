@@ -2,8 +2,8 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.1.0**, com as mudanças do lote 18 ainda não lançadas. Tudo está em
-[CHANGELOG.md](CHANGELOG.md).
+especialização. Versão **0.1.0**, com as mudanças dos lotes 18 e 19 ainda não lançadas. Tudo
+está em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
 
@@ -72,8 +72,8 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 - **Documentos:**
   - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página.
   - Os envios aparecem numa fila de até 3 cartões, com contador. Os que dão certo somem em 6 s.
-  - Cada documento ganha uma ficha de leitura.
-  - Com **Usar biblioteca**, o agente recebe a lista dos documentos, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
+  - Cada documento ganha uma ficha de leitura na memória e uma **ficha do documento** (título, autores, ano e DOI), conferida no próprio texto e editável na aba **Biblioteca**. **Completar fichas** cria as que faltam.
+  - Com **Usar biblioteca**, o agente recebe a lista dos documentos, com autor e ano, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
 - **Memória** (`data/memoria/`):
   - O que você diz ou corrige vale na hora; o que o agente deduz fica marcado como "inferida".
   - O que você conta sobre si vira **perfil** e vale em todas as conversas.
@@ -101,7 +101,11 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 .\.venv\Scripts\python.exe -m aliado biblioteca adicionar "C:\caminho\referencia.pdf" --biblioteca data/bibliotecas/principal
 .\.venv\Scripts\python.exe -m aliado biblioteca buscar "tempo médio de reparo" --biblioteca data/bibliotecas/principal
 .\.venv\Scripts\python.exe -m aliado biblioteca verificar --biblioteca data/bibliotecas/principal
+.\.venv\Scripts\python.exe -m aliado biblioteca avaliar --biblioteca data/bibliotecas/principal --saida data/resultados/busca-001
 ```
+
+`avaliar` mede a busca com as perguntas de referência de `data/avaliacao-busca/perguntas.json`,
+que ficam fora do Git. Veja o [guia da biblioteca](docs/biblioteca/uso.md).
 
 ## Confiabilidade e FMECA
 
@@ -169,6 +173,6 @@ desenvolvimento e não entram no pacote.
 - Reconferir nos PDFs as taxas de falha e as notas da FMECA, quando entrarem na biblioteca.
 - Tempos de reparo e disponibilidade só entram com fonte.
 - No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso.
-- A busca da biblioteca favorece documentos no idioma da pergunta, e o catálogo mostra o nome do arquivo, sem autor nem ano. É o lote 19; veja a [validação do lote 18](docs/migracao/validacao-lote-18.md).
+- A busca ainda erra algumas perguntas de conteúdo em outro idioma: 3 das 16 perguntas de referência. A tradução da pergunta ficou para depois. Veja a [validação do lote 19](docs/migracao/validacao-lote-19.md).
 - A aba **Ciência** da interface ainda está "em breve": entra no lote 20, depois da busca.
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

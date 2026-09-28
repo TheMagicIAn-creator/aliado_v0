@@ -103,8 +103,8 @@ de começar. A 0.2.0 sai no fim do lote 20.
 
 | Lote | Entrega | Situação |
 |---|---|---|
-| 18 | Biblioteca com catálogo e resposta sem citação exibida com aviso; memória com perfil e memória de conversas; fila de anexos; fontes numa janela sobre a resposta | Concluído em 28/09/2026, aguardando o commit do pesquisador |
-| 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | A combinar |
+| 18 | Biblioteca com catálogo e resposta sem citação exibida com aviso; memória com perfil e memória de conversas; fila de anexos; fontes numa janela sobre a resposta | Concluído em 28/09/2026 (commit `f23855d`) |
+| 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | Concluído em 28/09/2026, aguardando o commit |
 | 20 | Aba Ciência completa: cálculos, FMECA e GPVS pela interface, com gráficos, tabelas e exploradores interativos | A combinar |
 
 ### Decisões de 28/09/2026
@@ -117,6 +117,15 @@ de começar. A 0.2.0 sai no fim do lote 20.
   - Entram três correções: ignorar palavras vazias e dar mais peso ao significado, a ficha de cada documento e um limite de trechos por documento.
   - A tradução da pergunta para o inglês fica de fora, e só volta a ser considerada depois da medição.
   - A melhora é medida com perguntas de referência, antes e depois.
+  - Os parâmetros da busca são fixados antes de medir, e as fichas da biblioteca real são preenchidas depois de uma cópia de segurança do catálogo.
+
+### Resultado do lote 19
+
+Nas 16 perguntas de referência, os acertos passaram de 12 para 13 e o MRR, de 0,66 para 0,78. O
+ganho veio das fichas: as 4 perguntas que citam o autor passaram a acertar, com MRR de 0,40 para
+0,88. As perguntas de conteúdo ficaram em 9 de 12. Continuam fora dos 6 resultados três
+perguntas de conteúdo em outro idioma, e é aí que a tradução da pergunta poderia ajudar. Veja a
+[validação do lote 19](migracao/validacao-lote-19.md).
 
 ## Fica para a v1
 
