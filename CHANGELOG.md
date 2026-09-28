@@ -5,11 +5,20 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Lotes 18 e 19, a partir dos apontamentos do pesquisador no uso real. A versão 0.2.0 sai com a
-aba Ciência (lote 20). Detalhes nas specs [0018](docs/specs/0018-biblioteca-memoria-anexos.md)
-e [0019](docs/specs/0019-qualidade-da-busca.md).
+Lotes 18 a 20, a partir dos apontamentos do pesquisador no uso real. A versão 0.2.0 sai com o
+lote 21 (GPVS pela interface). Detalhes nas specs [0018](docs/specs/0018-biblioteca-memoria-anexos.md),
+[0019](docs/specs/0019-qualidade-da-busca.md) e [0020](docs/specs/0020-aba-ciencia.md).
 
 ### Adicionado
+
+- **Aba Ciência:**
+  - resultados com gráficos e tabelas;
+  - explorador do limiar (k de 1 a 24 e percentil, só na calibração);
+  - explorador de alarme e detecção (k, percentil e m, marcado como exploração pós-teste pelo M14). Com os parâmetros canônicos, ele repete a avaliação de 27/09;
+  - confiabilidade que recalcula sem gravar e salva o cenário só com fonte e hipóteses;
+  - FMECA com as duas ordens.
+  - Os gráficos são em SVG próprio, sem dependência nova.
+- **`aliado web --resultados --gpvs`** para escolher as pastas da aba Ciência.
 
 - **Ficha do documento:** título, autores, ano e DOI, lidos do começo do texto pelo modelo mais barato e conferidos no próprio texto. A ficha fica marcada "inferida" até você editá-la. O botão **Completar fichas** cria as que faltam. As fontes e o catálogo mostram "Baschel et al., 2018", e "segundo Baschel" acha o artigo.
 - **Medição da busca:** `aliado biblioteca avaliar` mede, com perguntas de referência, os acertos, a posição e a diversidade dos resultados.

@@ -80,8 +80,10 @@ referências de métodos, unidades, resultados e limitações; CSV contém curva
 Markdown apresenta parâmetros, fontes e hipóteses. A exportação não altera o JSON
 de entrada. A correção das fontes informadas não é verificada automaticamente.
 
-O chat pode ajudar a redigir o cenário e explicar resultados fornecidos. Ele não
-chama este serviço sozinho. O núcleo geral não tem horizonte padrão; os 20 anos
+Desde o lote 20, a aba **Ciência** da interface chama este mesmo serviço. Os controles
+exploram sem gravar, e salvar exige fonte e hipóteses, numa pasta nova. O chat pode
+ajudar a redigir o cenário e explicar resultados fornecidos. Ele não chama este
+serviço sozinho. O núcleo geral não tem horizonte padrão; os 20 anos
 da pesquisa e eventuais mudanças pelo chat orientam o cenário da especialização.
 No lote 07, Rodolfo escolheu as taxas e a análise isolada dos componentes dos
 inversores, em duas bases temporais; não há topologia de sistema nesses cenários.

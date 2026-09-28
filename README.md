@@ -2,7 +2,7 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.1.0**, com as mudanças dos lotes 18 e 19 ainda não lançadas. Tudo
+especialização. Versão **0.1.0**, com as mudanças dos lotes 18 a 20 ainda não lançadas. Tudo
 está em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
@@ -14,7 +14,8 @@ está em [CHANGELOG.md](CHANGELOG.md).
 - **Cálculos de confiabilidade** por cenário explícito e a **FMECA** dos inversores.
 - **Experimento de detecção** Denso × AE-LSTM no GPVS-Faults, reproduzível e com relatórios.
 
-Cálculos, FMECA e experimento rodam por comando próprio; o chat não os executa sozinho.
+Cálculos, FMECA e experimento rodam por comando próprio ou pela aba **Ciência** da interface; o
+chat não os executa sozinho. O treino e a avaliação do GPVS pela interface entram no lote 21.
 
 ## Instalação
 
@@ -82,6 +83,13 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - A aba **Memória** mostra histórico, edição, revogação e conflitos para você decidir. Nada é apagado.
   - `data/` fica fora do Git e sem cópia automática. Copie `data/memoria` e `data/conversas` se quiser guardá-los.
 - **Busca na web:** ligue **Buscar na web**. As fontes da web aparecem como **[Wn]**, separadas dos seus documentos. Na aba Memória, **Conferir na web** checa uma anotação.
+- **Ciência:** os números vêm do serviço científico, e o navegador só desenha.
+  - **Resultados:** os relatórios de `data/resultados/`, com gráficos (curvas, escores de calibração) e tabelas.
+  - **Limiar:** k de 1 a 24 e percentil sobre os escores reais da calibração, com o erro das 24 variáveis de uma janela. Não usa o teste.
+  - **Alarme e detecção:** k, percentil e m sobre o teste e os ensaios com falha, com a linha do tempo de cada ensaio. É **exploração pós-teste, não canônica (M14)**, e mostra os valores oficiais ao lado. Com k = 5, p99 e m = 3, repete a avaliação de 27/09.
+  - **Confiabilidade:** λ, horas por ano, base e horizonte recalculam R(t) e F(t) sem gravar nada. Para salvar o cenário numa pasta nova, fonte e hipóteses são obrigatórias. Aceita também qualquer cenário em JSON.
+  - **FMECA:** a tabela, as ordens pelo NPR e pela taxa e o relatório numa pasta nova.
+  - Os exploradores do GPVS precisam de `data/gpvs/` e das rodadas `gpvs-modelos-002` e `gpvs-avaliacao-001`. O erro por variável fica em `data/ciencia/`, e `--resultados` e `--gpvs` mudam essas pastas.
 - **Custo:** cada resposta chama o provedor, e a busca na web pode ter custo à parte no Google. O registro `data/uso/chamadas.jsonl` guarda data, modelo, tokens e número de buscas, sem o texto.
 
 ## Linha de comando
@@ -174,5 +182,5 @@ desenvolvimento e não entram no pacote.
 - Tempos de reparo e disponibilidade só entram com fonte.
 - No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso.
 - A busca ainda erra algumas perguntas de conteúdo em outro idioma: 3 das 16 perguntas de referência. A tradução da pergunta ficou para depois. Veja a [validação do lote 19](docs/migracao/validacao-lote-19.md).
-- A aba **Ciência** da interface ainda está "em breve": entra no lote 20, depois da busca.
+- Preparar, treinar e avaliar o GPVS pela aba **Ciência** fica para o lote 21. Uma nova avaliação vai exigir confirmação e ficar registrada como nova consulta ao teste (M14).
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

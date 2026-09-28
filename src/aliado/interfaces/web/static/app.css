@@ -27,6 +27,8 @@
   --rail: 64px;
   --drawer: 264px;
   --sources: 300px;
+  --chart-a: #2f6fb5;
+  --chart-b: #c2522f;
 }
 
 :root[data-theme="dark"] {
@@ -51,6 +53,8 @@
   --danger-bg: #401818;
   --danger-text: #f7c1c1;
   --focus: 0 0 0 3px rgba(93, 202, 165, 0.3);
+  --chart-a: #7ab3ef;
+  --chart-b: #f0997b;
 }
 
 * { box-sizing: border-box; }
@@ -356,6 +360,52 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
          padding: 10px 16px; border-radius: 10px; font-size: 13.5px; max-width: min(520px, 90vw); z-index: 10; }
 
 /* Telas estreitas: conversas e fontes abrem sobrepostas, sem espremer a resposta. */
+/* Aba Ciência (lote 20) */
+.science { overflow-y: auto; }
+.science-body { display: grid; gap: 16px; min-height: 0; }
+.science-body > .library-body { min-height: 60vh; }
+.science-output { display: grid; gap: 14px; }
+.science-h { font: 400 18px/1.3 var(--serif); margin: 6px 0 0; }
+.science-notice { font-weight: 500; }
+.note-ok { background: var(--accent-soft); color: var(--accent-text); }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 18px; align-items: end; }
+.control { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; color: var(--text-soft); }
+.control > span { grid-column: 1 / -1; }
+.control select, .control input[type="number"] { grid-column: 1 / -1; border: 1px solid var(--border-strong); border-radius: 8px;
+                                                 padding: 6px 8px; background: var(--surface); min-width: 0; }
+.control input[type="range"] { accent-color: var(--accent); min-width: 0; }
+.control output { font: 500 13px var(--mono); color: var(--text); min-width: 64px; text-align: right; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.metric { background: var(--surface-muted); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 2px; }
+.metric p { margin: 0; font-size: 12px; color: var(--text-soft); }
+.metric b { font: 500 20px/1.25 var(--sans); }
+.metric .muted { font-size: 12px; }
+.chart { width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-tick { font: 11px var(--sans); fill: var(--text-faint); }
+.chart-label { font: 12px var(--sans); fill: var(--text-soft); }
+.chart-line { fill: none; stroke-width: 1.8; }
+.chart-hline { stroke: var(--chart-b); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.chart-vline { stroke: var(--text-soft); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.chart-mark { fill: var(--chart-b); }
+.chart-mark.is-alarm { fill: var(--danger-text); }
+.chart-band { fill: var(--surface-muted); opacity: .8; }
+.chart-band.is-warn { fill: var(--warn-bg); }
+.chart-band.is-hot { fill: var(--danger-bg); opacity: .6; }
+.chart-bar { fill: var(--border-strong); }
+.chart-bar.is-hot { fill: var(--chart-b); }
+.table-wrap { overflow-x: auto; }
+.data-table { border-collapse: collapse; font-size: 13.5px; width: 100%; }
+.data-table th, .data-table td { border-bottom: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
+.data-table th { color: var(--text-soft); font-weight: 500; background: var(--surface-muted); }
+.science-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.science-form { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 6px; }
+.science-form input, .science-form textarea { border: 1px solid var(--border-strong); border-radius: 10px; padding: 8px 10px;
+                                              background: var(--surface); width: 100%; }
+.science-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--text-soft); }
+.mono, .science-pre { font-family: var(--mono); font-size: 12.5px; }
+.science-pre { white-space: pre-wrap; background: var(--surface-muted); border-radius: 8px; padding: 10px; margin: 0; }
+
 @media (max-width: 1100px) {
   .app, .app.drawer-closed { grid-template-columns: var(--rail) 0 minmax(0, 1fr); }
   .app .drawer { display: none; }

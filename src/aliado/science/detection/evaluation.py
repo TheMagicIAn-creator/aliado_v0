@@ -119,10 +119,14 @@ def load_training(folder: str | Path) -> TrainedDetectors:
     return TrainedDetectors(folder, config, frozen, models, thresholds)
 
 
-def score_segment(kind: str, model, scaled: np.ndarray, sequence: int, ks) -> dict[int, np.ndarray]:
-    """Escores de um trecho contínuo; no AE-LSTM, a 1ª janela só se repete no início do trecho."""
+def segment_errors(kind: str, model, scaled: np.ndarray, sequence: int) -> np.ndarray:
+    """Erro por variável de um trecho contínuo; no AE-LSTM, a 1ª janela só se repete no início do trecho."""
     inputs = np.asarray(scaled, dtype=np.float32) if kind == "denso" else sequences_from_flow(scaled, sequence)
-    errors = feature_errors(model, inputs)
+    return feature_errors(model, inputs)
+
+
+def score_segment(kind: str, model, scaled: np.ndarray, sequence: int, ks) -> dict[int, np.ndarray]:
+    errors = segment_errors(kind, model, scaled, sequence)
     return {int(k): top_k_scores(errors, k) for k in ks}
 
 

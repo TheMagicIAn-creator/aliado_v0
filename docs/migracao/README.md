@@ -230,6 +230,16 @@ foram preenchidas depois de uma cópia de segurança do catálogo, que só ganho
 Consulte a [spec 0019](../specs/0019-qualidade-da-busca.md), o [manifesto](lote-19.json) e a
 [validação](validacao-lote-19.md).
 
+## Lote 20 — aba Ciência
+
+Não houve migração de código da origem. A aba mostra os resultados e traz exploradores com os
+modelos congelados do lote 14. Eles reaproveitam as funções da avaliação canônica e repetem
+exatamente a avaliação de 27/09 com os parâmetros oficiais. A aba também roda confiabilidade e
+FMECA pela interface. `data/resultados` não é alterado: o que a aba grava vai sempre para uma
+pasta nova, e o erro por variável fica em `data/ciencia/`. O GPVS pela interface fica para o
+lote 21. Consulte a [spec 0020](../specs/0020-aba-ciencia.md), o [manifesto](lote-20.json) e a
+[validação](validacao-lote-20.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

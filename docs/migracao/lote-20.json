@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-28",
+  "batch": "20",
+  "status": "implemented_locally_pending_researcher_commit",
+  "spec": "docs/specs/0020-aba-ciencia.md",
+  "base_commit": "fb366c4",
+  "target_version": "0.2.0 (com o lote 21, GPVS pela interface)",
+  "decisions": {
+    "split": "lote 20 (resultados, exploradores, confiabilidade, FMECA) e lote 21 (GPVS pela interface)",
+    "alarm_explorer": "usa teste e ensaios com falha, com faixa 'exploração pós-teste, não canônica (M14)'",
+    "new_gpvs_evaluation_lot_21": "permitida com aviso, confirmação explícita e registro da consulta; não canônica",
+    "reliability": "explorar livre sem gravar; salvar exige fonte e hipóteses",
+    "charts": "SVG próprio, sem dependência nova"
+  },
+  "canonical_reproduction": {
+    "models_and_seeds": 10,
+    "exact": true,
+    "checked": [
+      "limiar",
+      "detectados",
+      "atraso_mediano_ms",
+      "sensibilidade_media",
+      "alarmes no teste saudável",
+      "alarmes no pré-falha",
+      "detecção e atraso dos 14 ensaios"
+    ],
+    "sensitivity_grids": {
+      "confirmacao": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "k": [
+        5,
+        10,
+        20
+      ],
+      "seed": 42,
+      "exact": true
+    }
+  },
+  "error_cache": {
+    "path": "data/ciencia/erros-<hash do treino>.npz",
+    "size_mb_accept": 8.5,
+    "prepare_seconds": 2.6
+  },
+  "acceptance": {
+    "paid_calls": 0,
+    "server": "127.0.0.1:8769, dados e cópia dos resultados em tmp/lote-20",
+    "threshold_denso_s42": {
+      "limiar": 3.7338,
+      "posicao": "191 de 192",
+      "falso_alarme_esperado": "1,04%"
+    },
+    "alarm_denso_s42_canonical": {
+      "detectados": "10 de 14",
+      "atraso_mediano_s": 2.04,
+      "falsos_alarmes_teste": 0,
+      "limite_superior_por_hora": 2050,
+      "alarmes_pre_falha": 0
+    },
+    "alarm_denso_s42_m1": {
+      "detectados": 13,
+      "atraso_mediano_s": 0.839,
+      "falsos_alarmes_teste": 2,
+      "alarmes_pre_falha": 51,
+      "matches_reported_grid": true
+    },
+    "reliability": {
+      "igbt_operacao_F1": 0.0351,
+      "igbt_operacao_F20": 0.511,
+      "ccb_calendario_F1": 0.428
+    },
+    "fmeca_orders_match_fmeca_001": true,
+    "narrow_319px_no_horizontal_overflow": true,
+    "real_results_untouched": true
+  },
+  "defects_fixed": [
+    "legenda sobre a curva nos gráficos de R(t) e F(t)",
+    "mensagens com data/resultados fixo, mesmo com --resultados; agora o caminho real",
+    "nome da pasta do cenário cortado no meio de uma palavra",
+    "porcentagem 99,6% exibida como 100%; agora 3 algarismos",
+    "linha do tempo achatada pelos escores do pós-falha; escala até 4× o limiar",
+    "rótulos fracionados no eixo das janelas"
+  ],
+  "validation": {
+    "pytest_passed": 362,
+    "new_tests": 8,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ],
+    "git_status_matches_manifest": true,
+    "unexpected_changes": [],
+    "previous_hash_method_check_against_lote_19": {
+      "src/aliado/interfaces/web/app.py": true,
+      "src/aliado/cli.py": true,
+      "src/aliado/interfaces/web/static/app.js": true,
+      "src/aliado/interfaces/web/static/app.css": true,
+      "src/aliado/interfaces/web/static/index.html": true,
+      ".claude/launch.json": true,
+      "README.md": true,
+      "CHANGELOG.md": true,
+      "AGENTS.md": true,
+      "docs/roteiro-v0.md": true,
+      "docs/migracao/README.md": true
+    }
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Pesquisador decide o commit; a 0.2.0 sai com o lote 21.",
+  "public_files": [
+    {
+      "path": "src/aliado/science/detection/evaluation.py",
+      "sha256": "cbbffa9fe0241b2295e5321525105a8363ef26a94fd34722b5286deb14638691",
+      "previous_sha256": "a8d882c16d248b4561bf712794032cddc2506d64a3e2114365028d9c31cb28fa",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "1c3265697afd987bf6606c41efa482ee29bf994786d79de332b48945220fbd57",
+      "previous_sha256": "168c006d1168641b1136286dacba0f932b418482855499e884c9763f4bc18204",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "638fe3fe39db9d0072165eb92a5c59ec8a52d8fd64989af7ce16112f4e3a4f18",
+      "previous_sha256": "fdd25aa571cc2025ff18f9f86b2ea761d107e3466ac6710a4524d3406823801e",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "bfabb790a80a559184a6b518df8f3bac0fd44625b5f28f4e10ebc6ce56384450",
+      "previous_sha256": "8c5297cbaef22c199db9d60b4413a61331f27027547e31b2af847f22fafafb84",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "6631182b78bd536b6a9b9d9234187697a47f153144d4de4d370540fc5c506959",
+      "previous_sha256": "01fa23338ca8fc3ea4e764562d6ef57d060aaa76d0f686030cfe2056f8df102f",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "adf4ebca563d571d2295c65003af3e01709d0cce767ac6bb15382f42bebb6c9f",
+      "previous_sha256": "b3f73acb6dfa88447354c49d920ac2e519a14cb378c74498787cb6c18356d578",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/launch.json",
+      "sha256": "8878486f46f27e1f28342b5d90b52e6a3baa26901d794ca490c33fa8d5f2aa69",
+      "previous_sha256": "201df10ae7ef065f2c67cfdcd4d69311f73a66103022c43daa54a5b9beedea28",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ef3b0b020f87439a6b8da77ee131098ed27bfec9993037293634fa745daec7d9",
+      "previous_sha256": "11d855f0be75b6c8c1cf2e4325d91eb4361e32b40889528ce6f5faa6a8b4b042",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "667541fa559aee37d175af6558073723b7159bb3c4a2591aeb0629419c8fc47d",
+      "previous_sha256": "17ce7c07283d96bc9d277d3337a25627e7dac98263660847898fa3c6a1d2acea",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "601b6f0618268f02d05a8295209261a6b720a18068a73c6628ada3e103816a5b",
+      "previous_sha256": "b0536ee09c7d24ade125f5aca4eb2b3f2bcab6868c5413c969b26fcd4624be59",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "34c63ab65210085115628dd0e36f03556a25e15e13c4adc9f339d404b0bc19f1",
+      "previous_sha256": "f0a3d234e9e3d6f431a8908cc62c7c95c5e29b6d66216bf3b980e5562c1eb809",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "fd64f97195cccc5093225b15540a422e47f7fa9e6e306c908e795411d5d928b1",
+      "previous_sha256": "c09f0174fde3655fb259d337d1fec9e1b19615aa408b9ff6985fa780db7620e0",
+      "status": "modified"
+    },
+    {
+      "path": "docs/ciencia/confiabilidade.md",
+      "sha256": "23e0349af3283c7a0989e359c9340973950af290c6a5ad40ca43f7cb861be196",
+      "previous_sha256": "f3370b9cba545a804e8a3647dfd7a67aec9ccb87cb92c9d58b9dc03a1ff71dac",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/explorer.py",
+      "sha256": "8acc3dabc520fd9fca3aba1c987f687ca3a964496ca076192e56ad8c89dfe912",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/science.py",
+      "sha256": "11350b4b9b14d9baf40d440febce5380122b26f5aa45e1a7b59714b00d7ffb6b",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/ciencia.js",
+      "sha256": "cf0389745fc8203ce485029c69b9b5d5850b3d806a0111625a10d83036385903",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_science_tab.py",
+      "sha256": "9c0f98c3c6c845c8c0d362979619ffc619f590ca92f289394293b404a0117aed",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0020-aba-ciencia.md",
+      "sha256": "66a540b41507be8ef5ef2dc222105ada170bec663999368798b7343134f375d0",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-20.md",
+      "sha256": "ca93700de60a80ab27f0221a67e08139cf2451c6fd5c8f2bfc18f0e3771b9c01",
+      "status": "new"
+    }
+  ]
+}

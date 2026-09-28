@@ -10,6 +10,7 @@
   <script defer src="/static/vendor/katex/katex.min.js"></script>
   <script defer src="/static/vendor/katex/auto-render.min.js"></script>
   <script defer src="/static/app.js"></script>
+  <script defer src="/static/ciencia.js"></script>
 </head>
 <body>
 <div class="app" id="app">
@@ -42,7 +43,7 @@
     <button class="rail-item" id="nav-library" type="button" title="Biblioteca">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h4v16H4zM10 4h4v16h-4zM16.5 5.5l3.6.9-3.3 13.6-3.6-.9z"/></svg>
       <span class="rail-label">Biblioteca</span></button>
-    <button class="rail-item is-soon" type="button" title="Ciência: lotes 13 a 15" aria-disabled="true">
+    <button class="rail-item" id="nav-science" type="button" title="Ciência">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 16v-5M11 16V6M16 16v-8M20 16v-3"/></svg>
       <span class="rail-label">Ciência</span></button>
     <button class="rail-item" id="nav-memory" type="button" title="Memória">
@@ -117,6 +118,18 @@
     </header>
     <div class="filters" id="memory-filters" role="tablist" aria-label="Filtrar anotações"></div>
     <ul class="memory-list" id="memory-list"></ul>
+  </section>
+
+  <section class="library science" id="science-view" hidden aria-labelledby="science-title">
+    <header class="library-head">
+      <div>
+        <h1 id="science-title">Ciência</h1>
+        <p class="muted">Resultados, exploradores e cálculos. Os números vêm do serviço científico; os resultados
+          gravados nunca são sobrescritos.</p>
+      </div>
+    </header>
+    <div class="filters" id="science-tabs" role="tablist" aria-label="Seções da Ciência"></div>
+    <div class="science-body" id="science-body"></div>
   </section>
 
   <dialog class="dialog" id="remember-dialog" aria-labelledby="remember-title">

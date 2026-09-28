@@ -28,6 +28,7 @@ from starlette.staticfiles import StaticFiles
 
 from aliado.interfaces.web.conversations import ConversationStore
 from aliado.interfaces.web.rendering import render_markdown
+from aliado.interfaces.web.science import science_routes
 from aliado.knowledge.metadata import reference
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.usage_log import record_usage
@@ -74,11 +75,18 @@ class WebSettings:
     checker: Callable[[dict], tuple[dict, object]] | None = None
     # Ficha do documento (lote 19): (título=, text=) -> (ficha conferida, resultado).
     card_extractor: Callable[..., tuple[dict, object]] | None = None
+    # Aba Ciência (lote 20): resultados, dados do GPVS e referências da pesquisa (FMECA e cenários).
+    results_dir: Path | None = None
+    gpvs_dir: Path = Path("data/gpvs")
+    reference_dir: Path = Path("docs/pesquisa-inversores")
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
         self.library_dir = Path(self.library_dir).resolve()
         self.usage_log = Path(self.usage_log or self.data_dir / "uso" / "chamadas.jsonl")
+        self.results_dir = Path(self.results_dir or self.data_dir / "resultados").resolve()
+        self.gpvs_dir = Path(self.gpvs_dir).resolve()
+        self.reference_dir = Path(self.reference_dir).resolve()
 
 
 class LocalOnly(BaseHTTPMiddleware):
@@ -617,6 +625,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/biblioteca/{doc}/{kind:str}", document, methods=["GET", "POST"]),
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
         Route("/api/memoria/{mid}/{acao}", memory_action, methods=["GET", "POST"]),
+        *science_routes(settings, worker, lock),
         Mount("/static", StaticFiles(directory=STATIC), name="static"),
     ]
     app = Starlette(routes=routes, middleware=[Middleware(LocalOnly, port=settings.port)])
@@ -624,7 +633,8 @@ def create_app(settings: WebSettings) -> Starlette:
     return app
 
 
-def default_settings(*, data_dir: Path, library_dir: Path, port: int) -> WebSettings:
+def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_dir: Path | None = None,
+                     gpvs_dir: Path = Path("data/gpvs")) -> WebSettings:
     """Gateway e biblioteca reais; o .env já deve ter sido carregado explicitamente."""
     from aliado.agent import Agent
     from aliado.knowledge.embeddings import LocalEncoder
@@ -658,4 +668,5 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int) -> WebSett
                        reviewer=lambda **kwargs: review_exchange(execute, **kwargs),
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
                        checker=lambda memory_: check_memory(execute, memory_),
-                       card_extractor=lambda **kwargs: extract_card(execute, **kwargs))
+                       card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
+                       results_dir=results_dir, gpvs_dir=gpvs_dir)

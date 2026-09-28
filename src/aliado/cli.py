@@ -60,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
     web.add_argument("--porta", type=int, default=8765)
     web.add_argument("--biblioteca", type=Path, default=Path("data/bibliotecas/principal"))
     web.add_argument("--dados", type=Path, default=Path("data"), help="Conversas e registro de uso")
+    web.add_argument("--resultados", type=Path, help="Resultados da aba Ciência (padrão: <dados>/resultados)")
+    web.add_argument("--gpvs", type=Path, default=Path("data/gpvs"), help="Dados do GPVS para os exploradores")
     web.add_argument("--sem-navegador", action="store_true", help="Não abrir o navegador")
     science = commands.add_parser("ciencia", help="Cálculos numéricos com cenário explícito")
     science_commands = science.add_subparsers(dest="operation", required=True)
@@ -273,7 +275,8 @@ def _serve_web(args) -> int:
         from aliado.interfaces.web.app import create_app, default_settings
     except ImportError as exc:
         raise ImportError("Instale o extra 'web' para usar a interface.") from exc
-    settings = default_settings(data_dir=args.dados, library_dir=args.biblioteca, port=args.porta)
+    settings = default_settings(data_dir=args.dados, library_dir=args.biblioteca, port=args.porta,
+                                results_dir=args.resultados, gpvs_dir=args.gpvs)
     url = f"http://127.0.0.1:{args.porta}"
     print(f"AL-IAdo em {url} (Ctrl+C encerra)", file=sys.stderr)
     if not settings.models:

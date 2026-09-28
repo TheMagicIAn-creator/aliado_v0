@@ -931,7 +931,9 @@ function showView(name) {
   $("chat-view").hidden = name !== "chat";
   $("library-view").hidden = name !== "library";
   $("memory-view").hidden = name !== "memory";
-  for (const [id, view] of [["nav-chats", "chat"], ["nav-library", "library"], ["nav-memory", "memory"]]) {
+  $("science-view").hidden = name !== "science";
+  for (const [id, view] of [["nav-chats", "chat"], ["nav-library", "library"], ["nav-memory", "memory"],
+    ["nav-science", "science"]]) {
     $(id).classList.toggle("is-active", view === name);
   }
 }

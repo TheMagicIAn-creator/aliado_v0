@@ -99,13 +99,14 @@ Progresso atual: **100%**. A soma dos pesos dos lotes concluídos dá o percentu
 ## Depois da v0.1.0: rumo à 0.2.0
 
 Os lotes partem dos apontamentos do pesquisador no uso real e continuam sendo combinados antes
-de começar. A 0.2.0 sai no fim do lote 20.
+de começar. A 0.2.0 sai no fim do lote 21.
 
 | Lote | Entrega | Situação |
 |---|---|---|
 | 18 | Biblioteca com catálogo e resposta sem citação exibida com aviso; memória com perfil e memória de conversas; fila de anexos; fontes numa janela sobre a resposta | Concluído em 28/09/2026 (commit `f23855d`) |
-| 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | Concluído em 28/09/2026, aguardando o commit |
-| 20 | Aba Ciência completa: cálculos, FMECA e GPVS pela interface, com gráficos, tabelas e exploradores interativos | A combinar |
+| 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | Concluído em 28/09/2026 (commit `fb366c4`) |
+| 20 | Aba Ciência: resultados com gráficos, exploradores do limiar e de alarme e detecção com os dados reais, confiabilidade e FMECA pela interface | Concluído em 28/09/2026, aguardando o commit |
+| 21 | GPVS pela interface: preparar, treinar e avaliar com progresso; nova avaliação com confirmação e registro da consulta ao teste (M14) | A combinar |
 
 ### Decisões de 28/09/2026
 
@@ -118,6 +119,9 @@ de começar. A 0.2.0 sai no fim do lote 20.
   - A tradução da pergunta para o inglês fica de fora, e só volta a ser considerada depois da medição.
   - A melhora é medida com perguntas de referência, antes e depois.
   - Os parâmetros da busca são fixados antes de medir, e as fichas da biblioteca real são preenchidas depois de uma cópia de segurança do catálogo.
+- **A aba Ciência foi dividida em dois lotes:** o 20 (resultados, exploradores, confiabilidade e FMECA) e o 21 (GPVS pela interface).
+- **Uma nova avaliação do GPVS pela interface é permitida com registro:** aviso, confirmação explícita e registro da consulta com data e configuração. Ela fica marcada como não canônica, e a oficial continua a de 27/09.
+- **Confiabilidade pela interface:** explorar é livre e não grava; salvar como cenário exige fonte e hipóteses.
 
 ### Resultado do lote 19
 

@@ -11,7 +11,7 @@ O lote 09 aprovado segue `docs/specs/0009-gemini-uso-real.md`; o lote 10,
 `docs/specs/0010-interface-local.md`; o lote 11, `docs/specs/0011-memoria-persistente.md`; o lote 12, `docs/specs/0012-busca-web.md`; o lote 13, `docs/specs/0013-gpvs-protocolo-m14.md`;
 o lote 14, `docs/specs/0014-autoencoders-limiar.md`; o lote 15, `docs/specs/0015-avaliacao-m13.md`; o lote 16, `docs/specs/0016-fmeca.md`; o lote 17,
 `docs/specs/0017-lancamento.md`; o lote 18, `docs/specs/0018-biblioteca-memoria-anexos.md`;
-e o lote 19, `docs/specs/0019-qualidade-da-busca.md`.
+o lote 19, `docs/specs/0019-qualidade-da-busca.md`; e o lote 20, `docs/specs/0020-aba-ciencia.md`.
 Os lotes seguintes
 seguem o `docs/roteiro-v0.md`, e cada um é combinado antes de começar.
 O mapa e a proveniência da migração ficam em `docs/migracao/`.
@@ -20,7 +20,7 @@ O mapa e a proveniência da migração ficam em `docs/migracao/`.
   o mestrado é uma especialização, isolada do núcleo geral.
 - Trabalhe em pequenos lotes. Explique propósito e arquivos envolvidos antes
   das alterações e apresente os resultados e testes para revisão do usuário.
-- Foram autorizados os planos dos lotes 01–07 e 09–19 e as correções do lote 08 na conversa com o pesquisador.
+- Foram autorizados os planos dos lotes 01–07 e 09–20 e as correções do lote 08 na conversa com o pesquisador.
   Pela decisão dele, nenhum commit foi feito antes da v0.1.0; depois dela, os commits continuam sendo dele.
   Combine qualquer lote posterior com o usuário antes de avançar.
 - Commit, push, PR, merge, publicação e exclusões devem ser discutidos com o
