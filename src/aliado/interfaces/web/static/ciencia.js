@@ -1,137 +1,40 @@
 "use strict";
 
-/* Aba Ciência (lote 20): resultados, exploradores do GPVS, confiabilidade e FMECA.
-   Todo número vem do serviço científico no servidor; aqui só se desenha, em SVG próprio. */
+/* Aba Ciência (lotes 20 e 23), organizada pelas perguntas: o resultado primeiro e as ferramentas
+   no fim. Todo número vem do servidor; aqui só se desenha, com os gráficos de graficos.js. As telas
+   mostram dados em palavras: a avaliação oficial é a de 27/09/2026, e os números são os do treino de
+   referência dela. Os controles internos do protocolo ficam no servidor e nos arquivos. */
 
-const science = { tab: "resultados", status: null, options: null, timer: null, result: null };
-const SCIENCE_TABS = [["resultados", "Resultados"], ["limiar", "Limiar"], ["alarme", "Alarme e detecção"],
-  ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["rodar", "Rodar GPVS"]];
-const SVGNS = "http://www.w3.org/2000/svg";
-
-/* Formatação */
-function num(value, digits = 3) {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  const abs = Math.abs(value);
-  if (abs !== 0 && (abs < 1e-3 || abs >= 1e6)) return value.toExponential(2).replace(".", ",");
-  return Number(value).toLocaleString("pt-BR", { maximumSignificantDigits: digits });
-}
-function pct(value, digits = 3) { return value === null || value === undefined ? "—" : `${num(100 * value, digits)}%`; }
-function seconds(ms) { return ms === null || ms === undefined ? "—" : `${num(ms / 1000, 3)} s`; }
-
-/* SVG */
-function svg(tag, attrs = {}, ...children) {
-  const node = document.createElementNS(SVGNS, tag);
-  for (const [key, value] of Object.entries(attrs)) if (value !== undefined && value !== null) node.setAttribute(key, value);
-  for (const child of children) if (child !== null && child !== undefined) node.append(child);
-  return node;
-}
-
-function ticks(min, max, count = 5) {
-  if (min === max) return [min];
-  const step = (max - min) / (count - 1);
-  return Array.from({ length: count }, (_, i) => min + i * step);
-}
-
-/* Gráfico de linhas com eixos; faixas verticais, linhas horizontais e marcas são opcionais. */
-function chart({ series, xLabel = "", yLabel = "", width = 680, height = 250, yMin, yMax, xMin, xMax,
-  bands = [], hLines = [], vLines = [], marks = [], label }) {
-  // Com mais de uma série, a legenda ganha uma faixa própria acima da área do gráfico.
-  const pad = { left: 56, right: 14, top: series.length > 1 ? 32 : 14, bottom: 38 };
-  const xs = series.flatMap((s) => s.points.map((p) => p[0]));
-  const ys = series.flatMap((s) => s.points.map((p) => p[1])).concat(hLines.map((h) => h.y));
-  const x0 = xMin ?? Math.min(...xs), x1 = xMax ?? Math.max(...xs);
-  const y0 = yMin ?? Math.min(0, ...ys), y1 = yMax ?? (Math.max(...ys) * 1.05 || 1);
-  const sx = (x) => pad.left + (width - pad.left - pad.right) * (x - x0) / ((x1 - x0) || 1);
-  const sy = (y) => height - pad.bottom - (height - pad.top - pad.bottom) * (Math.min(Math.max(y, y0), y1) - y0) / ((y1 - y0) || 1);
-  const root = svg("svg", { viewBox: `0 0 ${width} ${height}`, class: "chart", role: "img", "aria-label": label || yLabel });
-  for (const band of bands) {
-    root.append(svg("rect", { x: sx(band.from), y: pad.top, width: Math.max(1, sx(band.to) - sx(band.from)),
-      height: height - pad.top - pad.bottom, class: `chart-band ${band.class || ""}` }, svg("title", {}, band.label || "")));
-  }
-  for (const value of ticks(y0, y1)) {
-    root.append(svg("line", { x1: pad.left, x2: width - pad.right, y1: sy(value), y2: sy(value), class: "chart-grid" }),
-      svg("text", { x: pad.left - 6, y: sy(value) + 4, class: "chart-tick", "text-anchor": "end" }, num(value)));
-  }
-  const whole = xs.every(Number.isInteger);  // janelas e anos inteiros: rótulos sem fração
-  for (const raw of ticks(x0, x1)) {
-    const value = whole ? Math.round(raw) : raw;
-    root.append(svg("text", { x: sx(value), y: height - pad.bottom + 16, class: "chart-tick", "text-anchor": "middle" }, num(value)));
-  }
-  root.append(svg("text", { x: (pad.left + width - pad.right) / 2, y: height - 4, class: "chart-label", "text-anchor": "middle" }, xLabel),
-    svg("text", { x: 12, y: pad.top + (height - pad.top - pad.bottom) / 2, class: "chart-label", "text-anchor": "middle",
-      transform: `rotate(-90 12 ${pad.top + (height - pad.top - pad.bottom) / 2})` }, yLabel));
-  for (const line of vLines) {
-    root.append(svg("line", { x1: sx(line.x), x2: sx(line.x), y1: pad.top, y2: height - pad.bottom, class: `chart-vline ${line.class || ""}` },
-      svg("title", {}, line.label || "")));
-  }
-  for (const item of series) {
-    const d = item.points.map((p, i) => `${i ? "L" : "M"}${sx(p[0]).toFixed(1)} ${sy(p[1]).toFixed(1)}`).join("");
-    root.append(svg("path", { d, class: "chart-line", style: `stroke: ${item.color || "var(--chart-a)"}` }, svg("title", {}, item.label || "")));
-  }
-  for (const line of hLines) {
-    root.append(svg("line", { x1: pad.left, x2: width - pad.right, y1: sy(line.y), y2: sy(line.y), class: `chart-hline ${line.class || ""}` }),
-      svg("text", { x: width - pad.right - 4, y: sy(line.y) - 5, class: "chart-tick", "text-anchor": "end" }, line.label || ""));
-  }
-  for (const mark of marks) {
-    root.append(svg("circle", { cx: sx(mark.x), cy: sy(mark.y), r: mark.r || 3.2, class: `chart-mark ${mark.class || ""}` },
-      svg("title", {}, mark.label || "")));
-  }
-  if (series.length > 1) {
-    const legend = svg("g", { class: "chart-legend" });
-    series.forEach((item, i) => legend.append(
-      svg("rect", { x: pad.left + i * 190, y: 10, width: 14, height: 3, style: `fill: ${item.color}` }),
-      svg("text", { x: pad.left + 20 + i * 190, y: 15, class: "chart-tick" }, item.label)));
-    root.append(legend);
-  }
-  return root;
-}
-
-/* Barras verticais (erro por variável) ou horizontais (rankings da FMECA). */
-function bars({ values, labels, highlight = new Set(), width = 680, height = 190, label, horizontal = false, unit = "" }) {
-  const root = svg("svg", { viewBox: `0 0 ${width} ${horizontal ? 34 * values.length + 16 : height}`, class: "chart",
-    role: "img", "aria-label": label || "" });
-  const max = Math.max(...values, 1e-12);
-  if (horizontal) {
-    values.forEach((value, i) => {
-      const w = (width - 230) * value / max;
-      root.append(svg("text", { x: 0, y: 34 * i + 22, class: "chart-tick" }, labels[i]),
-        svg("rect", { x: 170, y: 34 * i + 8, width: Math.max(2, w), height: 20, rx: 3, class: highlight.has(i) ? "chart-bar is-hot" : "chart-bar" },
-          svg("title", {}, `${labels[i]}: ${num(value)}${unit}`)),
-        svg("text", { x: 176 + w, y: 34 * i + 22, class: "chart-tick" }, `${num(value)}${unit}`));
-    });
-    return root;
-  }
-  const slot = (width - 20) / values.length;
-  values.forEach((value, i) => {
-    const h = Math.max(2, (height - 40) * value / max);
-    root.append(svg("rect", { x: 10 + i * slot + 2, y: height - 26 - h, width: slot - 4, height: h, rx: 2,
-      class: highlight.has(i) ? "chart-bar is-hot" : "chart-bar" }, svg("title", {}, `${labels[i]}: ${num(value)}`)));
-  });
-  root.append(svg("text", { x: 10, y: height - 8, class: "chart-tick" }, label || ""));
-  return root;
-}
+const science = { tab: "resumo", status: null, options: null, timer: null, result: null, cache: {} };
+const SCIENCE_TABS = [["resumo", "Resumo"], ["escores", "Escores por ensaio"], ["metricas", "Métricas por falha"],
+  ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["explorar", "Explorar"], ["rodar", "Rodar e arquivos"]];
+const MODELOS = [["denso", "Denso"], ["lstm", "AE-LSTM"]];
+const NOME_MODELO = Object.fromEntries(MODELOS);
+const METRICAS = { sensibilidade: "Sensibilidade", especificidade: "Especificidade", precisao: "Precisão", f1: "F1",
+  acuracia_balanceada: "Acurácia balanceada", mcc: "MCC", auc_roc: "AUC-ROC", auc_pr: "AUC-PR" };
 
 /* Blocos de interface */
-function card(title, value, detail) {
-  return el("div", { class: "metric" }, el("p", { text: title }), el("b", { text: value }),
-    ...(detail ? [el("span", { class: "muted", text: detail })] : []));
+function card(title, value, detail, chave, extra) {
+  return el("div", { class: "metric" }, el("p", {}, title, ...(chave ? [nota(chave, extra)] : [])), el("b", { text: value }),
+    ...(detail ? [typeof detail === "string" ? el("span", { class: "muted", text: detail }) : detail] : []));
 }
 
-function slider(labelText, { min, max, step, value, format = (v) => v }, onInput) {
+function slider(labelText, { min, max, step, value, format = (v) => v }, onInput, chave) {
   const out = el("output", { text: format(value) });
   const input = el("input", { type: "range", min, max, step, value });
   input.addEventListener("input", () => { out.textContent = format(Number(input.value)); onInput(Number(input.value)); });
-  return { node: el("label", { class: "control" }, el("span", { text: labelText }), input, out), input, out };
+  const label = el("span", {}, labelText, ...(chave ? [nota(chave)] : []));
+  return { node: el("label", { class: "control" }, label, input, out), input, out };
 }
 
-function select(labelText, options, value, onChange) {
+function select(labelText, options, value, onChange, chave) {
   const node = el("select", {}, ...options.map(([id, text]) => {
     const option = el("option", { value: String(id), text });
     if (String(id) === String(value)) option.selected = true;
     return option;
   }));
   node.addEventListener("change", () => onChange(node.value));
-  return el("label", { class: "control" }, el("span", { text: labelText }), node);
+  return el("label", { class: "control" }, el("span", {}, labelText, ...(chave ? [nota(chave)] : [])), node);
 }
 
 function debounce(callback) {
@@ -141,9 +44,31 @@ function debounce(callback) {
 
 function table(headers, rows) {
   return el("div", { class: "table-wrap" }, el("table", { class: "data-table" },
-    el("thead", {}, el("tr", {}, ...headers.map((h) => el("th", { text: h })))),
+    el("thead", {}, el("tr", {}, ...headers.map((h) => (h instanceof Node ? el("th", {}, h) : el("th", { text: h }))))),
     el("tbody", {}, ...rows.map((row) => el("tr", {}, ...row.map((cell) =>
       cell instanceof Node ? el("td", {}, cell) : el("td", { text: String(cell ?? "—") })))))));
+}
+
+/* Tabela com título, nota e o botão de CSV. */
+function tabelaComCSV(titulo, chave, headers, rows, arquivo, csvRows) {
+  return el("section", { class: "science-output" },
+    el("h3", { class: "science-h subtitulo-secao" }, titulo, ...(chave ? [nota(chave)] : []),
+      el("button", { class: "link", type: "button", text: "CSV", title: "Baixar em CSV",
+        onclick: () => baixarCSV(csvRows, `${arquivo}.csv`) })),
+    table(headers, rows));
+}
+
+function faixaTexto(faixa, formato = num) {
+  return faixa ? `Nos 5 treinamentos repetidos, variou de ${formato(faixa[0])} a ${formato(faixa[1])}.` : "";
+}
+
+function aviso(body, message) { body.replaceChildren(el("div", { class: "note note-warn", text: message })); }
+function day(iso) { return iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "—"; }
+function dec(value, digits = 2) { return value === null || value === undefined ? "—" : BR.format(`.${digits}f`)(value); }
+
+async function carregar(chave, caminho) {
+  if (!science.cache[chave]) science.cache[chave] = await api(caminho);
+  return science.cache[chave];
 }
 
 /* Navegação da aba */
@@ -162,27 +87,290 @@ async function openScience(tab) {
     "aria-selected": String(id === science.tab), onclick: () => openScience(id) })));
   const body = $("science-body");
   body.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
-  const render = { resultados: renderResults, limiar: renderThreshold, alarme: renderAlarms,
-    confiabilidade: renderReliability, fmeca: renderFmeca, rodar: renderRuns }[science.tab];
+  const render = { resumo: renderSummary, escores: renderScores, metricas: renderMetrics, confiabilidade: renderReliability,
+    fmeca: renderFmeca, explorar: renderExplore, rodar: renderRunsAndFiles }[science.tab];
   await render(body);
 }
 
-/* GPVS: os exploradores só funcionam com os modelos, a avaliação e os dados no computador. */
+/* 1. Resumo: qual modelo detecta mais falhas com menos alarmes falsos? */
+async function renderSummary(body) {
+  let d;
+  try { d = await carregar("resumo", "/api/ciencia/resumo"); } catch (error) { aviso(body, error.message); return; }
+  const favor = (row) => (row.maior_e_melhor ? "Positivo favorece o Denso." : "Negativo favorece o Denso.");
+  const comparison = tabelaComCSV("Comparação por objetivo", "diferenca",
+    ["Objetivo", "Métrica", comNota("Diferença (Denso − AE-LSTM)", "diferenca"), comNota("Intervalo de 95%", "ic95"), "Leitura"],
+    d.comparacao.map((row) => [row.objetivo, row.metrica,
+      el("span", { class: "com-nota" }, num(row.diferenca), nota(favor(row))),
+      `${num(row.ic95[0])} a ${num(row.ic95[1])}`, row.leitura]),
+    "comparacao-por-objetivo",
+    [["Objetivo", "Métrica", "Diferença (Denso − AE-LSTM)", "IC 95% inferior", "IC 95% superior", "Ensaios", "Leitura"],
+      ...d.comparacao.map((row) => [row.objetivo, row.metrica, row.diferenca, row.ic95[0], row.ic95[1], row.ensaios, row.leitura])]);
+  const filtro = science.matriz ||= "total";
+  const filterOptions = [["total", "Todos os 14 ensaios"],
+    ...[1, 2, 3, 4, 5, 6, 7].map((f) => [`F${f}`, `F${f} · ${d.ensaios.find((t) => t.falha === `F${f}`).nome} (L e M)`]),
+    ...d.ensaios.map((t) => [t.id, `${t.id} · ${t.nome} · ${t.modo_nome}`])];
+  const columns = el("div", { class: "par-modelos" }, ...MODELOS.map(([kind]) => modelColumn(d, kind, filtro)));
+  body.replaceChildren(
+    el("p", { class: "muted" }, `Avaliação oficial de ${day(d.data)}: os 14 ensaios com falha e o teste saudável, `,
+      "em janelas de 20 ms. Os números são os do treino de referência ", nota("treinos"), "."),
+    comparison,
+    el("div", { class: "controls" }, select("Matriz de confusão de", filterOptions, filtro, (value) => {
+      science.matriz = value;
+      openScience("resumo");
+    }, "matriz")),
+    columns);
+}
+
+function modelColumn(d, kind, filtro) {
+  const m = d.modelos[kind];
+  const f = m.faixa;
+  const counts = filtro === "total" ? m.matrizes.total : m.matrizes.por_falha[filtro] || m.matrizes.por_ensaio[filtro];
+  const healthy = m.teste_saudavel;
+  const cards = el("div", { class: "metrics" },
+    card("Ensaios detectados", `${m.detectados} de ${m.ensaios}`, null, "detectados", faixaTexto(f.detectados)),
+    card("Atraso mediano", seconds(m.atraso_mediano_ms), null, "atraso", faixaTexto(f.atraso_mediano_ms, seconds)),
+    card("Alarmes falsos por hora", num(healthy.alarmes_por_hora),
+      el("span", { class: "muted com-nota" }, `limite superior: ${num(healthy.limite_superior_por_hora)} por hora`, nota("limite_superior")),
+      "alarmes_hora", `No teste saudável: ${healthy.alarmes} alarme(s) em ${num(healthy.duracao_s)} s.`),
+    card("Alarmes antes da falha", String(m.antes_da_falha.alarmes), null, "alarmes_antes", faixaTexto(f.alarmes_pre_falha)),
+    ...["sensibilidade", "especificidade", "f1", "mcc", "auc_roc", "auc_pr"].map((key) =>
+      card(METRICAS[key], dec(m.metricas[key]), null, key, `Média dos 14 ensaios. ${faixaTexto(f[key], (v) => dec(v))}`)));
+  const label = filtro === "total" ? "todos os ensaios" : filtro;
+  return el("section", { class: "coluna-modelo" },
+    el("h3", { class: "science-h" }, el("span", { class: `marca-modelo is-${kind}` }), m.nome),
+    cards,
+    quadro({ titulo: `Matriz de confusão · ${m.nome} · ${label}`, chave: "matriz", arquivo: `matriz-confusao-${kind}-${filtro}`,
+      desenhar: (area, largura, cores) => matrizDeConfusao(area, largura, cores, { contagens: counts,
+        titulo: `Matriz de confusão do ${m.nome} (${label})`, descricao: "Janelas de 20 ms por classe real e classe predita." }),
+      csv: () => [["", "Predita saudável", "Predita falha"], ["Real saudável", counts.vn, counts.fp], ["Real falha", counts.fn, counts.vp]] }));
+}
+
+/* 2. Escores por ensaio: os "escores divididos", um contêiner por ensaio. */
+async function renderScores(body) {
+  body.replaceChildren(el("p", { class: "muted", text: "Carregando os escores dos 14 ensaios…" }));
+  let d;
+  try { d = await carregar("escores", "/api/ciencia/escores"); } catch (error) { aviso(body, error.message); return; }
+  const swatch = (text, color) => el("span", {}, el("i", { style: `background: ${color}` }), text);
+  const legend = el("div", { class: "legenda-fases" },
+    swatch("Denso", "var(--g-denso)"), swatch("AE-LSTM", "var(--g-lstm)"),
+    el("span", { class: "com-nota" }, "Escore ÷ limiar", nota("razao")),
+    swatch("Comissionamento", "color-mix(in srgb, var(--g-fase-comissionamento) 35%, transparent)"),
+    swatch("Antes da falha", "color-mix(in srgb, var(--g-fase-antes) 35%, transparent)"),
+    swatch("Transição", "color-mix(in srgb, var(--g-fase-transicao) 45%, transparent)"),
+    swatch("Depois do início", "color-mix(in srgb, var(--g-fase-depois) 35%, transparent)"), nota("fases"),
+    el("span", { class: "com-nota" }, "Linha tracejada vertical: início nominal", nota("inicio")),
+    el("span", { class: "com-nota" }, "▲ alarme que detectou · ✕ alarme antes da falha", nota("alarme")));
+  const index = el("nav", { class: "indice", "aria-label": "Ir para o ensaio" },
+    ...[1, 2, 3, 4, 5, 6, 7].map((f) => el("button", { class: "filter", type: "button", text: `F${f}`,
+      onclick: () => $(`ensaio-F${f}L`)?.scrollIntoView({ behavior: "smooth" }) })),
+    el("button", { class: "filter", type: "button", text: "Teste saudável",
+      onclick: () => $("ensaio-F0L")?.scrollIntoView({ behavior: "smooth" }) }));
+  // Passa todos os carrosséis para o mesmo gráfico de uma vez, para comparar os ensaios.
+  CARROSSEIS.clear();
+  const all = el("div", { class: "indice" }, el("span", { class: "muted", text: "Mostrar em todos:" }),
+    ...["Denso", "AE-LSTM", "Ambos"].map((name, i) => el("button", { class: "filter", type: "button", text: name,
+      onclick: () => CARROSSEIS.forEach((c) => c.isConnected && c.ir(i, false)) })));
+  body.replaceChildren(
+    el("p", { class: "muted" }, "Cada ensaio mostra um gráfico por vez: Denso, AE-LSTM e os dois juntos, no mesmo tamanho e ",
+      "na mesma escala. Passe pelas setas, pelos nomes ou deslizando. Janelas de 20 ms; ",
+      `alarme com ${d.confirmacoes} janelas seguidas acima do limiar `, nota("confirmacoes"), "."),
+    legend, index, all,
+    el("div", { class: "escores-grade" }, ...d.ensaios.map((p) => trialBox(p, d)), ...d.teste_saudavel.map((p) => trialBox(p, d))));
+}
+
+function trialBox(p, d) {
+  const time = (i) => i * d.janela_s;
+  const kinds = MODELOS.map(([kind]) => kind);
+  const ratios = kinds.flatMap((kind) => p.modelos[kind].razao);
+  const domain = [Math.max(1e-3, d3.min(ratios) / 1.5), d3.max(ratios) * 1.5];
+  const healthy = !p.fases;
+  // Os três gráficos do carrossel têm o mesmo tamanho e a mesma escala, para comparar ao passar de um ao outro.
+  const panel = (shown) => (area, largura, cores) => graficoLinhas(area, largura, cores, {
+    titulo: `${p.id}: escore ÷ limiar (${shown.map((k) => NOME_MODELO[k]).join(" e ")})`,
+    descricao: `${p.nome}, ${p.modo_nome}. Escore de cada janela de 20 ms dividido pelo limiar do modelo.`,
+    proporcao: 0.5, alturaMinima: 240, log: true, yDominio: domain, legenda: true,
+    xRotulo: "tempo (s)", yRotulo: "escore ÷ limiar",
+    dicaX: (x) => `${num(x)} s`, dicaY: (v) => num(v),
+    series: shown.map((kind) => ({ nome: NOME_MODELO[kind], cor: MODELO_COR(cores, kind),
+      pontos: p.modelos[kind].razao.map((v, i) => [time(i), v]) })),
+    faixas: healthy ? [] : Object.entries(p.fases).filter(([, span]) => span).map(([phase, [a, b]]) =>
+      ({ de: time(a), ate: time(b + 1), cor: cores.fases[phase], opacidade: phase === "transicao" ? 0.3 : 0.12 })),
+    linhasH: [{ y: 1, cor: cores.limiar, rotulo: "limiar" }],
+    linhasV: healthy ? [] : [{ x: time(p.inicio), cor: cores.inicio }],
+    marcas: shown.flatMap((kind) => {
+      const m = p.modelos[kind];
+      const color = MODELO_COR(cores, kind);
+      const falsos = m.alarmes_antes.map((i) => ({ x: time(i), y: m.razao[i], cor: color, forma: "xis", tamanho: 70,
+        dica: [`${NOME_MODELO[kind]}: alarme ${healthy ? "falso no teste saudável" : "antes da falha (falso)"}`, `${num(time(i))} s`] }));
+      const hit = m.alarme_deteccao === null ? [] : [{ x: time(m.alarme_deteccao), y: m.razao[m.alarme_deteccao], cor: color,
+        forma: "triangulo", tamanho: 90, dica: [`${NOME_MODELO[kind]}: alarme que detectou a falha`, `atraso de ${seconds(m.atraso_ms)}`] }];
+      return [...falsos, ...hit];
+    }),
+  });
+  const phaseOf = (i) => (healthy ? "teste saudável" : Object.entries(p.fases).find(([, s]) => s && i >= s[0] && i <= s[1])?.[0] ?? "");
+  const csv = () => [["janela", "tempo_s", "fase", "denso_escore_sobre_limiar", "lstm_escore_sobre_limiar"],
+    ...p.modelos.denso.razao.map((v, i) => [i, time(i), phaseOf(i), v, p.modelos.lstm.razao[i]])];
+  const title = healthy ? `${p.id} · Teste saudável` : `${p.id} · ${p.nome}`;
+  const detail = healthy ? nota("teste_saudavel")
+    : nota(`${p.descricao}. ${p.fisica ? "Falha física." : "Falha de operação ou de controle."}`);
+  const footer = kinds.map((kind) => {
+    const m = p.modelos[kind];
+    const text = healthy ? `${m.alarmes_antes.length} alarme(s) falso(s)`
+      : `${m.detectado ? `detectou em ${seconds(m.atraso_ms)}` : "não detectou"} · ${m.alarmes_pre_falha} alarme(s) antes da falha`;
+    return el("span", { class: "com-nota" }, el("span", { class: `marca-modelo is-${kind}` }), `${NOME_MODELO[kind]}: ${text}`);
+  });
+  return el("section", { class: "ensaio", id: `ensaio-${p.id}` },
+    el("h3", { class: "ensaio-titulo" }, title, detail, el("span", { class: "muted", text: `· ${p.modo_nome}` }), nota("modos")),
+    carrossel(`Escores de ${p.id}`, [
+      { nome: "Denso", node: quadro({ titulo: `${p.id} · Denso`, chave: "razao", arquivo: `escores-${p.id}-denso`,
+        desenhar: panel(["denso"]), csv, preguicoso: true }) },
+      { nome: "AE-LSTM", node: quadro({ titulo: `${p.id} · AE-LSTM`, chave: "razao", arquivo: `escores-${p.id}-lstm`,
+        desenhar: panel(["lstm"]), csv, preguicoso: true }) },
+      { nome: "Ambos", node: quadro({ titulo: `${p.id} · Denso e AE-LSTM`, chave: "razao", arquivo: `escores-${p.id}`,
+        desenhar: panel(kinds), csv, preguicoso: true }) },
+    ]),
+    el("div", { class: "ensaio-rodape" }, ...footer));
+}
+
+/* Carrossel: um gráfico por vez, todos do mesmo tamanho; setas, nomes, teclado ou deslizar o dedo. */
+const CARROSSEIS = new Set();
+
+function carrossel(rotulo, slides) {
+  const track = el("div", { class: "carrossel-trilho", tabindex: 0, role: "region", "aria-roledescription": "carrossel",
+    "aria-label": `${rotulo}: use as setas do teclado para passar` },
+  ...slides.map((slide, i) => el("div", { class: "carrossel-slide", role: "group", "aria-roledescription": "slide",
+    "aria-label": `${i + 1} de ${slides.length}: ${slide.nome}` }, slide.node)));
+  const current = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+  const go = (index, smooth = true) => {
+    const target = (index + slides.length) % slides.length;
+    track.scrollTo({ left: target * track.clientWidth, behavior: smooth ? "smooth" : "auto" });
+  };
+  const pills = slides.map((slide, i) => el("button", { class: "filter", type: "button", text: slide.nome, onclick: () => go(i) }));
+  const mark = () => pills.forEach((pill, i) => {
+    pill.classList.toggle("is-active", i === current());
+    pill.setAttribute("aria-pressed", String(i === current()));
+  });
+  track.addEventListener("scroll", () => requestAnimationFrame(mark), { passive: true });
+  track.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowRight") { event.preventDefault(); go(current() + 1); }
+    if (event.key === "ArrowLeft") { event.preventDefault(); go(current() - 1); }
+  });
+  const node = el("div", { class: "carrossel" },
+    el("div", { class: "carrossel-controles" },
+      el("button", { class: "carrossel-seta", type: "button", "aria-label": "Gráfico anterior", text: "‹", onclick: () => go(current() - 1) }),
+      ...pills,
+      el("button", { class: "carrossel-seta", type: "button", "aria-label": "Próximo gráfico", text: "›", onclick: () => go(current() + 1) })),
+    track);
+  node.ir = go;
+  CARROSSEIS.add(node);
+  requestAnimationFrame(mark);
+  return node;
+}
+
+/* 3. Métricas por falha: em que falhas cada modelo vai melhor? */
+const METRIC_CHOICES = [["sensibilidade", "Sensibilidade"], ["especificidade", "Especificidade"], ["precisao", "Precisão"],
+  ["f1", "F1"], ["mcc", "MCC"], ["auc_roc", "AUC-ROC"], ["auc_pr", "AUC-PR"], ["atraso_ms", "Atraso (s)"]];
+
+async function renderMetrics(body) {
+  let d;
+  try { d = await carregar("metricas", "/api/ciencia/metricas"); } catch (error) { aviso(body, error.message); return; }
+  const metric = science.metrica ||= "sensibilidade";
+  const isDelay = metric === "atraso_ms";
+  const value = (item) => (item?.[metric] === null || item?.[metric] === undefined ? null : isDelay ? item[metric] / 1000 : item[metric]);
+  const format = (v) => (v === null ? (isDelay ? "não detectou" : "—") : isDelay ? `${dec(v)} s` : dec(v));
+  const label = Object.fromEntries(METRIC_CHOICES)[metric];
+  const glossKey = isDelay ? "atraso" : metric;
+  const faults = d.falhas;
+  const grouped = quadro({ titulo: `${label} por tipo de falha (L e M somados)`, chave: glossKey,
+    extra: isDelay ? "Média dos modos detectados." : ["auc_roc", "auc_pr"].includes(metric) ? "Média dos modos L e M."
+      : "Recalculada das janelas dos dois modos.",
+    arquivo: `metrica-${metric}-por-falha`,
+    desenhar: (area, largura, cores) => barrasAgrupadas(area, largura, cores, {
+      titulo: `${label} por tipo de falha`, altura: 300, yRotulo: label,
+      dominio: isDelay ? undefined : [Math.min(0, ...MODELOS.flatMap(([k]) => faults.map((f) => value(d.modelos[k].por_falha[f.id]) ?? 0))), 1],
+      grupos: faults.map((f) => ({ id: f.id, rotulo: f.id, nome: f.nome })),
+      series: MODELOS.map(([kind, name]) => ({ id: kind, nome: name, cor: MODELO_COR(cores, kind) })),
+      valor: (g, s) => value(d.modelos[s.id].por_falha[g.id]),
+      dica: (g, s, v) => [`${g.id} · ${g.nome}`, `${s.nome}: ${format(v)}`,
+        `detectou ${d.modelos[s.id].por_falha[g.id].detectados} de 2 modos`],
+    }),
+    csv: () => [["falha", "nome", ...MODELOS.map(([, n]) => `${label} ${n}`)],
+      ...faults.map((f) => [f.id, f.nome, ...MODELOS.map(([k]) => value(d.modelos[k].por_falha[f.id]))])] });
+  const heatmaps = el("div", { class: "par-modelos" }, ...MODELOS.map(([kind, name]) => quadro({
+    titulo: `${label} por ensaio · ${name}`, chave: glossKey, arquivo: `metrica-${metric}-${kind}`,
+    desenhar: (area, largura, cores) => mapaDeCalor(area, largura, cores, {
+      titulo: `${label} por ensaio (${name})`, margemEsquerda: Math.min(190, largura * 0.42),
+      linhas: faults.map((f) => ({ id: f.id, rotulo: `${f.id} · ${f.nome}` })),
+      colunas: [{ id: "L", rotulo: "L (IPPT)" }, { id: "M", rotulo: "M (MPPT)" }],
+      escala: isDelay
+        ? d3.scaleSequential(d3.interpolateViridis).domain([d3.max(Object.values(d.modelos[kind].por_ensaio), (t) => value(t)) || 1, 0])
+        : d3.scaleSequential(d3.interpolateViridis).domain([0, 1]).clamp(true),
+      valor: (l, c) => value(d.modelos[kind].por_ensaio[`${l.id}${c.id}`]),
+      formato: format,
+      dica: (l, c, v) => {
+        const t = d.modelos[kind].por_ensaio[`${l.id}${c.id}`];
+        const spread = t.faixa?.[metric];
+        return [`${l.id}${c.id} · ${l.rotulo.split(" · ")[1]} · ${c.rotulo}`, `${name}: ${format(v)}`,
+          ...(spread ? [`Nos 5 treinamentos: de ${format(isDelay ? spread[0] / 1000 : spread[0])} a ${format(isDelay ? spread[1] / 1000 : spread[1])}`] : []),
+          `detectou em ${t.detectado_em} de ${t.treinamentos} treinamentos`];
+      },
+    }),
+    csv: () => [["ensaio", "falha", "modo", label],
+      ...faults.flatMap((f) => ["L", "M"].map((mode) => [`${f.id}${mode}`, f.nome, mode, value(d.modelos[kind].por_ensaio[`${f.id}${mode}`])]))],
+  })));
+  const general = [["sensibilidade", "Sensibilidade"], ["f1", "F1"], ["precisao", "Precisão"], ["auc_roc", "AUC-ROC"],
+    ["auc_pr", "AUC-PR"], ["fpr", "Taxa de falso positivo"]];
+  const summary = quadro({ titulo: "Métricas gerais: média dos 14 ensaios, com a faixa dos 5 treinamentos", chave: "treinos",
+    arquivo: "metricas-gerais",
+    desenhar: (area, largura, cores) => pontoComFaixa(area, largura, cores, {
+      titulo: "Métricas gerais dos dois modelos", xRotulo: "média por ensaio", margemEsquerda: 170,
+      itens: general.map(([id, rotulo]) => ({ id, rotulo })),
+      series: MODELOS.map(([kind, name]) => ({ id: kind, nome: name, cor: MODELO_COR(cores, kind) })),
+      valor: (item, serie) => {
+        const g = d.modelos[serie.id].gerais;
+        if (item.id !== "fpr") return g[item.id];
+        return { valor: 1 - g.especificidade.valor, faixa: [1 - g.especificidade.faixa[1], 1 - g.especificidade.faixa[0]] };
+      },
+    }),
+    csv: () => [["métrica", ...MODELOS.flatMap(([, n]) => [`${n}`, `${n} mínimo`, `${n} máximo`])],
+      ...general.map(([id, rotulo]) => [rotulo, ...MODELOS.flatMap(([k]) => {
+        const g = d.modelos[k].gerais;
+        const item = id === "fpr" ? { valor: 1 - g.especificidade.valor, faixa: [1 - g.especificidade.faixa[1], 1 - g.especificidade.faixa[0]] } : g[id];
+        return [item.valor, item.faixa[0], item.faixa[1]];
+      })])] });
+  body.replaceChildren(
+    el("div", { class: "controls" }, select("Métrica", METRIC_CHOICES, metric, (v) => { science.metrica = v; openScience("metricas"); }, glossKey)),
+    grouped, heatmaps, summary);
+}
+
+/* 4. Explorar: e se o limiar fosse outro? Usa o treino de referência. */
+async function renderExplore(body) {
+  const sub = science.explorar ||= "limiar";
+  const inner = el("div", { class: "science-output" });
+  body.replaceChildren(
+    el("div", { class: "indice" }, ...[["limiar", "Limiar"], ["alarme", "Alarme e detecção"]].map(([id, text]) =>
+      el("button", { class: `filter${id === sub ? " is-active" : ""}`, type: "button", text,
+        onclick: () => { science.explorar = id; openScience("explorar"); } }))),
+    inner);
+  try { if (!(await ensureGpvs(inner))) return; } catch (error) { aviso(inner, error.message); return; }
+  if (sub === "limiar") await renderThreshold(inner); else await renderAlarms(inner);
+}
+
+/* Os exploradores precisam dos modelos, da avaliação e dos dados no computador. */
 async function ensureGpvs(body) {
   const status = science.status?.gpvs;
   if (!status?.disponivel) {
-    body.replaceChildren(el("div", { class: "note note-warn",
-      text: `Exploradores do GPVS indisponíveis: falta ${(status?.faltando || ["o serviço"]).join("; ")}.` }));
+    aviso(body, `Os exploradores não estão disponíveis: falta ${(status?.faltando || ["o serviço"]).join("; ")}.`);
     return false;
   }
   if (status.pronto && status.opcoes?.modelos) { science.options = status.opcoes; return true; }
-  body.replaceChildren(el("p", { class: "muted", text: "Preparando os modelos congelados e o erro por variável…" }));
+  body.replaceChildren(el("p", { class: "muted", text: "Carregando os modelos e o erro de cada variável…" }));
   const job = await api("/api/ciencia/preparar", { method: "POST" });
   for (;;) {
     const state = await api(`/api/ciencia/tarefas/${job.tarefa}`);
     if (state.estado === "falhou") throw new Error(state.erro);
     if (state.estado === "concluido") { science.options = state.resultado; science.status.gpvs.pronto = true; return true; }
-    body.firstElementChild.textContent = `Preparando: ${state.etapa} (${state.atual} de ${state.total})…`;
+    body.firstElementChild.textContent = `Carregando: ${state.etapa} (${state.atual} de ${state.total})…`;
     await new Promise((resolve) => setTimeout(resolve, 600));
   }
 }
@@ -190,15 +378,13 @@ async function ensureGpvs(body) {
 function gpvsControls(params, rerun, { withConfirmations = false, withTrial = false } = {}) {
   const o = science.options;
   const controls = el("div", { class: "controls" },
-    select("Modelo", o.modelos.map((m) => [m.id, m.nome]), params.modelo, (v) => { params.modelo = v; rerun(); }),
-    select("Semente", o.sementes.map((s) => [s, s === o.semente_referencia ? `${s} (referência)` : String(s)]), params.semente,
-      (v) => { params.semente = Number(v); rerun(); }),
-    slider("k (maiores erros)", { min: 1, max: o.variaveis, step: 1, value: params.k }, (v) => { params.k = v; debounce(rerun); }).node,
-    slider("Percentil", { min: 90, max: 99.9, step: 0.1, value: params.percentil, format: (v) => num(v, 3) },
-      (v) => { params.percentil = v; debounce(rerun); }).node);
+    select("Modelo", o.modelos.map((m) => [m.id, NOME_MODELO[m.id] || m.nome]), params.modelo, (v) => { params.modelo = v; rerun(); }),
+    slider("k (maiores erros)", { min: 1, max: o.variaveis, step: 1, value: params.k }, (v) => { params.k = v; debounce(rerun); }, "k").node,
+    slider("Percentil do limiar", { min: 90, max: 99.9, step: 0.1, value: params.percentil, format: (v) => num(v, 3) },
+      (v) => { params.percentil = v; debounce(rerun); }, "percentil").node);
   if (withConfirmations) {
-    controls.append(slider("m (janelas seguidas)", { min: 1, max: 10, step: 1, value: params.confirmacoes },
-      (v) => { params.confirmacoes = v; debounce(rerun); }).node);
+    controls.append(slider("Janelas seguidas para o alarme", { min: 1, max: 10, step: 1, value: params.confirmacoes },
+      (v) => { params.confirmacoes = v; debounce(rerun); }, "confirmacoes").node);
   }
   if (withTrial) {
     controls.append(select("Ensaio na linha do tempo", o.ensaios.map((e) => [e, e]), params.ensaio,
@@ -207,21 +393,18 @@ function gpvsControls(params, rerun, { withConfirmations = false, withTrial = fa
   return controls;
 }
 
-/* Explorador do limiar: só a calibração. */
+/* Limiar: só a calibração, sem os ensaios de teste. */
 async function renderThreshold(body) {
-  try { if (!(await ensureGpvs(body))) return; } catch (error) { body.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
   const o = science.options;
   const params = science.threshold ||= { modelo: o.modelos[0].id, semente: o.semente_referencia, k: o.k_canonico,
     percentil: o.percentil_canonico, janela: null };
   const output = el("div", { class: "science-output" });
   const rerun = async () => {
-    try {
-      const data = await api("/api/ciencia/limiar", { method: "POST", json: params });
-      drawThreshold(output, data, params, rerun);
-    } catch (error) { toast(error.message); }
+    try { drawThreshold(output, await api("/api/ciencia/limiar", { method: "POST", json: params }), params, rerun); }
+    catch (error) { toast(error.message); }
   };
-  body.replaceChildren(el("p", { class: "muted", text: "Usa só os escores de calibração do treino, sem o teste. " +
-    `Os valores canônicos são k = ${o.k_canonico} e p${num(o.percentil_canonico)}.` }), gpvsControls(params, rerun), output);
+  body.replaceChildren(el("p", { class: "muted", text: "Usa só os escores de calibração do treino, sem os ensaios de teste. " +
+    `Os valores oficiais são k = ${o.k_canonico} e percentil ${num(o.percentil_canonico)}.` }), gpvsControls(params, rerun), output);
   await rerun();
 }
 
@@ -229,82 +412,94 @@ function drawThreshold(output, data, params, rerun) {
   const t = data.limiar;
   const sorted = data.escores_ordenados;
   const cards = el("div", { class: "metrics" },
-    card("Limiar", num(t.limiar, 5), `canônico ${num(data.canonico.limiar, 5)} (k = ${data.canonico.k}, p${num(data.canonico.percentil)})`),
-    card("Posição na fila", `${t.posicao}ª de ${t.n_calibracao}`, `percentil efetivo ${num(t.percentil_efetivo, 4)}%`),
-    card("Janelas de calibração acima", String(t.n_calibracao - t.posicao)),
-    card("Falso alarme esperado por janela", pct(t.falso_alarme_esperado_por_janela, 3)));
-  const warn = t.maximo_amostral ? el("div", { class: "note note-warn", text: `Com ${t.n_calibracao} janelas, p${num(t.percentil_pedido, 4)} ` +
-    `cai no maior escore da calibração: o percentil pedido não se sustenta (seriam precisas ${t.n_minimo_para_o_percentil ?? "infinitas"}).` }) : null;
-  const curve = chart({ label: "Escores de calibração ordenados e limiar", xLabel: "janelas de calibração, do menor ao maior escore",
-    yLabel: "escore top-k", series: [{ points: sorted.map((v, i) => [i + 1, v]), color: "var(--chart-a)" }],
-    hLines: [{ y: t.limiar, label: `limiar ${num(t.limiar, 4)}`, class: "is-threshold" }],
-    marks: sorted.map((v, i) => [i + 1, v]).filter(([i]) => i > t.posicao).map(([x, y]) => ({ x, y, class: "is-hot",
-      label: `${x}ª janela: ${num(y, 4)}` })) });
+    card("Limiar", num(t.limiar, 5), `oficial: ${num(data.canonico.limiar, 5)} (k = ${data.canonico.k}, p${num(data.canonico.percentil)})`, "limiar"),
+    card("Posição do limiar", `${t.posicao}ª de ${t.n_calibracao}`, `percentil efetivo ${num(t.percentil_efetivo, 4)}%`, "percentil"),
+    card("Janelas de calibração acima", String(t.n_calibracao - t.posicao), null, "fpr"),
+    card("Falso alarme esperado por janela", pct(t.falso_alarme_esperado_por_janela, 3), null, "fpr"));
+  const warn = t.maximo_amostral ? el("div", { class: "note note-warn", text: `Com ${t.n_calibracao} janelas, o percentil ` +
+    `${num(t.percentil_pedido, 4)} cai no maior escore da calibração: ele não se sustenta com tão poucas janelas ` +
+    `(seriam precisas ${t.n_minimo_para_o_percentil ?? "infinitas"}).` }) : null;
+  const curve = quadro({ titulo: "Escores de calibração, do menor ao maior, e o limiar", chave: "limiar", arquivo: `limiar-${params.modelo}`,
+    desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, { titulo: "Escores de calibração ordenados",
+      proporcao: 0.38, xRotulo: "janelas de calibração, do menor ao maior escore", yRotulo: "escore",
+      series: [{ nome: "escore", cor: MODELO_COR(cores, params.modelo), pontos: sorted.map((v, i) => [i + 1, v]) }],
+      linhasH: [{ y: t.limiar, cor: cores.limiar, rotulo: `limiar ${num(t.limiar, 4)}` }],
+      marcas: sorted.map((v, i) => [i + 1, v]).filter(([i]) => i > t.posicao).map(([x, y]) => ({ x, y, cor: cores.limiar,
+        dica: [`${x}ª janela: escore ${num(y, 4)}`, "acima do limiar"] })) }),
+    csv: () => [["posicao", "escore"], ...sorted.map((v, i) => [i + 1, v])] });
   const w = data.janela;
   const windowSlider = slider("Janela de calibração", { min: 0, max: sorted.length - 1, step: 1, value: w.indice,
     format: (v) => `nº ${v + 1}` }, (v) => { params.janela = v; debounce(rerun); });
-  const variableBars = bars({ values: w.erros, labels: w.variaveis, highlight: new Set(w.maiores),
-    label: `24 variáveis da janela nº ${w.indice + 1} (escore ${num(w.escore, 4)}); as k maiores em destaque` });
-  output.replaceChildren(cards, ...(warn ? [warn] : []), el("h3", { class: "science-h", text: "Limiar na calibração" }), curve,
-    el("h3", { class: "science-h", text: "Escore top-k de uma janela" }), el("div", { class: "controls" }, windowSlider.node), variableBars,
+  const top = new Set(w.maiores);
+  const variables = quadro({ titulo: `Erro das 24 variáveis na janela nº ${w.indice + 1}; as ${params.k} maiores em destaque`,
+    chave: "k", arquivo: `variaveis-janela-${w.indice + 1}`,
+    desenhar: (area, largura, cores) => barrasAgrupadas(area, largura, cores, { titulo: "Erro por variável", altura: 300,
+      rotulosInclinados: true, yRotulo: "erro",
+      grupos: w.variaveis.map((name, i) => ({ id: name, rotulo: name, indice: i })),
+      series: [{ id: "erro", nome: "erro", cor: (g) => (top.has(g.indice) ? cores.limiar : cores.eixo) }],
+      valor: (g) => w.erros[g.indice], dica: (g, s, v) => [g.rotulo, `erro ${num(v, 4)}`, top.has(g.indice) ? "entre as k maiores" : ""] }),
+    csv: () => [["variavel", "erro", "entre_as_k_maiores"], ...w.variaveis.map((name, i) => [name, w.erros[i], top.has(i) ? "sim" : "não"])] });
+  output.replaceChildren(cards, ...(warn ? [warn] : []), curve, el("div", { class: "controls" }, windowSlider.node), variables,
     el("div", { class: "metrics" }, card("Média das 24 variáveis", num(w.media_todas, 4)),
-      card(`Média das ${params.k} maiores`, num(w.media_k, 4)), card("Quanto o top-k amplia", `${num(w.media_k / w.media_todas, 3)}×`)));
+      card(`Média das ${params.k} maiores (o escore)`, num(w.media_k, 4), null, "escore"),
+      card("Quanto o escore amplia a média", `${num(w.media_k / w.media_todas, 3)}×`, null, "k")));
 }
 
-/* Explorador de alarme e detecção: usa o teste já consultado (M14). */
+/* Alarme e detecção: reusa os ensaios de teste. */
 async function renderAlarms(body) {
-  try { if (!(await ensureGpvs(body))) return; } catch (error) { body.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
   const o = science.options;
-  const canonical = () => ({ modelo: science.alarms?.modelo || o.modelos[0].id, semente: science.alarms?.semente || o.semente_referencia,
+  const official = () => ({ modelo: science.alarms?.modelo || o.modelos[0].id, semente: o.semente_referencia,
     k: o.k_canonico, percentil: o.percentil_canonico, confirmacoes: o.confirmacoes_canonicas, ensaio: science.alarms?.ensaio || o.ensaios[0] });
-  const params = science.alarms ||= canonical();
+  const params = science.alarms ||= official();
   const output = el("div", { class: "science-output" });
   const rerun = async () => {
-    try {
-      drawAlarms(output, await api("/api/ciencia/alarme", { method: "POST", json: params }));
-    } catch (error) { toast(error.message); }
+    try { drawAlarms(output, await api("/api/ciencia/alarme", { method: "POST", json: params })); }
+    catch (error) { toast(error.message); }
   };
-  body.replaceChildren(el("div", { class: "note note-warn science-notice", text: "Exploração pós-teste, não canônica (M14): usa o teste " +
-      "já consultado e não altera os resultados congelados da avaliação de 27/09/2026." }),
+  body.replaceChildren(el("div", { class: "note note-warn science-notice", text: "Estes controles reusam os ensaios de teste. " +
+      "Servem para explorar; os números oficiais continuam os da avaliação de 27/09/2026." }),
     gpvsControls(params, rerun, { withConfirmations: true, withTrial: true }),
-    el("button", { class: "secondary", type: "button", text: `Voltar aos canônicos (k = ${o.k_canonico}, p${num(o.percentil_canonico)}, m = ${o.confirmacoes_canonicas})`,
-      onclick: () => { science.alarms = canonical(); openScience("alarme"); } }), output);
+    el("button", { class: "secondary", type: "button",
+      text: `Voltar aos valores oficiais (k = ${o.k_canonico}, p${num(o.percentil_canonico)}, ${o.confirmacoes_canonicas} janelas)`,
+      onclick: () => { science.alarms = official(); openScience("explorar"); } }), output);
   await rerun();
 }
 
 function drawAlarms(output, data) {
   const fa = data.falsos_alarmes, c = data.canonico, s = data.resumo;
   const cards = el("div", { class: "metrics" },
-    card("Ensaios com falha detectados", `${s.detectados} de ${data.ensaios.length}`, `canônico: ${c.detectados}`),
-    card("Atraso mediano", seconds(s.atraso_mediano_ms), `canônico: ${seconds(c.atraso_mediano_ms)}`),
-    card("Falsos alarmes no teste saudável", String(fa.teste_saudavel.alarmes),
-      `limite superior 95%: ${num(fa.teste_saudavel.limite_superior_por_hora, 4)} por hora · canônico: ${c.alarmes_teste_saudavel}`),
-    card("Alarmes no pré-falha", String(fa.pre_falha.alarmes), `canônico: ${c.alarmes_pre_falha}`),
-    card("Limiar", num(data.limiar.limiar, 5), `canônico: ${num(c.limiar, 5)}`));
-  const same = data.parametros_canonicos ? el("div", { class: "note note-ok", text: "Parâmetros canônicos: estes números " +
-    "reproduzem a avaliação de 27/09/2026." }) : null;
+    card("Ensaios detectados", `${s.detectados} de ${data.ensaios.length}`, `oficial: ${c.detectados}`, "detectados"),
+    card("Atraso mediano", seconds(s.atraso_mediano_ms), `oficial: ${seconds(c.atraso_mediano_ms)}`, "atraso"),
+    card("Alarmes falsos no teste saudável", String(fa.teste_saudavel.alarmes),
+      `limite superior: ${num(fa.teste_saudavel.limite_superior_por_hora, 4)} por hora · oficial: ${c.alarmes_teste_saudavel}`, "limite_superior"),
+    card("Alarmes antes da falha", String(fa.pre_falha.alarmes), `oficial: ${c.alarmes_pre_falha}`, "alarmes_antes"),
+    card("Limiar", num(data.limiar.limiar, 5), `oficial: ${num(c.limiar, 5)}`, "limiar"),
+    ...["sensibilidade", "especificidade", "f1", "mcc"].map((key) => card(METRICAS[key], dec(s[`${key}_media`]), null, key, "Média dos 14 ensaios.")));
+  const same = data.parametros_canonicos ? el("div", { class: "note note-ok", text: "Com estes valores, os números são os oficiais de 27/09/2026." }) : null;
+  const counts = ["vp", "fn", "fp", "vn"].reduce((acc, key) => ({ ...acc, [key]: data.ensaios.reduce((sum, t) => sum + (t[key] || 0), 0) }), {});
+  const matrix = quadro({ titulo: `Matriz de confusão · ${NOME_MODELO[data.modelo]} · valores escolhidos`, chave: "matriz",
+    arquivo: `matriz-exploracao-${data.modelo}`,
+    desenhar: (area, largura, cores) => matrizDeConfusao(area, largura, cores, { contagens: counts, titulo: "Matriz de confusão (exploração)" }),
+    csv: () => [["", "Predita saudável", "Predita falha"], ["Real saudável", counts.vn, counts.fp], ["Real falha", counts.fn, counts.vp]] });
   const rows = data.ensaios.map((t) => [t.ensaio, t.falha + (t.fisica ? "" : " (não física)"), t.modo,
-    t.detectado ? "sim" : "não", seconds(t.atraso_ms), t.alarmes_pre_falha,
+    t.detectado ? "sim" : "não", seconds(t.atraso_ms), t.alarmes_pre_falha, dec(t.sensibilidade), dec(t.especificidade),
     t.canonico ? `${t.canonico.detectado ? "sim" : "não"} · ${seconds(t.canonico.atraso_ms)}` : "—"]);
-  const parts = [cards, ...(same ? [same] : []), table(["Ensaio", "Falha", "Modo", "Detectado", "Atraso", "Alarmes no pré-falha", "Canônico"], rows)];
+  const parts = [cards, ...(same ? [same] : []), matrix,
+    table(["Ensaio", "Falha", "Modo", comNota("Detectou", "detectados"), comNota("Atraso", "atraso"), comNota("Alarmes antes", "alarmes_antes"),
+      comNota("Sensibilidade", "sensibilidade"), comNota("Especificidade", "especificidade"), "Oficial"], rows)];
   const line = data.linha_do_tempo;
   if (line) {
-    const bands = [["comissionamento", "Comissionamento", "is-muted"], ["pre_teste", "Pré-falha (teste)", ""],
-      ["transicao", "Transição", "is-warn"], ["pos_falha", "Pós-falha", "is-hot"]]
-      .filter(([key]) => line[key]).map(([key, label, cls]) => ({ from: line[key][0], to: line[key][1] + 1, label, class: cls }));
-    // O pós-falha chega a dezenas de vezes o limiar; a escala para em 4× o limiar, e o excesso fica no topo.
-    const top = Math.min(Math.max(...line.escores), 4 * line.limiar);
-    const clipped = Math.max(...line.escores) > top;
-    parts.push(el("h3", { class: "science-h", text: `Linha do tempo de ${line.ensaio}` }),
-      chart({ label: `Escores de ${line.ensaio}`, xLabel: "janelas de um ciclo (20 ms)", yLabel: "escore top-k", bands,
-        yMin: 0, yMax: top * 1.02,
-        series: [{ points: line.escores.map((v, i) => [i, v]), color: "var(--chart-a)" }],
-        hLines: [{ y: line.limiar, label: "limiar", class: "is-threshold" }],
-        vLines: [{ x: line.inicio_nominal, label: "início nominal da falha", class: "is-onset" }],
-        marks: line.alarmes.map((i) => ({ x: i, y: line.escores[i], class: "is-alarm", label: `alarme na janela ${i}` })) }),
-      el("p", { class: "muted", text: "Faixas: comissionamento, pré-falha, transição e pós-falha. Linha vertical: início nominal da " +
-        "falha. Pontos: alarmes (a m-ésima janela seguida acima do limiar)." +
-        (clipped ? ` A escala vai até 4 vezes o limiar; escores maiores aparecem no topo (máximo ${num(Math.max(...line.escores), 3)}).` : "") }));
+    const phases = { comissionamento: line.comissionamento, pre_teste: line.pre_teste, transicao: line.transicao, pos_falha: line.pos_falha };
+    const ratios = line.escores.map((v) => v / line.limiar);
+    parts.push(quadro({ titulo: `Linha do tempo de ${line.ensaio}: escore ÷ limiar`, chave: "razao", arquivo: `linha-do-tempo-${line.ensaio}`,
+      desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, { titulo: `Escores de ${line.ensaio}`, proporcao: 0.36,
+        log: true, xRotulo: "tempo (s)", yRotulo: "escore ÷ limiar", dicaX: (x) => `${num(x)} s`,
+        series: [{ nome: NOME_MODELO[data.modelo], cor: MODELO_COR(cores, data.modelo), pontos: ratios.map((v, i) => [i * 0.02, v]) }],
+        faixas: Object.entries(phases).filter(([, span]) => span).map(([phase, [a, b]]) =>
+          ({ de: a * 0.02, ate: (b + 1) * 0.02, cor: cores.fases[phase], opacidade: phase === "transicao" ? 0.3 : 0.12 })),
+        linhasH: [{ y: 1, cor: cores.limiar, rotulo: "limiar" }], linhasV: [{ x: line.inicio_nominal * 0.02, cor: cores.inicio }],
+        marcas: line.alarmes.map((i) => ({ x: i * 0.02, y: ratios[i], cor: cores.limiar, forma: "triangulo", dica: [`alarme em ${num(i * 0.02)} s`] })) }),
+      csv: () => [["janela", "tempo_s", "escore", "escore_sobre_limiar"], ...line.escores.map((v, i) => [i, i * 0.02, v, ratios[i]])] }));
   }
   output.replaceChildren(...parts);
 }
@@ -323,7 +518,7 @@ async function renderReliability(body) {
   };
   rate.addEventListener("input", () => { params.taxa = Number(rate.value); debounce(rerun); });
   const hours = slider("Horas por ano", { min: 100, max: 8760, step: 5, value: params.horas_por_ano, format: (v) => `${num(v, 4)} h` },
-    (v) => { params.horas_por_ano = v; debounce(rerun); });
+    (v) => { params.horas_por_ano = v; debounce(rerun); }, "horas_ano");
   const presetOptions = [["", "Escolha um cenário da pesquisa…"], ...presets.map((p, i) => [i, p.cenario.name])];
   const controls = el("div", { class: "controls" },
     select("Ponto de partida", presetOptions, "", (value) => {
@@ -333,28 +528,36 @@ async function renderReliability(body) {
         base: scenario.time_base.basis, nome: scenario.name, fontes: scenario.sources, hipoteses: scenario.assumptions });
       openScience("confiabilidade");
     }),
-    el("label", { class: "control" }, el("span", { text: "λ (falhas por hora)" }), rate),
+    el("label", { class: "control" }, el("span", {}, "λ (falhas por hora)", nota("lambda")), rate),
     hours.node,
-    select("Base", [["operation", "horas de operação"], ["calendar", "horas de calendário"]], params.base, (v) => { params.base = v; rerun(); }),
+    select("Base de tempo", [["operation", "horas de operação"], ["calendar", "horas de calendário"]], params.base,
+      (v) => { params.base = v; rerun(); }, "base_tempo"),
     slider("Horizonte", { min: 1, max: 40, step: 1, value: params.horizonte, format: (v) => `${v} anos` },
       (v) => { params.horizonte = v; debounce(rerun); }).node);
-  body.replaceChildren(el("p", { class: "muted", text: "Vida exponencial, calculada pelo serviço RAM (`time_base`). Explorar não grava nada." }),
+  body.replaceChildren(el("p", { class: "muted", text: "Vida exponencial (taxa constante), calculada pelo serviço de confiabilidade. Explorar não grava nada." }),
     controls, output, saveScenarioForm(params), scenarioJsonForm());
   await rerun();
 }
 
+function reliabilityChart(rows, unit = "anos") {
+  return quadro({ titulo: "R(t) e F(t)", chave: "r_t", extra: GLOSSARIO.f_t, arquivo: "confiabilidade",
+    desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, { titulo: "Confiabilidade e chance de falhar",
+      proporcao: 0.4, legenda: true, yDominio: [0, 1], xRotulo: unit, yRotulo: "probabilidade", dicaX: (x) => `${num(x)} ${unit}`,
+      dicaY: (v) => pct(v),
+      series: [{ nome: "R(t), confiabilidade", cor: cores.denso, pontos: rows.map((r) => [r.time, r.reliability]) },
+        { nome: "F(t), chance de falhar", cor: cores.limiar, pontos: rows.map((r) => [r.time, r.failure_probability]) }] }),
+    csv: () => [["tempo", "R(t)", "F(t)"], ...rows.map((r) => [r.time, r.reliability, r.failure_probability])] });
+}
+
 function drawReliability(output, result, params) {
   const rows = result.rows;
-  const points = (key) => rows.map((r) => [r.time, r[key]]);
   const marks = rows.filter((r) => Number.isInteger(r.time) && [1, 5, 10, 20, 30, 40].includes(r.time));
   output.replaceChildren(
-    el("div", { class: "metrics" }, card("MTTF", `${num(result.summary.mttf, 4)} anos`),
-      card("λ em anos da base", `${num(result.summary.rate, 4)} por ano`),
-      ...marks.slice(0, 3).map((r) => card(`Chance de falhar em ${r.time} ano(s)`, pct(r.failure_probability)))),
-    chart({ label: "R(t) e F(t)", xLabel: "anos", yLabel: "probabilidade", yMin: 0, yMax: 1,
-      series: [{ points: points("reliability"), color: "var(--chart-a)", label: "R(t), confiabilidade" },
-        { points: points("failure_probability"), color: "var(--chart-b)", label: "F(t), chance de falhar" }] }),
-    table(["Anos", "R(t)", "F(t)"], marks.map((r) => [r.time, num(r.reliability, 4), pct(r.failure_probability)])),
+    el("div", { class: "metrics" }, card("MTTF", `${num(result.summary.mttf, 4)} anos`, null, "mttf"),
+      card("λ por ano, na base escolhida", `${num(result.summary.rate, 4)} por ano`, null, "lambda"),
+      ...marks.slice(0, 3).map((r) => card(`Chance de falhar em ${r.time} ano(s)`, pct(r.failure_probability), null, "f_t"))),
+    reliabilityChart(rows),
+    table(["Anos", comNota("R(t)", "r_t"), comNota("F(t)", "f_t")], marks.map((r) => [r.time, num(r.reliability, 4), pct(r.failure_probability)])),
     el("p", { class: "muted", text: `Hipóteses: ${result.assumptions.join(" ")} Limitações: ${(result.limitations || []).join(" ")}` }));
   if (params) params.ultimo = result;
 }
@@ -415,7 +618,7 @@ function scenarioJsonForm() {
 /* FMECA: tabela, as duas ordens e o relatório. */
 async function renderFmeca(body) {
   let data;
-  try { data = await api("/api/ciencia/fmeca"); } catch (error) { body.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
+  try { data = await api("/api/ciencia/fmeca"); } catch (error) { aviso(body, error.message); return; }
   body.replaceChildren(fmecaView(data), el("div", { class: "dialog-actions" }, el("button", { class: "primary", type: "button",
     text: "Gerar relatório numa pasta nova", onclick: async () => {
       try {
@@ -430,19 +633,23 @@ function fmecaView(data) {
   const operation = (item) => item.leitura_pelas_taxas.find((r) => r.base === "operation") || item.leitura_pelas_taxas[0];
   const byNpr = [...items].sort((a, b) => a.posicoes.npr - b.posicoes.npr);
   const byRate = [...items].sort((a, b) => a.posicoes.taxa - b.posicoes.taxa);
+  const ranking = (titulo, chave, list, value, format, arquivo) => quadro({ titulo, chave, arquivo,
+    desenhar: (area, largura, cores) => barrasHorizontais(area, largura, cores, { titulo, formato: format,
+      margemEsquerda: Math.min(230, largura * 0.45),
+      itens: list.map((item) => ({ id: item.id, rotulo: item.nome, valor: value(item), cor: cores.denso })) }),
+    csv: () => [["grupo", titulo], ...list.map((item) => [item.nome, value(item)])] });
   return el("div", { class: "science-output" },
     el("p", { class: "muted", text: `${data.criterio} Notas: ${data.fonte_notas}` }),
-    table(["Grupo", "S", "O", "D", "NPR", "λ (1/h)", "MTBF em operação", "F(1 ano)", "F(20 anos)"], items.map((item) => {
+    table(["Grupo", comNota("S", "severidade"), comNota("O", "ocorrencia"), comNota("D", "deteccao"), comNota("NPR", "npr"),
+      comNota("λ (1/h)", "lambda"), comNota("MTBF em operação", "mtbf"), comNota("F(1 ano)", "f_t"), comNota("F(20 anos)", "f_t")],
+    items.map((item) => {
       const r = operation(item);
       return [item.nome, item.S, item.O, item.D, item.npr, num(item.taxa_por_hora), `${num(r.mtbf_anos, 3)} anos`,
         pct(r.horizontes["1"].chance_de_falhar), pct(r.horizontes["20"].chance_de_falhar)];
     })),
     el("div", { class: "science-pair" },
-      el("div", {}, el("h3", { class: "science-h", text: "Ordem pelo NPR (S × O × D)" }),
-        bars({ horizontal: true, values: byNpr.map((i) => i.npr), labels: byNpr.map((i) => i.id), label: "NPR" })),
-      el("div", {}, el("h3", { class: "science-h", text: "Ordem pela taxa de falha" }),
-        bars({ horizontal: true, values: byRate.map((i) => i.taxa_por_hora * 1e6), labels: byRate.map((i) => i.id),
-          unit: "e-6/h", label: "taxa" }))),
+      ranking("Ordem pelo NPR (S × O × D)", "npr", byNpr, (i) => i.npr, (v) => String(v), "fmeca-npr"),
+      ranking("Ordem pela taxa de falha (×10⁻⁶ por hora)", "lambda", byRate, (i) => i.taxa_por_hora * 1e6, (v) => dec(v), "fmeca-taxa")),
     el("p", { class: "muted", text: "As duas ordens ficam separadas, sem nota agregada (decisão de 27/09/2026)." }),
     ...(data.pares_discordantes_O_taxa?.length ? [el("h3", { class: "science-h", text: "Pares em que a ocorrência O e a taxa discordam" }),
       table(["Maior O", "Menor O", "O", "Taxas (1/h)"], data.pares_discordantes_O_taxa.map((p) => [p.maior_O, p.menor_O,
@@ -451,92 +658,23 @@ function fmecaView(data) {
     el("ul", { class: "science-list" }, ...[...(data.ressalvas || []), ...(data.limites || [])].map((text) => el("li", { text }))));
 }
 
-/* Resultados gravados */
-async function renderResults(body) {
-  let items = [];
-  try { items = await api("/api/ciencia/resultados"); } catch (error) { toast(error.message); }
-  if (!items.length) { body.replaceChildren(el("p", { class: "muted", text: "Nenhum resultado gravado ainda." })); return; }
-  const viewer = el("article", { class: "doc-viewer" }, el("p", { class: "muted", text: "Escolha um resultado." }));
-  const list = el("ul", { class: "doc-list" }, ...items.map((item) => el("li", {}, el("button", { class: "doc-item", type: "button",
-    "data-result": item.id, onclick: () => showResult(item, viewer) },
-    el("span", { class: "doc-title", text: item.titulo }), el("span", { class: "doc-ref", text: item.rotulo }),
-    el("span", { class: "doc-meta" }, el("span", { text: item.id }))))));
-  body.replaceChildren(el("div", { class: "library-body" }, list, viewer));
-  const chosen = items.find((item) => item.id === science.result) || null;
-  if (chosen) showResult(chosen, viewer);
-}
-
-async function showResult(item, viewer) {
-  science.result = item.id;
-  document.querySelectorAll("[data-result]").forEach((b) => b.classList.toggle("is-current", b.dataset.result === item.id));
-  viewer.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
-  let data;
-  try { data = await api(`/api/ciencia/resultados/${item.id.split("/").map(encodeURIComponent).join("/")}`); }
-  catch (error) { viewer.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
-  const parts = [el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: `${data.rotulo} · ${data.caminho}` }))];
-  if (data.consulta) {
-    parts.push(el("div", { class: `note ${data.consulta.canonica ? "note-ok" : "note-warn"}`, text: data.consulta.canonica
-      ? "Avaliação canônica: consulta nº 1 ao teste, de 27/09/2026."
-      : `Avaliação não canônica: consulta nº ${data.consulta.numero} ao teste, em ${day(data.consulta.data)}. ` +
-        "Não substitui a avaliação de 27/09 (M14)." }));
-  }
-  if (data.configuracao_canonica !== undefined) {
-    parts.push(el("div", { class: `note ${data.configuracao_canonica ? "note-ok" : "note-warn"}`, text: data.configuracao_canonica
-      ? "Treino com a configuração canônica." : "Treino exploratório: a configuração difere da canônica." }));
-  }
-  if (data.execucao) {
-    parts.push(el("p", { class: "muted", text: `Feita pela interface (${JOB_STATES[data.execucao.estado] || data.execucao.estado}): ` +
-      `${new Date(data.execucao.iniciado_em).toLocaleString("pt-BR")} a ${new Date(data.execucao.terminado_em).toLocaleString("pt-BR")}.` }));
-  }
-  if (data.curvas?.linhas?.length) {
-    parts.push(chart({ label: "R(t) e F(t)", xLabel: data.curvas.unidade === "year" ? "anos" : data.curvas.unidade, yLabel: "probabilidade",
-      yMin: 0, yMax: 1, series: [{ points: data.curvas.linhas.map((r) => [r.time, r.reliability]), color: "var(--chart-a)", label: "R(t)" },
-        { points: data.curvas.linhas.map((r) => [r.time, r.failure_probability]), color: "var(--chart-b)", label: "F(t)" }] }));
-  }
-  if (data.fmeca) parts.push(fmecaView(data.fmeca));
-  if (data.calibracao) {
-    for (const [kind, curve] of Object.entries(data.calibracao.modelos)) {
-      parts.push(el("h3", { class: "science-h", text: `${kind === "lstm" ? "AE-LSTM" : "Denso"}: calibração da semente ${data.calibracao.semente} ` +
-        `(k = ${data.calibracao.k}, p${num(data.calibracao.percentil)})` }),
-        chart({ label: "Escores de calibração", xLabel: "janelas, do menor ao maior escore", yLabel: "escore",
-          series: [{ points: curve.escores_ordenados.map((v, i) => [i + 1, v]), color: "var(--chart-a)" }],
-          hLines: [{ y: curve.limiar, label: `limiar ${num(curve.limiar, 5)}`, class: "is-threshold" }] }));
-    }
-  }
-  if (data.ensaios) {
-    parts.push(el("h3", { class: "science-h", text: `Ensaios, semente ${data.ensaios.semente}` }),
-      table(["Modelo", "Ensaio", "Detectado", "Atraso", "Alarmes no pré-falha"], data.ensaios.linhas.map((r) => [
-        r.modelo === "lstm" ? "AE-LSTM" : "Denso", r.ensaio, r.detectado === "True" ? "sim" : "não",
-        r.atraso_ms ? seconds(Number(r.atraso_ms)) : "—", r.alarmes_pre_falha])));
-  }
-  if (data.busca?.resumo) {
-    const r = data.busca.resumo;
-    parts.push(el("div", { class: "metrics" }, card("Acertos", `${r.acertos} de ${r.perguntas}`), card("MRR", num(r.mrr, 3)),
-      card("Documentos distintos", num(r.documentos_distintos_medio, 3))));
-  }
-  if (data.html) {
-    const report = el("div", { class: "answer" });
-    report.innerHTML = data.html; // Markdown do relatório renderizado no servidor, sem HTML bruto
-    renderMath(report);
-    parts.push(report);
-  }
-  viewer.replaceChildren(...parts);
-}
-
-/* Rodar GPVS (lote 21): preparar, treinar e avaliar pelos próprios comandos, uma etapa por vez. */
-function day(iso) { return iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "—"; }
-
+/* 5. Rodar e arquivos: preparar, treinar e avaliar pelos próprios comandos, e os resultados gravados. */
 const STEP_NAMES = { preparar: "Preparo", treinar: "Treino", avaliar: "Avaliação" };
 const JOB_STATES = { processando: "em andamento", concluido: "concluído", falhou: "falhou", cancelado: "cancelado" };
 const CONSULTATION_STATES = { iniciada: "iniciada", concluida: "concluída", falhou: "falhou", cancelada: "cancelada" };
 
+async function renderRunsAndFiles(body) {
+  const runs = el("div", { class: "science-output" });
+  const files = el("div", { class: "science-output" });
+  body.replaceChildren(el("h3", { class: "science-h", text: "Rodar" }), runs,
+    el("h3", { class: "science-h", text: "Arquivos de resultados" }), files);
+  await Promise.all([renderRuns(runs), renderResults(files)]);
+}
+
 async function renderRuns(body) {
   let info;
-  try { info = await api("/api/ciencia/gpvs"); } catch (error) { body.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
-  if (!info.disponivel) {
-    body.replaceChildren(el("div", { class: "note note-warn", text: `Não dá para rodar o GPVS: falta ${info.faltando.join("; ")}.` }));
-    return;
-  }
+  try { info = await api("/api/ciencia/gpvs"); } catch (error) { aviso(body, error.message); return; }
+  if (!info.disponivel) { aviso(body, `Não dá para rodar agora: falta ${info.faltando.join("; ")}.`); return; }
   const c = info.canonica;
   const progress = el("div", { class: "science-output" });
   const prep = { separacao: c.separacao };
@@ -546,54 +684,54 @@ async function renderRuns(body) {
     const seeds = String(train.sementes).split(",").map((s) => Number(s.trim())).join(",");
     const same = Number(train.separacao) === c.separacao && seeds === c.sementes.join(",") && Number(train.teto_epocas) === c.teto_epocas;
     badge.className = `badge ${same ? "badge-ok" : "badge-warn"}`;
-    badge.textContent = same ? "configuração canônica" : "exploratória";
+    badge.textContent = same ? "ajustes originais" : "ajustes diferentes (exploração)";
   };
-  const field = (label, key, target, attrs = {}) => {
+  const field = (label, key, target, attrs = {}, chave) => {
     const input = el("input", { value: target[key], ...attrs });
     input.addEventListener("input", () => { target[key] = input.value; updateBadge(); });
-    return el("label", { class: "control" }, el("span", { text: label }), input);
+    return el("label", { class: "control" }, el("span", {}, label, ...(chave ? [nota(chave)] : [])), input);
   };
-  const next = Math.max(0, ...info.consultas.map((item) => item.numero)) + 1;
   const trainingSelect = el("select", {}, ...info.treinos.map((item) => {
-    const option = el("option", { value: item.pasta, text: `${item.pasta}${item.canonica ? " (canônica)" : " (exploratória)"}` });
+    const option = el("option", { value: item.pasta, text: `${item.pasta} (${item.canonica ? "ajustes originais" : "exploração"})` });
     if (item.pasta === c.treino) option.selected = true;
     return option;
   }));
   const cards = el("div", { class: "run-grid" },
     el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "1. Preparar" }),
-      el("p", { class: "muted", text: "Divisão 50/15/15/20, normalização só no treino e verificação de autocorrelação. Não usa modelos nem o teste." }),
+      el("p", { class: "muted", text: "Divide os dados (50/15/15/20), normaliza só com o treino e confere a autocorrelação. Não usa modelos nem os ensaios de teste." }),
       field("Separação entre blocos (janelas)", "separacao", prep, { type: "number", min: 0, max: 200 }),
       el("button", { class: "primary", type: "button", text: "Preparar", onclick: () => launch("/api/ciencia/gpvs/preparar", prep, progress) })),
     el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "2. Treinar" }),
-      el("p", { class: "muted", text: `Denso e AE-LSTM em cada semente, parada pela validação e limiar p99 na calibração. Canônica: ${c.treino || "valores de 27/09"}.` }),
+      el("p", { class: "muted", text: "Treina o Denso e o AE-LSTM em cada repetição, para pela validação e põe o limiar no percentil 99 da calibração." }),
       field("Separação entre blocos (janelas)", "separacao", train, { type: "number", min: 0, max: 200 }),
-      field("Sementes (separadas por vírgula)", "sementes", train),
+      field("Repetições do treino (um número por repetição, separados por vírgula)", "sementes", train, {}, "treinos"),
       field("Teto de épocas (só de segurança)", "teto_epocas", train, { type: "number", min: 1 }),
       badge,
       el("button", { class: "primary", type: "button", text: "Treinar (cerca de 2 min)", onclick: () => launch("/api/ciencia/gpvs/treinar", train, progress) })),
     el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "3. Avaliar" }),
-      el("p", { class: "muted", text: "Pontua o teste e os 14 ensaios com falha: é uma nova consulta ao teste (M14), registrada e não canônica." }),
-      el("label", { class: "control" }, el("span", { text: "Rodada de treino" }), trainingSelect),
+      el("p", { class: "muted", text: "Pontua de novo o teste saudável e os 14 ensaios com falha. Fica registrada como exploração; a avaliação oficial continua a de 27/09." }),
+      el("label", { class: "control" }, el("span", { text: "Rodada de treino (pasta)" }), trainingSelect),
       el("button", { class: "primary", type: "button", text: "Avaliar…", disabled: info.treinos.length ? null : true,
-        onclick: () => confirmEvaluation(trainingSelect.value, info.frase, next, progress) })));
+        onclick: () => confirmEvaluation(trainingSelect.value, info.frase, progress) })));
   updateBadge();
-  const consultations = table(["Nº", "Data", "Treino", "Resultado", "Estado", "Tipo"], info.consultas.map((item) => [
-    item.numero, day(item.data), item.treino?.pasta, item.saida, CONSULTATION_STATES[item.estado] || item.estado,
-    item.canonica ? "canônica" : "não canônica"]));
-  body.replaceChildren(el("p", { class: "muted", text: "Cada etapa roda o mesmo comando do terminal e grava numa pasta nova de resultados. Uma etapa por vez." }),
-    progress, cards, el("h3", { class: "science-h", text: "Consultas ao teste (M14)" }), consultations);
+  const history = el("details", { class: "historico" }, el("summary", { text: "Histórico de avaliações" }),
+    table(["Nº", "Data", "Treino (pasta)", "Resultado (pasta)", "Estado", "Tipo"], info.consultas.map((item) => [
+      item.numero, day(item.data), item.treino?.pasta, item.saida, CONSULTATION_STATES[item.estado] || item.estado,
+      item.canonica ? "oficial" : "exploração"])));
+  body.replaceChildren(el("p", { class: "muted", text: "Cada etapa roda o mesmo comando do terminal e grava numa pasta nova de resultados, uma por vez." }),
+    progress, cards, history);
   if (info.tarefa) watch(info.tarefa.id, progress);
 }
 
-function confirmEvaluation(training, phrase, number, progress) {
+function confirmEvaluation(training, phrase, progress) {
   const input = el("input", { autocomplete: "off", placeholder: phrase });
   const go = el("button", { class: "primary", type: "button", text: "Avaliar", disabled: true });
   input.addEventListener("input", () => { go.disabled = input.value.trim().toLowerCase() !== phrase; });
   const dialog = el("dialog", { class: "dialog", "aria-labelledby": "consulta-titulo" },
-    el("h2", { id: "consulta-titulo", text: "Nova consulta ao teste" }),
-    el("p", { class: "muted", text: `Avaliar ${training} pontua o teste saudável e os 14 ensaios com falha, já consultados em 27/09. ` +
-      `Pelo M14, esta será a consulta nº ${number}: fica registrada, é não canônica e não substitui a avaliação oficial. ` +
-      "Não use o resultado para escolher parâmetros." }),
+    el("h2", { id: "consulta-titulo", text: "Avaliar de novo" }),
+    el("p", { class: "muted", text: `Avaliar ${training} pontua de novo o teste saudável e os 14 ensaios com falha, os mesmos da ` +
+      "avaliação oficial de 27/09. O resultado fica registrado como exploração e não substitui o oficial. " +
+      "Não use esse resultado para escolher ajustes: os ensaios de teste deixariam de ser um teste independente." }),
     el("label", { class: "field" }, `Digite "${phrase}" para confirmar`, input),
     el("div", { class: "dialog-actions" }, el("button", { class: "secondary", type: "button", text: "Cancelar", onclick: () => dialog.close() }), go));
   go.addEventListener("click", () => { dialog.close(); launch("/api/ciencia/gpvs/avaliar", { treino: training, frase: input.value }, progress); });
@@ -617,16 +755,15 @@ async function watch(id, box) {
     if (!box.isConnected) return;  // a seção foi trocada; a etapa continua no servidor
     const running = job.estado === "processando";
     const elapsed = running ? (Date.now() - Date.parse(job.iniciado_em)) / 1000 : job.decorrido_s;
-    const title = `${STEP_NAMES[job.etapa] || job.etapa} → ${job.pasta}${job.consulta ? ` (consulta nº ${job.consulta})` : ""}: ` +
-      `${JOB_STATES[job.estado] || job.estado}, ${num(elapsed, 3)} s`;
+    const title = `${STEP_NAMES[job.etapa] || job.etapa} → ${job.pasta}: ${JOB_STATES[job.estado] || job.estado}, ${num(elapsed, 3)} s`;
     const actions = el("div", { class: "dialog-actions" });
     if (running) {
       actions.append(el("button", { class: "secondary", type: "button", text: "Cancelar etapa", onclick: async () => {
         try { await api("/api/ciencia/gpvs/cancelar", { method: "POST" }); } catch (error) { toast(error.message); }
       } }));
     } else if (job.resultado?.pasta) {
-      actions.append(el("button", { class: "primary", type: "button", text: "Abrir em Resultados",
-        onclick: () => { science.result = job.resultado.pasta; openScience("resultados"); } }));
+      actions.append(el("button", { class: "primary", type: "button", text: "Abrir o resultado",
+        onclick: () => { science.result = job.resultado.pasta; openScience("rodar"); } }));
     }
     const tone = job.estado === "falhou" ? "note-warn" : job.estado === "concluido" ? "note-ok" : "";
     box.replaceChildren(el("div", { class: `note ${tone} run-status`, text: title }),
@@ -635,10 +772,78 @@ async function watch(id, box) {
     if (!running) {
       if (job.estado === "concluido" && !science.refreshed?.has(id)) {
         (science.refreshed ||= new Set()).add(id);
-        if (science.tab === "rodar") openScience("rodar");  // atualiza rodadas e o registro de consultas
+        if (science.tab === "rodar") openScience("rodar");  // atualiza as rodadas e o histórico
       }
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
+}
+
+/* Resultados gravados: pelo nome e pela data; a pasta aparece como detalhe. */
+async function renderResults(body) {
+  let items = [];
+  try { items = await api("/api/ciencia/resultados"); } catch (error) { toast(error.message); }
+  if (!items.length) { body.replaceChildren(el("p", { class: "muted", text: "Nenhum resultado gravado ainda." })); return; }
+  const viewer = el("article", { class: "doc-viewer" }, el("p", { class: "muted", text: "Escolha um resultado." }));
+  const list = el("ul", { class: "doc-list" }, ...items.map((item) => el("li", {}, el("button", { class: "doc-item", type: "button",
+    "data-result": item.id, onclick: () => showResult(item, viewer) },
+    el("span", { class: "doc-title", text: item.titulo }), el("span", { class: "doc-ref", text: item.rotulo }),
+    el("span", { class: "doc-meta" }, el("span", { text: item.modificado ? new Date(item.modificado).toLocaleString("pt-BR") : "" }))))));
+  body.replaceChildren(el("div", { class: "library-body" }, list, viewer));
+  const chosen = items.find((item) => item.id === science.result) || null;
+  if (chosen) showResult(chosen, viewer);
+}
+
+async function showResult(item, viewer) {
+  science.result = item.id;
+  document.querySelectorAll("[data-result]").forEach((b) => b.classList.toggle("is-current", b.dataset.result === item.id));
+  viewer.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
+  let data;
+  try { data = await api(`/api/ciencia/resultados/${item.id.split("/").map(encodeURIComponent).join("/")}`); }
+  catch (error) { viewer.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
+  const parts = [el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: `${data.rotulo} · pasta: ${data.caminho}` }))];
+  if (data.consulta) {
+    parts.push(el("div", { class: `note ${data.consulta.canonica ? "note-ok" : "note-warn"}`, text: data.consulta.canonica
+      ? "Avaliação oficial, de 27/09/2026."
+      : `Avaliação feita depois da oficial, em ${day(data.consulta.data)}: é exploração. Os números oficiais continuam os de 27/09.` }));
+  }
+  if (data.configuracao_canonica !== undefined) {
+    parts.push(el("div", { class: `note ${data.configuracao_canonica ? "note-ok" : "note-warn"}`, text: data.configuracao_canonica
+      ? "Treino com os ajustes originais." : "Treino com ajustes diferentes dos originais (exploração)." }));
+  }
+  if (data.execucao) {
+    parts.push(el("p", { class: "muted", text: `Feita pela interface (${JOB_STATES[data.execucao.estado] || data.execucao.estado}): ` +
+      `${new Date(data.execucao.iniciado_em).toLocaleString("pt-BR")} a ${new Date(data.execucao.terminado_em).toLocaleString("pt-BR")}.` }));
+  }
+  if (data.curvas?.linhas?.length) parts.push(reliabilityChart(data.curvas.linhas, data.curvas.unidade === "year" ? "anos" : data.curvas.unidade));
+  if (data.fmeca) parts.push(fmecaView(data.fmeca));
+  if (data.calibracao) {
+    for (const [kind, curve] of Object.entries(data.calibracao.modelos)) {
+      parts.push(quadro({ titulo: `${NOME_MODELO[kind] || kind}: escores de calibração do treino de referência ` +
+        `(k = ${data.calibracao.k}, percentil ${num(data.calibracao.percentil)})`, chave: "limiar", arquivo: `calibracao-${kind}`,
+      desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, { titulo: "Escores de calibração", proporcao: 0.36,
+        xRotulo: "janelas, do menor ao maior escore", yRotulo: "escore",
+        series: [{ nome: "escore", cor: MODELO_COR(cores, kind), pontos: curve.escores_ordenados.map((v, i) => [i + 1, v]) }],
+        linhasH: [{ y: curve.limiar, cor: cores.limiar, rotulo: `limiar ${num(curve.limiar, 5)}` }] }) }));
+    }
+  }
+  if (data.ensaios) {
+    parts.push(el("h3", { class: "science-h", text: "Ensaios (treino de referência)" }),
+      table(["Modelo", "Ensaio", comNota("Detectou", "detectados"), comNota("Atraso", "atraso"), comNota("Alarmes antes da falha", "alarmes_antes")],
+        data.ensaios.linhas.map((r) => [NOME_MODELO[r.modelo] || r.modelo, r.ensaio, r.detectado === "True" ? "sim" : "não",
+          r.atraso_ms ? seconds(Number(r.atraso_ms)) : "—", r.alarmes_pre_falha])));
+  }
+  if (data.busca?.resumo) {
+    const r = data.busca.resumo;
+    parts.push(el("div", { class: "metrics" }, card("Acertos", `${r.acertos} de ${r.perguntas}`), card("MRR", num(r.mrr, 3)),
+      card("Documentos distintos", num(r.documentos_distintos_medio, 3))));
+  }
+  if (data.html) {
+    const report = el("div", { class: "answer" });
+    report.innerHTML = data.html; // Markdown do relatório renderizado no servidor, sem HTML bruto
+    renderMath(report);
+    parts.push(report);
+  }
+  viewer.replaceChildren(...parts);
 }

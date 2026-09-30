@@ -1,8 +1,9 @@
-"""Aba Ciência da interface (lote 20): resultados, exploradores, confiabilidade e FMECA.
+"""Aba Ciência da interface (lotes 20 e 23): resultados oficiais, exploradores, confiabilidade e FMECA.
 
 Os cálculos são do serviço científico; o navegador só desenha. Salvar um cenário ou rodar a
-FMECA grava sempre numa pasta nova de `data/resultados`, sem sobrescrever outra. O GPVS pela
-interface (preparar, treinar e avaliar) fica para o lote 21.
+FMECA grava sempre numa pasta nova de `data/resultados`, sem sobrescrever outra. As visões dos
+resultados oficiais (resumo, métricas e escores) só leem arquivos. O GPVS pela interface
+(preparar, treinar e avaliar) fica em `gpvs_runs.py`.
 """
 
 from __future__ import annotations
@@ -308,8 +309,33 @@ def science_routes(settings, worker, lock) -> list[Route]:
             job = settings.jobs.get(request.path_params["job"])
         return JSONResponse(job) if job else _error("Tarefa não encontrada.", 404)
 
+    async def official(function: str, *arguments):
+        """Resultados oficiais (lote 23): só leitura, sem carregar os modelos."""
+        try:
+            from aliado.science.detection import summary
+
+            return JSONResponse(await run_in_threadpool(getattr(summary, function), *arguments))
+        except FileNotFoundError as exc:
+            return _error(str(exc), 404)
+        except ImportError:
+            return _error("Falta o extra 'ml' (numpy) para ver os resultados.", 404)
+        except (KeyError, ValueError, StopIteration):
+            return _error("Os resultados oficiais estão incompletos.", 404)
+
+    async def overview(request: Request):
+        return await official("overview", settings.results_dir)
+
+    async def per_fault(request: Request):
+        return await official("per_fault", settings.results_dir)
+
+    async def score_panels(request: Request):
+        return await official("score_panels", settings.results_dir, settings.gpvs_dir)
+
     return [
         Route("/api/ciencia", state),
+        Route("/api/ciencia/resumo", overview),
+        Route("/api/ciencia/metricas", per_fault),
+        Route("/api/ciencia/escores", score_panels),
         Route("/api/ciencia/preparar", prepare, methods=["POST"]),
         Route("/api/ciencia/tarefas/{job}", job_status),
         Route("/api/ciencia/limiar", threshold, methods=["POST"]),

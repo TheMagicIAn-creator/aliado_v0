@@ -29,6 +29,21 @@
   --sources: 300px;
   --chart-a: #2f6fb5;
   --chart-b: #c2522f;
+  /* Gráficos (lote 23): as cores das figuras antigas da dissertação (estilo_graficos.py). */
+  --g-denso: #2a78d6;
+  --g-lstm: #1baf7a;
+  --g-texto: #1e2220;
+  --g-suave: #52514e;
+  --g-grade: #ebe8e1;
+  --g-eixo: #c3c2b7;
+  --g-fundo: #ffffff;
+  --g-limiar: #c43d3d;
+  --g-inicio: #4a3aa7;
+  --g-vazio: #e3dfd6;
+  --g-fase-comissionamento: #898781;
+  --g-fase-antes: #147a3d;
+  --g-fase-transicao: #eda100;
+  --g-fase-depois: #e34948;
 }
 
 :root[data-theme="dark"] {
@@ -55,6 +70,27 @@
   --focus: 0 0 0 3px rgba(93, 202, 165, 0.3);
   --chart-a: #7ab3ef;
   --chart-b: #f0997b;
+  --g-denso: #6aa8f0;
+  --g-lstm: #3fd49b;
+  --g-texto: #edefe9;
+  --g-suave: #a8aea8;
+  --g-grade: #2a302c;
+  --g-eixo: #4a524c;
+  --g-fundo: #1c201e;
+  --g-limiar: #f08a8a;
+  --g-inicio: #b9a8f5;
+  --g-vazio: #2d332f;
+  --g-fase-comissionamento: #9a9f9a;
+  --g-fase-antes: #4fc27f;
+  --g-fase-transicao: #f5c04a;
+  --g-fase-depois: #f07a79;
+}
+
+/* Exportação dos gráficos: sempre as cores do tema claro, em fundo branco. */
+.grafico-claro {
+  --g-denso: #2a78d6; --g-lstm: #1baf7a; --g-texto: #0b0b0b; --g-suave: #52514e; --g-grade: #e1e0d9;
+  --g-eixo: #c3c2b7; --g-fundo: #ffffff; --g-limiar: #c43d3d; --g-inicio: #4a3aa7; --g-vazio: #e3dfd6;
+  --g-fase-comissionamento: #898781; --g-fase-antes: #147a3d; --g-fase-transicao: #eda100; --g-fase-depois: #e34948;
 }
 
 /* Fonte do texto (lote 22): troca a letra de toda a interface; só fontes instaladas no sistema,
@@ -392,20 +428,59 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .metric p { margin: 0; font-size: 12px; color: var(--text-soft); }
 .metric b { font: 500 20px/1.25 var(--sans); }
 .metric .muted { font-size: 12px; }
-.chart { width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-.chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-tick { font: 11px var(--sans); fill: var(--text-faint); }
-.chart-label { font: 12px var(--sans); fill: var(--text-soft); }
-.chart-line { fill: none; stroke-width: 1.8; }
-.chart-hline { stroke: var(--chart-b); stroke-width: 1.5; stroke-dasharray: 6 4; }
-.chart-vline { stroke: var(--text-soft); stroke-width: 1.2; stroke-dasharray: 3 3; }
-.chart-mark { fill: var(--chart-b); }
-.chart-mark.is-alarm { fill: var(--danger-text); }
-.chart-band { fill: var(--surface-muted); opacity: .8; }
-.chart-band.is-warn { fill: var(--warn-bg); }
-.chart-band.is-hot { fill: var(--danger-bg); opacity: .6; }
-.chart-bar { fill: var(--border-strong); }
-.chart-bar.is-hot { fill: var(--chart-b); }
+/* Gráficos em D3 (lote 23): quadro com título, nota e exportação. */
+.quadro { margin: 0; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+          padding: 10px 12px 8px; display: grid; gap: 6px; min-width: 0; }
+.quadro-titulo { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+                 font-size: 13.5px; color: var(--text); }
+.quadro-titulo > span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.quadro-acoes { display: inline-flex; gap: 10px; font-size: 12px; }
+.quadro-area { min-width: 0; }
+/* A regra global de svg é para ícones (18 px, só contorno); os gráficos trazem as próprias cores. */
+.quadro-area svg { display: block; width: 100%; max-width: 100%; height: auto; fill: currentColor; stroke: none; stroke-width: 1; }
+.grafico-exportacao { position: fixed; left: -12000px; top: 0; visibility: hidden; }
+.grafico-dica { position: fixed; z-index: 60; pointer-events: none; display: grid; gap: 2px; max-width: 340px;
+                background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px;
+                padding: 6px 9px; font-size: 12.5px; box-shadow: 0 6px 20px rgba(0, 0, 0, .16); }
+/* Notas do glossário: um "i" que abre um balão. */
+.nota { display: inline-grid; place-items: center; width: 17px; height: 17px; padding: 0; border-radius: 50%;
+        border: 1px solid var(--border-strong); background: var(--surface-muted); color: var(--text-soft);
+        font: italic 600 11px/1 var(--serif); flex: none; vertical-align: middle; }
+.nota:hover, .nota:focus-visible { border-color: var(--accent); color: var(--accent-text); }
+.nota-balao { position: fixed; z-index: 70; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong);
+              border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.45; box-shadow: 0 10px 28px rgba(0, 0, 0, .2); }
+.com-nota { display: inline-flex; align-items: center; gap: 5px; }
+.metric p { display: flex; align-items: center; gap: 5px; }
+/* Visões dos resultados */
+.par-modelos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
+.coluna-modelo { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.coluna-modelo > h3 { display: flex; align-items: center; gap: 8px; }
+.marca-modelo { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.marca-modelo.is-denso { background: var(--g-denso); }
+.marca-modelo.is-lstm { background: var(--g-lstm); }
+.indice { display: flex; flex-wrap: wrap; gap: 6px; }
+.legenda-fases { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--text-soft); align-items: center; }
+.legenda-fases i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.escores-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(540px, 100%), 1fr)); gap: 16px; }
+.ensaio { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; display: grid; gap: 10px;
+          background: var(--surface-muted); scroll-margin-top: 12px; min-width: 0; }
+.ensaio-titulo { margin: 0; font: 500 15px/1.35 var(--sans); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* Carrossel dos escores: um gráfico por vez, com rolagem lateral que encaixa em cada um. */
+.carrossel { display: grid; gap: 8px; min-width: 0; }
+.carrossel-controles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.carrossel-seta { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-strong);
+                  background: var(--surface); font-size: 18px; line-height: 1; display: grid; place-items: center; }
+.carrossel-seta:hover { border-color: var(--accent); color: var(--accent-text); }
+.carrossel-trilho { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; overflow-x: auto;
+                    scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain;
+                    scrollbar-width: none; border-radius: var(--radius); }
+.carrossel-trilho::-webkit-scrollbar { display: none; }
+.carrossel-trilho:focus-visible { box-shadow: var(--focus); }
+.carrossel-slide { scroll-snap-align: start; min-width: 0; }
+.ensaio-rodape { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 6px 14px;
+                 font-size: 13px; color: var(--text-soft); }
+.subtitulo-secao { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+details.historico > summary { cursor: pointer; font: 400 18px/1.3 var(--serif); margin: 6px 0; }
 .table-wrap { overflow-x: auto; }
 .data-table { border-collapse: collapse; font-size: 13.5px; width: 100%; }
 .data-table th, .data-table td { border-bottom: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }

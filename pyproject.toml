@@ -32,7 +32,8 @@ namespaces = false
 "aliado.skills" = ["builtin/*/SKILL.md", "builtin/*/references/*.md"]
 "aliado.interfaces.web" = ["static/*.html", "static/*.css", "static/*.js",
                            "static/vendor/katex/*.js", "static/vendor/katex/*.css",
-                           "static/vendor/katex/LICENSE", "static/vendor/katex/fonts/*.woff2"]
+                           "static/vendor/katex/LICENSE", "static/vendor/katex/fonts/*.woff2",
+                           "static/vendor/d3/d3.min.js", "static/vendor/d3/LICENSE"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

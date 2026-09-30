@@ -52,6 +52,6 @@
     "Notas conferidas em 30/09/2026 no PDF de Cristaldi et al. (2017), Tabela 6, p. 6: IGBT 3/3/7 (63), contatores CA/CC 6/5/5 (150), ventiladores 4/3/4 (48) e PCB 7/4/6 (168), iguais às do documento da origem (mestrado-utfpr, docs/fmeca.md, commit 21f6ddf).",
     "S, O e D refletem a percepção do levantamento de campo da fonte; não são medidas físicas.",
     "A ocorrência O não é recalculada a partir das taxas decididas (decisão de 27/09/2026): notas e taxas vêm de fontes e populações diferentes e ficam em leituras separadas.",
-    "S, O e D são os da fonte; métricas de detectores não os alteram (M09), e a FMECA é independente do GPVS (M11)."
+    "S, O e D são os da fonte; as métricas dos detectores não os alteram, e a FMECA é independente do GPVS."
   ]
 }

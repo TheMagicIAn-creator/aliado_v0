@@ -152,7 +152,7 @@ antes de começar.
 | Lote | Entrega | Situação |
 |---|---|---|
 | 22 | Correções de confiança: skill do mestrado atualizada, taxas e notas da FMECA conferidas nos PDFs, apagar documentos da biblioteca e os 2 recortes do Lafraia, consulta da busca reescrita a partir da conversa, em português e inglês, 10 trechos por resposta e fonte do texto | Concluído em 30/09/2026 |
-| 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | A combinar |
+| 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | Concluído em 30/09/2026 |
 | 24 | Aba Ciência nova, parte 2: confiabilidade por componente, FMECA melhorada e disponibilidade com os tempos de reparo do IEEE 493 | A combinar |
 | 25 | Início das falhas no GPVS | A combinar |
 | 26 | Resultados no chat e lançamento da 0.3.0 | A combinar |

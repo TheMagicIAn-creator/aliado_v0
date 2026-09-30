@@ -5,9 +5,19 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Rumo à 0.3.0 (lotes 22 a 26). Detalhes na spec [0022](docs/specs/0022-correcoes-confianca.md).
+Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correcoes-confianca.md) e
+[0023](docs/specs/0023-aba-ciencia-nova.md).
 
 ### Adicionado
+
+- **Aba Ciência nova**, organizada pelas perguntas: Resumo · Escores por ensaio · Métricas por falha · Confiabilidade · FMECA · Explorar · Rodar e arquivos.
+  - **Resumo:** a comparação Denso × AE-LSTM por objetivo, os indicadores de cada modelo e as matrizes de confusão, com filtro por falha e por ensaio.
+  - **Escores por ensaio:** um contêiner por ensaio, com um carrossel na ordem Denso → AE-LSTM → Ambos, no mesmo tamanho e na mesma escala. "Mostrar em todos" troca o gráfico de todos os ensaios de uma vez. Mostram escore ÷ limiar em escala log, as fases, o início nominal e os alarmes.
+  - **Métricas por falha:** barras agrupadas por tipo de falha, mapas de calor por ensaio e as métricas gerais com a faixa dos 5 treinamentos repetidos.
+  - **Gráficos em D3 v7**, copiado do projeto antigo, com as cores das figuras da dissertação.
+  - **Exportação:** SVG e PNG de 300 dpi em fundo branco, e CSV que o Excel em português abre direto.
+  - **Uma nota em cada índice e indicador**, ao passar o mouse, ao focar ou ao tocar.
+  - As telas mostram os dados em palavras, sem os códigos internos do protocolo.
 
 - **Consulta da busca reescrita:** com a biblioteca ligada, o modelo mais barato transforma cada mensagem numa consulta completa. O assunto vem da conversa, as siglas vão por extenso, e os termos vão em português e em inglês.
   - Continuações como "Traga a definição… uma citação direta" passam a achar o assunto da pergunta anterior.

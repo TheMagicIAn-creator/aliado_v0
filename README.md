@@ -86,16 +86,22 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - A aba **Memória** mostra histórico, edição, revogação e conflitos para você decidir. Nada é apagado.
   - `data/` fica fora do Git e sem cópia automática. Copie `data/memoria` e `data/conversas` se quiser guardá-los.
 - **Busca na web:** ligue **Buscar na web**. As fontes da web aparecem como **[Wn]**, separadas dos seus documentos. Na aba Memória, **Conferir na web** checa uma anotação.
-- **Ciência:** os números vêm do serviço científico, e o navegador só desenha.
-  - **Resultados:** os relatórios de `data/resultados/`, com gráficos (curvas, escores de calibração) e tabelas.
-  - **Limiar:** k de 1 a 24 e percentil sobre os escores reais da calibração, com o erro das 24 variáveis de uma janela. Não usa o teste.
-  - **Alarme e detecção:** k, percentil e m sobre o teste e os ensaios com falha, com a linha do tempo de cada ensaio. É **exploração pós-teste, não canônica (M14)**, e mostra os valores oficiais ao lado. Com k = 5, p99 e m = 3, repete a avaliação de 27/09.
+- **Ciência:** organizada pelas perguntas, com os números da avaliação oficial de 27/09. O navegador só desenha, com gráficos em D3.
+  - Cada gráfico pode ser baixado em **SVG** ou **PNG de 300 dpi**, em fundo branco, e cada tabela em **CSV**.
+  - Todo índice e indicador tem uma nota **i**.
+  - **Resumo:** a comparação Denso × AE-LSTM por objetivo, os indicadores de cada modelo e as matrizes de confusão, com filtro por falha e por ensaio.
+  - **Escores por ensaio:** para cada um dos 14 ensaios e o teste saudável, um carrossel (Denso → AE-LSTM → Ambos), com os gráficos no mesmo tamanho. Mostram escore ÷ limiar, as fases, o início nominal e os alarmes.
+  - **Métricas por falha:** barras por tipo de falha, mapas de calor por ensaio e as métricas gerais com a faixa dos 5 treinamentos.
   - **Confiabilidade:** λ, horas por ano, base e horizonte recalculam R(t) e F(t) sem gravar nada. Para salvar o cenário numa pasta nova, fonte e hipóteses são obrigatórias. Aceita também qualquer cenário em JSON.
   - **FMECA:** a tabela, as ordens pelo NPR e pela taxa e o relatório numa pasta nova.
-  - **Rodar GPVS:** preparar, treinar e avaliar pelos mesmos comandos do terminal, uma etapa por vez, com progresso e botão de cancelar.
-    - O treino abre com a configuração canônica; mudar separação, sementes ou teto de épocas marca a rodada como exploratória.
-    - Avaliar consulta o teste de novo: exige digitar "consultar o teste", entra em `registro-consultas-teste.jsonl` e fica **não canônica**. A oficial continua a de 27/09.
-  - Os exploradores do GPVS precisam de `data/gpvs/` e das rodadas `gpvs-modelos-002` e `gpvs-avaliacao-001`. O erro por variável fica em `data/ciencia/`, e `--resultados` e `--gpvs` mudam essas pastas.
+  - **Explorar:** e se o limiar fosse outro?
+    - O limiar usa só a calibração.
+    - O alarme reusa os ensaios de teste: serve para explorar, e os números oficiais continuam os de 27/09.
+    - Com k = 5, percentil 99 e 3 janelas seguidas, repete a avaliação oficial.
+  - **Rodar e arquivos:** preparar, treinar e avaliar pelos mesmos comandos do terminal, uma etapa por vez, com progresso e botão de cancelar, e os resultados gravados.
+    - Mudar os ajustes do treino marca a rodada como exploração.
+    - Avaliar de novo exige digitar "consultar o teste", fica registrado em `registro-consultas-teste.jsonl` e não substitui a avaliação oficial.
+  - As visões e os exploradores precisam de `data/gpvs/` e da avaliação de 27/09 em `data/resultados/`. O erro por variável fica em `data/ciencia/`, e `--resultados` e `--gpvs` mudam essas pastas.
 - **Custo:** cada resposta chama o provedor, e a busca na web pode ter custo à parte no Google. O registro `data/uso/chamadas.jsonl` guarda data, modelo, tokens e número de buscas, sem o texto.
 
 ## Linha de comando

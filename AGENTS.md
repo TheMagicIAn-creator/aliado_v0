@@ -12,7 +12,8 @@ O lote 09 aprovado segue `docs/specs/0009-gemini-uso-real.md`; o lote 10,
 o lote 14, `docs/specs/0014-autoencoders-limiar.md`; o lote 15, `docs/specs/0015-avaliacao-m13.md`; o lote 16, `docs/specs/0016-fmeca.md`; o lote 17,
 `docs/specs/0017-lancamento.md`; o lote 18, `docs/specs/0018-biblioteca-memoria-anexos.md`;
 o lote 19, `docs/specs/0019-qualidade-da-busca.md`; o lote 20, `docs/specs/0020-aba-ciencia.md`;
-o lote 21, `docs/specs/0021-gpvs-interface.md`; e o lote 22, `docs/specs/0022-correcoes-confianca.md`.
+o lote 21, `docs/specs/0021-gpvs-interface.md`; o lote 22, `docs/specs/0022-correcoes-confianca.md`;
+e o lote 23, `docs/specs/0023-aba-ciencia-nova.md`.
 Os lotes seguintes
 seguem o `docs/roteiro-v0.md`, e cada um é combinado antes de começar.
 O mapa e a proveniência da migração ficam em `docs/migracao/`.
@@ -21,8 +22,8 @@ O mapa e a proveniência da migração ficam em `docs/migracao/`.
   o mestrado é uma especialização, isolada do núcleo geral.
 - Trabalhe em pequenos lotes. Explique propósito e arquivos envolvidos antes
   das alterações e apresente os resultados e testes para revisão do usuário.
-- Foram autorizados os planos dos lotes 01–07 e 09–22 e as correções do lote 08 na conversa com o pesquisador.
-  O roteiro da 0.3.0 (lotes 22–26) foi aprovado em 30/09/2026; os lotes 23–26 são detalhados antes de começar.
+- Foram autorizados os planos dos lotes 01–07 e 09–23 e as correções do lote 08 na conversa com o pesquisador.
+  O roteiro da 0.3.0 (lotes 22–26) foi aprovado em 30/09/2026; os lotes 24–26 são detalhados antes de começar.
   Nas telas e nas respostas ao pesquisador, apresente dados em linguagem simples, sem códigos internos
   (M09–M14), "semente" ou "canônica" sem explicação, e com uma nota para cada índice ou indicador.
   Pela decisão dele, nenhum commit foi feito antes da v0.1.0; depois dela, os commits continuam sendo dele.

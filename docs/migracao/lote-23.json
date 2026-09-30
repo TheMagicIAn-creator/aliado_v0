@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-30",
+  "batch": "23",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0023-aba-ciencia-nova.md",
+  "base_commit": "cdcd141",
+  "decisions": {
+    "organization": "pelas perguntas: Resumo, Escores por ensaio, Métricas por falha, Confiabilidade, FMECA, Explorar, Rodar e arquivos",
+    "scores": "um contêiner por ensaio com carrossel Denso → AE-LSTM → Ambos, gráficos do mesmo tamanho (pedido depois dos prints; antes, os três ficavam empilhados)",
+    "explorers": "continuam, no fim da aba",
+    "language": "telas só com dados; uma nota em cada índice"
+  },
+  "vendored": {
+    "d3": {
+      "version": "7.9.0",
+      "from": "mestrado-utfpr/src/webapp/static/vendor/d3/ (local, só leitura)",
+      "sha256": "8b56e04f36583949cb0832c5cb863785ad26d6b9d444068f069764ea154f379a",
+      "bytes": 279708,
+      "license": "ISC",
+      "license_sha256": "f54fe7383368c89c11dc059f093e04689f85b49dcdd4d622b309f1ef5e1f141c",
+      "upstream_check": "não feito; comparar com npm d3@7.9.0 exige download"
+    }
+  },
+  "style_references_read_only": [
+    "mestrado-utfpr/src/ml/estilo_graficos.py",
+    "mestrado-utfpr/src/ml/graficos_comparacao.py",
+    "mestrado-utfpr/src/webapp/static/results-charts.js"
+  ],
+  "acceptance": {
+    "paid_calls": 0,
+    "server": "127.0.0.1:8772, cópia dos resultados em tmp/lote-23",
+    "official_numbers_reproduced": {
+      "denso_matrix": {
+        "vn": 2293,
+        "fp": 55,
+        "fn": 2747,
+        "vp": 1937
+      },
+      "explorer_official": "10 de 14, 2,04 s, 0 alarme falso, limiar 3,7338"
+    },
+    "panels_alarms_match_official": "14 ensaios × 2 modelos",
+    "export": {
+      "svg": "fundo branco, sem variáveis CSS",
+      "png_width_px": 3125,
+      "csv": "ponto e vírgula, vírgula decimal"
+    },
+    "internal_terms_on_screen_after_fix": 0,
+    "narrow_360px_no_overflow": true
+  },
+  "defects_fixed": [
+    "regra global de svg (ícones) encolhia os gráficos e contornava as letras",
+    "matriz de confusão esticada até a largura toda",
+    "eixo log com '1e+6' e grade densa",
+    "termos internos na tela: códigos M numa ressalva da FMECA e 'sementes' num rótulo",
+    "gráfico conjunto achatado em tela estreita"
+  ],
+  "validation": {
+    "pytest_passed": 392,
+    "new_tests": 8,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ]
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Commit do lote 23 feito pelo assistente com a autorização do pesquisador (30/09/2026), no formato dele e sem push.",
+  "public_files": [
+    {
+      "path": ".claude/launch.json",
+      "sha256": "80b142716c3e31e3c902e7fd010945b53f9bec1bbb9154164919f6c3fbe9efef",
+      "previous_sha256": "3cd84ab7e014219108d2cdf0d95bb4c9da6b67cf934b68485059bae97b572bab",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "54e3b16d81be4f20385038cce71304ca20e77e6d997c19e020d48c896b02f592",
+      "previous_sha256": "7f174ef0c550ace6f5f22cdcc4692c560c4db80c4140f1ed158532cfb0380945",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "bae3809d0a8004aabb82f4aae2c422ddf828f1625226ea886b5d67252a60b518",
+      "previous_sha256": "2fc716541d247f93bd37b52f43e17449984c525cb2753f8591aff83c7b750ec2",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "7738298caae830318fda47f997dd6beb7794eb349a78907ffa232efa01fb167d",
+      "previous_sha256": "1d49f4c63073fd19ab82ed4e231d3940ff6f2b944d04d3ac8ec3c6fcf756cdb8",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "64271fa734c0075543c8f9f6a55c026a43b68d170044ac09667a86b2fa491e28",
+      "previous_sha256": "70817cacc22f4a9b01222d55739fe9563443053c699be3f9bd907ee3358371ed",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/fmeca.json",
+      "sha256": "654d7bb6ae0c82ce55c6d88e113a9be40f1e4ee6af4f7ce358dd2f1855075604",
+      "previous_sha256": "67bcfa8de7dad005d29caa01f788257bb4ac2e807873b697f9d02db3ae9870d6",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "c21e7e15758ed4187b60fe61b4709afe495d0d600189739a0dc8a540971e8004",
+      "previous_sha256": "d80886bdf3b6a89b6002b68ec3b31039b1b196bab0697230fc60a8440d6e6b06",
+      "status": "modified"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "102d86908c017ddb4ad9ecac64d5f9987468e02352572735856af40df527fd7e",
+      "previous_sha256": "5896a448b5a04a10fcc5eb535328273da50c38415d225f563ce2dde6003828cc",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/science.py",
+      "sha256": "5780ba8130c3d15f4d85a34c900ee85be5d6e6605b41f62808329fd3d2ba6659",
+      "previous_sha256": "6a6100e8c5cad578dcf4754198ea11e00b3c9cb4f1b5c2c7c945d937c9f2e953",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "9303fc8860dd0fb3a22c519daf00e7a4bfc4b97f08eb9bd22794303e51deee6f",
+      "previous_sha256": "123ace09d32a22108ca113f681d8f5eccbeb5576920fdd60eb3ad21ed850fed1",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/ciencia.js",
+      "sha256": "ec5cb403fa4aff97b7b5f637fd2a865d930304e7887b877ced6d69378917c645",
+      "previous_sha256": "2c05a96fb997c689002c17ad6db24a85ff6d4a57e4f44d36fff9ea01ccda094a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "146923d1e2c584782886a4625e75af4e7b094da9aa80e6b7548bc7eb7d56c8d8",
+      "previous_sha256": "6bc3e76dd776916c90150abdd3fb3a1d8bb26dbb7807a146da2310cabf4b9c69",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/explorer.py",
+      "sha256": "02784cb69d3ba7870341d2794bb70b032c7b51002e58f6ca7e7d574fe77ef035",
+      "previous_sha256": "8acc3dabc520fd9fca3aba1c987f687ca3a964496ca076192e56ad8c89dfe912",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-23.md",
+      "sha256": "7c63256408c37e13c6acd7728e7c8afa50d35236173b2688c4ec677234307c75",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0023-aba-ciencia-nova.md",
+      "sha256": "344fa46b8a6019b93517075770b5cc4cc000bd016a10010f1606b0d761a3a89a",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/graficos.js",
+      "sha256": "38f507a6acc1112c8d72b221d056aa532ed6d518d18449bf439509ecb854c73c",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/vendor/d3/LICENSE",
+      "sha256": "f54fe7383368c89c11dc059f093e04689f85b49dcdd4d622b309f1ef5e1f141c",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/vendor/d3/d3.min.js",
+      "sha256": "8b56e04f36583949cb0832c5cb863785ad26d6b9d444068f069764ea154f379a",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/summary.py",
+      "sha256": "f226e3d3b87a3d6c680a5fb011340302ecbade7b26d2eed700b7a783b50eaa7d",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_science_views.py",
+      "sha256": "b7fa35bd8f9a18b4d7b1a0449862f7e9ba3e056946dd832d6f49c7addddba941",
+      "status": "new"
+    }
+  ]
+}

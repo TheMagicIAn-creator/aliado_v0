@@ -24,8 +24,10 @@ from aliado.science.detection.threshold import calibrate_threshold
 
 CACHE_VERSION = 1
 EVALUATION = "gpvs-avaliacao-001"
-POST_TEST_NOTICE = ("Exploração pós-teste, não canônica (M14): usa o teste já consultado e não altera "
-                    "os resultados congelados da avaliação de 27/09/2026.")
+# Em palavras, sem códigos internos (lote 23): o controle por trás continua sendo o M14.
+POST_TEST_NOTICE = ("Estes controles reusam os ensaios de teste. Servem para explorar; os números oficiais "
+                    "continuam os da avaliação de 27/09/2026.")
+WINDOW_KEYS = ("sensibilidade", "especificidade", "precisao", "f1", "mcc", "auc_roc", "auc_pr", "vp", "fn", "fp", "vn")
 PERCENTILES = (90.0, 99.9)
 CONFIRMATIONS = (1, 10)
 MODEL_NAMES = {"denso": "Denso", "lstm": "AE-LSTM"}
@@ -210,6 +212,8 @@ class Explorer:
                 "ensaio": name, "falha": fault, "fisica": physical, "modo": gpvs.MODES[name[2]],
                 "detectado": item["detectado"], "atraso_ms": item["atraso_ms"],
                 "alarmes_pre_falha": item["alarmes_pre_falha"],
+                # Lote 23: métricas por janela e contagens, para a matriz de confusão dos parâmetros explorados.
+                **{key: item.get(key) for key in WINDOW_KEYS},
                 "canonico": {"detectado": reference.get("detectado") == "True",
                              "atraso_ms": float(reference["atraso_ms"]) if reference.get("atraso_ms") else None}
                 if reference else None,

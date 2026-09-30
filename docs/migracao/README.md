@@ -263,6 +263,16 @@ visões de resultados que ele tinha e servir de referência aos lotes 23 e 24.
 Consulte a [spec 0022](../specs/0022-correcoes-confianca.md), o [manifesto](lote-22.json) e a
 [validação](validacao-lote-22.md).
 
+## Lote 23 — aba Ciência nova, parte 1
+
+Do `mestrado-utfpr` vieram, só lidos e copiados:
+- o **D3 v7.9.0**, de `src/webapp/static/vendor/d3/`, com a licença ISC e o sha no manifesto;
+- as referências de estilo: as cores e o formato das figuras de `src/ml/estilo_graficos.py` e `src/ml/graficos_comparacao.py`, e os padrões de `src/webapp/static/results-charts.js`.
+
+Nenhum código de cálculo veio da origem. As visões leem a avaliação oficial de 27/09 com
+`science/detection/summary.py`. Consulte a [spec 0023](../specs/0023-aba-ciencia-nova.md), o
+[manifesto](lote-23.json) e a [validação](validacao-lote-23.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |
