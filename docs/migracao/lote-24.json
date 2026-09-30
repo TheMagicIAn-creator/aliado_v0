@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-30",
+  "batch": "24",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0024-inicio-das-falhas.md",
+  "base_commit": "745880a",
+  "decisions": {
+    "order": "o início das falhas passou a ser o lote 24; confiabilidade, FMECA e disponibilidade passam ao 25",
+    "gap_between_onsets": "fora das métricas por janela; alarme nele conta como detecção, com atraso negativo",
+    "no_clear_change": "F4, F6 e F7 ficam no início nominal, marcados; médias para 14 e para os 8 de mudança clara",
+    "screen": "seção nova 'Início das falhas'; o Resumo segue com os números oficiais",
+    "lot_23_commit": "745880a, feito pelo assistente com a autorização do pesquisador"
+  },
+  "method": {
+    "onset": "PELT (Killick, Fearnhead e Eckley, 2012), custo quadrático nas 24 variáveis padronizadas pelo comissionamento, segmento mínimo de 5 janelas, penalidade c·24·ln n",
+    "onset_config_sha256": "1510880c26336589a95afb6a5f4df09ddeb8f73f32f1f0f0ebe4ee7cfb677bdf",
+    "penalty_c": 4.0,
+    "healthy_control": {
+      "F0L": {
+        "1.0": 2,
+        "2.0": 0,
+        "3.0": 0,
+        "4.0": 0,
+        "5.0": 0,
+        "6.0": 0,
+        "8.0": 0,
+        "10.0": 0,
+        "15.0": 0,
+        "20.0": 0,
+        "30.0": 0
+      },
+      "F0M": {
+        "1.0": 52,
+        "2.0": 21,
+        "3.0": 1,
+        "4.0": 0,
+        "5.0": 0,
+        "6.0": 0,
+        "8.0": 0,
+        "10.0": 0,
+        "15.0": 0,
+        "20.0": 0,
+        "30.0": 0
+      }
+    },
+    "false_alarms": "cadeia de Markov de dois estados (Brook e Evans, 1972), IC por reamostragem dos 16 trechos",
+    "threshold_range": "Beta(n + 1 − r, r) (Vovk, 2012)",
+    "scores_reused_from": "gpvs-avaliacao-001",
+    "models_run_again": false
+  },
+  "results": {
+    "onsets_s": {
+      "F1L": {
+        "meio": 6.45,
+        "mudanca": 8.66,
+        "classe": "clara"
+      },
+      "F1M": {
+        "meio": 6.95,
+        "mudanca": 8.46,
+        "classe": "clara"
+      },
+      "F2L": {
+        "meio": 7.106,
+        "mudanca": 8.88,
+        "classe": "clara"
+      },
+      "F2M": {
+        "meio": 7.2,
+        "mudanca": 8.7,
+        "classe": "clara"
+      },
+      "F3L": {
+        "meio": 5.175,
+        "mudanca": 8.92,
+        "classe": "clara"
+      },
+      "F3M": {
+        "meio": 3.498,
+        "mudanca": 6.74,
+        "classe": "clara"
+      },
+      "F4L": {
+        "meio": 7.2,
+        "mudanca": null,
+        "classe": "nenhuma"
+      },
+      "F4M": {
+        "meio": 7.2,
+        "mudanca": null,
+        "classe": "nenhuma"
+      },
+      "F5L": {
+        "meio": 7.15,
+        "mudanca": 7.14,
+        "classe": "clara"
+      },
+      "F5M": {
+        "meio": 7.2,
+        "mudanca": 7.38,
+        "classe": "clara"
+      },
+      "F6L": {
+        "meio": 7.2,
+        "mudanca": 5.6,
+        "classe": "fraca"
+      },
+      "F6M": {
+        "meio": 7.2,
+        "mudanca": 11.6,
+        "classe": "fraca"
+      },
+      "F7L": {
+        "meio": 7.2,
+        "mudanca": 9.32,
+        "classe": "fraca"
+      },
+      "F7M": {
+        "meio": 7.2,
+        "mudanca": 11.16,
+        "classe": "fraca"
+      }
+    },
+    "nominal_onset_reproduces_official_report": "bit a bit",
+    "reference_training": {
+      "denso": {
+        "detectados": 10,
+        "atraso_mediano_ms": 60.0,
+        "sensibilidade_media": 0.59,
+        "sensibilidade_media_8_claras": 1.0,
+        "alarmes_estimados_por_hora": 19.4,
+        "alarmes_estimados_ic95": [
+          0.0,
+          53.4
+        ]
+      },
+      "lstm": {
+        "detectados": 8,
+        "atraso_mediano_ms": 60.0,
+        "sensibilidade_media": 0.576,
+        "sensibilidade_media_8_claras": 1.0,
+        "alarmes_estimados_por_hora": 55.8,
+        "alarmes_estimados_ic95": [
+          0.0,
+          263.4
+        ]
+      }
+    },
+    "threshold_range_per_window": [
+      0.00126,
+      0.02868
+    ],
+    "test_consultation": 2
+  },
+  "acceptance": {
+    "paid_calls": 0,
+    "server": "127.0.0.1:8773, cópia dos resultados em tmp/lote-24",
+    "same_report_in_copy_and_real_run": true,
+    "export": {
+      "svg": "fundo branco, sem variáveis CSS",
+      "png_width_px": 3125
+    },
+    "narrow_360px_no_overflow": true
+  },
+  "defects_fixed": [
+    "rótulos e legenda do gráfico de início cortados em 360 px",
+    "rodapé dos escores sem dizer de onde contava o atraso"
+  ],
+  "validation": {
+    "pytest_passed": 409,
+    "new_tests": 17,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ]
+  },
+  "private_outputs_outside_git": [
+    "data/resultados/gpvs-reanalise-001",
+    "data/resultados/registro-consultas-teste.jsonl"
+  ],
+  "git_actions_by_assistant": [],
+  "commit_policy": "Commit do lote 24 feito pelo assistente com a autorização do pesquisador (30/09/2026), no formato dele e sem push.",
+  "tmp_cleanup": "tmp/ limpa a pedido do pesquisador depois da revisão (2,3 GB)",
+  "public_files": [
+    {
+      "path": ".claude/launch.json",
+      "sha256": "80b57080bcb3eababa51ac20158ee59f38e3b1187d0486d2741112f4d2fcf6bc",
+      "previous_sha256": "80b142716c3e31e3c902e7fd010945b53f9bec1bbb9154164919f6c3fbe9efef",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "9cb6bab8b90f818a6b7f808415fad1664344bf018a9477bb2ac93bbbfe367fd6",
+      "previous_sha256": "54e3b16d81be4f20385038cce71304ca20e77e6d997c19e020d48c896b02f592",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "7bbb46a38c7fc72e2219813f8d6610eb31ac9d5b5ea4aec9cce792c11dbd5014",
+      "previous_sha256": "bae3809d0a8004aabb82f4aae2c422ddf828f1625226ea886b5d67252a60b518",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "2943d732da457b8b9b291be9da970efb678e3e3877a495642ec83a037a5ace5d",
+      "previous_sha256": "7738298caae830318fda47f997dd6beb7794eb349a78907ffa232efa01fb167d",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "5fce003f8af4cd403842177a65e43380dc3c6f69662ec0730ef018aa34b9ccdf",
+      "previous_sha256": "64271fa734c0075543c8f9f6a55c026a43b68d170044ac09667a86b2fa491e28",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "5dcbfd8bccc5b7a9d4cadfa62cf30da9ddf142180cdac1415f659b1287fbdf91",
+      "previous_sha256": "c21e7e15758ed4187b60fe61b4709afe495d0d600189739a0dc8a540971e8004",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "472063b9da3b93dccb564cbd7c15d949bfa49bf903b5c437a32d293f5b8e5294",
+      "previous_sha256": "f98c6cf734332b0588c4fe186af748e7395869016ab7b012770d25f2fb8a7779",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/science.py",
+      "sha256": "1d358a90c9f59d17e6e83782f0f843f9717c8968c888f52ba51aa7a6c74b924a",
+      "previous_sha256": "4cbb30e291aba64dde6a8bf3583fa372eed29284e7172aa9c627875834ed3d43",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "856c246daace88cbbdac035c0f8ccc144305daebf95f1c046c0495c0b18d1e66",
+      "previous_sha256": "986330e9c2256feae549ed936bd7d6ba033cc6065957e01c8df3211ddbbd67d0",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/ciencia.js",
+      "sha256": "602fdbe57ee996174ac57bfee884437d1e8431fdcc2a10402f5c5dd15c39203a",
+      "previous_sha256": "12efa05be277b6406c4d04776c28faec6988bcd7a823f8394670ded19083a947",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/graficos.js",
+      "sha256": "6b106b2d5c4113625f23867f87cf1c8df1c8cb86e4919f1021b0e6ae121e65db",
+      "previous_sha256": "25aa5f13be364bb74dd2cc4b4934880311ff7215c466a6ed0ec4939f022fcd37",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/evaluation.py",
+      "sha256": "14aa0547ff8b9b6736b5b81f1fcc24239c9c9a4c31c1cb3b9a8aa8b38c92c143",
+      "previous_sha256": "cbbffa9fe0241b2295e5321525105a8363ef26a94fd34722b5286deb14638691",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/metrics.py",
+      "sha256": "7ad3b90dec2f2e78c5762bb6eb6593362363533e40f0359e61f44246a2478fca",
+      "previous_sha256": "31e53d879bf422ceeabb4764fc9e3e34a999cbed82ee1a1bf330f3fbb2c77d70",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/registry.py",
+      "sha256": "14a45dd40549b356247261b63e07d2b1568d90aaf15168791c95f79664022bca",
+      "previous_sha256": "586436414dc1d26768c00e414b3e9e95789311345a9226a6dd307d20413a5119",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/summary.py",
+      "sha256": "2ee2bd71e0058240c3577086ed8e67ae2f3185428c196bad34b310611c1c49b1",
+      "previous_sha256": "f226e3d3b87a3d6c680a5fb011340302ecbade7b26d2eed700b7a783b50eaa7d",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/threshold.py",
+      "sha256": "8e12e0e549ac4b96a227f35176c84286bac857ad9fd2e7b39504dbde911cab43",
+      "previous_sha256": "e9bfc53801364ced564732823b3ee68c0e987c4d4af399a29fa7254818c277bd",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_detection_metrics.py",
+      "sha256": "ae551f37ad458fc331fc6260135ad52a97940021f6ea891e0e164a1a70abac49",
+      "previous_sha256": "694069b40e9c85acb79acb7586d4d1b4219a0be3b6eee16e9f7df34e33c4aae5",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_detection_threshold.py",
+      "sha256": "49f29de03b0e87d0314ed2b01cb9c97e547ece9f014c9712141d60634be0ee56",
+      "previous_sha256": "9df01e073ac11dda312b5e285aa510aef73e30e2edd3afceb213cabe2db5abbd",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_science_views.py",
+      "sha256": "2ce71b8f94e61aa35ba133ac16f70fa1b860ae4f7a68b7bc4d1ee496b97a86cc",
+      "previous_sha256": "b7fa35bd8f9a18b4d7b1a0449862f7e9ba3e056946dd832d6f49c7addddba941",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-24.md",
+      "sha256": "3cdf27bb2954f5da76bca4091060c08d6f985e729b8c64190577e89bd827c62a",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0024-inicio-das-falhas.md",
+      "sha256": "1f69027a660fc42ae1aaf2a97749e6092105147b1f5ecd87288b40c0c761074a",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/onset.py",
+      "sha256": "6f066098fa1c45e619fb33df02f71aea6f5e3a662a8ee612252ba2cd67a46884",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/reanalysis.py",
+      "sha256": "90e61f2b0ed3135a2f9f38775da00484cd30893f2f7a5610dcca3fa9c42f7866",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_onset.py",
+      "sha256": "8237d2334cdef6e226331e1b656aa5ffe3a14d6a728d61c1e82a66e92dd3909c",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_reanalysis.py",
+      "sha256": "66711d23a8c1647c8df7104b8fdb64c5c1531820f6916028a45791ae1420ba41",
+      "status": "new"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ from aliado.science.detection.threshold import (
     DegenerateThresholdError,
     calibrate_threshold,
     effective_sample_size,
+    false_alarm_interval,
     minimum_n_for_percentile,
 )
 
@@ -47,3 +48,17 @@ def test_effective_sample_size_shrinks_with_autocorrelation():
     # AR(1) com ρ = 0,9: 2000 × 0,1/1,9 ≈ 105 observações independentes.
     assert report["n"] == 2000 and 70 < report["n_efetivo"] < 160
     assert [block["n"] for block in report["blocos"]] == [1000, 1000]
+
+
+def test_false_alarm_interval_of_an_order_statistic():
+    # No máximo de n escores, a chance é Beta(1, n): quantil q = 1 − (1 − q)^(1/n).
+    top = false_alarm_interval(50, 50)
+    assert top["ic95"][0] == pytest.approx(1 - 0.975 ** (1 / 50), rel=1e-6)
+    assert top["ic95"][1] == pytest.approx(1 - 0.025 ** (1 / 50), rel=1e-6)
+    gpvs = false_alarm_interval(191, 192)
+    calibration = calibrate_threshold(np.arange(192.0), 99.0)
+    assert gpvs["media"] == pytest.approx(calibration.expected_false_alarm)
+    draws = np.random.default_rng(3).beta(2, 191, 400_000)
+    assert gpvs["ic95"] == pytest.approx(np.percentile(draws, [2.5, 97.5]).tolist(), rel=0.03)
+    with pytest.raises(ValueError):
+        false_alarm_interval(0, 10)

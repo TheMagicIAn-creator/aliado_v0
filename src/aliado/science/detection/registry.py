@@ -2,8 +2,9 @@
 
 Cada avaliação pontua o teste saudável e os ensaios com falha, e isso é uma consulta ao teste.
 A oficial é a de 27/09/2026 (`gpvs-avaliacao-001`). Uma nova, pedida pela interface, exige a
-frase de confirmação, recebe o próximo número e fica marcada como não canônica. O arquivo nunca
-é reescrito: cada mudança de estado é um evento novo.
+frase de confirmação, recebe o próximo número e fica marcada como não canônica. Uma reanálise dos
+escores já gravados (lote 24) também entra, com o tipo "reanalise". O arquivo nunca é reescrito:
+cada mudança de estado é um evento novo.
 """
 
 from __future__ import annotations
@@ -69,6 +70,21 @@ def start(results_dir: str | Path, *, training: str, training_sha: str, output: 
         "numero": number, "estado": "iniciada", "canonica": False, "data": datetime.now().date().isoformat(),
         "treino": {"pasta": training, "sha256": training_sha}, "saida": output, "frase_confirmada": True,
         "registrado_em": _now(), "origem": "interface",
+    })
+    return number
+
+
+def record_reanalysis(results_dir: str | Path, *, source: str, output: str, training: str, training_sha: str,
+                      config_sha: str) -> int:
+    """Reanálise dos escores já gravados de uma avaliação (lote 24): não pontua o teste de novo, mas
+    volta a olhar para ele, então entra no registro, concluída e não canônica. Devolve o número."""
+    ensure_seeded(results_dir)
+    number = max((event["numero"] for event in events(results_dir)), default=0) + 1
+    _append(results_dir, {
+        "numero": number, "estado": "concluida", "canonica": False, "tipo": "reanalise",
+        "data": datetime.now().date().isoformat(), "treino": {"pasta": training, "sha256": training_sha},
+        "reusa": source, "saida": output, "configuracao_sha256": config_sha, "registrado_em": _now(),
+        "origem": "terminal",
     })
     return number
 

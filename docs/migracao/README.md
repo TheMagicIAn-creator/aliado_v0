@@ -273,6 +273,10 @@ Nenhum código de cálculo veio da origem. As visões leem a avaliação oficial
 `science/detection/summary.py`. Consulte a [spec 0023](../specs/0023-aba-ciencia-nova.md), o
 [manifesto](lote-23.json) e a [validação](validacao-lote-23.md).
 
+## Lote 24 — início observado das falhas
+
+Não houve migração de código da origem. O `mestrado-utfpr` só foi consultado para confirmar que o início da falha era o meio nominal do registro (`fault_boundary`, "nominal_mid_record", em `src/ml/dados_gpvs.py`). A descrição do GPVS no Mendeley Data diz só que as falhas foram introduzidas manualmente, na metade dos experimentos. O detector de mudança (PELT), a reanálise, a cadeia de Markov e a faixa do limiar foram escritos aqui, só com numpy. Consulte a [spec 0024](../specs/0024-inicio-das-falhas.md), o [manifesto](lote-24.json) e a [validação](validacao-lote-24.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

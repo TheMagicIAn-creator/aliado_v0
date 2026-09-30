@@ -1,13 +1,13 @@
 "use strict";
 
-/* Aba Ciência (lotes 20 e 23), organizada pelas perguntas: o resultado primeiro e as ferramentas
+/* Aba Ciência (lotes 20, 23 e 24), organizada pelas perguntas: o resultado primeiro e as ferramentas
    no fim. Todo número vem do servidor; aqui só se desenha, com os gráficos de graficos.js. As telas
    mostram dados em palavras: a avaliação oficial é a de 27/09/2026, e os números são os do treino de
    referência dela. Os controles internos do protocolo ficam no servidor e nos arquivos. */
 
 const science = { tab: "resumo", status: null, options: null, timer: null, result: null, cache: {} };
 const SCIENCE_TABS = [["resumo", "Resumo"], ["escores", "Escores por ensaio"], ["metricas", "Métricas por falha"],
-  ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["explorar", "Explorar"], ["rodar", "Rodar e arquivos"]];
+  ["inicio", "Início das falhas"], ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["explorar", "Explorar"], ["rodar", "Rodar e arquivos"]];
 const MODELOS = [["denso", "Denso"], ["lstm", "AE-LSTM"]];
 const NOME_MODELO = Object.fromEntries(MODELOS);
 const METRICAS = { sensibilidade: "Sensibilidade", especificidade: "Especificidade", precisao: "Precisão", f1: "F1",
@@ -65,6 +65,7 @@ function faixaTexto(faixa, formato = num) {
 function aviso(body, message) { body.replaceChildren(el("div", { class: "note note-warn", text: message })); }
 function day(iso) { return iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "—"; }
 function dec(value, digits = 2) { return value === null || value === undefined ? "—" : BR.format(`.${digits}f`)(value); }
+function ms(value) { return value === null || value === undefined ? "—" : `${num(value, 3)} ms`; }
 
 async function carregar(chave, caminho) {
   if (!science.cache[chave]) science.cache[chave] = await api(caminho);
@@ -87,7 +88,8 @@ async function openScience(tab) {
     "aria-selected": String(id === science.tab), onclick: () => openScience(id) })));
   const body = $("science-body");
   body.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
-  const render = { resumo: renderSummary, escores: renderScores, metricas: renderMetrics, confiabilidade: renderReliability,
+  const render = { resumo: renderSummary, escores: renderScores, metricas: renderMetrics, inicio: renderOnsets,
+    confiabilidade: renderReliability,
     fmeca: renderFmeca, explorar: renderExplore, rodar: renderRunsAndFiles }[science.tab];
   await render(body);
 }
@@ -126,12 +128,28 @@ function modelColumn(d, kind, filtro) {
   const f = m.faixa;
   const counts = filtro === "total" ? m.matrizes.total : m.matrizes.por_falha[filtro] || m.matrizes.por_ensaio[filtro];
   const healthy = m.teste_saudavel;
+  const s = m.saudavel;
+  const trecho = (part) => {
+    const item = s.trechos[part];
+    return `${pct(item.fracao)}${item.ic95 ? ` (intervalo de 95%: ${pct(item.ic95[0])} a ${pct(item.ic95[1])})` : ""}`;
+  };
+  const est = m.alarmes_estimados;
+  const faixa = m.limiar_faixa;
   const cards = el("div", { class: "metrics" },
     card("Ensaios detectados", `${m.detectados} de ${m.ensaios}`, null, "detectados", faixaTexto(f.detectados)),
     card("Atraso mediano", seconds(m.atraso_mediano_ms), null, "atraso", faixaTexto(f.atraso_mediano_ms, seconds)),
-    card("Alarmes falsos por hora", num(healthy.alarmes_por_hora),
-      el("span", { class: "muted com-nota" }, `limite superior: ${num(healthy.limite_superior_por_hora)} por hora`, nota("limite_superior")),
-      "alarmes_hora", `No teste saudável: ${healthy.alarmes} alarme(s) em ${num(healthy.duracao_s)} s.`),
+    card("Alarmes falsos por hora", num(s.alarmes_por_hora),
+      el("span", { class: "muted com-nota" }, `limite superior: ${num(s.limite_superior_por_hora)} por hora`, nota("limite_superior")),
+      "alarmes_hora", `${s.alarmes} alarme(s) em ${num(s.duracao_s)} s saudáveis: ${healthy.alarmes} no teste saudável e ` +
+      `${m.antes_da_falha.alarmes} antes da falha.`),
+    ...(est ? [card("Alarmes falsos por hora, estimados", num(est.alarmes_por_hora),
+      `intervalo de 95%: ${num(est.ic95[0])} a ${num(est.ic95[1])}`, "alarmes_estimados",
+      `Conferência: a cadeia previa ${num(est.previsto.sequencias_de_2)} sequências de 2 janelas e houve ` +
+      `${est.observado.sequencias_de_2}; previa ${num(est.previsto.alarmes)} alarme(s) e houve ${est.observado.alarmes}.`)] : []),
+    card("Janelas saudáveis acima do limiar", pct(s.janelas_acima / s.janelas),
+      faixa ? `esperado pelo limiar: ${pct(faixa.ic95[0])} a ${pct(faixa.ic95[1])}` : null, "janelas_acima",
+      `${s.janelas_acima} de ${s.janelas} janelas. No teste saudável: ${trecho("teste_saudavel")}. Antes da falha: ` +
+      `${trecho("pre_falha")}.${faixa ? ` ${GLOSSARIO.faixa_limiar} Aqui, o limiar é o ${faixa.posicao}º de ${faixa.n}.` : ""}`),
     card("Alarmes antes da falha", String(m.antes_da_falha.alarmes), null, "alarmes_antes", faixaTexto(f.alarmes_pre_falha)),
     ...["sensibilidade", "especificidade", "f1", "mcc", "auc_roc", "auc_pr"].map((key) =>
       card(METRICAS[key], dec(m.metricas[key]), null, key, `Média dos 14 ensaios. ${faixaTexto(f[key], (v) => dec(v))}`)));
@@ -159,6 +177,8 @@ async function renderScores(body) {
     swatch("Transição", "color-mix(in srgb, var(--g-fase-transicao) 45%, transparent)"),
     swatch("Depois do início", "color-mix(in srgb, var(--g-fase-depois) 35%, transparent)"), nota("fases"),
     el("span", { class: "com-nota" }, "Linha tracejada vertical: início nominal", nota("inicio")),
+    ...(d.reanalise ? [el("span", { class: "com-nota" }, swatch("", "var(--g-mudanca)"), "Linha pontilhada: mudança observada nos sinais",
+      nota("mudanca"))] : []),
     el("span", { class: "com-nota" }, "▲ alarme que detectou · ✕ alarme antes da falha", nota("alarme")));
   const index = el("nav", { class: "indice", "aria-label": "Ir para o ensaio" },
     ...[1, 2, 3, 4, 5, 6, 7].map((f) => el("button", { class: "filter", type: "button", text: `F${f}`,
@@ -196,7 +216,9 @@ function trialBox(p, d) {
     faixas: healthy ? [] : Object.entries(p.fases).filter(([, span]) => span).map(([phase, [a, b]]) =>
       ({ de: time(a), ate: time(b + 1), cor: cores.fases[phase], opacidade: phase === "transicao" ? 0.3 : 0.12 })),
     linhasH: [{ y: 1, cor: cores.limiar, rotulo: "limiar" }],
-    linhasV: healthy ? [] : [{ x: time(p.inicio), cor: cores.inicio }],
+    linhasV: healthy ? [] : [{ x: time(p.inicio), cor: cores.inicio },
+      ...(p.inicio_observado === null || p.inicio_observado === undefined ? []
+        : [{ x: time(p.inicio_observado), cor: cores.mudanca, traco: "2 3", espessura: 2 }])],
     marcas: shown.flatMap((kind) => {
       const m = p.modelos[kind];
       const color = MODELO_COR(cores, kind);
@@ -215,8 +237,11 @@ function trialBox(p, d) {
     : nota(`${p.descricao}. ${p.fisica ? "Falha física." : "Falha de operação ou de controle."}`);
   const footer = kinds.map((kind) => {
     const m = p.modelos[kind];
+    const since = m.atraso_mudanca_ms === null || m.atraso_mudanca_ms === undefined ? ""
+      : ` e ${ms(m.atraso_mudanca_ms)} depois da mudança`;
+    const found = since ? `detectou ${seconds(m.atraso_ms)} depois do meio${since}` : `detectou em ${seconds(m.atraso_ms)}`;
     const text = healthy ? `${m.alarmes_antes.length} alarme(s) falso(s)`
-      : `${m.detectado ? `detectou em ${seconds(m.atraso_ms)}` : "não detectou"} · ${m.alarmes_pre_falha} alarme(s) antes da falha`;
+      : `${m.detectado ? found : "não detectou"} · ${m.alarmes_pre_falha} alarme(s) antes da falha`;
     return el("span", { class: "com-nota" }, el("span", { class: `marca-modelo is-${kind}` }), `${NOME_MODELO[kind]}: ${text}`);
   });
   return el("section", { class: "ensaio", id: `ensaio-${p.id}` },
@@ -343,7 +368,121 @@ async function renderMetrics(body) {
     grouped, heatmaps, summary);
 }
 
-/* 4. Explorar: e se o limiar fosse outro? Usa o treino de referência. */
+/* 4. Início das falhas: quando cada falha aparece nos sinais e o que muda nos indicadores (lote 24). */
+const CLASSES_MUDANCA = { clara: "clara", fraca: "fraca (não usada)", nenhuma: "nenhuma" };
+const INDICADORES_INICIO = [["detectados", "Ensaios detectados"], ["atraso_mediano_ms", "Atraso mediano"],
+  ["sensibilidade", "Sensibilidade"], ["especificidade", "Especificidade"], ["precisao", "Precisão"], ["f1", "F1"],
+  ["mcc", "MCC"], ["auc_roc", "AUC-ROC"], ["auc_pr", "AUC-PR"]];
+const COLUNAS_INICIO = [["meio", "14 ensaios · meio", "inicio"], ["mudanca", "14 ensaios · mudança", "mudanca"],
+  ["clara_meio", "8 de mudança clara · meio", "clara_oito"], ["clara_mudanca", "8 de mudança clara · mudança", "clara_oito"]];
+
+function sinal(value) { return `${value > 0 ? "+" : ""}${dec(value)}`; }
+/* Em tela estreita, só o ensaio (F1L); o nome da falha fica na dica. */
+function rotuloEnsaio(t, largura) { return largura < 480 ? t.id : `${t.id} · ${t.nome}`; }
+
+async function renderOnsets(body) {
+  let d;
+  try { d = await carregar("inicio", "/api/ciencia/inicio"); } catch (error) { aviso(body, error.message); return; }
+  const longest = Math.ceil(d3.max(d.ensaios, (t) => t.duracao_s));
+  const timeline = quadro({ titulo: "Quando cada falha aparece nos sinais", chave: "mudanca", extra: GLOSSARIO.classe_mudanca,
+    arquivo: "inicio-das-falhas",
+    desenhar: (area, largura, cores) => linhaDoTempo(area, largura, cores, {
+      titulo: "Início nominal e mudança observada em cada ensaio",
+      descricao: "Para cada ensaio, o registro inteiro, o meio (início nominal) e a mudança observada nos sinais.",
+      dominio: [0, longest], xRotulo: "tempo no registro (s)", margemEsquerda: largura < 480 ? 48 : Math.min(230, largura * 0.42),
+      legenda: [{ nome: "meio do registro", forma: "circulo", cor: cores.inicio, vazado: true },
+        { nome: "mudança clara", forma: "losango", cor: cores.mudanca },
+        { nome: "mudança fraca (não usada)", forma: "losango", cor: cores.suave, vazado: true }],
+      itens: d.ensaios.map((t) => ({ id: t.id, rotulo: rotuloEnsaio(t, largura), trilho: [0, t.duracao_s],
+        ligar: t.classe === "clara" ? [t.nominal_s, t.observado_s] : null, corLigacao: cores.mudanca,
+        pontos: [{ x: t.nominal_s, forma: "circulo", cor: cores.inicio, vazado: true,
+          dica: [`${t.id} · ${t.nome} · meio do registro`, `${dec(t.nominal_s)} s de ${dec(t.duracao_s)} s`] },
+        ...(t.observado_s === null ? [] : [{ x: t.observado_s, forma: "losango", vazado: t.classe !== "clara",
+          cor: t.classe === "clara" ? cores.mudanca : cores.suave,
+          dica: [`${t.id} · ${t.nome} · mudança ${CLASSES_MUDANCA[t.classe]}`, `${dec(t.observado_s)} s (${sinal(t.observado_s - t.nominal_s)} s em relação ao meio)`] }])] })),
+    }),
+    csv: () => [["ensaio", "falha", "modo", "meio_s", "mudanca_s", "diferenca_s", "classe", "duracao_s"],
+      ...d.ensaios.map((t) => [t.id, t.nome, t.modo, t.nominal_s, t.observado_s,
+        t.observado_s === null ? null : t.observado_s - t.nominal_s, t.classe, t.duracao_s])] });
+  const format = (key, value, n) => (key === "detectados" ? `${value} de ${n}` : key === "atraso_mediano_ms" ? seconds(value) : dec(value, 3));
+  const indicators = MODELOS.map(([kind]) => {
+    const m = d.modelos[kind];
+    return tabelaComCSV(`Indicadores com cada início · ${m.nome}`, "trecho_incerto",
+      ["Indicador", ...COLUNAS_INICIO.map(([, label, chave]) => comNota(label, chave))],
+      INDICADORES_INICIO.map(([key, label]) => [
+        comNota(label, key === "atraso_mediano_ms" ? "atraso_mudanca" : key === "detectados" ? "detectados" : key,
+          key === "atraso_mediano_ms" ? "Nas colunas do meio, contado do meio do registro." : ""),
+        ...COLUNAS_INICIO.map(([column]) => format(key, m[column][key], m[column].ensaios))]),
+      `indicadores-inicio-${kind}`,
+      [["indicador", ...COLUNAS_INICIO.map(([, label]) => label)],
+        ...INDICADORES_INICIO.map(([key, label]) => [label, ...COLUNAS_INICIO.map(([column]) => m[column][key])])]);
+  });
+  const sensitivity = el("div", { class: "par-modelos" }, ...MODELOS.map(([kind, name]) => quadro({
+    titulo: `Sensibilidade por ensaio · ${name}`, chave: "sensibilidade", extra: GLOSSARIO.trecho_incerto,
+    arquivo: `sensibilidade-inicio-${kind}`,
+    desenhar: (area, largura, cores) => {
+      const color = MODELO_COR(cores, kind);
+      return linhaDoTempo(area, largura, cores, {
+        titulo: `Sensibilidade por ensaio com cada início (${name})`, dominio: [0, 1], xRotulo: "sensibilidade",
+        margemEsquerda: largura < 480 ? 48 : Math.min(190, largura * 0.42), alturaLinha: 26,
+        legenda: [{ nome: "meio do registro", forma: "circulo", cor: color, vazado: true }, { nome: "mudança observada", forma: "losango", cor: color }],
+        itens: d.ensaios.map((t) => {
+          const r = d.por_ensaio[kind][t.id];
+          return { id: t.id, rotulo: rotuloEnsaio(t, largura), ligar: [r.sensibilidade_meio, r.sensibilidade_mudanca], corLigacao: color,
+            pontos: [{ x: r.sensibilidade_meio, forma: "circulo", cor: color, vazado: true, tamanho: 60,
+              dica: [`${t.id} · ${name}`, `com o meio: ${dec(r.sensibilidade_meio, 3)}`] },
+            { x: r.sensibilidade_mudanca, forma: "losango", cor: color, tamanho: 60,
+              dica: [`${t.id} · ${name}`, `com a mudança: ${dec(r.sensibilidade_mudanca, 3)}`, `mudança ${CLASSES_MUDANCA[t.classe]}`] }] };
+        }),
+      });
+    },
+    csv: () => [["ensaio", "classe", "sensibilidade_meio", "sensibilidade_mudanca"],
+      ...d.ensaios.map((t) => [t.id, t.classe, d.por_ensaio[kind][t.id].sensibilidade_meio, d.por_ensaio[kind][t.id].sensibilidade_mudanca])],
+  })));
+  const delays = tabelaComCSV("Atraso por ensaio", "atraso_mudanca",
+    ["Ensaio", comNota("Mudança", "classe_mudanca"), ...MODELOS.flatMap(([, name]) => [comNota(`${name}: do meio`, "atraso"),
+      comNota(`${name}: da mudança`, "atraso_mudanca")])],
+    d.ensaios.map((t) => [`${t.id} · ${t.nome}`, CLASSES_MUDANCA[t.classe], ...MODELOS.flatMap(([kind]) => {
+      const r = d.por_ensaio[kind][t.id];
+      if (!r.detectado) return ["não detectou", "—"];
+      return [seconds(r.atraso_meio_ms), t.classe === "clara" ? ms(r.atraso_mudanca_ms) : "—"];
+    })]),
+    "atraso-por-ensaio",
+    [["ensaio", "classe", ...MODELOS.flatMap(([, name]) => [`${name} do meio (ms)`, `${name} da mudança (ms)`])],
+      ...d.ensaios.map((t) => [t.id, t.classe, ...MODELOS.flatMap(([kind]) => {
+        const r = d.por_ensaio[kind][t.id];
+        return [r.atraso_meio_ms, t.classe === "clara" ? r.atraso_mudanca_ms : null];
+      })])]);
+  const pair = (row) => (row.diferenca === null ? "—" : `${num(row.diferenca)} (${num(row.ic95[0])} a ${num(row.ic95[1])})`);
+  const comparison = tabelaComCSV("Comparação por objetivo com a mudança observada", "diferenca",
+    ["Objetivo", "Métrica", comNota("14 ensaios: diferença (intervalo de 95%)", "ic95"), "Leitura",
+      comNota("8 de mudança clara: diferença (intervalo de 95%)", "clara_oito"), "Leitura"],
+    d.comparacao.mudanca.map((row, i) => [row.objetivo, row.metrica, pair(row), row.leitura, pair(d.comparacao.clara[i]),
+      d.comparacao.clara[i].leitura]),
+    "comparacao-inicio-observado",
+    [["objetivo", "métrica", "14: diferença", "14: IC inferior", "14: IC superior", "14: leitura", "8: diferença", "8: IC inferior",
+      "8: IC superior", "8: leitura"],
+      ...d.comparacao.mudanca.map((row, i) => {
+        const clear = d.comparacao.clara[i];
+        return [row.objetivo, row.metrica, row.diferenca, row.ic95?.[0], row.ic95?.[1], row.leitura, clear.diferenca, clear.ic95?.[0],
+          clear.ic95?.[1], clear.leitura];
+      })]);
+  body.replaceChildren(
+    el("p", { class: "muted" }, "Os arquivos do GPVS não marcam quando cada falha foi disparada; o conjunto diz só que ela foi ",
+      "introduzida manualmente, na metade do experimento. A avaliação oficial usou o meio do registro ", nota("inicio"),
+      ". Aqui, um detector de mudança sobre as 24 variáveis, sem os autoencoders, mostra quando a falha aparece de fato nos sinais ",
+      nota("detector_mudanca"), `. Nos dois ensaios saudáveis, ele não acha mudança nenhuma. Os números reaproveitam os escores `,
+      `da avaliação de ${day(d.data_oficial)}, sem rodar os modelos de novo, e ela continua sendo a oficial.`),
+    timeline,
+    el("div", { class: "tabela-inicios" }, ...indicators),
+    sensitivity, delays, comparison,
+    el("div", { class: "note" }, "O que isto não resolve: F4 (sombreamento parcial) não muda as 24 variáveis, e F6 e F7 (ajustes do ",
+      "controlador PI) mudam pouco. Para eles não há início confiável, e a falta de detecção é, em boa parte, das variáveis, não só ",
+      "dos modelos. Como a mudança e os modelos olham as mesmas variáveis, a sensibilidade de 1 nos 8 ensaios de mudança clara ",
+      "mostra que os modelos veem logo o que aparece nelas; ela não mede falhas que não aparecem."));
+}
+
+/* 5. Explorar: e se o limiar fosse outro? Usa o treino de referência. */
 async function renderExplore(body) {
   const sub = science.explorar ||= "limiar";
   const inner = el("div", { class: "science-output" });
@@ -658,7 +797,7 @@ function fmecaView(data) {
     el("ul", { class: "science-list" }, ...[...(data.ressalvas || []), ...(data.limites || [])].map((text) => el("li", { text }))));
 }
 
-/* 5. Rodar e arquivos: preparar, treinar e avaliar pelos próprios comandos, e os resultados gravados. */
+/* 6. Rodar e arquivos: preparar, treinar e avaliar pelos próprios comandos, e os resultados gravados. */
 const STEP_NAMES = { preparar: "Preparo", treinar: "Treino", avaliar: "Avaliação" };
 const JOB_STATES = { processando: "em andamento", concluido: "concluído", falhou: "falhou", cancelado: "cancelado" };
 const CONSULTATION_STATES = { iniciada: "iniciada", concluida: "concluída", falhou: "falhou", cancelada: "cancelada" };
@@ -717,7 +856,7 @@ async function renderRuns(body) {
   const history = el("details", { class: "historico" }, el("summary", { text: "Histórico de avaliações" }),
     table(["Nº", "Data", "Treino (pasta)", "Resultado (pasta)", "Estado", "Tipo"], info.consultas.map((item) => [
       item.numero, day(item.data), item.treino?.pasta, item.saida, CONSULTATION_STATES[item.estado] || item.estado,
-      item.canonica ? "oficial" : "exploração"])));
+      item.tipo === "reanalise" ? "reanálise com o início observado (mesmos escores)" : item.canonica ? "oficial" : "exploração"])));
   body.replaceChildren(el("p", { class: "muted", text: "Cada etapa roda o mesmo comando do terminal e grava numa pasta nova de resultados, uma por vez." }),
     progress, cards, history);
   if (info.tarefa) watch(info.tarefa.id, progress);
@@ -807,6 +946,10 @@ async function showResult(item, viewer) {
     parts.push(el("div", { class: `note ${data.consulta.canonica ? "note-ok" : "note-warn"}`, text: data.consulta.canonica
       ? "Avaliação oficial, de 27/09/2026."
       : `Avaliação feita depois da oficial, em ${day(data.consulta.data)}: é exploração. Os números oficiais continuam os de 27/09.` }));
+  }
+  if (data.tipo === "gpvs-reanalise") {
+    parts.push(el("div", { class: "note note-ok", text: "Reanálise dos mesmos escores da avaliação oficial de 27/09, com o início " +
+      "observado das falhas. Não pontua o teste de novo, e a avaliação oficial continua a de 27/09." }));
   }
   if (data.configuracao_canonica !== undefined) {
     parts.push(el("div", { class: `note ${data.configuracao_canonica ? "note-ok" : "note-warn"}`, text: data.configuracao_canonica

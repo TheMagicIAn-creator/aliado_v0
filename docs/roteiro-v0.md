@@ -153,8 +153,8 @@ antes de começar.
 |---|---|---|
 | 22 | Correções de confiança: skill do mestrado atualizada, taxas e notas da FMECA conferidas nos PDFs, apagar documentos da biblioteca e os 2 recortes do Lafraia, consulta da busca reescrita a partir da conversa, em português e inglês, 10 trechos por resposta e fonte do texto | Concluído em 30/09/2026 |
 | 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | Concluído em 30/09/2026 |
-| 24 | Aba Ciência nova, parte 2: confiabilidade por componente, FMECA melhorada e disponibilidade com os tempos de reparo do IEEE 493 | A combinar |
-| 25 | Início das falhas no GPVS | A combinar |
+| 24 | Início das falhas no GPVS: a mudança observada nos sinais, a reanálise dos mesmos escores com ela, os alarmes falsos estimados e a faixa esperada pelo limiar, com a seção nova na aba Ciência | Concluído em 30/09/2026 |
+| 25 | Aba Ciência nova, parte 2: confiabilidade por componente, FMECA melhorada e disponibilidade com os tempos de reparo do IEEE 493 | A combinar |
 | 26 | Resultados no chat e lançamento da 0.3.0 | A combinar |
 
 ### Decisões de 30/09/2026
@@ -186,6 +186,17 @@ antes de começar.
   - O pedido "mais opções de fontes" era de fontes de texto. Antes do esclarecimento, a busca já tinha passado a 10 trechos, com a opção de cada autor na resposta, e o pesquisador decidiu manter.
   - O seletor de fonte do texto tem 8 opções.
 - Veja a [validação do lote 22](migracao/validacao-lote-22.md).
+
+### Decisões e resultado do lote 24 (30/09/2026)
+
+- **Ordem.** Depois da análise crítica dos resultados, o pesquisador pediu para corrigir o que tivesse solução. O início das falhas passou a ser o lote 24, e a confiabilidade por componente, o 25.
+- **Regras da reanálise.** O trecho entre o meio do registro e a mudança observada fica fora das métricas por janela. F4, F6 e F7, sem mudança clara, ficam no meio. As médias saem para os 14 ensaios e para os 8 de mudança clara.
+- **Resultado.**
+  - Em F1, F2 e F3, a mudança vem de 1,5 a 3,8 s depois do meio; em F5, coincide com ele.
+  - Com a mudança, a detecção não muda. O atraso mediano cai para 60 ms, e a sensibilidade nos 8 ensaios de mudança clara vai de 0,67 a 1,00.
+  - A avaliação de 27/09 continua sendo a oficial.
+- **Alarmes falsos.** A estimativa pela cadeia dá 19 por hora no Denso (0 a 53) e 56 no AE-LSTM (0 a 263). As janelas acima do limiar cabem na faixa esperada, de 0,13% a 2,87%.
+- Veja a [validação do lote 24](migracao/validacao-lote-24.md).
 
 ## Fica para a v1
 

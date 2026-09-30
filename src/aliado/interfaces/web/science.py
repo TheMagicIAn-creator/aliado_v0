@@ -1,4 +1,5 @@
-"""Aba Ciência da interface (lotes 20 e 23): resultados oficiais, exploradores, confiabilidade e FMECA.
+"""Aba Ciência da interface (lotes 20, 23 e 24): resultados oficiais, início das falhas, exploradores,
+confiabilidade e FMECA.
 
 Os cálculos são do serviço científico; o navegador só desenha. Salvar um cenário ou rodar a
 FMECA grava sempre numa pasta nova de `data/resultados`, sem sobrescrever outra. As visões dos
@@ -31,6 +32,7 @@ RESULT_KINDS = (
     ("escores_calibracao.npz", "gpvs-modelos", "GPVS: modelos e limiar"),
     ("avaliacao-busca.json", "busca", "Medição da busca"),
     ("normalizacao.npz", "gpvs-preparo", "GPVS: preparo"),  # modelos também têm; vêm antes na ordem
+    ("inicio.json", "gpvs-reanalise", "GPVS: reanálise com o início observado"),
     ("relatorio.json", "relatorio", "Relatório"),
 )
 REPORTS = ("relatorio.md", "fmeca.md")
@@ -331,11 +333,15 @@ def science_routes(settings, worker, lock) -> list[Route]:
     async def score_panels(request: Request):
         return await official("score_panels", settings.results_dir, settings.gpvs_dir)
 
+    async def onsets(request: Request):
+        return await official("onsets", settings.results_dir)
+
     return [
         Route("/api/ciencia", state),
         Route("/api/ciencia/resumo", overview),
         Route("/api/ciencia/metricas", per_fault),
         Route("/api/ciencia/escores", score_panels),
+        Route("/api/ciencia/inicio", onsets),
         Route("/api/ciencia/preparar", prepare, methods=["POST"]),
         Route("/api/ciencia/tarefas/{job}", job_status),
         Route("/api/ciencia/limiar", threshold, methods=["POST"]),

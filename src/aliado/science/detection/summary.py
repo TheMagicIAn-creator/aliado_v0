@@ -21,8 +21,11 @@ import numpy as np
 
 from aliado.science.detection import gpvs
 from aliado.science.detection.metrics import alarm_starts, first_alarm
+from aliado.science.detection.threshold import false_alarm_interval
 
 EVALUATION = "gpvs-avaliacao-001"
+REANALYSIS_PREFIX = "gpvs-reanalise-"
+SECONDARY = ("precisao", "f1", "acuracia_balanceada", "mcc", "auc_roc", "auc_pr")
 MODELS = {"denso": "Denso", "lstm": "AE-LSTM"}
 SHORT_FAULTS = {1: "Falha em IGBT", 2: "Sensor: −20%", 3: "Afundamento de tensão", 4: "Sombreamento parcial",
                 5: "Arranjo FV: 15% aberto", 6: "Ganho PI: −20%", 7: "Constante PI: +20%"}
@@ -97,13 +100,33 @@ def overview(results_dir: str | Path) -> dict:
     report, config = _json(folder / "relatorio.json"), _json(folder / "configuracao.json")
     reference = report["semente_referencia"]
     rows = [row for row in _rows(folder) if row["semente"] == reference]
+    training = folder.parent / Path(config["treino"]["pasta"]).name / "relatorio.json"
+    limits = _json(training)["modelos"] if training.is_file() else None
+    later = reanalysis(results_dir)
     models = {}
     for kind, name in MODELS.items():
         model = report["modelos"][kind]
         own = [row for row in rows if row["modelo"] == kind]
-        healthy, pre = model["referencia"]["falsos_alarmes"]["teste_saudavel"], model["referencia"]["falsos_alarmes"]["pre_falha"]
+        alarms = model["referencia"]["falsos_alarmes"]
+        healthy, pre, combined = alarms["teste_saudavel"], alarms["pre_falha"], alarms["combinado"]
         summary = model["referencia"]["resumo"]
+        limit = limits[kind]["sementes"][str(reference)]["limiar"] if limits else None
+        estimate = later["alarmes_estimados"][kind] if later else None
         models[kind] = {
+            # Os 52 s saudáveis juntos (teste saudável e antes da falha), a fração de janelas acima do
+            # limiar em cada trecho, o quanto o limiar pode variar e a estimativa da reanálise (lote 24).
+            "saudavel": {"alarmes": combined["alarmes"], "duracao_s": combined["duracao_s"],
+                         "alarmes_por_hora": combined["alarmes"] / combined["duracao_s"] * 3600,
+                         "limite_superior_por_hora": combined["limite_superior_por_hora"],
+                         "janelas": healthy["janelas"] + pre["janelas"],
+                         "janelas_acima": healthy["janelas_acima"] + pre["janelas_acima"],
+                         "trechos": {part: {"janelas": alarms[part]["janelas"], "janelas_acima": alarms[part]["janelas_acima"],
+                                            "fracao": alarms[part]["fracao_janelas_acima"],
+                                            "ic95": alarms[part].get("fracao_janelas_acima_ic95")}
+                                     for part in ("teste_saudavel", "pre_falha")}},
+            "limiar_faixa": None if limit is None else false_alarm_interval(limit["posicao"], limit["n_calibracao"]),
+            "alarmes_estimados": None if estimate is None else {
+                key: estimate[key] for key in ("alarmes_por_hora", "ic95", "p01", "p11", "previsto", "observado")},
             "nome": name, "limiar": model["limiar"], "ensaios": len(own),
             "detectados": summary["detectados"], "atraso_mediano_ms": summary["atraso_mediano_ms"],
             "metricas": {key: summary[f"{key}_media"] for key in METRICS},
@@ -117,11 +140,8 @@ def overview(results_dir: str | Path) -> dict:
                 "por_ensaio": {row["ensaio"]: _counts([row]) for row in own},
             },
         }
-    comparison = [{"objetivo": row["objetivo"], "metrica": COMPARISON_NAMES.get(row["metrica"], row["metrica"]),
-                   "diferenca": row["media"], "ic95": row["ic95"], "ensaios": row["n"],
-                   "maior_e_melhor": row["maior_e_melhor"], "leitura": row["leitura"]} for row in report["comparacao"]]
     return {"data": config.get("executado_em"), "confirmacoes": report["confirmacao"], "k": report["top_k"],
-            "modelos": models, "comparacao": comparison, "ensaios": trials()}
+            "modelos": models, "comparacao": _comparison(report["comparacao"]), "ensaios": trials()}
 
 
 def per_fault(results_dir: str | Path) -> dict:
@@ -190,7 +210,81 @@ def score_panels(results_dir: str | Path, gpvs_dir: str | Path) -> dict:
         if key not in _cache:
             _cache.clear()
             _cache[key] = _panels(folder, gpvs_dir)
-        return _cache[key]
+        panels = _cache[key]
+    return _with_onsets(panels, reanalysis(results_dir))
+
+
+def _with_onsets(panels: dict, report: dict | None) -> dict:
+    """Acrescenta a mudança observada (só a clara) e o atraso desde ela, sem mexer no que fica em memória."""
+    if report is None:
+        return panels
+    trials_ = []
+    for panel in panels["ensaios"]:
+        trial = report["inicio"]["ensaios"][panel["id"]]
+        observed = trial["observado_janela"] if trial["classe"] == "clara" else None
+        models = {kind: model | {"atraso_mudanca_ms": report["modelos"][kind]["referencia"]["ensaios"][panel["id"]]["atraso_ms"]
+                                 if observed is not None else None}
+                  for kind, model in panel["modelos"].items()}
+        trials_.append(panel | {"classe": trial["classe"], "inicio_observado": observed, "modelos": models})
+    return panels | {"ensaios": trials_, "reanalise": True}
+
+
+def reanalysis(results_dir: str | Path) -> dict | None:
+    """A reanálise mais recente dos escores da avaliação oficial, com o início observado (lote 24)."""
+    for folder in sorted(Path(results_dir).glob(f"{REANALYSIS_PREFIX}*"), reverse=True):
+        if (folder / "relatorio.json").is_file() and (folder / "configuracao.json").is_file():
+            report = _json(folder / "relatorio.json")
+            if report.get("origem", {}).get("avaliacao") == EVALUATION:
+                return report | {"executado_em": _json(folder / "configuracao.json").get("executado_em")}
+    return None
+
+
+def _indicators(summary: dict, trials_count: int) -> dict:
+    return {"ensaios": trials_count, "detectados": summary["detectados"], "atraso_mediano_ms": summary["atraso_mediano_ms"],
+            **{key: summary[f"{key}_media"] for key in ("sensibilidade", "especificidade", *SECONDARY)}}
+
+
+def _comparison(rows: list[dict]) -> list[dict]:
+    return [{"objetivo": row["objetivo"], "metrica": COMPARISON_NAMES.get(row["metrica"], row["metrica"]),
+             "diferenca": row["media"], "ic95": row["ic95"], "ensaios": row["n"], "maior_e_melhor": row["maior_e_melhor"],
+             "leitura": row["leitura"]} for row in rows]
+
+
+def onsets(results_dir: str | Path) -> dict:
+    """Início nominal e observado de cada ensaio e os indicadores com cada um (seção Início das falhas)."""
+    official = _json(_evaluation(results_dir) / "relatorio.json")
+    report = reanalysis(results_dir)
+    if report is None:
+        raise FileNotFoundError("Ainda não há a reanálise com o início observado das falhas. Ela é feita pelo "
+                                "terminal: aliado ciencia reanalisar-gpvs --saida data/resultados/gpvs-reanalise-001")
+    start = report["inicio"]
+    clear = report["so_mudanca_clara"]
+    items = []
+    for item in trials():
+        trial = start["ensaios"][item["id"]]
+        items.append(item | {key: trial[key] for key in ("classe", "nominal_s", "observado_s")}
+                     | {"duracao_s": trial["janelas"] * WINDOW_S})
+    models, per_trial = {}, {}
+    for kind, name in MODELS.items():
+        before = official["modelos"][kind]["referencia"]
+        after = report["modelos"][kind]["referencia"]
+        models[kind] = {"nome": name,
+                        "meio": _indicators(before["resumo"], len(before["ensaios"])),
+                        "mudanca": _indicators(after["resumo"], len(after["ensaios"])),
+                        "clara_meio": _indicators(clear["meio"]["modelos"][kind]["resumo"], len(clear["ensaios"])),
+                        "clara_mudanca": _indicators(clear["modelos"][kind]["resumo"], len(clear["ensaios"]))}
+        per_trial[kind] = {name_: {"detectado": result["detectado"], "atraso_meio_ms": result["atraso_desde_o_meio_ms"],
+                                   "atraso_mudanca_ms": result["atraso_ms"],
+                                   "sensibilidade_meio": before["ensaios"][name_]["sensibilidade"],
+                                   "sensibilidade_mudanca": result["sensibilidade"],
+                                   "especificidade_meio": before["ensaios"][name_]["especificidade"],
+                                   "especificidade_mudanca": result["especificidade"]}
+                           for name_, result in after["ensaios"].items()}
+    return {"data": report["executado_em"], "data_oficial": _json(_evaluation(results_dir) / "configuracao.json").get("executado_em"),
+            "penalidade_c": start["penalidade_c"], "controle_saudavel": {
+                name: counts[f"{float(start['penalidade_c'])}"] for name, counts in start["controle_saudavel"].items()},
+            "ensaios": items, "clara": clear["ensaios"], "modelos": models, "por_ensaio": per_trial,
+            "comparacao": {"mudanca": _comparison(report["comparacao"]), "clara": _comparison(clear["comparacao"])}}
 
 
 def _panels(folder: Path, gpvs_dir: Path) -> dict:

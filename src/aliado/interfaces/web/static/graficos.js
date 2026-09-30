@@ -1,6 +1,6 @@
 "use strict";
 
-/* Gráficos da aba Ciência (lote 23), em D3 v7 (copiado do mestrado-utfpr, licença ISC).
+/* Gráficos da aba Ciência (lotes 23 e 24), em D3 v7 (copiado do mestrado-utfpr, licença ISC).
    Cada gráfico mora num "quadro": título, nota, botões de exportação e uma área que se redesenha
    quando muda de largura, de tema ou de fonte. As cores e a fonte vêm de variáveis CSS lidas do
    próprio contêiner, e o SVG leva tudo resolvido: por isso a exportação sai em fundo branco, com
@@ -36,10 +36,13 @@ const GLOSSARIO = {
   vn: "Verdadeiro negativo: janela saudável que ficou abaixo do limiar.",
   matriz: "Conta as janelas de 20 ms dos ensaios com falha: as saudáveis, antes da falha, e as com falha, depois do início. As de comissionamento e a de transição ficam de fora. Cada linha soma 100% da classe real.",
   detectados: "Ensaios com falha em que houve alarme a partir do início da falha, de 14.",
-  atraso: "Tempo do início nominal da falha até o alarme (o fim da janela que o confirma). O atraso mediano usa só os ensaios detectados.",
+  atraso: "Tempo do início nominal da falha (o meio do registro) até o alarme, no fim da janela que o confirma. O atraso mediano usa só os ensaios detectados.",
   alarme: "Um alarme dispara quando 3 janelas seguidas ficam acima do limiar. Enquanto o escore continua acima, é o mesmo alarme.",
-  alarmes_hora: "Alarmes no teste saudável divididos pela duração dele, em horas.",
-  limite_superior: "Limite superior de 95% (Poisson) para os alarmes falsos por hora. O teste saudável dura só cerca de 5 s; por isso, mesmo sem nenhum alarme, o limite fica alto. É falta de tempo de observação, não excesso de alarmes.",
+  alarmes_hora: "Alarmes falsos vistos em toda a operação saudável fora do treino e da calibração: o teste saudável (5 s) e o trecho antes da falha dos 14 ensaios (47 s), divididos por esses 52 s, em horas.",
+  limite_superior: "Limite superior de 95% (Poisson) para os alarmes falsos por hora. Com pouco tempo de observação, mesmo sem nenhum alarme o limite fica alto: é falta de tempo, não excesso de alarmes.",
+  alarmes_estimados: "Estimativa dos alarmes falsos por hora pelo encadeamento das janelas acima do limiar nos 52 s saudáveis: uma cadeia de Markov de dois estados (Brook e Evans, 1972). As sequências de 1 e de 2 janelas acima do limiar, que aparecem nos dados, dão a chance de 3 seguidas, que disparam o alarme. O intervalo de 95% sorteia os 16 trechos saudáveis.",
+  janelas_acima: "Fração das janelas saudáveis acima do limiar, sem a regra das 3 seguidas. Pelo limiar p99, o esperado é cerca de 1%.",
+  faixa_limiar: "Quanto a fração esperada de janelas acima do limiar pode variar só por o limiar vir de poucas janelas de calibração: com o limiar na posição r de n, ela segue uma distribuição Beta(n + 1 − r, r) (Vovk, 2012).",
   alarmes_antes: "Alarmes nas janelas saudáveis antes da falha, somando os 14 ensaios: são alarmes falsos.",
   limiar: "Valor do escore acima do qual a janela é considerada anormal: o percentil 99 dos escores de calibração, dados saudáveis separados só para isso.",
   percentil: "Posição do limiar entre os escores saudáveis de calibração. p99 = só 1% dessas janelas fica acima dele.",
@@ -48,7 +51,13 @@ const GLOSSARIO = {
   escore: "Erro de reconstrução do autoencoder na janela: quanto o sinal se afasta do que o modelo aprendeu como saudável.",
   razao: "Escore dividido pelo limiar do modelo, em escala logarítmica. Acima de 1, a janela é anormal. Assim os dois modelos ficam na mesma escala.",
   fases: "Comissionamento: começo do registro, fora da avaliação. Antes da falha: janelas saudáveis, usadas como negativas. Transição: a janela do início. Depois: janelas com falha.",
-  inicio: "Instante em que o conjunto de dados diz que a falha começa, o meio do registro. Pode não coincidir com a mudança real no sinal.",
+  inicio: "Início nominal: o meio do registro. Os arquivos do GPVS não marcam o disparo, e o conjunto diz só que a falha foi introduzida manualmente, na metade do experimento. É o início da avaliação de 27/09.",
+  mudanca: "Mudança observada: o primeiro instante, depois do comissionamento, em que a média das 24 variáveis do ensaio muda de patamar. Vem de um detector de mudança sobre os sinais, sem os autoencoders.",
+  detector_mudanca: "PELT (Killick, Fearnhead e Eckley, 2012): divide o registro nos trechos de média constante que melhor o explicam, pagando uma penalidade por trecho novo. A penalidade usada é a menor que não acha mudança nenhuma nos dois ensaios saudáveis.",
+  classe_mudanca: "Clara: a mesma mudança aparece mesmo com penalidades até 7,5 vezes maiores, e o ensaio passa a usá-la. Fraca: some quando a penalidade cresce, pode ser variação do ambiente, e o ensaio fica no meio do registro. Nenhuma: as variáveis não mudam.",
+  trecho_incerto: "Entre o meio do registro e a mudança observada pode haver falha ainda invisível. Essas janelas ficam fora da sensibilidade e da especificidade; um alarme nelas conta como detecção.",
+  atraso_mudanca: "Tempo da mudança observada até o alarme. Pode ser negativo, se o alarme vier antes de a mudança ficar clara. Com 3 janelas seguidas de confirmação, o menor atraso é de 40 a 60 ms.",
+  clara_oito: "Só os 8 ensaios de mudança clara, com o início no meio e com a mudança: separa o efeito do início do efeito de escolher esses 8.",
   modos: "L = IPPT: o inversor com a potência limitada. M = MPPT: o inversor buscando a potência máxima.",
   treinos: "O treino foi repetido 5 vezes, cada uma partindo de um ponto aleatório diferente, dado por um número (a semente). Os números mostrados são os do treino de referência; a faixa mostra o menor e o maior valor entre as 5 repetições.",
   ic95: "Intervalo de 95% da diferença entre os modelos, reamostrando os ensaios. Se ele inclui o zero, não há diferença clara.",
@@ -132,6 +141,7 @@ function coresDe(node) {
   return {
     denso: v("--g-denso"), lstm: v("--g-lstm"), texto: v("--g-texto"), suave: v("--g-suave"), grade: v("--g-grade"),
     eixo: v("--g-eixo"), fundo: v("--g-fundo"), limiar: v("--g-limiar"), inicio: v("--g-inicio"), vazio: v("--g-vazio"),
+    mudanca: v("--g-mudanca"),
     fases: { comissionamento: v("--g-fase-comissionamento"), pre_teste: v("--g-fase-antes"),
       transicao: v("--g-fase-transicao"), pos_falha: v("--g-fase-depois") },
     fonte: style.fontFamily,
@@ -207,7 +217,7 @@ function graficoLinhas(area, largura, cores, o) {
     yValores: decadas ? decadas.filter((e) => e % passo === 0 || e === 0).map((e) => 10 ** e) : undefined });
   for (const linha of o.linhasV || []) {
     b.g.append("line").attr("x1", x(linha.x)).attr("x2", x(linha.x)).attr("y1", 0).attr("y2", b.altura)
-      .attr("stroke", linha.cor).attr("stroke-width", 1.4).attr("stroke-dasharray", "5 4");
+      .attr("stroke", linha.cor).attr("stroke-width", linha.espessura || 1.4).attr("stroke-dasharray", linha.traco || "5 4");
   }
   for (const linha of o.linhasH || []) {
     b.g.append("line").attr("x1", 0).attr("x2", b.largura).attr("y1", y(linha.y)).attr("y2", y(linha.y))
@@ -424,6 +434,70 @@ function pontoComFaixa(area, largura, cores, o) {
     });
   }
   legenda(b, o.series, cores);
+  return b.svg.node();
+}
+
+/* Linha do tempo por item: um trilho opcional, uma ligação entre dois valores e marcas com forma e cor. */
+function linhaDoTempo(area, largura, cores, o) {
+  const alturaLinha = o.alturaLinha || 30;
+  const esquerda = o.margemEsquerda || 170;
+  // A legenda quebra em linhas quando não cabe (largura estimada pelo número de letras).
+  const posicoes = [];
+  let coluna = 0, linha = 0;
+  for (const item of o.legenda || []) {
+    const ocupa = 30 + item.nome.length * 6.6;
+    if (coluna && coluna + ocupa > largura - esquerda - 16) { coluna = 0; linha += 1; }
+    posicoes.push([coluna, linha * 18]);
+    coluna += ocupa;
+  }
+  const extra = 18 * linha;
+  const altura = 44 + extra + alturaLinha * o.itens.length + 40;
+  const b = base(area, largura, altura, cores, { titulo: o.titulo, descricao: o.descricao,
+    margem: { top: 34 + extra, left: esquerda, bottom: 40, right: 16 } });
+  const y = d3.scaleBand().domain(o.itens.map((i) => i.id)).range([0, b.altura]).padding(0.2);
+  const x = d3.scaleLinear().domain(o.dominio).range([0, b.largura]);
+  const ticks = b.largura < 360 ? 4 : 8;
+  const grade = b.g.append("g").call(d3.axisBottom(x).ticks(ticks).tickSize(b.altura).tickFormat(""));
+  grade.selectAll("line").attr("stroke", cores.grade);
+  grade.select(".domain").remove();
+  const eixoX = b.g.append("g").attr("transform", `translate(0,${b.altura})`)
+    .call(d3.axisBottom(x).ticks(ticks).tickFormat(o.xFormato || BR.format("~g")));
+  eixoX.selectAll("line,path").attr("stroke", cores.eixo);
+  eixoX.selectAll("text").attr("fill", cores.suave).attr("font-size", 11).attr("font-family", cores.fonte);
+  if (o.xRotulo) {
+    b.g.append("text").attr("x", b.largura / 2).attr("y", b.altura + 34).attr("text-anchor", "middle")
+      .attr("font-size", 12).attr("fill", cores.suave).text(o.xRotulo);
+  }
+  const simbolo = { circulo: d3.symbolCircle, losango: d3.symbolDiamond, quadrado: d3.symbolSquare };
+  for (const item of o.itens) {
+    const cy = y(item.id) + y.bandwidth() / 2;
+    b.g.append("text").attr("x", -10).attr("y", cy + 4).attr("text-anchor", "end").attr("font-size", 12)
+      .attr("fill", cores.texto).text(item.rotulo);
+    if (item.trilho) {
+      b.g.append("rect").attr("x", x(item.trilho[0])).attr("width", Math.max(1, x(item.trilho[1]) - x(item.trilho[0])))
+        .attr("y", cy - 5).attr("height", 10).attr("rx", 5).attr("fill", cores.vazio);
+    }
+    if (item.ligar) {
+      b.g.append("line").attr("x1", x(item.ligar[0])).attr("x2", x(item.ligar[1])).attr("y1", cy).attr("y2", cy)
+        .attr("stroke", item.corLigacao || cores.suave).attr("stroke-width", 2.5).attr("stroke-linecap", "round");
+    }
+    for (const ponto of item.pontos) {
+      b.g.append("path").attr("transform", `translate(${x(ponto.x)},${cy})`)
+        .attr("d", d3.symbol(simbolo[ponto.forma] || d3.symbolCircle, ponto.tamanho || 80)())
+        .attr("fill", ponto.vazado ? cores.fundo : ponto.cor).attr("stroke", ponto.cor).attr("stroke-width", 1.6)
+        .attr("tabindex", 0)
+        .on("pointerenter focus", (event) => mostrarDica(event.type === "focus" ? posicao(event.target) : event, ponto.dica))
+        .on("pointerleave blur", esconderDica);
+    }
+  }
+  const g = b.svg.append("g").attr("transform", `translate(${b.m.left},14)`);
+  (o.legenda || []).forEach((item, i) => {
+    const [dx, dy] = posicoes[i];
+    g.append("path").attr("transform", `translate(${dx + 6},${dy - 4})`)
+      .attr("d", d3.symbol(simbolo[item.forma] || d3.symbolCircle, 60)())
+      .attr("fill", item.vazado ? cores.fundo : item.cor).attr("stroke", item.cor).attr("stroke-width", 1.6);
+    g.append("text").attr("x", dx + 16).attr("y", dy).attr("font-size", 12).attr("fill", cores.texto).text(item.nome);
+  });
   return b.svg.node();
 }
 

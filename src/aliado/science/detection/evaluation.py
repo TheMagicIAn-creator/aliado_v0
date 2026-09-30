@@ -93,8 +93,11 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def load_training(folder: str | Path) -> TrainedDetectors:
-    """Rodada de treino congelada, com configuração e pesos conferidos pelos hashes gravados."""
+def load_thresholds(folder: str | Path) -> tuple[TrainedDetectors, dict]:
+    """Configuração e limiares de uma rodada congelada, conferidos pelo hash, sem carregar os pesos.
+
+    Devolve também o relatório do treino, que guarda o caminho e o hash de cada modelo.
+    """
     folder = Path(folder)
     frozen = json.loads((folder / "configuracao.json").read_text(encoding="utf-8"))
     summary = json.loads((folder / "relatorio.json").read_text(encoding="utf-8"))
@@ -104,19 +107,26 @@ def load_training(folder: str | Path) -> TrainedDetectors:
         "sensitivity_k": tuple(raw["sensitivity_k"]), "hyperparameters": Hyperparameters(**raw["hyperparameters"])}))
     if config.digest() != frozen["sha256"] or summary["configuracao_sha256"] != frozen["sha256"]:
         raise ValueError("A configuração do treino não confere com o hash gravado.")
-    models, thresholds = {}, {}
+    thresholds = {(kind, seed, int(k)): float(value)
+                  for kind in MODELS for seed in config.seeds
+                  for k, value in summary["modelos"][kind]["sementes"][str(seed)]["sensibilidade_k"].items()}
+    return TrainedDetectors(folder, config, frozen, {}, thresholds), summary
+
+
+def load_training(folder: str | Path) -> TrainedDetectors:
+    """Rodada de treino congelada, com configuração e pesos conferidos pelos hashes gravados."""
+    trained, summary = load_thresholds(folder)
     for kind in MODELS:
-        for seed in config.seeds:
+        for seed in trained.config.seeds:
             run = summary["modelos"][kind]["sementes"][str(seed)]
-            path = folder / run["arquivos"]["modelo"]["caminho"]
+            path = trained.folder / run["arquivos"]["modelo"]["caminho"]
             if _sha256(path) != run["arquivos"]["modelo"]["sha256"]:
                 raise ValueError(f"Os pesos de {path.name} não conferem com o hash gravado.")
             model, checkpoint = load_model(path)
             if (checkpoint["modelo"], checkpoint["semente"]) != (kind, seed):
                 raise ValueError(f"{path.name} não é o modelo {kind} da semente {seed}.")
-            models[(kind, seed)] = model
-            thresholds |= {(kind, seed, int(k)): float(value) for k, value in run["sensibilidade_k"].items()}
-    return TrainedDetectors(folder, config, frozen, models, thresholds)
+            trained.models[(kind, seed)] = model
+    return trained
 
 
 def segment_errors(kind: str, model, scaled: np.ndarray, sequence: int) -> np.ndarray:

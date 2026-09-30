@@ -5,10 +5,23 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
-Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correcoes-confianca.md) e
-[0023](docs/specs/0023-aba-ciencia-nova.md).
+Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correcoes-confianca.md),
+[0023](docs/specs/0023-aba-ciencia-nova.md) e [0024](docs/specs/0024-inicio-das-falhas.md).
 
 ### Adicionado
+
+- **Início observado das falhas do GPVS.** Os arquivos não marcam o disparo, e a avaliação de 27/09 usou o meio do registro.
+  - Um detector de mudança (PELT) sobre as 24 variáveis, sem os autoencoders, acha onde cada falha aparece nos sinais. Nos dois ensaios saudáveis, ele não acha mudança nenhuma.
+  - Em 8 ensaios, a mudança é clara: F1, F2, F3 e F5, nos dois modos. Em F1, F2 e F3, ela vem de 1,5 a 3,8 s depois do meio.
+  - F6 e F7 mudam pouco, e F4 não muda. Esses ensaios ficam no meio.
+- **Reanálise dos mesmos escores com o início observado** (`aliado ciencia reanalisar-gpvs`):
+  - sem rodar os modelos de novo e registrada como consulta nº 2 ao teste; a avaliação de 27/09 continua sendo a oficial;
+  - com o início nominal, repete o relatório oficial bit a bit;
+  - com a mudança, a detecção não muda (Denso 10 de 14 e AE-LSTM 8 de 14), e o atraso mediano cai de 2,04 s e 1,70 s para 60 ms;
+  - nos 8 ensaios de mudança clara, a sensibilidade vai de 0,67 para 1,00 nos dois modelos. A demora de 27/09 era a espera até a falha aparecer nas variáveis.
+- **Alarmes falsos estimados pelo encadeamento das janelas** (cadeia de Markov, Brook e Evans, 1972): Denso com 19 por hora (0 a 53) e AE-LSTM com 56 por hora (0 a 263), nos 52 s saudáveis. A cadeia previu 3,9 e 5,3 sequências de 2 janelas, e houve 4 e 5.
+- **Faixa esperada pelo limiar:** com o limiar no 191º de 192 escores de calibração, a chance de alarme por janela fica entre 0,13% e 2,87% (Vovk, 2012). O observado cabe nela.
+- **Seção "Início das falhas" na aba Ciência**, com o início por ensaio, os indicadores com cada início, a sensibilidade e o atraso por ensaio e a comparação. Os escores ganharam a linha da mudança observada.
 
 - **Aba Ciência nova**, organizada pelas perguntas: Resumo · Escores por ensaio · Métricas por falha · Confiabilidade · FMECA · Explorar · Rodar e arquivos.
   - **Resumo:** a comparação Denso × AE-LSTM por objetivo, os indicadores de cada modelo e as matrizes de confusão, com filtro por falha e por ensaio.
@@ -32,6 +45,7 @@ Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correco
 
 ### Alterado
 
+- **Resumo da aba Ciência:** os alarmes falsos por hora passam a usar os 52 s saudáveis (o teste saudável e o trecho antes da falha), e não só os 5 s do teste. O limite superior do Denso cai de 2.050 para 207 por hora. Entram também a estimativa pela cadeia e as janelas saudáveis acima do limiar, com a faixa esperada.
 - **Skill do mestrado** (versão 0.2.0):
   - descreve a situação atual: há memória, o acervo tem os PDFs e a aba Ciência executa o experimento;
   - registra a tabela e a página de cada taxa e das notas da FMECA;

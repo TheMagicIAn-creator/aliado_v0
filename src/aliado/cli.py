@@ -94,6 +94,13 @@ def main(argv: list[str] | None = None) -> int:
     evaluation.add_argument("--saida", type=Path, required=True, help="Pasta nova para a avaliação")
     evaluation.add_argument("--dados", type=Path, default=Path("data/gpvs"))
     evaluation.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
+    reanalysis = science_commands.add_parser(
+        "reanalisar-gpvs", help="Mesmos escores com o início observado das falhas (lote 24)")
+    reanalysis.add_argument("--avaliacao", type=Path, default=Path("data/resultados/gpvs-avaliacao-001"))
+    reanalysis.add_argument("--modelos", type=Path, default=Path("data/resultados/gpvs-modelos-002"))
+    reanalysis.add_argument("--saida", type=Path, required=True, help="Pasta nova para a reanálise")
+    reanalysis.add_argument("--dados", type=Path, default=Path("data/gpvs"))
+    reanalysis.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
     args = parser.parse_args(argv)
     try:
         if args.command == "skills":
@@ -155,6 +162,8 @@ def main(argv: list[str] | None = None) -> int:
             return _train_gpvs(args)
         if args.command == "ciencia" and args.operation == "avaliar-gpvs":
             return _evaluate_gpvs(args)
+        if args.command == "ciencia" and args.operation == "reanalisar-gpvs":
+            return _reanalyze_gpvs(args)
         if args.command == "ciencia":
             from aliado.science import evaluate_scenario, export_result
 
@@ -291,6 +300,22 @@ def _evaluate_gpvs(args) -> int:
     config = EvaluationConfig()
     print(json.dumps(export_evaluation(score_all(trained, prepared), trained, prepared, config, args.saida),
                      ensure_ascii=False, indent=2))
+    return 0
+
+
+def _reanalyze_gpvs(args) -> int:
+    from aliado.science.detection import registry
+    from aliado.science.detection.reanalysis import run
+
+    if args.saida.exists():
+        raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
+    paths = run(args.avaliacao, args.modelos, args.dados, args.saida, cache=args.cache)
+    frozen = json.loads(Path(paths["configuracao"]).read_text(encoding="utf-8"))
+    number = registry.record_reanalysis(args.saida.parent, source=args.avaliacao.name, output=args.saida.name,
+                                        training=args.modelos.name,
+                                        training_sha=frozen["origem"]["treino_configuracao_sha256"],
+                                        config_sha=frozen["sha256"])
+    print(json.dumps(paths | {"consulta": number}, ensure_ascii=False, indent=2))
     return 0
 
 

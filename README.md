@@ -92,6 +92,7 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - **Resumo:** a comparação Denso × AE-LSTM por objetivo, os indicadores de cada modelo e as matrizes de confusão, com filtro por falha e por ensaio.
   - **Escores por ensaio:** para cada um dos 14 ensaios e o teste saudável, um carrossel (Denso → AE-LSTM → Ambos), com os gráficos no mesmo tamanho. Mostram escore ÷ limiar, as fases, o início nominal e os alarmes.
   - **Métricas por falha:** barras por tipo de falha, mapas de calor por ensaio e as métricas gerais com a faixa dos 5 treinamentos.
+  - **Início das falhas:** onde cada falha aparece nos sinais, contra o meio do registro, e os indicadores com cada início. Os números vêm da reanálise dos mesmos escores; a avaliação de 27/09 continua sendo a oficial.
   - **Confiabilidade:** λ, horas por ano, base e horizonte recalculam R(t) e F(t) sem gravar nada. Para salvar o cenário numa pasta nova, fonte e hipóteses são obrigatórias. Aceita também qualquer cenário em JSON.
   - **FMECA:** a tabela, as ordens pelo NPR e pela taxa e o relatório numa pasta nova.
   - **Explorar:** e se o limiar fosse outro?
@@ -172,6 +173,16 @@ arquivo, conferido a cada preparo.
 A avaliação canônica já foi feita em 27/09/2026. Mudanças de protocolo depois disso exigem
 uma avaliação independente (M14).
 
+4. **Reanálise com o início observado** (lote 24):
+   - acha onde cada falha aparece nas 24 variáveis, com o PELT e sem os modelos;
+   - recalcula as métricas com esse início sobre os mesmos escores de 27/09;
+   - estima os alarmes falsos por hora e a faixa esperada pelo limiar;
+   - grava numa pasta nova e entra no registro de consultas ao teste.
+
+```powershell
+.\.venv\Scripts\python.exe -m aliado ciencia reanalisar-gpvs --saida data/resultados/gpvs-reanalise-001
+```
+
 ## Pacote
 
 ```powershell
@@ -192,8 +203,9 @@ desenvolvimento e não entram no pacote.
 ## Pendências conhecidas
 
 - A 0.3.0 está em andamento (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)): aba Ciência nova, confiabilidade por componente com disponibilidade, início das falhas no GPVS e resultados no chat.
-- Tempos de reparo e disponibilidade só entram com fonte (lote 24).
-- No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso (lote 25).
+- Tempos de reparo e disponibilidade só entram com fonte (lote 25).
+- No GPVS, o início observado vale só para os 8 ensaios de mudança clara. F4 não muda as 24 variáveis, e F6 e F7 mudam pouco: para eles, a falta de detecção é, em boa parte, das variáveis (lote 24).
+- Os alarmes falsos contam com só 52 s saudáveis: a taxa por hora é uma estimativa com intervalo largo.
 - Com a consulta reescrita, a busca acerta as 16 perguntas de referência. São só 16 perguntas: um conjunto maior diria mais. Veja a [validação do lote 22](docs/migracao/validacao-lote-22.md).
 - Os exploradores da aba Ciência usam só a rodada canônica; rodadas novas aparecem em Resultados.
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

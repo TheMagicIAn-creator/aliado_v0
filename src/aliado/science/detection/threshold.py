@@ -88,6 +88,40 @@ def calibrate_threshold(scores, percentile: float = PERCENTILE, *, strict: bool 
     return calibration
 
 
+def _beta_cdf(x: float, a: int, b: int) -> float:
+    """Beta(a, b) com a e b inteiros pela identidade binomial: P(Binomial(a + b − 1, x) ≥ a)."""
+    if x <= 0.0:
+        return 0.0
+    if x >= 1.0:
+        return 1.0
+    n = a + b - 1
+    log_x, log_y = math.log(x), math.log1p(-x)
+    return float(sum(math.exp(math.lgamma(n + 1) - math.lgamma(k + 1) - math.lgamma(n - k + 1)
+                              + k * log_x + (n - k) * log_y) for k in range(a, n + 1)))
+
+
+def false_alarm_interval(rank: int, n: int, confidence: float = 0.95) -> dict:
+    """Quanto a chance de alarme por janela de um limiar empírico pode variar só pelo tamanho da calibração.
+
+    Com o limiar na posição r de n e janelas novas permutáveis com as da calibração, a chance de
+    uma janela saudável nova passar dele segue uma Beta(n + 1 − r, r) (Vovk, 2012). A média é o
+    `expected_false_alarm`; o intervalo sai por bisseção.
+    """
+    if not 1 <= int(rank) <= int(n):
+        raise ValueError("A posição do limiar deve estar entre 1 e n.")
+    a, b = int(n) + 1 - int(rank), int(rank)
+
+    def quantile(q: float) -> float:
+        low, high = 0.0, 1.0
+        for _ in range(100):
+            middle = (low + high) / 2
+            low, high = (middle, high) if _beta_cdf(middle, a, b) < q else (low, middle)
+        return (low + high) / 2
+
+    tail = (1.0 - confidence) / 2
+    return {"media": a / (a + b), "ic95": [quantile(tail), quantile(1.0 - tail)], "posicao": int(rank), "n": int(n)}
+
+
 def effective_sample_size(blocks) -> dict:
     """Informação independente em escores autocorrelacionados: Σ n·(1 − ρ)/(1 + ρ) por bloco.
 

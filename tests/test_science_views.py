@@ -49,8 +49,14 @@ def synthetic(root: Path) -> Path:
         "nome": name, "limiar": 2.0, "faixa_sementes": spread, "sementes": {},
         "referencia": {"resumo": {"detectados": 10, "atraso_mediano_ms": 1000.0, **{f"{k}_media": 0.5 for k in summary.METRICS}},
                        "falsos_alarmes": {"teste_saudavel": {"janelas": 263, "janelas_acima": 2, "alarmes": 0, "duracao_s": 5.26,
-                                                             "alarmes_por_hora": 0.0, "limite_superior_por_hora": 2050.3},
-                                          "pre_falha": {"janelas": 2348, "janelas_acima": 55, "alarmes": 7, "duracao_s": 46.96}}}}
+                                                             "alarmes_por_hora": 0.0, "limite_superior_por_hora": 2050.3,
+                                                             "fracao_janelas_acima": 2 / 263,
+                                                             "fracao_janelas_acima_ic95": [0.0, 0.019]},
+                                          "pre_falha": {"janelas": 2348, "janelas_acima": 55, "alarmes": 7, "duracao_s": 46.96,
+                                                        "fracao_janelas_acima": 55 / 2348,
+                                                        "fracao_janelas_acima_ic95": [0.018, 0.027]},
+                                          "combinado": {"alarmes": 7, "duracao_s": 52.22,
+                                                        "limite_superior_por_hora": 950.0}}}}
     report = {"semente_referencia": 2, "top_k": 5, "confirmacao": 3,
               "modelos": {"denso": model("Autoencoder Denso"), "lstm": model("AE-LSTM")},
               "comparacao": [{"objetivo": "Detecta mais falhas", "metrica": "sensibilidade", "maior_e_melhor": True, "media": 0.02,
@@ -125,6 +131,25 @@ def test_routes_serve_the_views_and_explain_what_is_missing(client):
     assert client.get("/api/ciencia/metricas").json()["falhas"][0]["nome"] == "Falha em IGBT"
     missing = client.get("/api/ciencia/escores")
     assert missing.status_code == 404 and "dados do GPVS" in missing.json()["erro"]
+    # Lote 24: sem a reanálise, a seção do início das falhas diz o que falta, e o Resumo segue sem a estimativa.
+    onsets = client.get("/api/ciencia/inicio")
+    assert onsets.status_code == 404 and "reanálise" in onsets.json()["erro"]
+    denso = overview.json()["modelos"]["denso"]
+    assert denso["alarmes_estimados"] is None and denso["limiar_faixa"] is None
+    assert denso["saudavel"]["janelas"] == 263 + 2348 and denso["saudavel"]["alarmes"] == 7
+    assert denso["saudavel"]["alarmes_por_hora"] == pytest.approx(7 / 52.22 * 3600)
+
+
+def test_score_panels_gain_only_the_clear_change():
+    panels = {"ensaios": [{"id": name, "modelos": {"denso": {"atraso_ms": 1.0}}} for name in ("F1L", "F4L")]}
+    report = {"inicio": {"ensaios": {"F1L": {"classe": "clara", "observado_janela": 433},
+                                     "F4L": {"classe": "nenhuma", "observado_janela": None}}},
+              "modelos": {"denso": {"referencia": {"ensaios": {"F1L": {"atraso_ms": 40.0}, "F4L": {"atraso_ms": None}}}}}}
+    merged = summary._with_onsets(panels, report)
+    first, second = merged["ensaios"]
+    assert (first["inicio_observado"], first["modelos"]["denso"]["atraso_mudanca_ms"]) == (433, 40.0)
+    assert (second["inicio_observado"], second["modelos"]["denso"]["atraso_mudanca_ms"]) == (None, None)
+    assert "inicio_observado" not in panels["ensaios"][0] and summary._with_onsets(panels, None) is panels
 
 
 def test_page_loads_d3_and_the_charts_before_the_science_tab():
