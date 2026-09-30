@@ -1,0 +1,339 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-30",
+  "batch": "22",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0022-correcoes-confianca.md",
+  "base_commit": "50c4a63",
+  "roadmap": "0.3.0, lotes 22–26, aprovado em 30/09/2026 (docs/roteiro-v0.md)",
+  "decisions": {
+    "lafraia_excerpts": "apagar de vez '7_cap_confiabilidade_sistemas.pdf' e 'Adobe Scan 11 de jan. de 2024.pdf'; o manual completo fica",
+    "deductions_from_them": "revogar as 16",
+    "language": "telas e respostas em palavras, sem códigos internos (M09–M14), 'semente' ou 'canônica' sem explicar; uma nota em cada índice (vale para a 0.3)",
+    "follow_up_search": "consulta reescrita pelo modelo mais barato, em português e inglês, no lote 22 (decidida depois do caso da MCC; reabre a tradução da pergunta)"
+  },
+  "query_rewrite": {
+    "case": "continuação 'Traga a definição com base na literatura. Uma citação direta.' (9 palavras) não somava a pergunta anterior sobre MCC; somar também não bastava (0 de 6 trechos com definição)",
+    "real_case_after": "Lafraia p. 181, IEEE 493 p. 134 e NASA p. 19 entre os 6 trechos; 767 tokens",
+    "reference_questions": {
+      "before": {
+        "hits": "13/16",
+        "mrr": 0.781
+      },
+      "first_rewrite": {
+        "hits": "15/16",
+        "mrr": 0.906,
+        "still_missing": [
+          "P8"
+        ]
+      },
+      "adjusted_rewrite": {
+        "hits": "16/16",
+        "mrr": 0.969,
+        "distinct_docs": 3.62
+      },
+      "worse": 0,
+      "limit_measured": 6
+    },
+    "instructions_fixed_before_first_measurement": true,
+    "adjustment": "manter só autores e normas citados pelo usuário, não os das respostas do assistente",
+    "chat_acceptance": "a continuação trouxe a citação direta do IEEE 493, p. 134, com citação conferida"
+  },
+  "more_references": {
+    "chat_search_limit": 10,
+    "answer_rule": "a opção de cada fonte, com a citação",
+    "decision": "feita antes do esclarecimento ('fontes' = letras) e mantida pelo pesquisador"
+  },
+  "text_font": {
+    "options": [
+      "Padrão",
+      "Arial",
+      "Calibri",
+      "Verdana",
+      "Georgia",
+      "Cambria",
+      "Times New Roman",
+      "Monoespaçada"
+    ],
+    "stored": "localStorage do navegador",
+    "downloads": "nenhum"
+  },
+  "paid_calls": {
+    "flash_lite": "34 na medição + 2 consultas e 2 revisões no aceite",
+    "flash": 2
+  },
+  "checked_in_pdfs": {
+    "method": "páginas renderizadas como imagem a partir dos originais da biblioteca",
+    "sarquis_2020_tab_III_p3": "contator 8,31e-6 [3]; CCB 63,7e-6 [3] e 26,7e-6 [9]; ventilador 26,7e-6 [9]; IGBT 16,6e-6 [3] e 8,9e-6 [9]; [3] Gallardo-Saavedra 2019, [9] Baschel 2018",
+    "baschel_2018_tab_1_p5_p6": "IGBT 11,4 (negrito, [30]) e 8,9 ([−], O&M juwi); ventilador 26,7 ([−]); MTBF com 4.015 h de operação por ano",
+    "cristaldi_2017_tab_6_p6": "IGBT 3/3/7 63; contatores 6/5/5 150; ventiladores 4/3/4 48; PCB 7/4/6 168",
+    "values_changed": false
+  },
+  "real_library": {
+    "deleted": {
+      "7_cap_confiabilidade_sistemas.pdf": {
+        "versions": 1,
+        "chunks": 65,
+        "revoked": 7
+      },
+      "Adobe Scan 11 de jan. de 2024.pdf": {
+        "versions": 1,
+        "chunks": 29,
+        "revoked": 9
+      }
+    },
+    "documents": {
+      "before": 27,
+      "after": 25
+    },
+    "backup": "nenhuma, por decisão do pesquisador",
+    "verify": "só as 2 extrações parciais anteriores (OCR de baixa confiança: manual de Lafraia e guia da NASA)",
+    "reference_questions": {
+      "adjusted": [
+        "P7",
+        "E8"
+      ],
+      "hits": "13/16",
+      "mrr": 0.781,
+      "changed_vs_lote_19": 0
+    }
+  },
+  "validation": {
+    "pytest_passed": 384,
+    "new_tests": 15,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ],
+    "rules_m09_m14_sha256_lf": "754ba9ad1153ff5fcf2109e9e3edbc04bf5443f99fdf3d76a6b528cc08f7de4f",
+    "git_status_matches_manifest": true,
+    "unexpected_changes": []
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Commit do lote 22 feito pelo assistente com a autorização do pesquisador ('aplique', 30/09/2026), no formato dele e sem push.",
+  "public_files": [
+    {
+      "path": ".claude/launch.json",
+      "sha256": "3cd84ab7e014219108d2cdf0d95bb4c9da6b67cf934b68485059bae97b572bab",
+      "previous_sha256": "2f202cabfab661f361f856547be3a55d45f6640f605bf6157c14f3f6216f0e26",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "7f174ef0c550ace6f5f22cdcc4692c560c4db80c4140f1ed158532cfb0380945",
+      "previous_sha256": "b572af142618fc60059d3ba0c42d0b901c435864279834dfc56415a1dddb4fa4",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "2fc716541d247f93bd37b52f43e17449984c525cb2753f8591aff83c7b750ec2",
+      "previous_sha256": "a9e4dce7c8aad9c87295c2ac341aff4f3ebb2bf2a64e79499dd407cfe15cd261",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "1d49f4c63073fd19ab82ed4e231d3940ff6f2b944d04d3ac8ec3c6fcf756cdb8",
+      "previous_sha256": "61198c4bf6ed254b6d794ad05c42fd7caa60fbcc4d98d7b00136abedfcb1ab73",
+      "status": "modified"
+    },
+    {
+      "path": "docs/biblioteca/uso.md",
+      "sha256": "ab88edad22bff7238f9bb83840e1ac96f2b1c7ef229766c52784af1306cf2364",
+      "previous_sha256": "f00d41e9ca3edf480666f29320a451c4bb5da725fd19dcf00ce1705d45810d7f",
+      "status": "modified"
+    },
+    {
+      "path": "docs/ciencia/confiabilidade.md",
+      "sha256": "2181f5c981b2d0c7d5e412ef290f3d6a025604c0f0064840c4b86ea0b207efcb",
+      "previous_sha256": "23e0349af3283c7a0989e359c9340973950af290c6a5ad40ca43f7cb861be196",
+      "status": "modified"
+    },
+    {
+      "path": "docs/ciencia/procedimentos.md",
+      "sha256": "65f715debe357567ebd29e65e857a5ddaf887bc5a9d21e630a79128e24970766",
+      "previous_sha256": "07ea86bfd6f6eac88828a44429bdba5b1527f790d417d3a72416ca920b825901",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "70817cacc22f4a9b01222d55739fe9563443053c699be3f9bd907ee3358371ed",
+      "previous_sha256": "1f558bd8abb63a46c8bcfea1675e626110ce654b02ae6480c44798b06049b0b5",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ccb-calendario.json",
+      "sha256": "2ac36eb50a0d32a327505ef6090ee15f800b45782c1b4799bcd17defdd51d932",
+      "previous_sha256": "1b6da3520cbac9e38eef718523b5199b0bad5da9903a22f2c24e0e738af7dbac",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ccb-operacao.json",
+      "sha256": "6f4a388a193202f7a96a34a10980fa8ca62d12bbdd8c0718c1cb373fd72b8009",
+      "previous_sha256": "80119e3d0a4caaad5b37ce5db6cb06ce896d49d0b171033b7e7c17643cd95344",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/contatores-calendario.json",
+      "sha256": "a9ef500b784ee9a7fb4b3a8f94df056e5386f7ca6cfd3a042aed91b3b008350a",
+      "previous_sha256": "7cd458431dbe01ea003f54c30c6282048dbca328d1fc146b8b2c5c7e53e010ec",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/contatores-operacao.json",
+      "sha256": "2d8416c5dd58c133be933f71fd7bf99ea1c6c034ad24ff28cbe8752148508e5d",
+      "previous_sha256": "00ccd11016b5cf196f66132a7e2eef618d491533877c3ea244d08d6d05aabee8",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/igbt-calendario.json",
+      "sha256": "31a46162b6dedb49271712a5f3c0499485a3acb491b3c0d800595b19a58c6de9",
+      "previous_sha256": "47e4485adf7de142190fbba71e0828ec84217b009a3c723c2cb032497ac65920",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/igbt-operacao.json",
+      "sha256": "5e4ebb71a727daf07ea839252190213967f0a2749fa84f7f32f0db26059a02a7",
+      "previous_sha256": "5457ef03eff68f74c28bef226b4f21a3bf43b28ac54b7e805902c0728ca9ea4a",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ventiladores-calendario.json",
+      "sha256": "80cfca583a2ae68c691ad66c8bbeb583555ee1184265da62cfac961bbf800ee1",
+      "previous_sha256": "c1e07154cfaac9da022733f2cfc8a8617db008992239821475f7f8d0a5a3d8ee",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ventiladores-operacao.json",
+      "sha256": "a0e89b770f44b8fc122777e45d774aea768e38a2defae7bc1d1897d2b54bb731",
+      "previous_sha256": "5a77c110836aa472aaadb7067ac5d7e87417e4800fedda501e4f39ba980de010",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/fmeca.json",
+      "sha256": "67bcfa8de7dad005d29caa01f788257bb4ac2e807873b697f9d02db3ae9870d6",
+      "previous_sha256": "1260b7c71033802332f06c02379c1739db206912597e4a899cdaec909828d862",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "d80886bdf3b6a89b6002b68ec3b31039b1b196bab0697230fc60a8440d6e6b06",
+      "previous_sha256": "c2972e7c0f89c5c8bd27a08ba43d6149ac0c46fb634c2e78a86e71f2cd05a73b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "f3235873e81313cf7083e83f537aa38b0c74fdba58b777af7ee0d2c90f048564",
+      "previous_sha256": "8fdcd7dd8ee377a57c3a1862f80c28a5a43526076fd9c5cd2320188f74a2e7e3",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "f98c6cf734332b0588c4fe186af748e7395869016ab7b012770d25f2fb8a7779",
+      "previous_sha256": "638fe3fe39db9d0072165eb92a5c59ec8a52d8fd64989af7ce16112f4e3a4f18",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "bba4fcbd57ddf84c867e95f484671e279842bd2fd2c2d8f7c89362ea9171f68d",
+      "previous_sha256": "b7fc6455176b1c7096c3844b05992114f595cdd8ab6d7adca46ea4d91f57407b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "123ace09d32a22108ca113f681d8f5eccbeb5576920fdd60eb3ad21ed850fed1",
+      "previous_sha256": "01ff287cb7f02d671ab8928795928fb71f426897f2898a5c1776099a27054c5f",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "b8a97a061a542fc29d0d530dbeb88b8b0c949dbc345638e2e6ffbfe36579dcca",
+      "previous_sha256": "bfabb790a80a559184a6b518df8f3bac0fd44625b5f28f4e10ebc6ce56384450",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "6bc3e76dd776916c90150abdd3fb3a1d8bb26dbb7807a146da2310cabf4b9c69",
+      "previous_sha256": "adf4ebca563d571d2295c65003af3e01709d0cce767ac6bb15382f42bebb6c9f",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/evaluation.py",
+      "sha256": "4479ee5bec0dcb3c5fcd76f0fe955d40692591c795e687d623a404f5e4d0b3a2",
+      "previous_sha256": "6199a3c125e318926fb5f7e9b5046af029d0f66a8164554cc79ae5aba7899af4",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/library.py",
+      "sha256": "2a275288ece9bafa1d99ad088018479dfab984d969505ee49d13e2697d406026",
+      "previous_sha256": "c930e7cc1f9289225fc04913b6c8f6f1e1b1757b7863cd402a03f9561d13c37e",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/memory/store.py",
+      "sha256": "1f00755b58f07a03e2e2678d86c8851bdea78c09f491df93f44ec053e7b6dc95",
+      "previous_sha256": "1336142261f6f7fae70866ca3e4f095a048ae481618bcda4cc8b6e37158800d8",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "sha256": "5ad0226e16c3250573cba3b99e4274cf6ba8d7924490f50787c1bb625462cf25",
+      "previous_sha256": "fdfb49ac2bad84d90b66110b632845355f8f87efe907289088afe2a18d403ac9",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md",
+      "sha256": "86e0a7130860d4301188fe1869131d7684c08c198cd52aac8bc58ab6547cf71a",
+      "previous_sha256": "6dcfe019ac9159235f822c0c9140dcf180b8f27dfc15415d62524b9ad6d740ac",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_fmeca.py",
+      "sha256": "27b432b0b9652ef95221ba07bb90a2d1247cb8712cbb6424a33a0afe91d674b2",
+      "previous_sha256": "de7adfab948b9489629151999f167f9727bfae539d74147271341e40ae9fce20",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "f080e41992454fda389d6a93acb9b53312c45f552496a4b431954fc6bf5e378f",
+      "previous_sha256": "c6d0f5de791792d113a5ebaabcdaf53a663208b327ca939c3186d503e842bbde",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web_search.py",
+      "sha256": "b4cfee0fd1e7115f993a96c07ac220c06d75887aff4cc0175a357a2eade5ae12",
+      "previous_sha256": "0cc8db522cc52e5ead7ca8d2ae6f728b4f9b1becaafa656cd0e01093fa474fb9",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/rewrite.py",
+      "sha256": "b7b6d3b83ca9d7b54f45b675e6e22fe7929fb77c8a31730caed9ab90212b4ffa",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_library_delete.py",
+      "sha256": "7ece2a5468fe4f34e1d6d64599f39379d67ad367aadf8635a9fbdd0b4c686018",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_research_skill.py",
+      "sha256": "69ba106e654fff9138cb8b19627d7e820372809b124304320b073bea01776db7",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_query_rewrite.py",
+      "sha256": "56665c41647b3c9c5cb9858a36966f4d3d455cf7b3efe198ed1b4071e1078b5b",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0022-correcoes-confianca.md",
+      "sha256": "3bfd2087be9a36c2c42707957f0d8a9c16d84f4e81fb72babc843e2dd259bc80",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-22.md",
+      "sha256": "e7d23e7b702126b28b4a790554cf303b3bfcecde120dbb61a27f60937e143614",
+      "status": "new"
+    }
+  ]
+}

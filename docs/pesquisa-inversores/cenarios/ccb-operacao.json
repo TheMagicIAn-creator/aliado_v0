@@ -19,9 +19,9 @@
     20
   ],
   "sources": [
-    "Gallardo-Saavedra et al. (2019), via Sarquis Filho et al. (2020), Tabela III, p. 3; valor secundário, original não consultado.",
+    "Gallardo-Saavedra et al. (2019), via Sarquis Filho et al. (2020), Tabela III, p. 3 (ref. [3]); valor secundário, original não consultado.",
     "Escolha do pesquisador em 13/09/2026: maior dos dois valores levantados (26,7e-6/h e 63,7e-6/h).",
-    "Valor conforme registro de 13/09/2026; tabela e página não reconferidas no PDF neste lote."
+    "Conferido no PDF de Sarquis Filho et al. (2020) em 30/09/2026: \"Ctrl & Communication board\" 63,7×10⁻⁶ falhas por unidade-hora [3]. O outro valor da mesma tabela, 26,7×10⁻⁶ [9], é de Baschel et al. (2018)."
   ],
   "assumptions": [
     "Taxa de falha constante (vida exponencial), sem mortalidade infantil nem desgaste.",

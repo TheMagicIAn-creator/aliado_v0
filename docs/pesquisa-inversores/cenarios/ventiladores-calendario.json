@@ -19,8 +19,8 @@
     20
   ],
   "sources": [
-    "Baschel et al. (2018), Energies 11(6), 1579, Tabela 1.",
-    "Valor conforme registro de 13/09/2026; tabela e página não reconferidas no PDF neste lote."
+    "Baschel et al. (2018), Energies 11(6), 1579, Tabela 1 (continuação), p. 6; também em Sarquis Filho et al. (2020), Tabela III, p. 3 (ref. [9]).",
+    "Conferido no PDF em 30/09/2026: \"Cooling fan\" 26,7 falhas por 10⁶ h (MTBF de 9,3 anos com 4.015 h de operação por ano), marcado [−]: valor extrapolado dos relatórios de O&M da juwi. É o único valor da tabela para o ventilador."
   ],
   "assumptions": [
     "Taxa de falha constante (vida exponencial), sem mortalidade infantil nem desgaste.",

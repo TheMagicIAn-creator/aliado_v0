@@ -73,7 +73,11 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página.
   - Os envios aparecem numa fila de até 3 cartões, com contador. Os que dão certo somem em 6 s.
   - Cada documento ganha uma ficha de leitura na memória e uma **ficha do documento** (título, autores, ano e DOI), conferida no próprio texto e editável na aba **Biblioteca**. **Completar fichas** cria as que faltam.
+  - **Apagar**, na aba Biblioteca, tira o documento de vez, com todas as versões, a extração e o índice, e revoga as anotações que o agente deduziu dele. As suas anotações ficam. Não tem volta.
   - Com **Usar biblioteca**, o agente recebe a lista dos documentos, com autor e ano, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
+  - Antes de buscar, o modelo mais barato reescreve a mensagem com o assunto da conversa, as siglas por extenso e os termos em português e inglês. É uma chamada barata a mais por mensagem, e a janela de fontes mostra o que foi buscado.
+  - A busca traz até 10 trechos. Quando autores diferentes tratam do pedido, a resposta mostra a opção de cada um, com a citação.
+- **Fonte do texto:** o seletor **Aa**, na barra do topo, troca a letra da interface entre 8 opções. A escolha fica guardada no navegador.
 - **Memória** (`data/memoria/`):
   - O que você diz ou corrige vale na hora; o que o agente deduz fica marcado como "inferida".
   - O que você conta sobre si vira **perfil** e vale em todas as conversas.
@@ -115,7 +119,8 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 ```
 
 `avaliar` mede a busca com as perguntas de referência de `data/avaliacao-busca/perguntas.json`,
-que ficam fora do Git. Veja o [guia da biblioteca](docs/biblioteca/uso.md).
+que ficam fora do Git. Com `--reescrever --env-file .env`, mede com a consulta reescrita, como no chat:
+são 16 chamadas ao modelo mais barato. Veja o [guia da biblioteca](docs/biblioteca/uso.md).
 
 ## Confiabilidade e FMECA
 
@@ -180,9 +185,9 @@ desenvolvimento e não entram no pacote.
 
 ## Pendências conhecidas
 
-- Reconferir nos PDFs as taxas de falha e as notas da FMECA, quando entrarem na biblioteca.
-- Tempos de reparo e disponibilidade só entram com fonte.
-- No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso.
-- A busca ainda erra algumas perguntas de conteúdo em outro idioma: 3 das 16 perguntas de referência. A tradução da pergunta ficou para depois. Veja a [validação do lote 19](docs/migracao/validacao-lote-19.md).
+- A 0.3.0 está em andamento (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)): aba Ciência nova, confiabilidade por componente com disponibilidade, início das falhas no GPVS e resultados no chat.
+- Tempos de reparo e disponibilidade só entram com fonte (lote 24).
+- No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso (lote 25).
+- Com a consulta reescrita, a busca acerta as 16 perguntas de referência. São só 16 perguntas: um conjunto maior diria mais. Veja a [validação do lote 22](docs/migracao/validacao-lote-22.md).
 - Os exploradores da aba Ciência usam só a rodada canônica; rodadas novas aparecem em Resultados.
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

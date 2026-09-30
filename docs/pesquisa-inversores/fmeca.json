@@ -2,7 +2,7 @@
   "nome": "FMECA dos inversores fotovoltaicos — quatro grupos",
   "decidida_em": "2026-09-27",
   "criterio": "Notas ordinais de 1 a 10 no critério da IEC 60812; NPR = S × O × D, calculado.",
-  "fonte_notas": "Cristaldi, Khalil e Soulatiantork (2017), Acta IMEKO, Tabela 6 (levantamento de campo).",
+  "fonte_notas": "Cristaldi, Khalil e Soulatiantork (2017), Acta IMEKO 6(4), Tabela 6, p. 6 do PDF (p. 118 da revista) (levantamento de campo).",
   "horizontes_anos": [1, 20],
   "itens": [
     {
@@ -14,7 +14,7 @@
       "D": 6,
       "cenarios": ["cenarios/ccb-operacao.json", "cenarios/ccb-calendario.json"],
       "ressalvas": [
-        "A CCB herda as notas do item \"PCB\" da fonte (decisão de 27/09/2026); reconferir a correspondência no PDF quando ele entrar no acervo."
+        "A CCB herda as notas do item \"PCB\" da fonte (decisão de 27/09/2026). No PDF, conferido em 30/09/2026, a Tabela 6 traz \"PCB\" 7/4/6 (168), e o texto da p. 6 descreve as placas de circuito impresso em que ficam o software de controle e os capacitores do barramento CC, que a fonte avalia em itens separados."
       ]
     },
     {
@@ -49,7 +49,7 @@
     }
   ],
   "ressalvas": [
-    "Notas conforme o documento da origem (mestrado-utfpr, docs/fmeca.md, commit 21f6ddf); não reconferidas no PDF de Cristaldi et al. (2017), que ainda não está no acervo.",
+    "Notas conferidas em 30/09/2026 no PDF de Cristaldi et al. (2017), Tabela 6, p. 6: IGBT 3/3/7 (63), contatores CA/CC 6/5/5 (150), ventiladores 4/3/4 (48) e PCB 7/4/6 (168), iguais às do documento da origem (mestrado-utfpr, docs/fmeca.md, commit 21f6ddf).",
     "S, O e D refletem a percepção do levantamento de campo da fonte; não são medidas físicas.",
     "A ocorrência O não é recalculada a partir das taxas decididas (decisão de 27/09/2026): notas e taxas vêm de fontes e populações diferentes e ficam em leituras separadas.",
     "S, O e D são os da fonte; métricas de detectores não os alteram (M09), e a FMECA é independente do GPVS (M11)."

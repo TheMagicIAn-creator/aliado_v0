@@ -68,8 +68,8 @@ explícitas, respeitando o recorte de componentes aprovado.
 
 **Entradas:** componente, taxa/parametrização, fonte, página/tabela, unidade,
 condições de aplicação, base de tempo e hipótese de modelo. A referência atual
-de escopo contém quatro grupos. As taxas e a FMECA foram decididas nos lotes 07 e 16; as taxas e as
-notas ainda precisam ser reconferidas nos PDFs.
+de escopo contém quatro grupos. As taxas e a FMECA foram decididas nos lotes 07 e 16; no lote 22,
+as taxas e as notas foram conferidas nos PDFs, com tabela e página registradas nos cenários e na FMECA.
 
 **Hipóteses:** se uma taxa constante for justificada, o cenário exponencial pode
 ser documentado por `R(t)=exp(-lambda*t)`, `F(t)=1-R(t)`,

@@ -26,15 +26,18 @@ def load_questions(path: str | Path) -> list[dict]:
     return questions
 
 
-def evaluate_search(library, questions: list[dict], *, limit: int = LIMIT) -> dict:
-    """Roda a busca de cada pergunta e resume acertos, posição do primeiro acerto e diversidade."""
+def evaluate_search(library, questions: list[dict], *, limit: int = LIMIT, rewrite=None) -> dict:
+    """Roda a busca de cada pergunta e resume acertos, posição do primeiro acerto e diversidade.
+
+    `rewrite(pergunta) -> consulta` mede a busca com a consulta reescrita (lote 22), como no chat."""
     known = {document["title"] for document in library.documents()}
     missing = sorted({title for question in questions for title in question["esperados"] if title not in known})
     if missing:
         raise ValueError("Documentos esperados fora da biblioteca: " + ", ".join(missing))
     rows = []
     for question in questions:
-        titles = [hit["title"] for hit in library.search(question["pergunta"], limit=limit)]
+        query = rewrite(question["pergunta"]) if rewrite else question["pergunta"]
+        titles = [hit["title"] for hit in library.search(query, limit=limit)]
         rank = next((position for position, title in enumerate(titles, 1) if title in question["esperados"]), None)
         rows.append({
             "id": question.get("id"), "idioma": question.get("idioma"), "tipo": question.get("tipo"),
@@ -42,11 +45,12 @@ def evaluate_search(library, questions: list[dict], *, limit: int = LIMIT) -> di
             else "mesmo idioma",
             "acerto": rank is not None, "posicao": rank, "documentos_distintos": len(set(titles)),
             "resultados": titles,
-        })
+        } | ({"consulta": query} if rewrite else {}))
     return {
         "data": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "limite": limit,
         "busca": getattr(library, "search_settings", None),
+        "consulta_reescrita": bool(rewrite),
         "resumo": _summary(rows),
         "por_grupo": {group: {value: _summary([row for row in rows if row[group] == value])
                               for value in sorted({row[group] for row in rows})} for group in GROUPS},

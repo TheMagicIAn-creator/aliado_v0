@@ -31,13 +31,16 @@ Preservar, como referência inicial reproduzível da especialização GPVS, a di
 
 ## Aplicação e limites atuais
 
-Os parâmetros aprovados orientam o planejamento; nenhum executor científico
-está instalado. Um pedido para usar outro horizonte deve ser refletido no
-plano, sem alegar alteração de arquivos ou cálculos executados. Partições e
-limiares exigem protocolo registrado antes da avaliação final. P99 na calibração
+Situação atualizada em 30/09/2026. As regras acima orientam o planejamento e a
+interpretação; a execução fica fora do chat. O preparo, o treino e a avaliação do
+GPVS, a FMECA e a confiabilidade rodam na aba Ciência do AL-IAdo, com protocolo
+registrado; o treino e a avaliação oficiais são de 27/09/2026. P99 na calibração
 não garante 1% de falsos alarmes em dados novos.
 
-O acervo está vazio. A referência metodológica a Lafraia não significa acesso
-ao livro neste ambiente. Valores físicos, condições de aplicação, unidades e
-fontes precisam ser conferidos antes de produzir cenários numéricos. Não
+O acervo é alimentado pelo pesquisador e inclui o manual de Lafraia, que só
+fundamenta uma resposta com trechos recuperados e localizadores verificáveis. As
+taxas e as notas da FMECA foram conferidas nos PDFs do acervo em 30/09/2026. Um
+pedido para usar outro horizonte deve ser refletido no plano, sem alegar alteração
+de arquivos ou cálculos executados. Valores físicos, condições de aplicação,
+unidades e fontes precisam ser conferidos antes de produzir cenários numéricos. Não
 reutilizar taxas, NPR, métricas, pesos ou resultados antigos por omissão.

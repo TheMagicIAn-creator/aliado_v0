@@ -5,6 +5,7 @@ Importado apenas por `aliado web`; o restante do pacote não carrega Starlette.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import shutil
@@ -22,7 +23,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware import Middleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import FileResponse, JSONResponse, StreamingResponse
+from starlette.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
@@ -76,6 +77,8 @@ class WebSettings:
     checker: Callable[[dict], tuple[dict, object]] | None = None
     # Ficha do documento (lote 19): (título=, text=) -> (ficha conferida, resultado).
     card_extractor: Callable[..., tuple[dict, object]] | None = None
+    # Consulta da busca (lote 22): (question=, history=) -> (consulta reescrita, resultado).
+    query_rewriter: Callable[..., tuple[str, object]] | None = None
     # Aba Ciência (lote 20): resultados, dados do GPVS e referências da pesquisa (FMECA e cenários).
     results_dir: Path | None = None
     gpvs_dir: Path = Path("data/gpvs")
@@ -173,6 +176,7 @@ def create_app(settings: WebSettings) -> Starlette:
     uploads = settings.data_dir / "uploads-temporarios"
     worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="aliado-biblioteca")
     lock = threading.Lock()
+    library_jobs: set[str] = set()  # envios e fichas; enquanto correm, nenhum documento é apagado
     skills = {item.name: item.description for item in list_skills()}
     aliases = {model["alias"] for model in settings.models}
     if settings.memory is not None:
@@ -258,11 +262,13 @@ def create_app(settings: WebSettings) -> Starlette:
                     recalled = settings.memory.recall(text, exclude_conversation=cid)
                 except (ValueError, OSError, sqlite3.DatabaseError):
                     memories, recalled = [], []  # a conversa segue sem memória em vez de falhar
+            search_query = rewrite() if library is not None else None
             try:
                 for kind, value in settings.stream(
                         text, model_alias=alias, skill_name=memory_skill,
                         supporting_skill_name=support, library=library, history=history,
-                        memories=memories, web_search=use_web, recalled=recalled):
+                        memories=memories, web_search=use_web, recalled=recalled,
+                        search_query=search_query):
                     if kind == "texto":
                         yield line({"tipo": "texto", "texto": value})
                     else:
@@ -294,6 +300,7 @@ def create_app(settings: WebSettings) -> Starlette:
                      "sources": list(result.sources), "validation_status": result.validation_status,
                      "web_sources": [dict(s) for s in result.web_sources],
                      "web_queries": list(result.web_queries),
+                     "consulta_biblioteca": search_query,
                      "memorias_usadas": [{"id": m["id"], "kind": m["kind"], "origin": m["origin"],
                                           "text": m["text"]} for m in memories],
                      "conversas_lembradas": [{"conversation_id": r["conversation_id"],
@@ -317,6 +324,20 @@ def create_app(settings: WebSettings) -> Starlette:
                         "mensagens": [_view(m) for m in stored["messages"][-2:]]})
             if in_context and settings.memory is not None and settings.reviewer is not None:
                 yield line(review(stored, memories, result))
+
+        def rewrite() -> str | None:
+            """Consulta da busca pelo modelo mais barato; sem ela, a busca segue pela própria pergunta."""
+            if settings.query_rewriter is None:
+                return None
+            try:
+                query, rewrite_result = settings.query_rewriter(question=text, history=history)
+            except (ProviderError, ValueError, KeyError, TypeError):
+                return None
+            try:
+                record_usage(rewrite_result, settings.usage_log)
+            except OSError:
+                pass
+            return query
 
         def review(stored: dict, memories: list[dict], result) -> dict:
             """Revisor depois da resposta: a conversa já está salva, e uma falha aqui não a afeta."""
@@ -405,6 +426,7 @@ def create_app(settings: WebSettings) -> Starlette:
                 handle.write(chunk)
         with lock:
             settings.jobs[job] = {"estado": "na fila", "arquivo": name}
+            library_jobs.add(job)
 
         def progress(stage: str, current: int, total: int) -> None:
             with lock:
@@ -566,6 +588,7 @@ def create_app(settings: WebSettings) -> Starlette:
         job = uuid.uuid4().hex
         with lock:
             settings.jobs[job] = {"estado": "processando", "etapa": "fichas", "atual": 0, "total": len(titles)}
+            library_jobs.add(job)
 
         def run():
             counts = {"fichas": 0, "sem_dados": 0, "falhas": 0}
@@ -594,6 +617,28 @@ def create_app(settings: WebSettings) -> Starlette:
             return _error(str(exc), 404)
         return JSONResponse(saved)
 
+    async def delete_document(request: Request):
+        """Apaga de vez um documento e revoga as deduções tiradas dele (decisão de 30/09/2026)."""
+        with lock:
+            busy = any(settings.jobs.get(job, {}).get("estado") in {"na fila", "processando"}
+                       for job in library_jobs)
+        if busy:
+            return _error("Espere terminar o envio ou as fichas em andamento para apagar um documento.", 409)
+        library_ = settings.library_factory()
+        try:
+            # Pelo mesmo executor dos envios: nunca apaga enquanto um documento está sendo gravado.
+            result = await asyncio.wrap_future(worker.submit(library_.delete, request.path_params["doc"]))
+        except ValueError as exc:
+            return _error(str(exc), 404)
+        revoked = 0
+        if settings.memory is not None:
+            try:
+                revoked = len(await run_in_threadpool(settings.memory.revoke_from_documents, result["ids"]))
+            except (OSError, sqlite3.DatabaseError):
+                revoked = None  # o documento já saiu; as deduções podem ser revogadas na aba Memória
+        return JSONResponse({"apagado": result["title"], "versoes": result["versions"], "trechos": result["chunks"],
+                             "anotacoes_revogadas": revoked, "sobras": result["leftovers"]})
+
     async def job_status(request: Request):
         with lock:
             job = settings.jobs.get(request.path_params["job"])
@@ -608,6 +653,11 @@ def create_app(settings: WebSettings) -> Starlette:
             files = await run_in_threadpool(settings.library_factory().document_files,
                                             request.path_params["doc"])
         except ValueError as exc:
+            if request.path_params["kind"] == "original":
+                # O original abre numa aba nova: uma página curta em vez de JSON.
+                return HTMLResponse("<!doctype html><meta charset='utf-8'><title>Documento indisponível</title>"
+                                    "<p style='font-family:sans-serif'>Este documento não está na biblioteca: "
+                                    "ele pode ter sido apagado.</p>", 404)
             return _error(str(exc), 404)
         if request.path_params["kind"] == "original":
             media = "application/pdf" if files["original"].suffix == ".pdf" else "text/plain; charset=utf-8"
@@ -625,6 +675,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/biblioteca", library, methods=["GET", "POST"]),
         Route("/api/biblioteca/tarefas/{job}", job_status),
         Route("/api/biblioteca/fichas", complete_cards, methods=["POST"]),
+        Route("/api/biblioteca/{doc}", delete_document, methods=["DELETE"]),
         Route("/api/biblioteca/{doc}/{kind:str}", document, methods=["GET", "POST"]),
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
         Route("/api/memoria/{mid}/{acao}", memory_action, methods=["GET", "POST"]),
@@ -644,6 +695,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     from aliado.knowledge.embeddings import LocalEncoder
     from aliado.knowledge.library import DocumentLibrary
     from aliado.knowledge.metadata import extract_card
+    from aliado.knowledge.rewrite import rewrite_query
     from aliado.llm.providers.gateway import build_default_gateway
     from aliado.memory.reviewer import check_memory, reading_card, review_exchange
     from aliado.memory.store import MemoryStore
@@ -673,4 +725,5 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
                        checker=lambda memory_: check_memory(execute, memory_),
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
+                       query_rewriter=lambda **kwargs: rewrite_query(execute, **kwargs),
                        results_dir=results_dir, gpvs_dir=gpvs_dir)

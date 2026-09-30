@@ -47,6 +47,10 @@ def main(argv: list[str] | None = None) -> int:
         if name == "avaliar":  # mede a busca com perguntas de referência (lote 19)
             operation.add_argument("--perguntas", type=Path, default=Path("data/avaliacao-busca/perguntas.json"))
             operation.add_argument("--saida", type=Path, help="Pasta nova para guardar o relatório")
+            operation.add_argument("--reescrever", action="store_true",
+                                   help="Mede com a consulta reescrita pelo modelo mais barato, como no chat")
+            operation.add_argument("--env-file", type=Path, help="Arquivo .env, necessário com --reescrever")
+            operation.add_argument("--registro-uso", type=Path, default=DEFAULT_USAGE_LOG)
         if name == "adicionar":
             operation.add_argument("arquivo", type=Path)
             operation.add_argument("--titulo", help="Identificador lógico; reutilize para novas versões")
@@ -119,7 +123,9 @@ def main(argv: list[str] | None = None) -> int:
 
                     if args.saida is not None and args.saida.exists():
                         raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
-                    payload = evaluate_search(library, load_questions(args.perguntas))
+                    questions = load_questions(args.perguntas)
+                    payload = evaluate_search(library, questions,
+                                              rewrite=_rewriter(args) if args.reescrever else None)
                     if args.saida is not None:
                         payload = export_evaluation(payload, args.saida)
                 else:
@@ -208,6 +214,34 @@ def main(argv: list[str] | None = None) -> int:
         print("Operação local indisponível. Confira arquivos, diretório novo de saída e dependências opcionais.",
               file=sys.stderr)
         return 2
+
+
+def _rewriter(args):
+    """Consulta reescrita pelo modelo mais barato configurado, como no chat (lote 22).
+
+    Cada chamada entra no registro de uso."""
+    if args.env_file is None or not args.env_file.is_file():
+        raise ValueError("Com --reescrever, informe o .env com --env-file.")
+    from dotenv import load_dotenv
+
+    from aliado.knowledge.rewrite import rewrite_query
+
+    load_dotenv(args.env_file, override=False)
+    gateway = build_default_gateway()
+    aliases = [m["alias"] for m in gateway.registry.status()["models"]
+               if m["provider"] == "google" and m["configured"]]
+    alias = "flash_lite" if "flash_lite" in aliases else (aliases[0] if aliases else "flash_lite")
+
+    def rewrite(question: str) -> str:
+        query, result = rewrite_query(lambda request: gateway.execute(request, provider="google", model_alias=alias),
+                                      question=question)
+        try:
+            record_usage(result, args.registro_uso)
+        except OSError:
+            pass
+        return query
+
+    return rewrite
 
 
 def _purge(args) -> dict:

@@ -250,6 +250,19 @@ fecha a versão 0.2.0, com o pacote em `dist/v0.2.0`. Consulte a
 [spec 0021](../specs/0021-gpvs-interface.md), o [manifesto](lote-21.json) e a
 [validação](validacao-lote-21.md).
 
+## Lote 22 — correções de confiança
+
+Não houve migração de código da origem; o repositório `mestrado-utfpr` só foi lido, para ver as
+visões de resultados que ele tinha e servir de referência aos lotes 23 e 24.
+- A skill do mestrado descreve a situação atual, e o texto das regras M09 a M14 ficou idêntico.
+- As taxas e as notas da FMECA foram conferidas nas páginas dos PDFs, e os valores não mudaram.
+- A biblioteca ganhou o recurso de apagar documentos. Os dois recortes do Lafraia saíram da biblioteca do pesquisador, e as 16 deduções tiradas deles foram revogadas.
+- A busca do chat passou a usar uma consulta reescrita pela conversa, em português e inglês, com até 10 trechos por resposta. As perguntas de referência foram de 13 para 16 de 16.
+- A interface ganhou o seletor de fonte do texto.
+
+Consulte a [spec 0022](../specs/0022-correcoes-confianca.md), o [manifesto](lote-22.json) e a
+[validação](validacao-lote-22.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

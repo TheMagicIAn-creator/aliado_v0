@@ -99,15 +99,14 @@ Progresso atual: **100%**. A soma dos pesos dos lotes concluídos dá o percentu
 ## Depois da v0.1.0: a 0.2.0
 
 Os lotes partem dos apontamentos do pesquisador no uso real e continuam sendo combinados antes
-de começar. Com o lote 21, a 0.2.0 está pronta; o commit, a tag `v0.2.0` e o push ficam com o
-pesquisador. Depois dela não há lote definido: cada tema abaixo, em "Pendências depois da 0.2.0", só vira lote se ele decidir.
+de começar. A 0.2.0 saiu com o lote 21 (commit `50c4a63`, tag `v0.2.0`, enviada ao GitHub em 29/09).
 
 | Lote | Entrega | Situação |
 |---|---|---|
 | 18 | Biblioteca com catálogo e resposta sem citação exibida com aviso; memória com perfil e memória de conversas; fila de anexos; fontes numa janela sobre a resposta | Concluído em 28/09/2026 (commit `f23855d`) |
 | 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | Concluído em 28/09/2026 (commit `fb366c4`) |
 | 20 | Aba Ciência: resultados com gráficos, exploradores do limiar e de alarme e detecção com os dados reais, confiabilidade e FMECA pela interface | Concluído em 28/09/2026 (commit `4d38e19`) |
-| 21 | GPVS pela interface: preparar, treinar e avaliar com progresso; nova avaliação com confirmação e registro da consulta ao teste (M14); lançamento da 0.2.0 | Concluído em 28/09/2026, aguardando o commit e a tag |
+| 21 | GPVS pela interface: preparar, treinar e avaliar com progresso; nova avaliação com confirmação e registro da consulta ao teste (M14); lançamento da 0.2.0 | Concluído em 28/09/2026 (commit `50c4a63`, tag `v0.2.0`) |
 
 ### Decisões de 28/09/2026
 
@@ -139,14 +138,54 @@ avaliação de 27/09. O treino e a avaliação feitos pela interface reproduzira
 canônica, e a nova avaliação entrou no registro como consulta nº 2, não canônica (na cópia usada
 no aceite). Veja as validações dos lotes [20](migracao/validacao-lote-20.md) e [21](migracao/validacao-lote-21.md).
 
-### Pendências depois da 0.2.0
+## Depois da 0.2.0: a 0.3.0
 
-Nenhuma delas está planejada; cada uma vira lote só por decisão do pesquisador.
-- A tradução da pergunta na busca, para as 3 perguntas de conteúdo em outro idioma que ainda erram.
-- Tempos de reparo e disponibilidade, agora que o IEEE 493 está na biblioteca.
-- A reconferência das taxas de falha e das notas da FMECA nos PDFs que já estão no acervo.
-- O início nominal das falhas no GPVS, que não coincide com a mudança observada no sinal.
-- Cópia de segurança ou exportação da memória.
+Em 30/09, o pesquisador avaliou a 0.2.0 para o mestrado:
+- a aba Ciência está confusa e os gráficos estão ruins;
+- faltam visões do projeto antigo: os escores divididos por ensaio, a matriz de confusão e as métricas para comparar;
+- a confiabilidade deveria ter uma curva por componente;
+- a biblioteca tem recortes repetidos do Lafraia.
+
+O plano da 0.3.0 foi aprovado no mesmo dia. Cada lote a partir do 23 é detalhado e combinado
+antes de começar.
+
+| Lote | Entrega | Situação |
+|---|---|---|
+| 22 | Correções de confiança: skill do mestrado atualizada, taxas e notas da FMECA conferidas nos PDFs, apagar documentos da biblioteca e os 2 recortes do Lafraia, consulta da busca reescrita a partir da conversa, em português e inglês, 10 trechos por resposta e fonte do texto | Concluído em 30/09/2026 |
+| 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | A combinar |
+| 24 | Aba Ciência nova, parte 2: confiabilidade por componente, FMECA melhorada e disponibilidade com os tempos de reparo do IEEE 493 | A combinar |
+| 25 | Início das falhas no GPVS | A combinar |
+| 26 | Resultados no chat e lançamento da 0.3.0 | A combinar |
+
+### Decisões de 30/09/2026
+
+- **"Métricas entre componentes"** são por **tipo de falha do GPVS** (F1 a F7, com o nome), Denso contra LSTM, nos modos L e M. A regra de não ligar as falhas do GPVS aos componentes da FMECA continua valendo.
+- **Os dois recortes do Lafraia** (o capítulo 7 e a digitalização) são **apagados de vez**. O manual completo cobre os dois. As 16 anotações deduzidas deles são revogadas.
+- **A aba Ciência** é organizada pelas perguntas: o resultado primeiro, e as ferramentas no fim.
+- **Os gráficos novos** usam o D3 v7, copiado do projeto antigo, como foi feito com o KaTeX.
+- **As telas apresentam dados, não o versionamento do trabalho.**
+  - Nada de códigos internos (M11, M14), "semente", "canônica" ou nomes de pasta sem explicação.
+  - Os números mostrados são os do modelo de referência do relatório oficial.
+  - As regras continuam valendo por dentro.
+- **Todo índice ou indicador tem uma nota**, ao passar o mouse ou ao tocar, dizendo o que significa.
+- **Entram na 0.3:** o início das falhas no GPVS, os resultados no chat e a disponibilidade. **Fica de fora:** a cópia de segurança da memória.
+- **A busca nas continuações, decidida depois, no mesmo dia.** Uma pergunta de continuação sobre a definição de MCC não achou a definição, que estava na biblioteca.
+  - A pergunta passa a ser reescrita pelo modelo mais barato, em português e inglês, ainda no lote 22.
+  - Isso trouxe de volta a tradução da pergunta, que tinha ficado de fora.
+
+### Resultado do lote 22
+
+- **Conferência nos PDFs.** As taxas e as notas da FMECA batem com as fontes: Sarquis Filho et al. (2020), Tab. III, p. 3; Baschel et al. (2018), Tab. 1, p. 5 e 6; e Cristaldi et al. (2017), Tab. 6, p. 6.
+  - O 8,9e-6/h do IGBT é o valor extrapolado dos relatórios de O&M da juwi. O valor que o próprio Baschel usa é 11,4e-6/h.
+- **Biblioteca.** Ficou com 25 documentos, e a busca manteve 13 das 16 perguntas de referência.
+- **Consulta reescrita.**
+  - Com ela, a busca passou a acertar **15 das 16** perguntas de referência, com MRR de 0,91.
+  - Depois, a busca parou de se prender a um autor só porque a resposta anterior o citou. Com isso, foram **16 de 16**, com MRR de 0,97.
+  - A continuação sobre MCC passou a trazer a citação direta do IEEE 493, p. 134. Com 10 trechos, ela traz definições de 6 documentos.
+- **Mais referências e fonte do texto.**
+  - O pedido "mais opções de fontes" era de fontes de texto. Antes do esclarecimento, a busca já tinha passado a 10 trechos, com a opção de cada autor na resposta, e o pesquisador decidiu manter.
+  - O seletor de fonte do texto tem 8 opções.
+- Veja a [validação do lote 22](migracao/validacao-lote-22.md).
 
 ## Fica para a v1
 

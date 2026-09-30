@@ -19,9 +19,9 @@
     20
   ],
   "sources": [
-    "Baschel et al. (2018), Energies 11(6), 1579.",
+    "Baschel et al. (2018), Energies 11(6), 1579, Tabela 1, p. 5; também em Sarquis Filho et al. (2020), Tabela III, p. 3 (ref. [9]).",
     "Escolha do pesquisador em 25/09/2026 entre 8,9e-6/h (Baschel) e 16,6e-6/h (Gallardo-Saavedra via Sarquis Filho).",
-    "Valor conforme registro de 13/09/2026; tabela e página não reconferidas no PDF neste lote."
+    "Conferido nos PDFs em 30/09/2026: em Baschel, \"IGBT module\" 8,9 falhas por 10⁶ h (MTBF de 28 anos com 4.015 h de operação por ano), marcado [−]: valor extrapolado dos relatórios de O&M da juwi. O valor em negrito, usado no estudo de Baschel, é 11,4 [30]."
   ],
   "assumptions": [
     "Taxa de falha constante (vida exponencial), sem mortalidade infantil nem desgaste.",

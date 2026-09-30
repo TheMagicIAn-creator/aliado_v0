@@ -78,6 +78,20 @@ Desde o lote 19, cada documento pode ter uma ficha com título, autores, ano e D
 - Uma falha do provedor não grava nada, e o documento continua pendente para uma
   nova tentativa.
 
+## Apagar um documento
+
+Desde o lote 22, o botão **Apagar** da aba Biblioteca tira um documento de vez:
+- saem todas as versões do título, as extrações, os trechos do índice e a ficha;
+- o original só sai quando nenhum outro documento o usa;
+- as anotações que o agente deduziu do documento são revogadas e ficam no histórico
+  da memória; as anotações do pesquisador não mudam;
+- não há cópia nem lixeira, e a janela de confirmação avisa quantas anotações serão
+  revogadas;
+- enquanto um envio ou as fichas estão em andamento, a biblioteca pede para esperar.
+
+Respostas antigas que citavam o documento continuam no histórico; abrir a fonte mostra
+que ele não está mais na biblioteca.
+
 `verificar` confere hashes dos originais e artefatos, trechos, vetores e índice
 lexical. Processamentos antigos continuam auditáveis. Fórmulas, tabelas, colunas
 e figuras não são interpretadas com garantia; compare com o original.
@@ -98,6 +112,14 @@ Os parâmetros abaixo são do lote 19 e foram fixados antes da medição:
 - cada documento ocupa no máximo 2 dos resultados (4 se for citado), e o limite só
   é passado quando faltam candidatos de outros documentos.
 
+No chat, desde o lote 22, a busca não usa a mensagem como veio.
+- O modelo mais barato a reescreve numa consulta completa, olhando as 4 últimas mensagens da conversa.
+- O assunto vem da conversa, para que "a definição" diga de quê.
+- As siglas vão por extenso, e os termos principais vão em português e em inglês.
+- A consulta só escolhe os trechos, sem responder à pergunta, e a janela de fontes a mostra.
+- O chat recebe até 10 trechos. Quando documentos diferentes tratam do pedido, a resposta mostra a opção de cada fonte.
+- Se a chamada falhar ou a consulta não trouxer trechos, vale a regra anterior: pela própria mensagem, e, nas de até 6 palavras ou sem resultado, junto com a pergunta anterior.
+
 Sem coincidência lexical nem citação, exige-se cosseno de pelo menos 0,30: é uma
 heurística de recuperação, não um limiar científico. Índices de processamento antigo
 não entram no ranqueamento lexical ativo. Os vetores ficam no SQLite, e a comparação
@@ -113,7 +135,9 @@ o acervo:
 
 O relatório dá, por idioma, por tipo de pergunta e por cruzamento de idioma, o
 número de acertos entre os 6 resultados, a posição do primeiro acerto (MRR) e os
-documentos distintos.
+documentos distintos. Com `--reescrever --env-file .env`, cada pergunta passa antes
+pela consulta reescrita, como no chat, e o relatório guarda a consulta usada. São 16
+chamadas ao modelo mais barato, e cada uma entra no registro de uso.
 
 A resposta recebe fontes locais reais. O verificador bloqueia ausência de
 identificadores e identificadores desconhecidos; **não prova** que o texto gerado

@@ -3,6 +3,41 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Rumo à 0.3.0 (lotes 22 a 26). Detalhes na spec [0022](docs/specs/0022-correcoes-confianca.md).
+
+### Adicionado
+
+- **Consulta da busca reescrita:** com a biblioteca ligada, o modelo mais barato transforma cada mensagem numa consulta completa. O assunto vem da conversa, as siglas vão por extenso, e os termos vão em português e em inglês.
+  - Continuações como "Traga a definição… uma citação direta" passam a achar o assunto da pergunta anterior.
+  - A busca não se prende a um autor só porque a resposta anterior o citou.
+  - Nas 16 perguntas de referência, os acertos foram de 13 para 16 e o MRR, de 0,78 para 0,97.
+  - Custa uma chamada barata a mais por mensagem, e se ela falhar, a busca segue pela própria pergunta.
+  - A janela de fontes mostra o que foi buscado.
+  - `aliado biblioteca avaliar --reescrever --env-file .env` mede a busca do mesmo jeito.
+- **Mais referências por resposta:** a busca do chat traz 10 trechos em vez de 6, e, quando documentos diferentes tratam do pedido, a resposta mostra a opção de cada fonte, com a citação, para você escolher.
+- **Fonte do texto:** um seletor na barra do topo troca a letra da interface. Há 8 opções: Padrão, Arial, Calibri, Verdana, Georgia, Cambria, Times New Roman e monoespaçada. A escolha fica guardada no navegador.
+- **Apagar documento** na aba Biblioteca (`DELETE /api/biblioteca/{doc}`): tira de vez todas as versões, a extração, o índice e a ficha. O original só sai se nenhum outro documento o usa. As anotações que o agente deduziu do documento são revogadas, e as suas ficam. Enquanto um envio ou as fichas estão em andamento, a biblioteca pede para esperar.
+
+### Alterado
+
+- **Skill do mestrado** (versão 0.2.0):
+  - descreve a situação atual: há memória, o acervo tem os PDFs e a aba Ciência executa o experimento;
+  - registra a tabela e a página de cada taxa e das notas da FMECA;
+  - pede ao modelo que explique em palavras, sem citar os códigos das diretrizes.
+  - Nas diretrizes, só a seção "Aplicação e limites atuais" mudou; o texto de M09 a M14 ficou idêntico.
+- **Taxas e notas da FMECA conferidas nos PDFs:**
+  - Sarquis Filho et al. (2020), Tab. III, p. 3;
+  - Baschel et al. (2018), Tab. 1, p. 5 e 6;
+  - Cristaldi et al. (2017), Tab. 6, p. 6.
+  - Os valores não mudaram. Os 8 cenários e a FMECA citam agora tabela e página.
+  - O IGBT de Baschel (8,9e-6/h) é o valor extrapolado dos relatórios de O&M da juwi. O valor que o próprio estudo usa é 11,4e-6/h.
+
+### Removido
+
+- Da biblioteca do pesquisador, os dois recortes do manual de Lafraia (o capítulo 7 e uma digitalização). O manual completo cobre os dois. As 16 anotações deduzidas deles foram revogadas.
+
 ## [0.2.0] — 2026-09-28
 
 Lotes 18 a 21, a partir dos apontamentos do pesquisador no uso real da v0.1.0. Detalhes nas

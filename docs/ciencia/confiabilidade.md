@@ -87,7 +87,8 @@ serviço sozinho. O núcleo geral não tem horizonte padrão; os 20 anos
 da pesquisa e eventuais mudanças pelo chat orientam o cenário da especialização.
 No lote 07, Rodolfo escolheu as taxas e a análise isolada dos componentes dos
 inversores, em duas bases temporais; não há topologia de sistema nesses cenários.
-As taxas ainda precisam de reconferência nos PDFs. No lote 16, Rodolfo decidiu a FMECA:
+No lote 22, as taxas foram conferidas nos PDFs de Sarquis Filho et al. (2020, Tab. III) e Baschel et al.
+(2018, Tab. 1), com a página registrada em cada cenário. No lote 16, Rodolfo decidiu a FMECA:
 - o NPR é o da fonte das notas;
 - a leitura pelas taxas (MTBF, chance de falhar e falhas esperadas) fica separada;
 - não há disponibilidade para os inversores enquanto não houver fonte de tempo de reparo.

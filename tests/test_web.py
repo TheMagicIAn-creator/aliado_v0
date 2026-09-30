@@ -134,6 +134,7 @@ def test_page_and_static_files_are_served_with_protective_headers(env):
     client = env["client"]
     page = client.get("/")
     assert page.status_code == 200 and "AL-IAdo" in page.text
+    assert 'id="font"' in page.text  # fonte do texto na barra do topo (lote 22)
     assert "default-src 'self'" in page.headers["content-security-policy"]
     assert page.headers["x-content-type-options"] == "nosniff"
     for path in ("/static/app.js", "/static/app.css", "/static/vendor/katex/katex.min.js"):

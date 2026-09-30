@@ -202,6 +202,16 @@ class MemoryStore:
             db.execute("UPDATE memories SET conflict_with=NULL WHERE conflict_with=?", (memory_id,))
         return self.get(memory_id)
 
+    def revoke_from_documents(self, document_ids) -> list[str]:
+        """Revoga as deduções que citam documentos apagados; as anotações do usuário ficam."""
+        ids = set(document_ids)
+        revoked = []
+        for memory in self.list(origin="inferido"):
+            if memory["status"] in {"ativa", "conflito"} and memory["source"].get("document_id") in ids:
+                self.revoke(memory["id"])
+                revoked.append(memory["id"])
+        return revoked
+
     def edit(self, memory_id: str, text: str) -> dict:
         """Edição do usuário: nova versão com origem feedback, sem apagar a anterior."""
         memory = self.get(memory_id)

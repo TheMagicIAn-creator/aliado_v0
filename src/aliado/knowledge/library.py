@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+import shutil
 import sqlite3
 import uuid
 from collections import Counter
@@ -301,6 +302,45 @@ class DocumentLibrary:
         return {k: metadata[k] for k in ("id", "title", "sha256", "version", "run_id", "status", "issues")} | {
             "duplicate": False, "chunks": len(indexed), "original": str(original_path),
         }
+
+    def delete(self, doc_id: str) -> dict:
+        """Apaga de vez um documento: todas as versões do título, extrações, índice e ficha.
+
+        Um original só sai quando nenhum outro documento o usa. Sem cópia: não tem volta."""
+        if not (self.root / "catalog.sqlite3").exists():
+            raise ValueError("Documento não encontrado na biblioteca.")
+        with self._connect(create=True) as db, db:
+            row = db.execute("SELECT title FROM documents WHERE id=?", (doc_id,)).fetchone()
+            if row is None:
+                raise ValueError("Documento não encontrado na biblioteca.")
+            title = row["title"]
+            documents = db.execute("SELECT id, original FROM documents WHERE title=? ORDER BY version",
+                                   (title,)).fetchall()
+            ids = [document["id"] for document in documents]
+            marks = ",".join("?" * len(ids))
+            runs = [run["id"] for run in db.execute(f"SELECT id FROM runs WHERE document_id IN ({marks})", ids)]
+            chunks = 0
+            if runs:
+                run_marks = ",".join("?" * len(runs))
+                db.execute(f"""DELETE FROM chunk_fts WHERE id IN (
+                    SELECT id FROM chunks WHERE run_id IN ({run_marks}))""", runs)
+                chunks = db.execute(f"DELETE FROM chunks WHERE run_id IN ({run_marks})", runs).rowcount
+                db.execute(f"DELETE FROM runs WHERE id IN ({run_marks})", runs)
+            db.execute(f"DELETE FROM documents WHERE id IN ({marks})", ids)
+            db.execute("DELETE FROM document_cards WHERE title=?", (title,))
+            in_use = {document["original"] for document in db.execute("SELECT original FROM documents")}
+        folders = [self._path(f"extracted/{document_id}") for document_id in ids]
+        folders += [self._path(original).parent for original in {d["original"] for d in documents} - in_use]
+        leftovers = []
+        for folder in folders:
+            # Só pastas próprias do documento, nunca a raiz nem as pastas de topo da biblioteca.
+            if folder.parent.parent != self.root or not folder.exists():
+                continue
+            try:
+                shutil.rmtree(folder)
+            except OSError:
+                leftovers.append(folder.relative_to(self.root).as_posix())
+        return {"title": title, "ids": ids, "versions": len(ids), "chunks": chunks, "leftovers": leftovers}
 
     def document_files(self, doc_id: str) -> dict:
         """Original e Markdown da extração ativa, para exibição local; nunca caminhos externos."""

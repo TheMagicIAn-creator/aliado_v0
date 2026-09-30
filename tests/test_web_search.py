@@ -89,7 +89,7 @@ class Library:
     def __init__(self, hits):
         self.hits = hits
 
-    def search(self, question):
+    def search(self, question, **_):
         return self.hits
 
 

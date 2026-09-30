@@ -121,6 +121,25 @@ $("theme").addEventListener("click", () =>
 applyTheme(store.get("aliado.theme",
   window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
+/* Fonte do texto (lote 22): a escolha fica neste navegador. */
+const FONTS = [
+  ["padrao", "Padrão", ""], ["arial", "Arial", "Arial, sans-serif"], ["calibri", "Calibri", "Calibri, sans-serif"],
+  ["verdana", "Verdana", "Verdana, sans-serif"], ["georgia", "Georgia", "Georgia, serif"],
+  ["cambria", "Cambria", "Cambria, serif"], ["times", "Times New Roman", "'Times New Roman', serif"],
+  ["mono", "Monoespaçada", "Consolas, monospace"],
+];
+function applyFont(font) {
+  const known = FONTS.some(([key]) => key === font) ? font : "padrao";
+  if (known === "padrao") delete document.documentElement.dataset.font;
+  else document.documentElement.dataset.font = known;
+  $("font").value = known;
+  store.set("aliado.font", known);
+}
+$("font").replaceChildren(...FONTS.map(([key, label, family]) =>
+  el("option", { value: key, text: label, ...(family ? { style: `font-family: ${family}` } : {}) })));
+$("font").addEventListener("change", (event) => applyFont(event.target.value));
+applyFont(store.get("aliado.font", "padrao"));
+
 /* Estado geral */
 async function loadState() {
   const data = await api("/api/estado");
@@ -549,11 +568,15 @@ function showSources(message) {
   const list = $("source-list");
   const sources = message?.sources || [];
   const web = message?.web_sources || [];
+  // Lote 22: a consulta que a biblioteca buscou, reescrita a partir da conversa.
+  const query = message?.consulta_biblioteca
+    ? [el("p", { class: "muted source-queries", text: `Buscou na biblioteca: ${message.consulta_biblioteca}` })] : [];
   if (!sources.length && !web.length) {
-    list.replaceChildren(el("p", { class: "muted", text: "Esta resposta não usou trechos da biblioteca nem a web." }));
+    list.replaceChildren(...query,
+      el("p", { class: "muted", text: "Esta resposta não usou trechos da biblioteca nem a web." }));
     return;
   }
-  const parts = [];
+  const parts = [...query];
   if (sources.length && web.length) parts.push(el("h3", { class: "source-group", text: "Seus documentos" }));
   parts.push(...sources.map((source, index) => {
     const number = index + 1;
@@ -946,10 +969,12 @@ async function openLibrary(selectId) {
 }
 
 const STATUS = { ready: ["pronto", "badge-ok"], partial: ["parcial", "badge-warn"], failed: ["falhou", "badge-fail"] };
+let libraryDocuments = [];
 
 async function loadLibrary(selectId) {
   let documents = [];
   try { documents = await api("/api/biblioteca"); } catch (error) { toast(error.message); }
+  libraryDocuments = documents;
   const list = $("doc-list");
   if (!documents.length) {
     list.replaceChildren(el("li", { class: "empty",
@@ -971,6 +996,35 @@ async function loadLibrary(selectId) {
   $("library-cards").dataset.pending = String(pending);
   const chosen = documents.find((doc) => doc.id === selectId);
   if (chosen) showDocument(chosen);
+  else if (selectId) toast("Este documento não está mais na biblioteca: ele pode ter sido apagado.");
+}
+
+/* Apagar documento (lote 22): de vez, com todas as versões; as deduções tiradas dele são revogadas. */
+async function deleteDocument(doc) {
+  const ids = libraryDocuments.filter((item) => item.title === doc.title).map((item) => item.id);
+  let count = null;
+  try {
+    const data = await api("/api/memoria?origem=inferido");
+    count = data.itens.filter((m) => ["ativa", "conflito"].includes(m.status) && ids.includes(m.source?.document_id)).length;
+  } catch { /* sem memória: o aviso fica genérico */ }
+  const notes = count === null ? "As anotações inferidas tiradas dele são revogadas."
+    : count === 0 ? "Nenhuma anotação da memória foi tirada dele."
+    : count === 1 ? "1 anotação inferida tirada dele é revogada."
+    : `${count} anotações inferidas tiradas dele são revogadas.`;
+  const versions = ids.length > 1 ? `, com as ${ids.length} versões` : "";
+  if (!window.confirm(`Apagar de vez «${doc.title}»${versions}?\n\nO PDF, a extração e o índice somem da biblioteca. ` +
+    `${notes}\n\nNão tem volta.`)) return;
+  try {
+    const result = await api(`/api/biblioteca/${doc.id}`, { method: "DELETE" });
+    const revoked = result.anotacoes_revogadas;
+    toast(`«${result.apagado}» foi apagado` +
+      (revoked ? `; ${revoked} ${revoked === 1 ? "anotação revogada" : "anotações revogadas"}` : "") +
+      (result.sobras.length ? ". Alguns arquivos não puderam ser removidos agora." : "."));
+    $("doc-viewer").replaceChildren(el("p", { class: "muted", text: "Escolha um documento para ver a versão em Markdown." }));
+    loadLibrary();
+  } catch (error) {
+    toast(error.message);
+  }
 }
 
 /* Ficha do documento (lote 19): título, autores, ano e DOI, inferidos e editáveis. */
@@ -1053,7 +1107,9 @@ async function showDocument(doc) {
     const issues = doc.issues?.length ? el("div", { class: "note note-warn", text: `Pendências: ${doc.issues.join(" ")}` }) : null;
     viewer.replaceChildren(
       el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: "Extração em Markdown · confira fórmulas, tabelas e OCR no original" }),
-        el("a", { class: "link", href: `/api/biblioteca/${doc.id}/original`, target: "_blank", rel: "noopener", text: "Abrir original" })),
+        el("span", { class: "doc-viewer-actions" },
+          el("a", { class: "link", href: `/api/biblioteca/${doc.id}/original`, target: "_blank", rel: "noopener", text: "Abrir original" }),
+          el("button", { class: "link danger", type: "button", text: "Apagar", onclick: () => deleteDocument(doc) }))),
       cardBox(doc), ...(issues ? [issues] : []), body);
   } catch (error) {
     viewer.replaceChildren(el("p", { class: "muted", text: error.message }));
