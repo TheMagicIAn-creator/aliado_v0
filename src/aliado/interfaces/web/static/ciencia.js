@@ -5,7 +5,7 @@
 
 const science = { tab: "resultados", status: null, options: null, timer: null, result: null };
 const SCIENCE_TABS = [["resultados", "Resultados"], ["limiar", "Limiar"], ["alarme", "Alarme e detecção"],
-  ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"]];
+  ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["rodar", "Rodar GPVS"]];
 const SVGNS = "http://www.w3.org/2000/svg";
 
 /* Formatação */
@@ -163,7 +163,7 @@ async function openScience(tab) {
   const body = $("science-body");
   body.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
   const render = { resultados: renderResults, limiar: renderThreshold, alarme: renderAlarms,
-    confiabilidade: renderReliability, fmeca: renderFmeca }[science.tab];
+    confiabilidade: renderReliability, fmeca: renderFmeca, rodar: renderRuns }[science.tab];
   await render(body);
 }
 
@@ -474,6 +474,20 @@ async function showResult(item, viewer) {
   try { data = await api(`/api/ciencia/resultados/${item.id.split("/").map(encodeURIComponent).join("/")}`); }
   catch (error) { viewer.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
   const parts = [el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: `${data.rotulo} · ${data.caminho}` }))];
+  if (data.consulta) {
+    parts.push(el("div", { class: `note ${data.consulta.canonica ? "note-ok" : "note-warn"}`, text: data.consulta.canonica
+      ? "Avaliação canônica: consulta nº 1 ao teste, de 27/09/2026."
+      : `Avaliação não canônica: consulta nº ${data.consulta.numero} ao teste, em ${day(data.consulta.data)}. ` +
+        "Não substitui a avaliação de 27/09 (M14)." }));
+  }
+  if (data.configuracao_canonica !== undefined) {
+    parts.push(el("div", { class: `note ${data.configuracao_canonica ? "note-ok" : "note-warn"}`, text: data.configuracao_canonica
+      ? "Treino com a configuração canônica." : "Treino exploratório: a configuração difere da canônica." }));
+  }
+  if (data.execucao) {
+    parts.push(el("p", { class: "muted", text: `Feita pela interface (${JOB_STATES[data.execucao.estado] || data.execucao.estado}): ` +
+      `${new Date(data.execucao.iniciado_em).toLocaleString("pt-BR")} a ${new Date(data.execucao.terminado_em).toLocaleString("pt-BR")}.` }));
+  }
   if (data.curvas?.linhas?.length) {
     parts.push(chart({ label: "R(t) e F(t)", xLabel: data.curvas.unidade === "year" ? "anos" : data.curvas.unidade, yLabel: "probabilidade",
       yMin: 0, yMax: 1, series: [{ points: data.curvas.linhas.map((r) => [r.time, r.reliability]), color: "var(--chart-a)", label: "R(t)" },
@@ -507,4 +521,124 @@ async function showResult(item, viewer) {
     parts.push(report);
   }
   viewer.replaceChildren(...parts);
+}
+
+/* Rodar GPVS (lote 21): preparar, treinar e avaliar pelos próprios comandos, uma etapa por vez. */
+function day(iso) { return iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "—"; }
+
+const STEP_NAMES = { preparar: "Preparo", treinar: "Treino", avaliar: "Avaliação" };
+const JOB_STATES = { processando: "em andamento", concluido: "concluído", falhou: "falhou", cancelado: "cancelado" };
+const CONSULTATION_STATES = { iniciada: "iniciada", concluida: "concluída", falhou: "falhou", cancelada: "cancelada" };
+
+async function renderRuns(body) {
+  let info;
+  try { info = await api("/api/ciencia/gpvs"); } catch (error) { body.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
+  if (!info.disponivel) {
+    body.replaceChildren(el("div", { class: "note note-warn", text: `Não dá para rodar o GPVS: falta ${info.faltando.join("; ")}.` }));
+    return;
+  }
+  const c = info.canonica;
+  const progress = el("div", { class: "science-output" });
+  const prep = { separacao: c.separacao };
+  const train = science.train ||= { separacao: c.separacao, sementes: c.sementes.join(","), teto_epocas: c.teto_epocas };
+  const badge = el("span", { class: "badge" });
+  const updateBadge = () => {
+    const seeds = String(train.sementes).split(",").map((s) => Number(s.trim())).join(",");
+    const same = Number(train.separacao) === c.separacao && seeds === c.sementes.join(",") && Number(train.teto_epocas) === c.teto_epocas;
+    badge.className = `badge ${same ? "badge-ok" : "badge-warn"}`;
+    badge.textContent = same ? "configuração canônica" : "exploratória";
+  };
+  const field = (label, key, target, attrs = {}) => {
+    const input = el("input", { value: target[key], ...attrs });
+    input.addEventListener("input", () => { target[key] = input.value; updateBadge(); });
+    return el("label", { class: "control" }, el("span", { text: label }), input);
+  };
+  const next = Math.max(0, ...info.consultas.map((item) => item.numero)) + 1;
+  const trainingSelect = el("select", {}, ...info.treinos.map((item) => {
+    const option = el("option", { value: item.pasta, text: `${item.pasta}${item.canonica ? " (canônica)" : " (exploratória)"}` });
+    if (item.pasta === c.treino) option.selected = true;
+    return option;
+  }));
+  const cards = el("div", { class: "run-grid" },
+    el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "1. Preparar" }),
+      el("p", { class: "muted", text: "Divisão 50/15/15/20, normalização só no treino e verificação de autocorrelação. Não usa modelos nem o teste." }),
+      field("Separação entre blocos (janelas)", "separacao", prep, { type: "number", min: 0, max: 200 }),
+      el("button", { class: "primary", type: "button", text: "Preparar", onclick: () => launch("/api/ciencia/gpvs/preparar", prep, progress) })),
+    el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "2. Treinar" }),
+      el("p", { class: "muted", text: `Denso e AE-LSTM em cada semente, parada pela validação e limiar p99 na calibração. Canônica: ${c.treino || "valores de 27/09"}.` }),
+      field("Separação entre blocos (janelas)", "separacao", train, { type: "number", min: 0, max: 200 }),
+      field("Sementes (separadas por vírgula)", "sementes", train),
+      field("Teto de épocas (só de segurança)", "teto_epocas", train, { type: "number", min: 1 }),
+      badge,
+      el("button", { class: "primary", type: "button", text: "Treinar (cerca de 2 min)", onclick: () => launch("/api/ciencia/gpvs/treinar", train, progress) })),
+    el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "3. Avaliar" }),
+      el("p", { class: "muted", text: "Pontua o teste e os 14 ensaios com falha: é uma nova consulta ao teste (M14), registrada e não canônica." }),
+      el("label", { class: "control" }, el("span", { text: "Rodada de treino" }), trainingSelect),
+      el("button", { class: "primary", type: "button", text: "Avaliar…", disabled: info.treinos.length ? null : true,
+        onclick: () => confirmEvaluation(trainingSelect.value, info.frase, next, progress) })));
+  updateBadge();
+  const consultations = table(["Nº", "Data", "Treino", "Resultado", "Estado", "Tipo"], info.consultas.map((item) => [
+    item.numero, day(item.data), item.treino?.pasta, item.saida, CONSULTATION_STATES[item.estado] || item.estado,
+    item.canonica ? "canônica" : "não canônica"]));
+  body.replaceChildren(el("p", { class: "muted", text: "Cada etapa roda o mesmo comando do terminal e grava numa pasta nova de resultados. Uma etapa por vez." }),
+    progress, cards, el("h3", { class: "science-h", text: "Consultas ao teste (M14)" }), consultations);
+  if (info.tarefa) watch(info.tarefa.id, progress);
+}
+
+function confirmEvaluation(training, phrase, number, progress) {
+  const input = el("input", { autocomplete: "off", placeholder: phrase });
+  const go = el("button", { class: "primary", type: "button", text: "Avaliar", disabled: true });
+  input.addEventListener("input", () => { go.disabled = input.value.trim().toLowerCase() !== phrase; });
+  const dialog = el("dialog", { class: "dialog", "aria-labelledby": "consulta-titulo" },
+    el("h2", { id: "consulta-titulo", text: "Nova consulta ao teste" }),
+    el("p", { class: "muted", text: `Avaliar ${training} pontua o teste saudável e os 14 ensaios com falha, já consultados em 27/09. ` +
+      `Pelo M14, esta será a consulta nº ${number}: fica registrada, é não canônica e não substitui a avaliação oficial. ` +
+      "Não use o resultado para escolher parâmetros." }),
+    el("label", { class: "field" }, `Digite "${phrase}" para confirmar`, input),
+    el("div", { class: "dialog-actions" }, el("button", { class: "secondary", type: "button", text: "Cancelar", onclick: () => dialog.close() }), go));
+  go.addEventListener("click", () => { dialog.close(); launch("/api/ciencia/gpvs/avaliar", { treino: training, frase: input.value }, progress); });
+  dialog.addEventListener("close", () => dialog.remove());
+  document.body.append(dialog);
+  dialog.showModal();
+  input.focus();
+}
+
+async function launch(path, payload, progress) {
+  try {
+    const job = await api(path, { method: "POST", json: payload });
+    watch(job.tarefa, progress);
+  } catch (error) { toast(error.message); }
+}
+
+async function watch(id, box) {
+  for (;;) {
+    let job;
+    try { job = await api(`/api/ciencia/tarefas/${id}`); } catch (error) { box.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
+    if (!box.isConnected) return;  // a seção foi trocada; a etapa continua no servidor
+    const running = job.estado === "processando";
+    const elapsed = running ? (Date.now() - Date.parse(job.iniciado_em)) / 1000 : job.decorrido_s;
+    const title = `${STEP_NAMES[job.etapa] || job.etapa} → ${job.pasta}${job.consulta ? ` (consulta nº ${job.consulta})` : ""}: ` +
+      `${JOB_STATES[job.estado] || job.estado}, ${num(elapsed, 3)} s`;
+    const actions = el("div", { class: "dialog-actions" });
+    if (running) {
+      actions.append(el("button", { class: "secondary", type: "button", text: "Cancelar etapa", onclick: async () => {
+        try { await api("/api/ciencia/gpvs/cancelar", { method: "POST" }); } catch (error) { toast(error.message); }
+      } }));
+    } else if (job.resultado?.pasta) {
+      actions.append(el("button", { class: "primary", type: "button", text: "Abrir em Resultados",
+        onclick: () => { science.result = job.resultado.pasta; openScience("resultados"); } }));
+    }
+    const tone = job.estado === "falhou" ? "note-warn" : job.estado === "concluido" ? "note-ok" : "";
+    box.replaceChildren(el("div", { class: `note ${tone} run-status`, text: title }),
+      ...(job.erro ? [el("p", { class: "muted", text: job.erro })] : []),
+      ...(job.linhas?.length ? [el("pre", { class: "run-log", text: job.linhas.slice(-12).join("\n") })] : []), actions);
+    if (!running) {
+      if (job.estado === "concluido" && !science.refreshed?.has(id)) {
+        (science.refreshed ||= new Set()).add(id);
+        if (science.tab === "rodar") openScience("rodar");  // atualiza rodadas e o registro de consultas
+      }
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
 }

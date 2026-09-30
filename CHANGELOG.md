@@ -3,13 +3,19 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [0.2.0] — 2026-09-28
 
-Lotes 18 a 20, a partir dos apontamentos do pesquisador no uso real. A versão 0.2.0 sai com o
-lote 21 (GPVS pela interface). Detalhes nas specs [0018](docs/specs/0018-biblioteca-memoria-anexos.md),
-[0019](docs/specs/0019-qualidade-da-busca.md) e [0020](docs/specs/0020-aba-ciencia.md).
+Lotes 18 a 21, a partir dos apontamentos do pesquisador no uso real da v0.1.0. Detalhes nas
+specs [0018](docs/specs/0018-biblioteca-memoria-anexos.md), [0019](docs/specs/0019-qualidade-da-busca.md),
+[0020](docs/specs/0020-aba-ciencia.md) e [0021](docs/specs/0021-gpvs-interface.md).
 
 ### Adicionado
+
+- **GPVS pela interface** (seção Rodar GPVS da aba Ciência):
+  - preparar, treinar e avaliar com progresso e botão de cancelar, pelos próprios comandos do terminal;
+  - o treino aceita separação, sementes e teto de épocas, e uma rodada fora da configuração canônica fica marcada como exploratória;
+  - uma nova avaliação exige digitar "consultar o teste", entra no registro de consultas ao teste (M14) e é não canônica;
+  - no aceite, treino e avaliação pela interface reproduziram bit a bit a rodada de 27/09.
 
 - **Aba Ciência:**
   - resultados com gráficos e tabelas;

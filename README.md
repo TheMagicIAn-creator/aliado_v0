@@ -2,8 +2,7 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.1.0**, com as mudanças dos lotes 18 a 20 ainda não lançadas. Tudo
-está em [CHANGELOG.md](CHANGELOG.md).
+especialização. Versão **0.2.0**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
 
@@ -15,7 +14,7 @@ está em [CHANGELOG.md](CHANGELOG.md).
 - **Experimento de detecção** Denso × AE-LSTM no GPVS-Faults, reproduzível e com relatórios.
 
 Cálculos, FMECA e experimento rodam por comando próprio ou pela aba **Ciência** da interface; o
-chat não os executa sozinho. O treino e a avaliação do GPVS pela interface entram no lote 21.
+chat não os executa sozinho.
 
 ## Instalação
 
@@ -89,6 +88,9 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - **Alarme e detecção:** k, percentil e m sobre o teste e os ensaios com falha, com a linha do tempo de cada ensaio. É **exploração pós-teste, não canônica (M14)**, e mostra os valores oficiais ao lado. Com k = 5, p99 e m = 3, repete a avaliação de 27/09.
   - **Confiabilidade:** λ, horas por ano, base e horizonte recalculam R(t) e F(t) sem gravar nada. Para salvar o cenário numa pasta nova, fonte e hipóteses são obrigatórias. Aceita também qualquer cenário em JSON.
   - **FMECA:** a tabela, as ordens pelo NPR e pela taxa e o relatório numa pasta nova.
+  - **Rodar GPVS:** preparar, treinar e avaliar pelos mesmos comandos do terminal, uma etapa por vez, com progresso e botão de cancelar.
+    - O treino abre com a configuração canônica; mudar separação, sementes ou teto de épocas marca a rodada como exploratória.
+    - Avaliar consulta o teste de novo: exige digitar "consultar o teste", entra em `registro-consultas-teste.jsonl` e fica **não canônica**. A oficial continua a de 27/09.
   - Os exploradores do GPVS precisam de `data/gpvs/` e das rodadas `gpvs-modelos-002` e `gpvs-avaliacao-001`. O erro por variável fica em `data/ciencia/`, e `--resultados` e `--gpvs` mudam essas pastas.
 - **Custo:** cada resposta chama o provedor, e a busca na web pode ter custo à parte no Google. O registro `data/uso/chamadas.jsonl` guarda data, modelo, tokens e número de buscas, sem o texto.
 
@@ -162,7 +164,7 @@ uma avaliação independente (M14).
 ## Pacote
 
 ```powershell
-.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.1.0
+.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.2.0
 ```
 
 O wheel inclui a interface, com o KaTeX, e as skills do AL-IAdo. Documentação, cenários e dados
@@ -182,5 +184,5 @@ desenvolvimento e não entram no pacote.
 - Tempos de reparo e disponibilidade só entram com fonte.
 - No GPVS, o início nominal das falhas (o meio do registro) não coincide com a mudança observada no sinal. Os atrasos medidos refletem isso.
 - A busca ainda erra algumas perguntas de conteúdo em outro idioma: 3 das 16 perguntas de referência. A tradução da pergunta ficou para depois. Veja a [validação do lote 19](docs/migracao/validacao-lote-19.md).
-- Preparar, treinar e avaliar o GPVS pela aba **Ciência** fica para o lote 21. Uma nova avaliação vai exigir confirmação e ficar registrada como nova consulta ao teste (M14).
+- Os exploradores da aba Ciência usam só a rodada canônica; rodadas novas aparecem em Resultados.
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

@@ -96,17 +96,18 @@ Progresso atual: **100%**. A soma dos pesos dos lotes concluídos dá o percentu
 - A partir das taxas entram MTBF e falhas esperadas em 1 e 20 anos. A disponibilidade espera uma
   fonte de tempo de reparo.
 
-## Depois da v0.1.0: rumo à 0.2.0
+## Depois da v0.1.0: a 0.2.0
 
 Os lotes partem dos apontamentos do pesquisador no uso real e continuam sendo combinados antes
-de começar. A 0.2.0 sai no fim do lote 21.
+de começar. Com o lote 21, a 0.2.0 está pronta; o commit, a tag `v0.2.0` e o push ficam com o
+pesquisador. Depois dela não há lote definido: cada tema abaixo, em "Pendências depois da 0.2.0", só vira lote se ele decidir.
 
 | Lote | Entrega | Situação |
 |---|---|---|
 | 18 | Biblioteca com catálogo e resposta sem citação exibida com aviso; memória com perfil e memória de conversas; fila de anexos; fontes numa janela sobre a resposta | Concluído em 28/09/2026 (commit `f23855d`) |
 | 19 | Qualidade da busca: palavras vazias ignoradas e mais peso ao significado, ficha de cada documento (título, autores, ano e DOI) e limite de trechos por documento, medidos com perguntas de referência | Concluído em 28/09/2026 (commit `fb366c4`) |
-| 20 | Aba Ciência: resultados com gráficos, exploradores do limiar e de alarme e detecção com os dados reais, confiabilidade e FMECA pela interface | Concluído em 28/09/2026, aguardando o commit |
-| 21 | GPVS pela interface: preparar, treinar e avaliar com progresso; nova avaliação com confirmação e registro da consulta ao teste (M14) | A combinar |
+| 20 | Aba Ciência: resultados com gráficos, exploradores do limiar e de alarme e detecção com os dados reais, confiabilidade e FMECA pela interface | Concluído em 28/09/2026 (commit `4d38e19`) |
+| 21 | GPVS pela interface: preparar, treinar e avaliar com progresso; nova avaliação com confirmação e registro da consulta ao teste (M14); lançamento da 0.2.0 | Concluído em 28/09/2026, aguardando o commit e a tag |
 
 ### Decisões de 28/09/2026
 
@@ -130,6 +131,22 @@ ganho veio das fichas: as 4 perguntas que citam o autor passaram a acertar, com 
 0,88. As perguntas de conteúdo ficaram em 9 de 12. Continuam fora dos 6 resultados três
 perguntas de conteúdo em outro idioma, e é aí que a tradução da pergunta poderia ajudar. Veja a
 [validação do lote 19](migracao/validacao-lote-19.md).
+
+### Resultado dos lotes 20 e 21
+
+A aba Ciência faz tudo pela interface. Com os parâmetros oficiais, os exploradores repetem a
+avaliação de 27/09. O treino e a avaliação feitos pela interface reproduziram bit a bit a rodada
+canônica, e a nova avaliação entrou no registro como consulta nº 2, não canônica (na cópia usada
+no aceite). Veja as validações dos lotes [20](migracao/validacao-lote-20.md) e [21](migracao/validacao-lote-21.md).
+
+### Pendências depois da 0.2.0
+
+Nenhuma delas está planejada; cada uma vira lote só por decisão do pesquisador.
+- A tradução da pergunta na busca, para as 3 perguntas de conteúdo em outro idioma que ainda erram.
+- Tempos de reparo e disponibilidade, agora que o IEEE 493 está na biblioteca.
+- A reconferência das taxas de falha e das notas da FMECA nos PDFs que já estão no acervo.
+- O início nominal das falhas no GPVS, que não coincide com a mudança observada no sinal.
+- Cópia de segurança ou exportação da memória.
 
 ## Fica para a v1
 

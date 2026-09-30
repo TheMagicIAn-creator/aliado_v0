@@ -29,6 +29,7 @@ RESULT_KINDS = (
     ("escores.npz", "gpvs-avaliacao", "GPVS: avaliação"),
     ("escores_calibracao.npz", "gpvs-modelos", "GPVS: modelos e limiar"),
     ("avaliacao-busca.json", "busca", "Medição da busca"),
+    ("normalizacao.npz", "gpvs-preparo", "GPVS: preparo"),  # modelos também têm; vêm antes na ordem
     ("relatorio.json", "relatorio", "Relatório"),
 )
 REPORTS = ("relatorio.md", "fmeca.md")
@@ -86,6 +87,19 @@ def result_detail(root: Path, result_id: str) -> dict:
     detail = item | {"caminho": _shown(folder),
                      "html": render_markdown(report.read_text(encoding="utf-8")) if report else None}
     kind = item["tipo"]
+    if (folder / "execucao.json").is_file():  # rodada feita pela interface (lote 21)
+        detail["execucao"] = json.loads((folder / "execucao.json").read_text(encoding="utf-8"))
+    if kind == "gpvs-avaliacao":
+        from aliado.science.detection import registry
+
+        consultation = folder / "consulta.json"
+        detail["consulta"] = (json.loads(consultation.read_text(encoding="utf-8")) if consultation.is_file()
+                              else {"numero": 1, "canonica": True} if folder.name == registry.CANONICAL else None)
+    if kind == "gpvs-modelos":
+        from aliado.interfaces.web.gpvs_runs import canonical
+
+        frozen = json.loads((folder / "configuracao.json").read_text(encoding="utf-8"))
+        detail["configuracao_canonica"] = frozen["sha256"] == canonical(root)["sha256"]
     if kind == "cenario":
         data = json.loads((folder / "resultado.json").read_text(encoding="utf-8"))
         detail["curvas"] = {"unidade": data.get("time_unit"), "linhas": [

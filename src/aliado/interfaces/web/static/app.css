@@ -362,20 +362,20 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 /* Telas estreitas: conversas e fontes abrem sobrepostas, sem espremer a resposta. */
 /* Aba Ciência (lote 20) */
 .science { overflow-y: auto; }
-.science-body { display: grid; gap: 16px; min-height: 0; }
+.science-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-height: 0; }
 .science-body > .library-body { min-height: 60vh; }
-.science-output { display: grid; gap: 14px; }
+.science-output { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .science-h { font: 400 18px/1.3 var(--serif); margin: 6px 0 0; }
 .science-notice { font-weight: 500; }
 .note-ok { background: var(--accent-soft); color: var(--accent-text); }
-.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 18px; align-items: end; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 10px 18px; align-items: end; }
 .control { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; color: var(--text-soft); }
 .control > span { grid-column: 1 / -1; }
 .control select, .control input[type="number"] { grid-column: 1 / -1; border: 1px solid var(--border-strong); border-radius: 8px;
                                                  padding: 6px 8px; background: var(--surface); min-width: 0; }
 .control input[type="range"] { accent-color: var(--accent); min-width: 0; }
 .control output { font: 500 13px var(--mono); color: var(--text); min-width: 64px; text-align: right; }
-.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 10px; }
 .metric { background: var(--surface-muted); border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 2px; }
 .metric p { margin: 0; font-size: 12px; color: var(--text-soft); }
 .metric b { font: 500 20px/1.25 var(--sans); }
@@ -398,12 +398,22 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .data-table { border-collapse: collapse; font-size: 13.5px; width: 100%; }
 .data-table th, .data-table td { border-bottom: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
 .data-table th { color: var(--text-soft); font-weight: 500; background: var(--surface-muted); }
-.science-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.science-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 14px; }
 .science-form { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 6px; }
 .science-form input, .science-form textarea { border: 1px solid var(--border-strong); border-radius: 10px; padding: 8px 10px;
                                               background: var(--surface); width: 100%; }
 .science-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--text-soft); }
 .mono, .science-pre { font-family: var(--mono); font-size: 12.5px; }
+/* Rodar GPVS (lote 21) */
+.run-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; }
+.run-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 8px;
+            align-content: start; }
+.run-card .control input { grid-column: 1 / -1; border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 8px;
+                           background: var(--surface); min-width: 0; }
+.run-card .badge { justify-self: start; }
+.run-status { font-weight: 500; }
+.run-log { font: 12px/1.45 var(--mono); background: var(--surface-muted); border-radius: 8px; padding: 8px 10px; margin: 0;
+           max-height: 220px; overflow: auto; white-space: pre-wrap; }
 .science-pre { white-space: pre-wrap; background: var(--surface-muted); border-radius: 8px; padding: 10px; margin: 0; }
 
 @media (max-width: 1100px) {

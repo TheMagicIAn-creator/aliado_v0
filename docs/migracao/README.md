@@ -240,6 +240,16 @@ pasta nova, e o erro por variável fica em `data/ciencia/`. O GPVS pela interfac
 lote 21. Consulte a [spec 0020](../specs/0020-aba-ciencia.md), o [manifesto](lote-20.json) e a
 [validação](validacao-lote-20.md).
 
+## Lote 21 — GPVS pela interface e 0.2.0
+
+Não houve migração de código da origem. As três etapas do GPVS rodam pela aba Ciência, em
+subprocessos dos próprios comandos do terminal. Uma nova avaliação exige a frase de confirmação e
+entra no registro de consultas ao teste (M14) como não canônica. No aceite, feito numa cópia dos
+resultados, o treino e a avaliação pela interface reproduziram bit a bit a rodada de 27/09. O lote
+fecha a versão 0.2.0, com o pacote em `dist/v0.2.0`. Consulte a
+[spec 0021](../specs/0021-gpvs-interface.md), o [manifesto](lote-21.json) e a
+[validação](validacao-lote-21.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

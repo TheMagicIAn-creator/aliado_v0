@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-28",
+  "batch": "21",
+  "status": "implemented_locally_pending_researcher_commit",
+  "spec": "docs/specs/0021-gpvs-interface.md",
+  "base_commit": "4d38e19",
+  "release": {
+    "version": "0.2.0",
+    "wheel": "dist/v0.2.0/aliado-0.2.0-py3-none-any.whl",
+    "wheel_sha256": "175d7d8c57bd6256480c1547111ff8d71a4c818b3b591fd39c1711fff7915933",
+    "wheel_files": 83,
+    "smoke_test_outside_project": true,
+    "tag": "com o pesquisador"
+  },
+  "decisions": {
+    "training": "ajustes do comando (separação, sementes, teto de épocas) com padrão canônico; mudança = exploratória",
+    "evaluation_confirmation": "frase digitada 'consultar o teste', conferida no servidor",
+    "acceptance": "avaliação igual à de 27/09 pela interface, numa cópia; registro na cópia",
+    "explorers": "só a rodada canônica",
+    "execution": "subprocesso dos próprios comandos do terminal; uma etapa por vez; cancelar encerra o processo"
+  },
+  "registry": {
+    "file": "registro-consultas-teste.jsonl (na pasta de resultados)",
+    "append_only": true,
+    "seeded_with": "consulta 1, canônica, 27/09/2026 (gpvs-avaliacao-001)",
+    "real_registry_created": false
+  },
+  "acceptance": {
+    "paid_calls": 0,
+    "server": "127.0.0.1:8770, cópia dos resultados em tmp/lote-21",
+    "prepare_seconds": 0.7,
+    "cancel": {
+      "after_seconds": 6,
+      "folder_created": false,
+      "process_left": false
+    },
+    "training_via_ui": {
+      "folder": "gpvs-modelos-003",
+      "seconds": 107,
+      "config_sha_equal": true,
+      "identical_weights_and_thresholds": "10 de 10"
+    },
+    "evaluation_via_ui": {
+      "folder": "gpvs-avaliacao-002",
+      "consultation": 2,
+      "seconds": 5.2,
+      "csv_identical": true,
+      "report_identical": true,
+      "score_arrays_identical": 480
+    },
+    "narrow_319px_no_overflow_all_sections": true,
+    "real_results_untouched": true
+  },
+  "defects_fixed": [
+    "rolagem lateral em telas estreitas na aba Ciência (cartões e gráficos lado a lado da FMECA), vinda do lote 20",
+    "estados sem acento na tela ('concluida', 'concluido')"
+  ],
+  "validation": {
+    "pytest_passed": 369,
+    "new_tests": 7,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ],
+    "git_status_matches_manifest": true,
+    "unexpected_changes": [],
+    "previous_hash_method_check_against_lote_20": {
+      "src/aliado/interfaces/web/app.py": true,
+      "src/aliado/interfaces/web/science.py": true,
+      "src/aliado/interfaces/web/static/ciencia.js": true,
+      "src/aliado/interfaces/web/static/app.css": false,
+      ".claude/launch.json": true,
+      "README.md": true,
+      "CHANGELOG.md": true,
+      "AGENTS.md": true,
+      "docs/roteiro-v0.md": true,
+      "docs/migracao/README.md": true
+    },
+    "method_check_note": "app.css: a cópia de trabalho do lote 20 estava em CRLF e o sed deste lote a regravou em LF; o conteúdo do commit 4d38e19 em CRLF tem exatamente o hash registrado no lote 20 (6631182b…). Só o final de linha difere, e o Git o normaliza no commit."
+  },
+  "git_actions_by_assistant": [
+    "commit 4d38e19 (lote 20), com permissão do pesquisador"
+  ],
+  "commit_policy": "Pesquisador decide o commit do lote 21, a tag v0.2.0 e o push.",
+  "public_files": [
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "b7fc6455176b1c7096c3844b05992114f595cdd8ab6d7adca46ea4d91f57407b",
+      "previous_sha256": "1c3265697afd987bf6606c41efa482ee29bf994786d79de332b48945220fbd57",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/science.py",
+      "sha256": "6a6100e8c5cad578dcf4754198ea11e00b3c9cb4f1b5c2c7c945d937c9f2e953",
+      "previous_sha256": "11350b4b9b14d9baf40d440febce5380122b26f5aa45e1a7b59714b00d7ffb6b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/ciencia.js",
+      "sha256": "2c05a96fb997c689002c17ad6db24a85ff6d4a57e4f44d36fff9ea01ccda094a",
+      "previous_sha256": "cf0389745fc8203ce485029c69b9b5d5850b3d806a0111625a10d83036385903",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "01ff287cb7f02d671ab8928795928fb71f426897f2898a5c1776099a27054c5f",
+      "previous_sha256": "4ff73258fa2b2c8614e8735d6e149bef2a166a1aee8fe7bd818374c5659a054a",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/launch.json",
+      "sha256": "2f202cabfab661f361f856547be3a55d45f6640f605bf6157c14f3f6216f0e26",
+      "previous_sha256": "8878486f46f27e1f28342b5d90b52e6a3baa26901d794ca490c33fa8d5f2aa69",
+      "status": "modified"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "5896a448b5a04a10fcc5eb535328273da50c38415d225f563ce2dde6003828cc",
+      "previous_sha256": "a0a28ab086fb07701aed30fbbf95e7681f4de0efecb962ef07e51f7125257207",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "61198c4bf6ed254b6d794ad05c42fd7caa60fbcc4d98d7b00136abedfcb1ab73",
+      "previous_sha256": "ef3b0b020f87439a6b8da77ee131098ed27bfec9993037293634fa745daec7d9",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "a9e4dce7c8aad9c87295c2ac341aff4f3ebb2bf2a64e79499dd407cfe15cd261",
+      "previous_sha256": "667541fa559aee37d175af6558073723b7159bb3c4a2591aeb0629419c8fc47d",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "b572af142618fc60059d3ba0c42d0b901c435864279834dfc56415a1dddb4fa4",
+      "previous_sha256": "601b6f0618268f02d05a8295209261a6b720a18068a73c6628ada3e103816a5b",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "c2972e7c0f89c5c8bd27a08ba43d6149ac0c46fb634c2e78a86e71f2cd05a73b",
+      "previous_sha256": "34c63ab65210085115628dd0e36f03556a25e15e13c4adc9f339d404b0bc19f1",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "1f558bd8abb63a46c8bcfea1675e626110ce654b02ae6480c44798b06049b0b5",
+      "previous_sha256": "fd64f97195cccc5093225b15540a422e47f7fa9e6e306c908e795411d5d928b1",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/gpvs_runs.py",
+      "sha256": "29fd230f736d63e21fcdf0088481fbc73d86c945801f8176f1bf1723c3c0286c",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/detection/registry.py",
+      "sha256": "2941fd0ba5b79ef03fc826b358f1e488d6cbf8c690ea02d630a0cce782be83fd",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_gpvs_runs.py",
+      "sha256": "f41e3f660689a76dfb9997a86aeb324f275976e2ef4a7b87f528ea87459e66fa",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0021-gpvs-interface.md",
+      "sha256": "690809b482a53cc179f2b1bccf8f12fda44199d33e79a5e82edce56b131e93ba",
+      "status": "new"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-21.md",
+      "sha256": "35a4c5b4e13b02b31204a25ef30db5a03025d82442ce9e0f1c6a27140098d788",
+      "status": "new"
+    }
+  ]
+}

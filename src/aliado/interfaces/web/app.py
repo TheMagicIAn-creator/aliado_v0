@@ -27,6 +27,7 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
 from aliado.interfaces.web.conversations import ConversationStore
+from aliado.interfaces.web.gpvs_runs import gpvs_routes
 from aliado.interfaces.web.rendering import render_markdown
 from aliado.interfaces.web.science import science_routes
 from aliado.knowledge.metadata import reference
@@ -79,6 +80,8 @@ class WebSettings:
     results_dir: Path | None = None
     gpvs_dir: Path = Path("data/gpvs")
     reference_dir: Path = Path("docs/pesquisa-inversores")
+    # GPVS pela interface (lote 21): (args, on_line, on_process) -> (código, stdout); padrão, subprocesso.
+    gpvs_command: Callable[..., tuple[int, str]] | None = None
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -626,6 +629,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
         Route("/api/memoria/{mid}/{acao}", memory_action, methods=["GET", "POST"]),
         *science_routes(settings, worker, lock),
+        *gpvs_routes(settings, lock),
         Mount("/static", StaticFiles(directory=STATIC), name="static"),
     ]
     app = Starlette(routes=routes, middleware=[Middleware(LocalOnly, port=settings.port)])
