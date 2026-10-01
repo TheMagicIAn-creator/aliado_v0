@@ -2,7 +2,7 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.2.0**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
+especialização. Versão **0.3.0**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
 
@@ -12,9 +12,10 @@ especialização. Versão **0.2.0**. As mudanças estão em [CHANGELOG.md](CHANG
 - **Busca na web** com as fontes citadas.
 - **Cálculos de confiabilidade** por cenário explícito e a **FMECA** dos inversores.
 - **Experimento de detecção** Denso × AE-LSTM no GPVS-Faults, reproduzível e com relatórios.
+- **Resultados no chat:** na skill do mestrado, as respostas usam os números já gravados da pesquisa, com a marca **[Rn]**, e cada número é conferido.
 
 Cálculos, FMECA e experimento rodam por comando próprio ou pela aba **Ciência** da interface; o
-chat não os executa sozinho.
+chat não os executa sozinho: ele só consulta os resultados já gravados.
 
 ## Instalação
 
@@ -42,7 +43,7 @@ Testes:
 .\.venv\Scripts\python.exe -m ruff check .
 ```
 
-Nenhum teste chama provedores pagos ou acessa a rede. Os testes que usam os dados reais do GPVS são pulados se `data/gpvs/` não existir.
+Nenhum teste chama provedores pagos ou acessa a rede. Os testes que usam os dados reais são pulados se faltar `data/gpvs/`, a avaliação oficial em `data/resultados/` ou o encoder da busca.
 
 ## Configuração
 
@@ -85,6 +86,12 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - Diga "lembre que…" ou use **Lembrar…**.
   - A aba **Memória** mostra histórico, edição, revogação e conflitos para você decidir. Nada é apagado.
   - `data/` fica fora do Git e sem cópia automática. Copie `data/memoria` e `data/conversas` se quiser guardá-los.
+- **Resultados da pesquisa no chat:** o interruptor **Usar resultados** vem ligado na skill do mestrado e pode ser desligado; a escolha fica guardada por skill.
+  - O agente recebe 8 blocos com os números da aba Ciência: a avaliação oficial de 27/09 (resumo, alarmes falsos, comparação e cada tipo de falha), a reanálise de 30/09 (início das falhas e alarmes estimados, sempre marcada como secundária), a FMECA e a confiabilidade por grupo.
+  - Cada número tirado deles leva a marca **[Rn]**, que abre o bloco na janela de fontes, com a tabela, as notas dos indicadores e o botão **Ver na aba Ciência**.
+  - O AL-IAdo confere cada número com o bloco citado. Só a escrita pode diferir (2.041 e 2041). Um número arredondado, convertido ou inventado faz a resposta aparecer com um aviso que lista os números, e ela sai do histórico e da memória de conversas.
+  - Um número sem marca não é conferido. O chat não recalcula nada: para um número que não está nos blocos, ele indica a seção da aba.
+  - Os blocos acrescentam cerca de 5,5 mil tokens de entrada a cada pergunta.
 - **Busca na web:** ligue **Buscar na web**. As fontes da web aparecem como **[Wn]**, separadas dos seus documentos. Na aba Memória, **Conferir na web** checa uma anotação.
 - **Ciência:** organizada pelas perguntas, com os números da avaliação oficial de 27/09. O navegador só desenha, com gráficos em D3.
   - Cada gráfico pode ser baixado em **SVG** ou **PNG de 300 dpi**, em fundo branco, e cada tabela em **CSV**.
@@ -115,7 +122,7 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 .\.venv\Scripts\python.exe -m aliado perguntar "Quais taxas foram decididas?" --provider google --model-alias flash --env-file .env
 ```
 
-- **`preparar`** mostra o pedido montado, sem enviar nada.
+- **`preparar`** mostra o pedido montado, sem enviar nada. Com `--resultados`, inclui os blocos de resultados, como no chat.
 - **`perguntar`** chama o provedor.
 - **A skill** padrão é a da pesquisa, com apoio da skill `confiabilidade`. Troque com `--skill engenharia`, `--skill confiabilidade` ou `--skill nenhuma`; `--apoio` compõe as duas.
 - **A biblioteca** também tem comandos próprios:
@@ -172,10 +179,10 @@ arquivo, conferido a cada preparo.
    - falsos alarmes por hora com limite superior, ensaios detectados, atraso em ms e intervalos por bootstrap em blocos;
    - comparação pareada por objetivo, sem vencedor geral.
 
-A avaliação canônica já foi feita em 27/09/2026. Mudanças de protocolo depois disso exigem
+A avaliação oficial já foi feita em 27/09/2026. Mudanças de protocolo depois disso exigem
 uma avaliação independente (M14).
 
-4. **Reanálise com o início observado** (lote 24):
+4. **Reanálise com o início observado:**
    - acha onde cada falha aparece nas 24 variáveis, com o PELT e sem os modelos;
    - recalcula as métricas com esse início sobre os mesmos escores de 27/09;
    - estima os alarmes falsos por hora e a faixa esperada pelo limiar;
@@ -188,10 +195,10 @@ uma avaliação independente (M14).
 ## Pacote
 
 ```powershell
-.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.2.0
+.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.3.0
 ```
 
-O wheel inclui a interface, com o KaTeX, e as skills do AL-IAdo. Documentação, cenários e dados
+O wheel inclui a interface, com o KaTeX e o D3 v7 (licença ISC, copiada junto), e as skills do AL-IAdo. Documentação, cenários e dados
 ficam no repositório. As skills de `.agents/` e `.claude/` orientam os assistentes de
 desenvolvimento e não entram no pacote.
 
@@ -204,10 +211,11 @@ desenvolvimento e não entram no pacote.
 
 ## Pendências conhecidas
 
-- A 0.3.0 está em andamento (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)): aba Ciência nova, confiabilidade por componente com disponibilidade, início das falhas no GPVS e resultados no chat.
+- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat.
+- No chat, a conferência vale para os números com a marca [Rn]. Um número sem marca não é conferido, e o chat não calcula: ele repete o que está gravado.
 - Nenhuma fonte traz o tempo de reparo de cada componente: a disponibilidade usa o tempo do inversor inteiro, em dois cenários.
-- No GPVS, o início observado vale só para os 8 ensaios de mudança clara. F4 não muda as 24 variáveis, e F6 e F7 mudam pouco: para eles, a falta de detecção é, em boa parte, das variáveis (lote 24).
+- No GPVS, o início observado vale só para os 8 ensaios de mudança clara. F4 não muda as 24 variáveis, e F6 e F7 mudam pouco: para eles, a falta de detecção é, em boa parte, das variáveis.
 - Os alarmes falsos contam com só 52 s saudáveis: a taxa por hora é uma estimativa com intervalo largo.
 - Com a consulta reescrita, a busca acerta as 16 perguntas de referência. São só 16 perguntas: um conjunto maior diria mais. Veja a [validação do lote 22](docs/migracao/validacao-lote-22.md).
-- Os exploradores da aba Ciência usam só a rodada canônica; rodadas novas aparecem em Resultados.
+- Os exploradores da aba Ciência usam só a avaliação oficial de 27/09; rodadas novas aparecem nos arquivos de resultados, em **Rodar e arquivos**.
 - Para a v1: site com domínio e vários usuários, MCP, roteador de modelos e importação das memórias antigas.

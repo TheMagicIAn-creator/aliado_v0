@@ -75,7 +75,7 @@ def env(tmp_path):
                "web_queries": ("taxa IGBT",)} if kwargs.get("web_search") else {}
         yield "final", LLMResult(content, reply["provider"], "gemini-teste", "critical_reasoning",
                                  usage=LLMUsage(100, 20, 320, 200), sources=reply["sources"],
-                                 validation_status=reply["status"], **web)
+                                 validation_status=reply["status"], **web, **reply.get("extra", {}))
 
     memory = MemoryStore(tmp_path / "dados" / "memoria")
     review = {"notes": [{"kind": "preferencia", "text": "Prefiro respostas curtas.", "origin": "feedback",
@@ -457,3 +457,69 @@ def test_page_and_static_files_are_revalidated_after_updates(env):
     for path in ("/", "/static/app.js", "/static/app.css"):
         assert client.get(path).headers["cache-control"] == "no-cache", path
 
+
+
+RESULT_BLOCK = {"citation_id": "R1", "titulo": "Avaliação oficial", "fonte": "Avaliação oficial de 27/09/2026",
+                "data": "2026-09-27", "estatuto": "oficial", "secao": "resumo", "texto": "| Denso | 10 de 14 |\n|---|---|",
+                "notas": [{"nome": "Ensaios detectados", "texto": "Ensaios com alarme a partir do início da falha."}]}
+RESULTS_DIGEST = {"cabecalho": "c", "blocos": [RESULT_BLOCK], "faltando": ["a reanálise com o início observado das falhas"]}
+
+
+def test_results_switch_reaches_the_agent_and_defaults_to_the_research_skill(env):
+    client, built = env["client"], []
+    env["settings"].results_digest = lambda: built.append(1) or RESULTS_DIGEST
+    state = client.get("/api/estado").json()["resultados"]
+    assert state == {"disponivel": True, "skill": "pesquisa-inversores"} and not built  # o estado não monta o resumo
+    cid = new_conversation(client)
+    ask(client, cid, resultados=True)
+    assert env["calls"][-1]["results"] is RESULTS_DIGEST and len(built) == 1
+    ask(client, cid)  # sem o campo, vale ligado na skill do mestrado
+    assert env["calls"][-1]["results"] is RESULTS_DIGEST
+    ask(client, cid, skill="engenharia")
+    assert "results" not in env["calls"][-1]
+    ask(client, cid, resultados=False)
+    assert "results" not in env["calls"][-1]
+    stored = client.get(f"/api/conversas/{cid}").json()["messages"]
+    assert [m["resultados"] for m in stored if m["role"] == "user"] == [True, True, False, False]
+
+
+def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_history(env):
+    client = env["client"]
+    env["settings"].results_digest = lambda: RESULTS_DIGEST
+    env["reply"].update(pieces=["O Denso detectou 10 de 14 [R1]."], sources=(), status=None,
+                        extra={"result_sources": (RESULT_BLOCK,), "results_status": "conferido"})
+    cid = new_conversation(client)
+    reply = fim(ask(client, cid)[1])["mensagens"][1]
+    assert 'class="cite cite-result" data-result="R1"' in reply["html"] and reply["results_status"] == "conferido"
+    assert reply["result_sources"][0]["citation_id"] == "R1" and "<table>" in reply["result_sources"][0]["html"]
+    assert reply["resultados_faltando"] == RESULTS_DIGEST["faltando"] and reply["in_context"] is True
+    assert reply["result_sources"][0]["notas"][0]["nome"] == "Ensaios detectados" and reply["numeros_sem_marca"] == 0
+    assert all("R1" not in str(source) for source in env["review"]["calls"][-1]["sources"])  # o revisor não recebe os blocos
+    env["reply"].update(pieces=["A sensibilidade é 0,45 [R1]."],
+                        extra={"result_sources": (RESULT_BLOCK,), "results_status": "numeros_nao_conferidos",
+                               "unverified_numbers": ("0,45",)})
+    flagged = fim(ask(client, cid, "E a sensibilidade?")[1])["mensagens"]
+    assert [m["in_context"] for m in flagged] == [False, False] and flagged[1]["numeros_nao_conferidos"] == ["0,45"]
+    ask(client, cid, "Continue")
+    assert [m["content"] for m in env["calls"][-1]["history"]] == ["Qual a taxa?", "O Denso detectou 10 de 14 [R1]."]
+    env["reply"].update(pieces=["Aviso local."], status="invalid_result_refs", extra={"results_status": "invalid_result_refs"})
+    assert fim(ask(client, cid, "De novo")[1])["mensagens"][1]["in_context"] is False
+
+
+def test_a_failing_digest_does_not_break_the_conversation(env):
+    client = env["client"]
+
+    cid = new_conversation(client)
+    for error in (OSError("disco"), TypeError("float() de None"), ZeroDivisionError()):
+        def broken(error=error):
+            raise error
+
+        env["settings"].results_digest = broken
+        reply = fim(ask(client, cid)[1])["mensagens"][1]
+        assert "results" not in env["calls"][-1] and "não foi possível" in reply["resultados_faltando"][0]
+    env["settings"].results_digest = lambda: {"cabecalho": "c", "blocos": [], "faltando": ["tudo"]}
+    reply = fim(ask(client, cid)[1])["mensagens"][1]
+    assert "results" not in env["calls"][-1] and reply["resultados_faltando"] == ["tudo"]
+    env["settings"].results_digest = None
+    assert client.get("/api/estado").json()["resultados"]["disponivel"] is False
+    assert fim(ask(client, cid)[1])["mensagens"][1]["resultados_faltando"] == []

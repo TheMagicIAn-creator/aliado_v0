@@ -269,7 +269,8 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .composer:focus-within { border-color: var(--accent); box-shadow: var(--focus); }
 .composer textarea { width: 100%; border: 0; resize: none; background: none; outline: none; max-height: 220px;
                      padding: 4px 4px 8px; line-height: 1.5; }
-.composer-bar { display: flex; align-items: center; gap: 10px; }
+.composer-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.composer-bar .icon-button, .composer-bar .send { flex: none; }
 .composer-hint { margin-left: auto; font-size: 11.5px; color: var(--text-faint); }
 .send { width: 36px; height: 36px; border-radius: 11px; border: 0; background: var(--accent); color: #fff;
         display: grid; place-items: center; }
@@ -279,7 +280,8 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .send.is-stop { background: var(--text); color: var(--bg); }
 .send.is-stop .icon-send { display: none; }
 .send.is-stop .icon-stop { display: block; }
-.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-soft); cursor: pointer; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-soft); cursor: pointer;
+          white-space: nowrap; }
 .switch input { position: absolute; opacity: 0; pointer-events: none; }
 .switch-track { width: 32px; height: 18px; border-radius: 999px; background: var(--surface-strong); position: relative; transition: background .15s; }
 .switch-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
@@ -363,6 +365,20 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .cite-web:hover, .cite-web.is-active { background: var(--warn-text); color: var(--warn-bg); }
 .source-card.source-web.is-active { border-color: var(--warn-text); box-shadow: 0 0 0 3px var(--warn-bg); }
 .source-group { font-size: 12px; font-weight: 500; color: var(--text-soft); margin: 14px 0 8px; }
+/* Resultados da pesquisa no chat (lote 26): marca própria e a tabela do bloco na janela de fontes. */
+.cite-result { background: var(--accent-soft, #dff3ec); color: var(--accent-text, #0b6b52); min-width: 26px; }
+.cite-result:hover, .cite-result.is-active { background: var(--accent-text, #0b6b52); color: var(--accent-soft, #dff3ec); }
+.source-card.source-result.is-active { border-color: var(--accent-text, #0b6b52); }
+.source-card.source-result .badge { margin: 4px 0; display: inline-block; }
+.result-table { overflow: auto; font-size: 12.5px; max-height: min(320px, 30vh); margin-top: 6px; }
+.result-table table { border-collapse: collapse; display: table; overflow: visible; margin: 0 0 8px; }
+.result-table th { position: sticky; top: 0; }
+.source-card.source-result { scroll-margin-top: 60px; }
+.result-notes { font-size: 12.5px; color: var(--text-soft); margin-top: 6px; }
+.result-notes summary { cursor: pointer; }
+.result-notes ul { margin: 6px 0 0; padding-left: 18px; }
+.result-table th, .result-table td { border-bottom: 1px solid var(--border); padding: 4px 8px; text-align: left; white-space: nowrap; }
+.result-table p, .result-table ul { white-space: normal; }
 .source-group:first-child { margin-top: 0; }
 .source-queries { margin: -2px 0 10px; font-size: 12px; }
 .web-link { color: var(--warn-text); }
@@ -530,6 +546,7 @@ details.historico > summary { cursor: pointer; font: 400 18px/1.3 var(--serif); 
   .app.drawer-open-small .scrim {
     display: block; position: fixed; inset: 56px 0 0 var(--rail); z-index: 15; background: rgba(0, 0, 0, .28); }
   .composer-hint, .usage { display: none; }
+  .composer-bar .send { margin-left: auto; }
   .library-body { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {

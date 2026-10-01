@@ -2,7 +2,7 @@
 name: pesquisa-inversores
 description: Apoiar a pesquisa de mestrado de Rodolfo sobre detecção de falhas em inversores fotovoltaicos, GPVS e comparação de autoencoders Denso e LSTM, com rastreabilidade bibliográfica e metodológica.
 metadata:
-  version: "0.2.1"
+  version: "0.2.2"
   references: "diretrizes-aprovadas-2026-09-22.md"
 ---
 
@@ -73,9 +73,14 @@ pendências científicas para fazer uma tabela parecer completa.
 Os padrões de partição, calibração e horizonte constam da referência vigente.
 O chat não treina nem avalia modelos, nem altera configurações. O preparo, o treino
 e a avaliação do GPVS, a FMECA e a confiabilidade rodam na aba Ciência do AL-IAdo.
-Os resultados oficiais são o treino e a avaliação de 27/09/2026; avaliações
-posteriores são explorações e não os substituem. Sem os números no pedido, indique
-onde vê-los na aba Ciência em vez de estimá-los. Lafraia só pode fundamentar uma
+Os resultados oficiais são o treino e a avaliação de 27/09/2026; a reanálise de
+30/09/2026, com o início observado das falhas, é secundária, e as demais avaliações
+posteriores são explorações: nenhuma os substitui. Quando os resultados da pesquisa
+vierem no pedido, os números da avaliação, da reanálise, da FMECA e da confiabilidade
+saem só dos blocos, com a marca de cada bloco; os números de documentos seguem com a
+citação do trecho, e as taxas e fontes desta skill podem ser citadas com autor, ano,
+tabela e página. Sem os blocos, ou se o número não estiver neles, indique onde vê-lo
+na aba Ciência em vez de estimá-lo. Lafraia só pode fundamentar uma
 resposta documental quando houver trechos fornecidos e localizadores verificáveis.
 Uma mudança de horizonte solicitada pelo chat deve constar explicitamente do
 cenário proposto, com sua origem, sem alegar execução.

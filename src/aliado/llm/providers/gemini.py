@@ -29,6 +29,7 @@ def _usage(response) -> LLMUsage | None:
         total_tokens=getattr(usage, "total_token_count", None),
         # Tokens de raciocínio são cobrados, mas não entram em candidates_token_count.
         reasoning_tokens=getattr(usage, "thoughts_token_count", None),
+        cached_tokens=getattr(usage, "cached_content_token_count", None),
     )
 
 

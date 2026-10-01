@@ -146,16 +146,16 @@ Em 30/09, o pesquisador avaliou a 0.2.0 para o mestrado:
 - a confiabilidade deveria ter uma curva por componente;
 - a biblioteca tem recortes repetidos do Lafraia.
 
-O plano da 0.3.0 foi aprovado no mesmo dia. Cada lote a partir do 23 é detalhado e combinado
-antes de começar.
+O plano da 0.3.0 foi aprovado no mesmo dia. Cada lote a partir do 23 foi detalhado e combinado
+antes de começar. A 0.3.0 sai com o lote 26; a tag `v0.3.0` e o envio ao GitHub ficam com o pesquisador.
 
 | Lote | Entrega | Situação |
 |---|---|---|
-| 22 | Correções de confiança: skill do mestrado atualizada, taxas e notas da FMECA conferidas nos PDFs, apagar documentos da biblioteca e os 2 recortes do Lafraia, consulta da busca reescrita a partir da conversa, em português e inglês, 10 trechos por resposta e fonte do texto | Concluído em 30/09/2026 |
-| 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | Concluído em 30/09/2026 |
-| 24 | Início das falhas no GPVS: a mudança observada nos sinais, a reanálise dos mesmos escores com ela, os alarmes falsos estimados e a faixa esperada pelo limiar, com a seção nova na aba Ciência | Concluído em 30/09/2026 |
-| 25 | Confiabilidade por componente (um painel por grupo, nas duas bases de tempo), matriz de criticidade S × O na FMECA e disponibilidade com os tempos de reparo do IEEE 493 e de Baschel et al. (2018) | Concluído em 30/09/2026 |
-| 26 | Resultados no chat e lançamento da 0.3.0 | A combinar |
+| 22 | Correções de confiança: skill do mestrado atualizada, taxas e notas da FMECA conferidas nos PDFs, apagar documentos da biblioteca e os 2 recortes do Lafraia, consulta da busca reescrita a partir da conversa, em português e inglês, 10 trechos por resposta e fonte do texto | Concluído em 30/09/2026 (commit `cdcd141`) |
+| 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | Concluído em 30/09/2026 (commit `745880a`) |
+| 24 | Início das falhas no GPVS: a mudança observada nos sinais, a reanálise dos mesmos escores com ela, os alarmes falsos estimados e a faixa esperada pelo limiar, com a seção nova na aba Ciência | Concluído em 30/09/2026 (commit `0cc8f78`) |
+| 25 | Confiabilidade por componente (um painel por grupo, nas duas bases de tempo), matriz de criticidade S × O na FMECA e disponibilidade com os tempos de reparo do IEEE 493 e de Baschel et al. (2018) | Concluído em 30/09/2026 (commit `36bf84a`) |
+| 26 | Resultados no chat: 8 blocos com os números da aba Ciência, marca [Rn] em cada número e conferência contra o bloco citado; lançamento da 0.3.0 | Concluído em 01/10/2026 |
 
 ### Decisões de 30/09/2026
 
@@ -187,6 +187,13 @@ antes de começar.
   - O seletor de fonte do texto tem 8 opções.
 - Veja a [validação do lote 22](migracao/validacao-lote-22.md).
 
+### Resultado do lote 23
+
+- **Aba Ciência nova**, organizada pelas perguntas: Resumo, Escores por ensaio, Métricas por falha, Confiabilidade, FMECA, Explorar e Rodar e arquivos.
+- **Gráficos em D3 v7**, com exportação em SVG, PNG de 300 dpi e CSV, e uma nota em cada índice e indicador.
+- **Conferência com os dados reais:** o Resumo repete o relatório de 27/09, e as matrizes de confusão repetem as contagens de cada ensaio.
+- Veja a [validação do lote 23](migracao/validacao-lote-23.md).
+
 ### Decisões e resultado do lote 24 (30/09/2026)
 
 - **Ordem.** Depois da análise crítica dos resultados, o pesquisador pediu para corrigir o que tivesse solução. O início das falhas passou a ser o lote 24, e a confiabilidade por componente, o 25.
@@ -207,6 +214,23 @@ antes de começar.
 - **Base de tempo:** as duas no gráfico e um seletor. **FMECA:** entra a matriz S × O.
 - **Resultado:** a disponibilidade vai de 99,09% (CCB, calendário, parada de campo) a 99,99% (contatores e IGBT na operação, reparo ativo). A CCB para até 80 h por ano.
 - Veja a [validação do lote 25](migracao/validacao-lote-25.md).
+
+### Decisões e resultado do lote 26 (30/09 e 01/10/2026)
+
+- **Decisões:**
+  - um interruptor **Usar resultados**, ligado na skill do mestrado e desligável;
+  - 8 blocos resumidos, no formato da aba Ciência;
+  - uma resposta com número que não confere aparece com aviso e sai do histórico e da memória de conversas;
+  - o lançamento da 0.3.0 fica neste lote, com 8 perguntas pagas de aceite.
+- **Caminho escolhido:** os resultados vão no próprio pedido, gerados por código das mesmas funções da aba. Uma ferramenta de consulta e os relatórios na biblioteca foram comparados e ficaram de fora.
+- **Revisão antes do aceite:** uma revisão por agentes, com verificação adversarial, confirmou 25 defeitos, todos corrigidos. Os principais estavam na leitura dos números: frações lidas como datas, fórmulas ignoradas e tabelas que não eram conferidas.
+- **Resultado do aceite:**
+  - nas 8 perguntas, as 7 respostas com números saíram conferidas, e a pergunta sem números não citou bloco nenhum;
+  - nenhum número ficou fora dos blocos citados;
+  - a reanálise apareceu identificada como secundária, depois do oficial;
+  - cada pergunta custou cerca de 11 mil tokens de entrada, contra cerca de 5,5 mil sem os resultados.
+- **Limites:** um número sem marca não é conferido, e o chat não calcula.
+- Veja a [validação do lote 26](migracao/validacao-lote-26.md).
 
 ## Fica para a v1
 

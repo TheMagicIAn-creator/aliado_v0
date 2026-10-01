@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aliado"
-version = "0.2.0"
+version = "0.3.0"
 description = "AL-IAdo: agente modular para pesquisa e engenharia"
 requires-python = ">=3.12"
 dependencies = ["PyYAML>=6,<7", "python-dotenv>=1,<2"]

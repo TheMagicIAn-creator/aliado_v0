@@ -31,6 +31,12 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--skill", default="pesquisa-inversores", help="Nome ou 'nenhuma'")
         command.add_argument("--apoio", help="Skill geral complementar")
         command.add_argument("--biblioteca", type=Path, help="Biblioteca local explicitamente selecionada")
+        command.add_argument("--resultados", action="store_true",
+                             help="Inclui os resultados da pesquisa (blocos [R1]…), como no chat")
+        command.add_argument("--resultados-dir", type=Path, default=Path("data/resultados"),
+                             help="Pasta dos resultados do GPVS")
+        command.add_argument("--referencias", type=Path, default=Path("docs/pesquisa-inversores"),
+                             help="Pasta com a FMECA, os cenários e os tempos de reparo")
         if name == "perguntar":
             command.add_argument("--provider", choices=("openai", "google"), required=True)
             command.add_argument("--model-alias", required=True, help="Alias configurado no gateway")
@@ -73,29 +79,29 @@ def main(argv: list[str] | None = None) -> int:
     calculation.add_argument("--cenario", type=Path, required=True)
     calculation.add_argument("--saida", type=Path, required=True)
     calculation.add_argument("--grafico", action="store_true")
-    fmeca = science_commands.add_parser("fmeca", help="NPR e leitura separada pelas taxas (lote 16)")
+    fmeca = science_commands.add_parser("fmeca", help="NPR e leitura separada pelas taxas de falha")
     fmeca.add_argument("--tabela", type=Path, default=Path("docs/pesquisa-inversores/fmeca.json"))
     fmeca.add_argument("--saida", type=Path, required=True, help="Pasta nova para o relatório")
-    gpvs = science_commands.add_parser("preparar-gpvs", help="Dados GPVS e protocolo M14 (sem modelos)")
+    gpvs = science_commands.add_parser("preparar-gpvs", help="Prepara os dados do GPVS: divisão e normalização, sem modelos")
     gpvs.add_argument("--dados", type=Path, default=Path("data/gpvs"))
     gpvs.add_argument("--saida", type=Path, required=True, help="Pasta nova para o relatório")
     gpvs.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
-    gpvs.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: a canônica, 11)")
-    training = science_commands.add_parser("treinar-gpvs", help="Autoencoders e limiar p99 (lote 14)")
+    gpvs.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: 11)")
+    training = science_commands.add_parser("treinar-gpvs", help="Treina os autoencoders e fixa o limiar p99")
     training.add_argument("--dados", type=Path, default=Path("data/gpvs"))
     training.add_argument("--saida", type=Path, required=True, help="Pasta nova para modelos e relatório")
     training.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
-    training.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: a canônica, 11)")
+    training.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: 11)")
     training.add_argument("--sementes", help="Lista separada por vírgulas (padrão: 13,29,42,71,101)")
     training.add_argument("--teto-epocas", type=int,
                           help="Teto de épocas (padrão: 2000, só de segurança; 150 reproduz a origem)")
-    evaluation = science_commands.add_parser("avaliar-gpvs", help="Avaliação M13 dos modelos treinados (lote 15)")
+    evaluation = science_commands.add_parser("avaliar-gpvs", help="Avalia os modelos treinados nos ensaios de teste")
     evaluation.add_argument("--modelos", type=Path, required=True, help="Pasta de uma rodada de treinar-gpvs")
     evaluation.add_argument("--saida", type=Path, required=True, help="Pasta nova para a avaliação")
     evaluation.add_argument("--dados", type=Path, default=Path("data/gpvs"))
     evaluation.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
     reanalysis = science_commands.add_parser(
-        "reanalisar-gpvs", help="Mesmos escores com o início observado das falhas (lote 24)")
+        "reanalisar-gpvs", help="Reanalisa os mesmos escores com o início observado das falhas")
     reanalysis.add_argument("--avaliacao", type=Path, default=Path("data/resultados/gpvs-avaliacao-001"))
     reanalysis.add_argument("--modelos", type=Path, default=Path("data/resultados/gpvs-modelos-002"))
     reanalysis.add_argument("--saida", type=Path, required=True, help="Pasta nova para a reanálise")
@@ -186,14 +192,20 @@ def main(argv: list[str] | None = None) -> int:
 
             selected_library = DocumentLibrary(args.biblioteca)
         skill_name = None if args.skill == "nenhuma" else args.skill
+        results = None
+        if args.resultados:
+            from aliado.science.digest import build_digest
+
+            results = build_digest(args.resultados_dir, args.referencias)
         if args.command == "preparar":
             print(json.dumps(asdict(prepare_request(args.question, skill_name=skill_name,
-                                                   supporting_skill_name=args.apoio, library=selected_library)),
+                                                   supporting_skill_name=args.apoio, library=selected_library,
+                                                   results=results)),
                              ensure_ascii=False, indent=2))
             return 0
         result = Agent(build_default_gateway()).answer(
             args.question, provider=args.provider, model_alias=args.model_alias, skill_name=skill_name,
-            supporting_skill_name=args.apoio, library=selected_library,
+            supporting_skill_name=args.apoio, library=selected_library, results=results,
         )
         print(result.content)
         print(f"\nProvedor: {result.provider} | Modelo: {result.model}", file=sys.stderr)

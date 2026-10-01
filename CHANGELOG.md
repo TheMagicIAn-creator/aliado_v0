@@ -3,13 +3,27 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [0.3.0] — 2026-10-01
 
-Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correcoes-confianca.md),
-[0023](docs/specs/0023-aba-ciencia-nova.md), [0024](docs/specs/0024-inicio-das-falhas.md) e
-[0025](docs/specs/0025-confiabilidade-por-componente.md).
+Lotes 22 a 26, a partir da avaliação da 0.2.0 pelo pesquisador para o mestrado. Detalhes nas specs
+[0022](docs/specs/0022-correcoes-confianca.md), [0023](docs/specs/0023-aba-ciencia-nova.md),
+[0024](docs/specs/0024-inicio-das-falhas.md), [0025](docs/specs/0025-confiabilidade-por-componente.md) e
+[0026](docs/specs/0026-resultados-no-chat.md).
 
 ### Adicionado
+
+- **Resultados da pesquisa no chat.** Na skill do mestrado, o interruptor **Usar resultados** vem ligado e pode ser desligado.
+  - O agente recebe 8 blocos com os números da aba Ciência: a avaliação oficial de 27/09 (resumo, alarmes falsos, comparação e cada tipo de falha), a reanálise de 30/09 (sempre marcada como secundária), a FMECA e a confiabilidade por grupo.
+  - Os blocos saem das mesmas funções da aba, com a mesma escrita dos números e as notas dos indicadores.
+  - Cada número tirado deles leva a marca **[Rn]**, que abre o bloco na janela de fontes, com a tabela, as notas e o botão **Ver na aba Ciência**.
+  - O chat não calcula: para um número que não está nos blocos, ele indica a seção da aba.
+- **Conferência dos números.** Cada número marcado é comparado ao bloco citado.
+  - Só a escrita pode diferir: 2.041 e 2041; 63,7e-6 e 63,7 × 10⁻⁶.
+  - Um número arredondado, convertido ou inventado faz a resposta aparecer com um aviso que lista os números, e ela sai do histórico e da memória de conversas.
+  - Uma marca [Rn] que não foi enviada troca a resposta por um aviso.
+  - No aceite, as 7 respostas com números saíram conferidas, sem nenhum número fora dos blocos.
+- **`aliado preparar --resultados`** mostra o pedido com os blocos, sem custo.
+- **Tokens do cache** no registro de uso, quando o provedor informa.
 
 - **Início observado das falhas do GPVS.** Os arquivos não marcam o disparo, e a avaliação de 27/09 usou o meio do registro.
   - Um detector de mudança (PELT) sobre as 24 variáveis, sem os autoencoders, acha onde cada falha aparece nos sinais. Nos dois ensaios saudáveis, ele não acha mudança nenhuma.
@@ -53,7 +67,9 @@ Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correco
 ### Alterado
 
 - **Resumo da aba Ciência:** os alarmes falsos por hora passam a usar os 52 s saudáveis (o teste saudável e o trecho antes da falha), e não só os 5 s do teste. O limite superior do Denso cai de 2.050 para 207 por hora. Entram também a estimativa pela cadeia e as janelas saudáveis acima do limiar, com a faixa esperada.
-- **Skill do mestrado 0.2.1:** a disponibilidade usa os dois cenários de reparo.
+- **Skill do mestrado 0.2.2:** a disponibilidade usa os dois cenários de reparo, e os números dos resultados vêm só dos blocos, com a marca, ou a resposta indica a aba Ciência.
+- **Aba Ciência:** os cartões do Resumo e as Métricas por falha mostram 3 casas e o mesmo formato de segundos dos blocos do chat.
+- **Custo:** com os resultados ligados, cada pergunta leva cerca de 5,5 mil tokens de entrada a mais.
 - **Cenários e FMECA na tela:** "Horizonte de 20 anos (M12)" virou "o das diretrizes da pesquisa", e uma ressalva da FMECA deixou de citar commit e caminho do projeto anterior.
 - **Skill do mestrado** (versão 0.2.0):
   - descreve a situação atual: há memória, o acervo tem os PDFs e a aba Ciência executa o experimento;

@@ -152,7 +152,7 @@ function modelColumn(d, kind, filtro) {
       `${trecho("pre_falha")}.${faixa ? ` ${GLOSSARIO.faixa_limiar} Aqui, o limiar é o ${faixa.posicao}º de ${faixa.n}.` : ""}`),
     card("Alarmes antes da falha", String(m.antes_da_falha.alarmes), null, "alarmes_antes", faixaTexto(f.alarmes_pre_falha)),
     ...["sensibilidade", "especificidade", "f1", "mcc", "auc_roc", "auc_pr"].map((key) =>
-      card(METRICAS[key], dec(m.metricas[key]), null, key, `Média dos 14 ensaios. ${faixaTexto(f[key], (v) => dec(v))}`)));
+      card(METRICAS[key], dec(m.metricas[key], 3), null, key, `Média dos 14 ensaios. ${faixaTexto(f[key], (v) => dec(v, 3))}`)));
   const label = filtro === "total" ? "todos os ensaios" : filtro;
   return el("section", { class: "coluna-modelo" },
     el("h3", { class: "science-h" }, el("span", { class: `marca-modelo is-${kind}` }), m.nome),
@@ -302,7 +302,7 @@ async function renderMetrics(body) {
   const metric = science.metrica ||= "sensibilidade";
   const isDelay = metric === "atraso_ms";
   const value = (item) => (item?.[metric] === null || item?.[metric] === undefined ? null : isDelay ? item[metric] / 1000 : item[metric]);
-  const format = (v) => (v === null ? (isDelay ? "não detectou" : "—") : isDelay ? `${dec(v)} s` : dec(v));
+  const format = (v) => (v === null ? (isDelay ? "não detectou" : "—") : isDelay ? seconds(v * 1000) : dec(v, 3));
   const label = Object.fromEntries(METRIC_CHOICES)[metric];
   const glossKey = isDelay ? "atraso" : metric;
   const faults = d.falhas;

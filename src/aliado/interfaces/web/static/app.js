@@ -162,6 +162,8 @@ async function loadState() {
   $("support").setAttribute("aria-pressed", store.get("aliado.support", "false"));
   $("use-library").checked = store.get("aliado.library", "false") === "true";
   $("use-web").checked = store.get("aliado.web", "false") === "true";
+  state.results = data.resultados || { disponivel: false };
+  updateResultsSwitch();
   updateSupportVisibility();
   updateLibraryLabel();
   showUsage(data.uso);
@@ -177,12 +179,25 @@ function updateSupportVisibility() {
   $("support").hidden = skill === "pesquisa-inversores" || skill === "confiabilidade";
 }
 
+/* Resultados da pesquisa no chat (lote 26): ligado por padrão só na skill do mestrado; a escolha fica por skill. */
+function updateResultsSwitch() {
+  const skill = $("skill").value;
+  $("results-switch").hidden = !state.results?.disponivel;
+  $("use-results").checked = store.get(`aliado.results.${skill}`, String(skill === state.results?.skill)) === "true";
+}
+
 function updateLibraryLabel() {
   const count = state.documents;
   $("library-label").textContent = count ? `Usar biblioteca (${count})` : "Usar biblioteca";
 }
 
-$("skill").addEventListener("change", () => { store.set("aliado.skill", $("skill").value); updateSupportVisibility(); });
+$("skill").addEventListener("change", () => {
+  store.set("aliado.skill", $("skill").value);
+  updateSupportVisibility();
+  updateResultsSwitch();
+});
+$("use-results").addEventListener("change", () =>
+  store.set(`aliado.results.${$("skill").value}`, String($("use-results").checked)));
 $("model").addEventListener("change", () => store.set("aliado.model", $("model").value));
 $("support").addEventListener("click", () => {
   const next = $("support").getAttribute("aria-pressed") !== "true";
@@ -290,13 +305,34 @@ function renderMessage(message) {
   renderMath(answer);
   answer.querySelectorAll(".cite").forEach((button) =>
     button.addEventListener("click", () => openInfo(message, button, button.dataset.web
-      ? { number: button.dataset.web, kind: "web" } : { number: button.dataset.cite, kind: "source" })));
+      ? { number: button.dataset.web, kind: "web" }
+      : button.dataset.result ? { number: button.dataset.result, kind: "result" }
+        : { number: button.dataset.cite, kind: "source" })));
   const node = el("article", { class: "msg-assistant", "data-message": message.id }, answer);
   if (message.validation_status === "insufficient_evidence" || message.validation_status === "invalid_citations") {
     node.append(el("div", { class: "note note-warn",
       text: "Resposta local: a biblioteca não sustentou uma resposta com citações. Ela não entra no histórico enviado ao modelo." }));
   }
-  if (message.validation_status === "uncited") {
+  if (message.validation_status === "invalid_result_refs") {
+    node.append(el("div", { class: "note note-warn",
+      text: "Resposta local: o modelo citou um resultado que não recebeu. Ela não entra no histórico enviado ao modelo." }));
+  }
+  if (message.results_status === "numeros_nao_conferidos") {
+    node.append(el("div", { class: "note note-warn",
+      text: `Estes números não vieram dos resultados citados: ${(message.numeros_nao_conferidos || []).join("; ")}. ` +
+        "Confira na aba Ciência. A resposta não entra no histórico enviado ao modelo." }));
+  }
+  if (message.numeros_sem_marca && message.results_status !== "numeros_nao_conferidos") {
+    const n = message.numeros_sem_marca;
+    node.append(el("div", { class: "note note-uncited",
+      text: `${n === 1 ? "Há 1 número" : `Há ${n} números`} nesta resposta sem a marca de um resultado e que ` +
+        "não aparecem nos resultados enviados: não foram conferidos." }));
+  }
+  if (message.resultados_faltando?.length) {
+    node.append(el("div", { class: "note note-uncited",
+      text: `Não entraram nesta resposta: ${message.resultados_faltando.join("; ")}.` }));
+  }
+  if (message.validation_status === "uncited" && !message.result_sources?.length) {
     node.append(el("div", { class: "note note-uncited", text: "Esta resposta não cita trechos dos seus documentos." }));
   }
   const usage = message.usage || {};
@@ -305,6 +341,10 @@ function renderMessage(message) {
   if (usage.total_tokens) meta.append(el("span", { text: `${formatTokens(usage.total_tokens)} tokens` }));
   if (usage.reasoning_tokens) meta.append(el("span", { text: `${formatTokens(usage.reasoning_tokens)} de raciocínio` }));
   const info = (event) => openInfo(message, event.currentTarget);
+  if (message.result_sources?.length) {
+    meta.append(el("button", { class: "link result-link", type: "button",
+      text: `${message.result_sources.length} resultado(s)`, onclick: info }));
+  }
   if (message.sources?.length) {
     meta.append(el("button", { class: "link", type: "button", text: `${message.sources.length} fonte(s)`,
       onclick: info }));
@@ -571,13 +611,34 @@ function showSources(message) {
   // Lote 22: a consulta que a biblioteca buscou, reescrita a partir da conversa.
   const query = message?.consulta_biblioteca
     ? [el("p", { class: "muted source-queries", text: `Buscou na biblioteca: ${message.consulta_biblioteca}` })] : [];
-  if (!sources.length && !web.length) {
+  const results = message?.result_sources || [];
+  if (!sources.length && !web.length && !results.length) {
     list.replaceChildren(...query,
-      el("p", { class: "muted", text: "Esta resposta não usou trechos da biblioteca nem a web." }));
+      el("p", { class: "muted", text: "Esta resposta não usou resultados da pesquisa, trechos da biblioteca nem a web." }));
     return;
   }
-  const parts = [...query];
-  if (sources.length && web.length) parts.push(el("h3", { class: "source-group", text: "Seus documentos" }));
+  const parts = [];
+  if (results.length) {
+    parts.push(el("h3", { class: "source-group", text: "Resultados da pesquisa" }));
+    parts.push(...results.map((block) => {
+      const table = el("div", { class: "answer result-table" });
+      table.innerHTML = block.html || ""; // Markdown gerado por código e renderizado no servidor
+      const day = String(block.data || "").split("-").reverse().join("/");
+      return el("div", { class: "source-card source-result", "data-result": block.citation_id },
+        el("div", { class: "source-head" }, el("span", { class: "cite cite-result", text: block.citation_id }),
+          el("span", { class: "source-title", title: block.titulo, text: block.titulo })),
+        el("div", { class: "source-loc", text: [block.fonte, day].filter(Boolean).join(" · ") }),
+        ...(block.estatuto === "secundaria" ? [el("span", { class: "badge badge-warn",
+          text: "Secundária: a oficial continua sendo a de 27/09/2026" })] : []),
+        table,
+        ...(block.notas?.length ? [el("details", { class: "result-notes" }, el("summary", { text: "O que cada indicador significa" }),
+          el("ul", {}, ...block.notas.map((note) => el("li", {}, el("b", { text: `${note.nome}: ` }), note.texto))))] : []),
+        el("div", { class: "source-actions" }, el("button", { class: "link", type: "button", text: "Ver na aba Ciência",
+          onclick: () => { closeInfo(); openScience(block.secao); } })));
+    }));
+  }
+  parts.push(...query);
+  if (sources.length && (web.length || results.length)) parts.push(el("h3", { class: "source-group", text: "Seus documentos" }));
   parts.push(...sources.map((source, index) => {
     const number = index + 1;
     const where = [source.locator, source.page ? `p. ${source.page}` : null].filter(Boolean).join(" · ");
@@ -672,10 +733,11 @@ $("messages").addEventListener("scroll", () => { if (state.infoAnchor?.isConnect
 $("scrim").addEventListener("click", () => $("app").classList.remove("drawer-open-small"));
 
 function highlightSource(number, kind = "source") {
-  const key = kind === "web" ? "web" : "source";
+  const key = kind === "web" ? "web" : kind === "result" ? "result" : "source";
   document.querySelectorAll(".source-card").forEach((card) =>
     card.classList.toggle("is-active", card.dataset[key] === String(number)));
-  document.querySelector(`.source-card[data-${key}="${number}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  document.querySelector(`.source-card[data-${key}="${number}"]`)?.scrollIntoView({ behavior: "smooth",
+    block: kind === "result" ? "start" : "nearest" });
 }
 
 function autosize() {
@@ -737,13 +799,14 @@ $("composer").addEventListener("submit", async (event) => {
       await streamMessage(state.conversation.id, {
         texto: text, skill, apoio: supportOn ? "confiabilidade" : null, modelo: $("model").value,
         biblioteca: $("use-library").checked, web: $("use-web").checked,
+        resultados: !$("results-switch").hidden && $("use-results").checked,
       }, {
         onText(piece) {
           const follow = nearBottom(messages);
           if (thinking.isConnected) thinking.replaceWith(liveNode);
           written += piece;
           // As citações [K…] só viram números depois da checagem final no servidor.
-          live.textContent = written.replace(/\[K[^\]\s]*\]/g, "[fonte]");
+          live.textContent = written.replace(/\[K[^\]\s]*\]/g, "[fonte]").replace(/\[R\d+(?:\s*(?:[,;]|e|[-–])\s*R\d+)*\]/g, "[resultado]");
           if (follow) messages.scrollTop = messages.scrollHeight;
         },
         onFinal(data) {

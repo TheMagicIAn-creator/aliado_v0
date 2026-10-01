@@ -111,7 +111,9 @@ def overview(results_dir: str | Path) -> dict:
         healthy, pre, combined = alarms["teste_saudavel"], alarms["pre_falha"], alarms["combinado"]
         summary = model["referencia"]["resumo"]
         limit = limits[kind]["sementes"][str(reference)]["limiar"] if limits else None
-        estimate = later["alarmes_estimados"][kind] if later else None
+        estimate = ((later or {}).get("alarmes_estimados") or {}).get(kind)
+        if estimate and not all(key in estimate for key in ("alarmes_por_hora", "ic95", "p01", "p11", "previsto", "observado")):
+            estimate = None  # reanálise incompleta: o Resumo segue sem a estimativa
         models[kind] = {
             # Os 52 s saudáveis juntos (teste saudável e antes da falha), a fração de janelas acima do
             # limiar em cada trecho, o quanto o limiar pode variar e a estimativa da reanálise (lote 24).
@@ -233,9 +235,12 @@ def reanalysis(results_dir: str | Path) -> dict | None:
     """A reanálise mais recente dos escores da avaliação oficial, com o início observado (lote 24)."""
     for folder in sorted(Path(results_dir).glob(f"{REANALYSIS_PREFIX}*"), reverse=True):
         if (folder / "relatorio.json").is_file() and (folder / "configuracao.json").is_file():
-            report = _json(folder / "relatorio.json")
-            if report.get("origem", {}).get("avaliacao") == EVALUATION:
-                return report | {"executado_em": _json(folder / "configuracao.json").get("executado_em")}
+            try:
+                report = _json(folder / "relatorio.json")
+                if report.get("origem", {}).get("avaliacao") == EVALUATION:
+                    return report | {"executado_em": _json(folder / "configuracao.json").get("executado_em")}
+            except (OSError, ValueError, AttributeError):
+                continue  # reanálise ilegível: é secundária e não pode derrubar as visões da avaliação oficial
     return None
 
 

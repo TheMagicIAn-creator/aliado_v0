@@ -281,6 +281,10 @@ Não houve migração de código da origem. O `mestrado-utfpr` só foi consultad
 
 Não houve migração de código da origem. O `mestrado-utfpr` (`src/ml/confiabilidade_componentes.py`) só foi lido para ver as curvas por componente que ele tinha. Os tempos de reparo vêm do IEEE 493-2007 e de Baschel et al. (2018), conferidos nas páginas dos PDFs da biblioteca. Consulte a [spec 0025](../specs/0025-confiabilidade-por-componente.md), o [manifesto](lote-25.json) e a [validação](validacao-lote-25.md).
 
+## Lote 26 — resultados no chat e lançamento da 0.3.0
+
+Não houve migração de código da origem. O resumo dos resultados e a conferência dos números foram escritos aqui: o resumo usa as mesmas funções da aba Ciência, e a conferência, só a biblioteca padrão. Nenhum relatório, dado ou memória da origem entrou. Consulte a [spec 0026](../specs/0026-resultados-no-chat.md), o [manifesto](lote-26.json) e a [validação](validacao-lote-26.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |

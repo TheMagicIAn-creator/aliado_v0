@@ -15,10 +15,13 @@ MAX_RENDER_CHARS = 60_000
 _MATH = re.compile(r"\$\$.+?\$\$|\\\[.+?\\\]|\\\(.+?\\\)|(?<![\\\w])\$(?=\S)[^\n$]+?(?<=\S)\$", re.DOTALL)
 _CITATION = re.compile(r"\[(K[^\]\s]*)\]")
 _WEB = re.compile(r"\[W(\d+)\]")
+_RESULT = re.compile(r"\[(R\d+)\]")
 
 
-def render_markdown(text: str, sources: list[dict] | tuple = (), web_sources: list[dict] | tuple = ()) -> str:
-    """Converte a resposta; `[Kid]` vira o número da fonte e `[Wn]`, o da fonte na web."""
+def render_markdown(text: str, sources: list[dict] | tuple = (), web_sources: list[dict] | tuple = (),
+                    result_sources: list[dict] | tuple = ()) -> str:
+    """Converte a resposta; `[Kid]` vira o número da fonte, `[Wn]`, o da fonte na web, e `[Rn]`, o
+    bloco de resultados da pesquisa (lote 26), quando ele foi mesmo citado."""
     text = str(text or "")[:MAX_RENDER_CHARS]
     numbers = {source["citation_id"]: index for index, source in enumerate(sources, 1)}
     protected: list[str] = []
@@ -46,5 +49,15 @@ def render_markdown(text: str, sources: list[dict] | tuple = (), web_sources: li
                     f'aria-label="Fonte na web {number}">{number}</button>')
 
     text = _WEB.sub(web, text)
+    results = {source["citation_id"] for source in result_sources}
+
+    def result(match: re.Match) -> str:
+        mark = match.group(1)
+        if mark not in results:
+            return match.group(0)
+        return keep(f'<button type="button" class="cite cite-result" data-result="{mark}" '
+                    f'aria-label="Resultado da pesquisa {mark}">{mark}</button>')
+
+    text = _RESULT.sub(result, text)
     rendered = _MARKDOWN.render(text)
     return re.sub(r"ALIADOPH(\d+)X", lambda match: protected[int(match.group(1))], rendered)

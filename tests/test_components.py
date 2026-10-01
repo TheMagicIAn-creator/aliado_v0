@@ -101,7 +101,7 @@ def test_fmeca_points_to_the_availability_and_the_skill_says_so():
     limits = " ".join(evaluate_fmeca(*load_table(REFERENCE / "fmeca.json"))["limites"])
     assert "Disponibilidade não calculada" not in limits and "IEEE 493" in limits and "reparos.json" not in limits
     skill = (ROOT / "src" / "aliado" / "skills" / "builtin" / "pesquisa-inversores" / "SKILL.md").read_text(encoding="utf-8")
-    assert 'version: "0.2.1"' in skill and "26 h" in skill and "Não há disponibilidade calculada" not in skill
+    assert 'version: "0.2.2"' in skill and "26 h" in skill and "Não há disponibilidade calculada" not in skill
 
 
 @pytest.fixture

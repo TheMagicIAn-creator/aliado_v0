@@ -147,6 +147,9 @@ def test_gemini_registra_tokens_de_raciocinio_cobrados():
     assert result.usage.output_tokens == 40
     assert result.usage.reasoning_tokens == 300
     assert result.usage.total_tokens == 460
+    assert result.usage.cached_tokens is None  # o provedor não informou cache nesta resposta
+    usage.cached_content_token_count = 90
+    assert provider.generate(request, model_id="modelo").usage.cached_tokens == 90
 
 
 def test_gemini_stream_informa_tokens_no_fim():

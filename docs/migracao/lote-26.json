@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-01",
+  "batch": "26",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0026-resultados-no-chat.md",
+  "base_commit": "36bf84a",
+  "release": {
+    "version": "0.3.0",
+    "wheel": "dist/v0.3.0/aliado-0.3.0-py3-none-any.whl",
+    "wheel_sha256": "bd3dc2ba9d85d0d22172f47b5ac6b705dcf8e5eb26cf02004477483da953ca2b",
+    "wheel_files": 93,
+    "wheel_matches_src_by_hash": true,
+    "smoke_test_outside_project": true,
+    "tag": "com o pesquisador"
+  },
+  "decisions": {
+    "entry": "interruptor 'Usar resultados', ligado por padrão na skill do mestrado e desligável",
+    "unverified_number": "a resposta aparece com um aviso que lista os números e sai do histórico e da memória de conversas",
+    "content": "8 blocos resumidos (R1 a R8), no formato da aba Ciência; a reanálise sempre marcada como secundária",
+    "release": "no lote 26, com 8 perguntas pagas de aceite; tag e push com o pesquisador",
+    "design": "resultados no próprio pedido, gerados por código; ferramenta de consulta e relatórios na biblioteca ficaram de fora"
+  },
+  "digest": {
+    "blocks": 8,
+    "chars": 15347,
+    "max_chars": 16000,
+    "planned_max_chars": 14000
+  },
+  "review": {
+    "reviewers": 5,
+    "adversarial_verification": true,
+    "confirmed_findings": 25,
+    "fixed": 25
+  },
+  "acceptance": {
+    "paid_calls": 16,
+    "questions": 8,
+    "server": "127.0.0.1:8775, cópias em tmp/lote-26",
+    "results_status": {
+      "conferido": 7,
+      "sem_citacao": 1,
+      "numeros_nao_conferidos": 0,
+      "invalid_result_refs": 0
+    },
+    "input_tokens": {
+      "per_question_min": 10922,
+      "per_question_max": 12171,
+      "total": 108420,
+      "gemini-3.8-flash": 69040,
+      "gemini-3.5-flash-lite": 39380
+    },
+    "cached_tokens_reported": 2827,
+    "narrow_360_and_320px_no_overflow": true,
+    "internal_terms_on_screen": 0
+  },
+  "deviations": [
+    "teto do resumo de 14 mil para 16 mil caracteres",
+    "contagem de números sem marca revista depois das duas primeiras respostas do aceite"
+  ],
+  "validation": {
+    "pytest_passed": 448,
+    "new_tests": 32,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ]
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Commit do lote 26 feito pelo assistente com a autorização do pesquisador (01/10/2026), no formato dele, sem tag e sem push; a tag v0.3.0 e o push ficam com ele.",
+  "cleanup": "tmp/ e build/ apagadas a pedido do pesquisador (01/10/2026), depois da conferência do wheel; dist/v0.3.0 ficou.",
+  "public_files": [
+    {
+      "path": ".claude/launch.json",
+      "sha256": "10eeb470f5c466bda84ab0f83cf1659e0c64f3e7be144351c3cb4ca499e46e37",
+      "previous_sha256": "470636d1961445a0af3cc48e49948ed89ac3790e546641178eccff281978865d",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "18f41f55499a8cb22b30c608c71f47a2436210ad26cd2eb1dc136624a20f55c8",
+      "previous_sha256": "610db21d9c8698b47c8c299c5dd2e4fb34a5dfea0a85430ff5f7fd310471f262",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "08f82594247aa85f4feeffc7e5186c7edd6fb9e16046e88e5cd8c777fe6fcdef",
+      "previous_sha256": "9342c8a5191c98651fc41186a13be15048b312fe72b00dfd3ac307b2a132cbee",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "f008a0121f8716ded113940c94b8204d8b3bc2b9515e4af128f9efb97e41f8be",
+      "previous_sha256": "2594c665a68d2795c98f043b169922a7667d02485f2ee06d619810eccac28aa7",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "e3fe80d058cda862fc37be8f674f0a62ac0ffa4e45d885371f7ac87377b0e70c",
+      "previous_sha256": "0ff2c5d757e60bab2cf64cd4e2c64a9d01e3e963212303f4ffab8af944c78f00",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "3b8aff8fca46ef2dda5515485aa01a5fd0e231c7327f677092d5ef4a150bf8d9",
+      "previous_sha256": "7c29e8bf976c1f2a67fcd09cc9b427359ab8ebea5e1975d0209ebe1b81d9d266",
+      "status": "modified"
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "08f6a948907172d76607c43387f4d71554019b34fcb833ca3fe24659c515f454",
+      "previous_sha256": "102d86908c017ddb4ad9ecac64d5f9987468e02352572735856af40df527fd7e",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "90282ca09180fea8b4f07056f60d0ebdd3657d5242a98c9e7a5a4c0a70264d0e",
+      "previous_sha256": "f3235873e81313cf7083e83f537aa38b0c74fdba58b777af7ee0d2c90f048564",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "5414a39db0921baa5086f45f9e374e5b5321c9d24d1d806be94d0ba5b01a9439",
+      "previous_sha256": "472063b9da3b93dccb564cbd7c15d949bfa49bf903b5c437a32d293f5b8e5294",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "63a3863920ba4b50f91d272e54002bdfc81a66abb6d7053d607958830603b3a2",
+      "previous_sha256": "bba4fcbd57ddf84c867e95f484671e279842bd2fd2c2d8f7c89362ea9171f68d",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/rendering.py",
+      "sha256": "90ea83d597ad48deee775d0962be9d24140efb9802531ed8b4ef49fd351f0472",
+      "previous_sha256": "a94c596db314915357061080db40809b5f8bc899c1200c87459d3e960b558eb2",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "7986eee5b57336f22aded6f773b859784b23afb8e9cac17bdf20648525f2c265",
+      "previous_sha256": "b2424ec699b85fed653cc0fe9fbc7ebfb942562839c296036cca25bb0e615e5e",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "ea2c03b10fbdd5efef6b618724c18a186f3d20f58d34e34b9f0053407504c7e5",
+      "previous_sha256": "b8a97a061a542fc29d0d530dbeb88b8b0c949dbc345638e2e6ffbfe36579dcca",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/ciencia.js",
+      "sha256": "c610bf843cc6b87617734c8994ba3bb221aaac772e41377c38e089c765dcad8e",
+      "previous_sha256": "5c63fe1af2e6fb2dc6cd0311694467d1146a0725852f7290dd813005f407b71a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "d7297f0e85e809c3a667efdd48c7dbde796ce63fd1f0fc98d6725e25c6b08e5b",
+      "previous_sha256": "146923d1e2c584782886a4625e75af4e7b094da9aa80e6b7548bc7eb7d56c8d8",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/contracts.py",
+      "sha256": "9f3db4fa7eecb0469420a9c06e5ba95a3db25ae05b171e9a63a457e039138af0",
+      "previous_sha256": "ce01f385978b2dcfa973715714bd5fb58e95196d2a960780a9b881526a735021",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/providers/gemini.py",
+      "sha256": "fbd2585b02160ae15f58af8cda0cda00072e0b73e24185c2cdfd4da5f1cb1a57",
+      "previous_sha256": "f3eb4fae427d787b8f350e89a43c9587fc0a373d4fc69b0df8700f3694d9a1d4",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/memory/reviewer.py",
+      "sha256": "8adcdc8df91b4146c688232f4aeeee34c61a2a46c59c4ddec982ead2c55039f1",
+      "previous_sha256": "4b537d1dea9c52be8a6ffce0f98a9f67ffd029577672f8e8b65dda997407ff05",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/detection/summary.py",
+      "sha256": "bbd57994048e545291fb980f66eb9b5034f6531ee2848b56c3215ff9247b2fd1",
+      "previous_sha256": "2ee2bd71e0058240c3577086ed8e67ae2f3185428c196bad34b310611c1c49b1",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "sha256": "caae634c7712c7e97d292e049338f7afb1ec577c922f18c4ef1dc44c2ee7f793",
+      "previous_sha256": "c1f1d133a7b1bfa515f83f07b3547914d560a998cb6463ee393fabbc9d65c4f3",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_components.py",
+      "sha256": "0bf5d36a9a9c5b85e75be8e19a709e1d74d231b425300a16ece5648c9ae30a85",
+      "previous_sha256": "611383a960ba1a7f2987ec7473b3ce36abaf35d8b09896f11f3e0a0ab298f740",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_providers.py",
+      "sha256": "771e3ee9bee5de8aab0aa864fbde8c4ac8b1f6d873edfd32dd2a80adb5d7438b",
+      "previous_sha256": "96fa53a3bf70a135b7bcb0ef1c6f178f7c7b54ea5d0e4f7d100fd885ec0deb76",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "28665979329787a16dfb73152850e217a987253bf5fa83b2f41e6d379d5921a3",
+      "previous_sha256": "f080e41992454fda389d6a93acb9b53312c45f552496a4b431954fc6bf5e378f",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-26.md",
+      "sha256": "e662ac8b070d275a6b3ac96d764df202e8154a6768b474ff916080d47135f2cf",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0026-resultados-no-chat.md",
+      "sha256": "2d9d41eb5aef4c379c46d7879d972e528f8be98c3b5c884bb0e246ed998eb037",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/numbers.py",
+      "sha256": "fe9940ea97acb08303e6ce92768e475df4602a791d39e19c965ebaa25911f3be",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/digest.py",
+      "sha256": "aa3778bd17e400c30a615338bd5b1c1a9befa00b923d8d85a4a89bd1933b2dd5",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_numbers.py",
+      "sha256": "6ebe5d701ac64e8fc93bf4d513e9dc67954d8a6499426bf9fb932089c291e797",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_results_chat.py",
+      "sha256": "6f5b3bcf30c7df6a67b3171e06c94b88984e17ce954c1c9b11973909107a0d9a",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_results_digest.py",
+      "sha256": "fd517c5b7d08fca5ba7849c4210bf48b56de3c309fcd709062483fe056ad275a",
+      "status": "new"
+    }
+  ]
+}

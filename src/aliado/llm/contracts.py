@@ -67,6 +67,8 @@ class LLMUsage:
     output_tokens: int | None = None
     total_tokens: int | None = None
     reasoning_tokens: int | None = None
+    # Parte da entrada servida pelo cache do provedor (lote 26); mede o desconto real.
+    cached_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -96,6 +98,12 @@ class LLMResult:
     web_sources: tuple[dict[str, Any], ...] = ()
     web_queries: tuple[str, ...] = ()
     web_supports: tuple[dict[str, Any], ...] = ()
+    # Resultados da pesquisa (lote 26): blocos citados, estado da conferência e números que não conferem.
+    result_sources: tuple[dict[str, Any], ...] = ()
+    results_status: str | None = None
+    unverified_numbers: tuple[str, ...] = ()
+    # Quantos números ficaram em parágrafos sem marca de resultado: não foram conferidos.
+    unmarked_numbers: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.content, str):

@@ -41,7 +41,10 @@ MAX_QUESTION_CHARS = 20_000
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 UPLOAD_SUFFIXES = {".pdf", ".md", ".json"}
 # Respostas locais que não devem voltar ao modelo como histórico.
-OUT_OF_CONTEXT = {"insufficient_evidence", "invalid_citations"}
+OUT_OF_CONTEXT = {"insufficient_evidence", "invalid_citations", "invalid_result_refs"}
+# Resposta com número que não está no resultado citado (lote 26): aparece com aviso e fica fora do histórico.
+UNVERIFIED_RESULTS = "numeros_nao_conferidos"
+RESULTS_SKILL = "pesquisa-inversores"
 # "Lembre que…", "lembre-se de que…", "lembra que…": pedido explícito de anotação.
 EXPLICIT_MEMORY = re.compile(r"^\s*lembr[ae](?:-se)?(?:\s+de)?\s+que\b", re.IGNORECASE)
 MEMORY_VIEW_KEYS = ("id", "kind", "text", "origin", "status", "skill", "source", "diverges_skill",
@@ -85,6 +88,8 @@ class WebSettings:
     reference_dir: Path = Path("docs/pesquisa-inversores")
     # GPVS pela interface (lote 21): (args, on_line, on_process) -> (código, stdout); padrão, subprocesso.
     gpvs_command: Callable[..., tuple[int, str]] | None = None
+    # Resultados no chat (lote 26): () -> resumo com os blocos [R1]…; montado sob demanda, em cache.
+    results_digest: Callable[[], dict] | None = None
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -129,8 +134,12 @@ def _view(message: dict) -> dict:
     """Mensagem pronta para a tela; o HTML é gerado na leitura a partir do texto guardado."""
     view = dict(message)
     if message["role"] == "assistant":
+        results = message.get("result_sources") or ()
         view["html"] = render_markdown(message["content"], message.get("sources") or (),
-                                       message.get("web_sources") or ())
+                                       message.get("web_sources") or (), results)
+        if results:
+            # A tabela de cada bloco citado, pronta para a janela de fontes.
+            view["result_sources"] = [dict(block) | {"html": render_markdown(block.get("texto", ""))} for block in results]
     return view
 
 
@@ -192,6 +201,8 @@ def create_app(settings: WebSettings) -> Starlette:
             "skills": [{"name": name, "description": text} for name, text in skills.items()],
             "modelos": settings.models,
             "biblioteca": {"documentos": len(documents)},
+            # Só diz se há de onde tirar os resultados; o resumo é montado na primeira pergunta.
+            "resultados": {"disponivel": settings.results_digest is not None, "skill": RESULTS_SKILL},
             "uso": _usage_totals(settings.usage_log),
         })
 
@@ -238,6 +249,8 @@ def create_app(settings: WebSettings) -> Starlette:
         alias = body.get("modelo")
         use_library = bool(body.get("biblioteca"))
         use_web = bool(body.get("web"))
+        # Sem o campo, os resultados entram só na skill do mestrado.
+        use_results = bool(body["resultados"]) if "resultados" in body else skill == RESULTS_SKILL
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_QUESTION_CHARS:
             return _error("Escreva uma pergunta de até 20 mil caracteres.")
         if skill != "nenhuma" and skill not in skills or support and support not in skills:
@@ -263,12 +276,14 @@ def create_app(settings: WebSettings) -> Starlette:
                 except (ValueError, OSError, sqlite3.DatabaseError):
                     memories, recalled = [], []  # a conversa segue sem memória em vez de falhar
             search_query = rewrite() if library is not None else None
+            digest, missing = results_for_request()
+            extra = {"results": digest} if digest else {}
             try:
                 for kind, value in settings.stream(
                         text, model_alias=alias, skill_name=memory_skill,
                         supporting_skill_name=support, library=library, history=history,
                         memories=memories, web_search=use_web, recalled=recalled,
-                        search_query=search_query):
+                        search_query=search_query, **extra):
                     if kind == "texto":
                         yield line({"tipo": "texto", "texto": value})
                     else:
@@ -291,9 +306,11 @@ def create_app(settings: WebSettings) -> Starlette:
                     record_usage(result, settings.usage_log)
                 except OSError:
                     pass
-            in_context = result.validation_status not in OUT_OF_CONTEXT and result.provider != "local"
+            in_context = (result.validation_status not in OUT_OF_CONTEXT and result.provider != "local"
+                          and result.results_status != UNVERIFIED_RESULTS)
             user = {"role": "user", "content": text.strip(), "in_context": in_context,
-                    "skill": skill, "apoio": support, "biblioteca": use_library, "web": use_web}
+                    "skill": skill, "apoio": support, "biblioteca": use_library, "web": use_web,
+                    "resultados": use_results}
             reply = {"role": "assistant", "content": result.content, "in_context": in_context,
                      "provider": result.provider, "model": result.model,
                      "usage": asdict(result.usage) if result.usage else None,
@@ -301,6 +318,11 @@ def create_app(settings: WebSettings) -> Starlette:
                      "web_sources": [dict(s) for s in result.web_sources],
                      "web_queries": list(result.web_queries),
                      "consulta_biblioteca": search_query,
+                     "result_sources": [dict(block) for block in result.result_sources],
+                     "results_status": result.results_status,
+                     "numeros_nao_conferidos": list(result.unverified_numbers),
+                     "numeros_sem_marca": result.unmarked_numbers,
+                     "resultados_faltando": missing,
                      "memorias_usadas": [{"id": m["id"], "kind": m["kind"], "origin": m["origin"],
                                           "text": m["text"]} for m in memories],
                      "conversas_lembradas": [{"conversation_id": r["conversation_id"],
@@ -324,6 +346,16 @@ def create_app(settings: WebSettings) -> Starlette:
                         "mensagens": [_view(m) for m in stored["messages"][-2:]]})
             if in_context and settings.memory is not None and settings.reviewer is not None:
                 yield line(review(stored, memories, result))
+
+        def results_for_request() -> tuple[dict | None, list[str]]:
+            """O resumo dos resultados e o que faltou, em palavras; uma falha aqui não derruba a conversa."""
+            if not use_results or settings.results_digest is None:
+                return None, []
+            try:
+                digest = settings.results_digest()
+            except Exception:  # o resumo é opcional: qualquer falha dele deixa a conversa seguir
+                return None, ["os resultados da pesquisa (não foi possível montá-los)"]
+            return (digest if digest.get("blocos") else None), list(digest.get("faltando") or ())
 
         def rewrite() -> str | None:
             """Consulta da busca pelo modelo mais barato; sem ela, a busca segue pela própria pergunta."""
@@ -699,6 +731,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     from aliado.llm.providers.gateway import build_default_gateway
     from aliado.memory.reviewer import check_memory, reading_card, review_exchange
     from aliado.memory.store import MemoryStore
+    from aliado.science import digest
 
     gateway = build_default_gateway()
     agent = Agent(gateway)
@@ -719,11 +752,13 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     def stream(question, **kwargs):
         return agent.stream_answer(question, provider="google", append_sources=False, **kwargs)
 
-    return WebSettings(data_dir=data_dir, library_dir=library_dir, port=port, stream=stream,
+    settings = WebSettings(data_dir=data_dir, library_dir=library_dir, port=port, stream=stream,
                        models=models, library_factory=lambda: library, memory=memory,
                        reviewer=lambda **kwargs: review_exchange(execute, **kwargs),
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
                        checker=lambda memory_: check_memory(execute, memory_),
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
                        query_rewriter=lambda **kwargs: rewrite_query(execute, **kwargs),
-                       results_dir=results_dir, gpvs_dir=gpvs_dir)
+                       results_dir=results_dir, gpvs_dir=gpvs_dir,
+                       results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir))
+    return settings
