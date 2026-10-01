@@ -296,6 +296,20 @@ def science_routes(settings, worker, lock) -> list[Route]:
         except ValueError as exc:
             return _error(str(exc))
 
+    async def components(request: Request):
+        """Confiabilidade e disponibilidade de cada grupo da FMECA (lote 25); não grava nada."""
+        from aliado.science.components import component_view, load_repairs
+        from aliado.science.fmeca import load_table
+
+        repairs = settings.reference_dir / "reparos.json"
+        if not fmeca_table.is_file() or not repairs.is_file():
+            return _error("Faltam a tabela da FMECA ou os tempos de reparo (reparos.json).", 404)
+        try:
+            return JSONResponse(await run_in_threadpool(
+                lambda: component_view(*load_table(fmeca_table), load_repairs(repairs))))
+        except (ValueError, KeyError, OSError) as exc:
+            return _error(str(exc))
+
     async def results(request: Request):
         return JSONResponse(await run_in_threadpool(list_results, settings.results_dir))
 
@@ -347,6 +361,7 @@ def science_routes(settings, worker, lock) -> list[Route]:
         Route("/api/ciencia/limiar", threshold, methods=["POST"]),
         Route("/api/ciencia/alarme", alarms, methods=["POST"]),
         Route("/api/ciencia/confiabilidade", reliability, methods=["POST"]),
+        Route("/api/ciencia/componentes", components),
         Route("/api/ciencia/cenarios", presets),
         Route("/api/ciencia/cenarios/rodar", run_scenario, methods=["POST"]),
         Route("/api/ciencia/cenarios/salvar", save_scenario, methods=["POST"]),

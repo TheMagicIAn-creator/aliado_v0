@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-30",
+  "batch": "25",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0025-confiabilidade-por-componente.md",
+  "base_commit": "0cc8f78",
+  "decisions": {
+    "repair_time": "dois cenários: reparo ativo do IEEE 493-2007 (inversores, 26 h) e parada de campo de Baschel et al. (2018), 1 + 5 dias; a tela mostra a faixa",
+    "contactors": "mesmo tempo do inversor; a linha de partidas de motor do IEEE 493 fica como ressalva",
+    "time_base": "as duas no gráfico (cheia e tracejada) e um seletor (as duas, operação, calendário)",
+    "fmeca": "matriz de criticidade S × O; barras de S/O/D, ordem pela indisponibilidade e série ficaram de fora"
+  },
+  "sources_checked_on_pages": {
+    "ieee493_table_10_4_p290": {
+      "item": "Inverters, all types (E25-000)",
+      "unit_years": 414.8,
+      "failures": 2,
+      "mttr_h": 26
+    },
+    "ieee493_table_10_2_p283": {
+      "item": "Motor starters, contact type 0 to 600 V",
+      "average_h": 65.1,
+      "median_h": 24.5,
+      "used": false
+    },
+    "baschel_2018_fig7_p12": {
+      "item": "Inverter",
+      "mttd_days": 1,
+      "mttr_days": 5,
+      "mdt_days": 6
+    }
+  },
+  "acceptance": {
+    "paid_calls": 0,
+    "server": "127.0.0.1:8774, cópia dos resultados em tmp/lote-25",
+    "internal_terms_on_screen": 0,
+    "export": {
+      "svg": "fundo branco, sem variáveis CSS, tracejado preservado",
+      "png_width_px": 3125
+    },
+    "narrow_360px_no_overflow": true
+  },
+  "defects_fixed": [
+    "tabela de disponibilidade com altura zero dentro da grade da seção",
+    "termo interno (M12) nos 8 cenários e commit do projeto anterior numa ressalva da FMECA",
+    "nome de arquivo no limite da FMECA",
+    "cartões densos: nomes curtos dos cenários de reparo e F(t) com 4 algarismos"
+  ],
+  "validation": {
+    "pytest_passed": 416,
+    "new_tests": 7,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ]
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Commit do lote 25 feito pelo assistente com a autorização do pesquisador (30/09/2026), no formato dele e sem push.",
+  "public_files": [
+    {
+      "path": ".claude/launch.json",
+      "sha256": "470636d1961445a0af3cc48e49948ed89ac3790e546641178eccff281978865d",
+      "previous_sha256": "80b57080bcb3eababa51ac20158ee59f38e3b1187d0486d2741112f4d2fcf6bc",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "610db21d9c8698b47c8c299c5dd2e4fb34a5dfea0a85430ff5f7fd310471f262",
+      "previous_sha256": "9cb6bab8b90f818a6b7f808415fad1664344bf018a9477bb2ac93bbbfe367fd6",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "9342c8a5191c98651fc41186a13be15048b312fe72b00dfd3ac307b2a132cbee",
+      "previous_sha256": "1e7cd418a8300492cae02dc08b13e749911fef0f8309612b2e131e88bd3a6f61",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "1e573ef0f51072b4a81eb35f57d5d40431be58a8d46bac3e316a792a5860d99a",
+      "previous_sha256": "2943d732da457b8b9b291be9da970efb678e3e3877a495642ec83a037a5ace5d",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "0ff2c5d757e60bab2cf64cd4e2c64a9d01e3e963212303f4ffab8af944c78f00",
+      "previous_sha256": "5fce003f8af4cd403842177a65e43380dc3c6f69662ec0730ef018aa34b9ccdf",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ccb-calendario.json",
+      "sha256": "dc48cb58efc82fa5a6c4f166aeb1a83b7fbad7a3d194fcd1a7cd902cb5c0ad7c",
+      "previous_sha256": "2ac36eb50a0d32a327505ef6090ee15f800b45782c1b4799bcd17defdd51d932",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ccb-operacao.json",
+      "sha256": "57e1a71d6143ac06f7d4b4e04f5baaacb528374cadd6ca8cc7f8c8e2c36fafcb",
+      "previous_sha256": "6f4a388a193202f7a96a34a10980fa8ca62d12bbdd8c0718c1cb373fd72b8009",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/contatores-calendario.json",
+      "sha256": "0d8da90155db927cf32be85c7418286000df7778198e97963efbfd261cf6a239",
+      "previous_sha256": "a9ef500b784ee9a7fb4b3a8f94df056e5386f7ca6cfd3a042aed91b3b008350a",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/contatores-operacao.json",
+      "sha256": "63ccdc38397e73d853fbd59e8783b677e30c04b6e53a5cf3a03d0b95689f2f90",
+      "previous_sha256": "2d8416c5dd58c133be933f71fd7bf99ea1c6c034ad24ff28cbe8752148508e5d",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/igbt-calendario.json",
+      "sha256": "244522f4a1c93c6e79915a19ef851a323e95f235c08455dc1788854b2f4457e9",
+      "previous_sha256": "31a46162b6dedb49271712a5f3c0499485a3acb491b3c0d800595b19a58c6de9",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/igbt-operacao.json",
+      "sha256": "1cf7a431569872bb145299ea891b952426a294f9685a10fd9615e2866abcea0e",
+      "previous_sha256": "5e4ebb71a727daf07ea839252190213967f0a2749fa84f7f32f0db26059a02a7",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ventiladores-calendario.json",
+      "sha256": "ea531b1e9703d932cd382724b62d4691035b5bfcecde12647519dfb7481f0aaf",
+      "previous_sha256": "80cfca583a2ae68c691ad66c8bbeb583555ee1184265da62cfac961bbf800ee1",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/cenarios/ventiladores-operacao.json",
+      "sha256": "091768fc832bb2156f8a4b22759f547d921d4b7963cb445b69940c5718fecaea",
+      "previous_sha256": "a0e89b770f44b8fc122777e45d774aea768e38a2defae7bc1d1897d2b54bb731",
+      "status": "modified"
+    },
+    {
+      "path": "docs/pesquisa-inversores/fmeca.json",
+      "sha256": "4634920bfd42e3b89d7a21c3718754e2efbaaf08aa5f73db2bf1c626437fa529",
+      "previous_sha256": "654d7bb6ae0c82ce55c6d88e113a9be40f1e4ee6af4f7ce358dd2f1855075604",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "7c29e8bf976c1f2a67fcd09cc9b427359ab8ebea5e1975d0209ebe1b81d9d266",
+      "previous_sha256": "5dcbfd8bccc5b7a9d4cadfa62cf30da9ddf142180cdac1415f659b1287fbdf91",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/science.py",
+      "sha256": "a4331b2a43a0d39ca4bfd60c5e7ee5658fb5cc35a182b05d7f274db905e23009",
+      "previous_sha256": "1d358a90c9f59d17e6e83782f0f843f9717c8968c888f52ba51aa7a6c74b924a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "b2424ec699b85fed653cc0fe9fbc7ebfb942562839c296036cca25bb0e615e5e",
+      "previous_sha256": "856c246daace88cbbdac035c0f8ccc144305daebf95f1c046c0495c0b18d1e66",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/ciencia.js",
+      "sha256": "5c63fe1af2e6fb2dc6cd0311694467d1146a0725852f7290dd813005f407b71a",
+      "previous_sha256": "602fdbe57ee996174ac57bfee884437d1e8431fdcc2a10402f5c5dd15c39203a",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/graficos.js",
+      "sha256": "8264ca0dbc69de7edba4e345f41f1af4a8791c0d152bf5c59318b0cc0daf4f3c",
+      "previous_sha256": "6b106b2d5c4113625f23867f87cf1c8df1c8cb86e4919f1021b0e6ae121e65db",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/science/fmeca.py",
+      "sha256": "47e87d10cc497cb72900150681015ce7239a51bf7ce4d16e39218756772751da",
+      "previous_sha256": "eefa79d29355052275c4db7348d748b9c8c33987145c42d2a42de52f3e01d20b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/skills/builtin/pesquisa-inversores/SKILL.md",
+      "sha256": "c1f1d133a7b1bfa515f83f07b3547914d560a998cb6463ee393fabbc9d65c4f3",
+      "previous_sha256": "5ad0226e16c3250573cba3b99e4274cf6ba8d7924490f50787c1bb625462cf25",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_fmeca.py",
+      "sha256": "8685a7b0951f3abc0260f8f51084ba57ff2fffa60840a21115cf1de866616e2a",
+      "previous_sha256": "27b432b0b9652ef95221ba07bb90a2d1247cb8712cbb6424a33a0afe91d674b2",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-25.md",
+      "sha256": "f85ba72b52d1be0deab59eaf5a30c825b5f88b3208560c0e59aef3997a919715",
+      "status": "new"
+    },
+    {
+      "path": "docs/pesquisa-inversores/reparos.json",
+      "sha256": "ca12efc3623808c5ce12ddfedece1fdb7376cb436d4076ada52c1f839f10d3f7",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0025-confiabilidade-por-componente.md",
+      "sha256": "eb6a7a6bfab9da1890810226fe8183cf609075c9f5cee4269a5a93b5fe06d444",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/science/components.py",
+      "sha256": "1563a7278175019dd96c843c537141da05c68d099f65c4ddd99174b19172062e",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_components.py",
+      "sha256": "611383a960ba1a7f2987ec7473b3ce36abaf35d8b09896f11f3e0a0ab298f740",
+      "status": "new"
+    }
+  ]
+}

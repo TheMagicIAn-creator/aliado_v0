@@ -1,6 +1,6 @@
 "use strict";
 
-/* Gráficos da aba Ciência (lotes 23 e 24), em D3 v7 (copiado do mestrado-utfpr, licença ISC).
+/* Gráficos da aba Ciência (lotes 23 a 25), em D3 v7 (copiado do mestrado-utfpr, licença ISC).
    Cada gráfico mora num "quadro": título, nota, botões de exportação e uma área que se redesenha
    quando muda de largura, de tema ou de fonte. As cores e a fonte vêm de variáveis CSS lidas do
    próprio contêiner, e o SVG leva tudo resolvido: por isso a exportação sai em fundo branco, com
@@ -66,7 +66,16 @@ const GLOSSARIO = {
   teste_saudavel: "Trecho final dos registros sem falha, separado do treino e da calibração. Mede os alarmes falsos.",
   lambda: "λ, a taxa de falha: falhas esperadas por hora (ou por ano) de um componente, suposta constante.",
   horas_ano: "Quantas horas por ano contam para a taxa: 4.015 h de operação (a premissa de Baschel et al.) ou 8.760 h de calendário.",
-  base_tempo: "Horas de operação: só enquanto o inversor funciona. Horas de calendário: o ano inteiro. A mesma taxa por hora dá riscos anuais diferentes.",
+  base_tempo: "Horas de operação: só enquanto o inversor funciona, 4.015 h por ano (a premissa de Baschel et al., 2018). Horas de calendário: o ano inteiro, 8.760 h. As fontes não dizem em qual base a taxa foi medida; por isso as duas aparecem. A mesma taxa por hora dá riscos anuais diferentes.",
+  mttr: "Tempo médio para reparar: da chegada ao equipamento até ele voltar a funcionar.",
+  parada_falha: "Parada por falha: o tempo para notar a falha mais o tempo para reparar. É quanto o componente fica fora a cada falha.",
+  disponibilidade: "Fração do tempo em que o componente está funcionando: MTBF / (MTBF + parada por falha), com o MTBF em horas de calendário.",
+  disponibilidade_inerente: "Disponibilidade com só o reparo ativo: 26 h por falha, o MTTR de inversores do IEEE 493-2007 (Tabela 10-4, p. 290). Não conta o tempo para notar a falha nem a espera por peças.",
+  disponibilidade_logistica: "Disponibilidade com a parada de campo: 1 dia para notar a falha e 5 para reparar, os tempos de inversores de Baschel et al. (2018, Figura 7), de usinas fotovoltaicas.",
+  horas_paradas: "Horas por ano com o componente parado: falhas por ano × parada por falha.",
+  falhas_esperadas: "Falhas esperadas no período, se cada falha for reparada e a taxa continuar a mesma: λ × horas.",
+  cenario_reparo: "Os dois cenários de reparo usam o tempo do inversor inteiro para os 4 grupos: nenhuma fonte traz o tempo de reparo de cada componente.",
+  matriz_criticidade: "Matriz de criticidade: cada grupo na posição da sua severidade (S) e da sua ocorrência (O), de 1 a 10. O fundo escurece com S × O. A detecção (D) aparece no rótulo, porque não é um eixo. Não há faixas de risco marcadas: a IEC 60812 deixa os limites para quem faz a análise, e não há fonte para eles.",
   mttf: "Tempo médio até a falha. Com taxa constante, é 1/λ.",
   mtbf: "Tempo médio entre falhas. Com taxa constante e reparo imediato, é 1/λ.",
   r_t: "R(t), a confiabilidade: a chance de o componente ainda não ter falhado no tempo t.",
@@ -142,6 +151,8 @@ function coresDe(node) {
     denso: v("--g-denso"), lstm: v("--g-lstm"), texto: v("--g-texto"), suave: v("--g-suave"), grade: v("--g-grade"),
     eixo: v("--g-eixo"), fundo: v("--g-fundo"), limiar: v("--g-limiar"), inicio: v("--g-inicio"), vazio: v("--g-vazio"),
     mudanca: v("--g-mudanca"),
+    grupos: { ccb: v("--g-grupo-ccb"), contatores: v("--g-grupo-contatores"), igbt: v("--g-grupo-igbt"),
+      ventiladores: v("--g-grupo-ventiladores") },
     fases: { comissionamento: v("--g-fase-comissionamento"), pre_teste: v("--g-fase-antes"),
       transicao: v("--g-fase-transicao"), pos_falha: v("--g-fase-depois") },
     fonte: style.fontFamily,
@@ -189,9 +200,14 @@ function eixos(b, x, y, cores, { xRotulo = "", yRotulo = "", xFormato, yFormato,
 /* Linhas: séries, escala log opcional, faixas, linhas de referência e marcas. */
 function graficoLinhas(area, largura, cores, o) {
   // Proporção pela largura, com altura mínima para continuar legível em tela estreita.
-  const altura = o.altura || Math.max(o.alturaMinima ?? 200, Math.round(largura * (o.proporcao || 0.42)));
+  const itensLegenda = o.legenda ? [
+    ...o.series.filter((s) => s.nome && s.legenda !== false).map((s) => ({ nome: s.rotuloLegenda || s.nome, cor: s.cor, traco: s.traco })),
+    ...(o.legendaExtra || [])] : [];
+  const esquerda = o.margemEsquerda || 58;
+  const arranjo = arranjoLegenda(itensLegenda, largura - esquerda - 16);
+  const altura = (o.altura || Math.max(o.alturaMinima ?? 200, Math.round(largura * (o.proporcao || 0.42)))) + arranjo.extra;
   const b = base(area, largura, altura, cores, { titulo: o.titulo, descricao: o.descricao,
-    margem: { top: o.legenda ? 30 : 14, left: o.margemEsquerda || 58 } });
+    margem: { top: (o.legenda ? 30 : 14) + arranjo.extra, left: esquerda } });
   const xs = o.series.flatMap((s) => s.pontos.map((p) => p[0]));
   const ys = o.series.flatMap((s) => s.pontos.map((p) => p[1])).filter((v) => Number.isFinite(v));
   const x = d3.scaleLinear().domain(o.xDominio || d3.extent(xs)).range([0, b.largura]);
@@ -230,7 +246,8 @@ function graficoLinhas(area, largura, cores, o) {
   const caminho = d3.line().defined((p) => Number.isFinite(p[1])).x((p) => x(p[0])).y((p) => y(p[1]));
   for (const serie of o.series) {
     b.g.append("path").datum(serie.pontos).attr("fill", "none").attr("stroke", serie.cor)
-      .attr("stroke-width", serie.espessura || 1.6).attr("stroke-opacity", serie.opacidade ?? 0.95).attr("d", caminho);
+      .attr("stroke-width", serie.espessura || 1.6).attr("stroke-opacity", serie.opacidade ?? 0.95)
+      .attr("stroke-dasharray", serie.traco || null).attr("d", caminho);
   }
   const simbolo = { triangulo: d3.symbolTriangle, xis: d3.symbolCross, circulo: d3.symbolCircle, losango: d3.symbolDiamond };
   for (const marca of o.marcas || []) {
@@ -240,7 +257,7 @@ function graficoLinhas(area, largura, cores, o) {
       .on("pointerenter focus", (event) => mostrarDica(event.type === "focus" ? posicao(event.target) : event, marca.dica))
       .on("pointerleave blur", esconderDica);
   }
-  if (o.legenda) legenda(b, o.series.filter((s) => s.nome), cores);
+  if (o.legenda) legenda(b, itensLegenda, cores, arranjo.posicoes);
   // Guia vertical: o valor de cada série no ponto mais próximo do mouse.
   const guia = b.g.append("line").attr("y1", 0).attr("y2", b.altura).attr("stroke", cores.suave).attr("opacity", 0);
   const perto = d3.bisector((p) => p[0]).center;
@@ -263,15 +280,30 @@ function graficoLinhas(area, largura, cores, o) {
 
 function posicao(node) { const r = node.getBoundingClientRect(); return { clientX: r.right, clientY: r.top }; }
 
-function legenda(b, series, cores) {
+/* Legenda: posições em linhas que cabem na largura (pelo número de letras) e a altura extra que pedem. */
+function arranjoLegenda(itens, largura) {
+  const posicoes = [];
+  let coluna = 0, linha = 0;
+  for (const item of itens) {
+    const ocupa = 34 + item.nome.length * 6.6;
+    if (coluna && coluna + ocupa > largura) { coluna = 0; linha += 1; }
+    posicoes.push([coluna, linha * 18]);
+    coluna += ocupa;
+  }
+  return { posicoes, extra: 18 * linha };
+}
+
+function legenda(b, itens, cores, posicoes) {
   const g = b.svg.append("g").attr("transform", `translate(${b.m.left},12)`);
   let deslocamento = 0;
-  for (const serie of series) {
-    g.append("rect").attr("x", deslocamento).attr("y", -5).attr("width", 16).attr("height", 3).attr("fill", serie.cor);
-    const texto = g.append("text").attr("x", deslocamento + 22).attr("y", 0).attr("font-size", 12).attr("fill", cores.texto)
-      .text(serie.nome);
-    deslocamento += 34 + (texto.node().getComputedTextLength?.() || serie.nome.length * 7);
-  }
+  itens.forEach((item, i) => {
+    const [dx, dy] = posicoes ? posicoes[i] : [deslocamento, 0];
+    g.append("line").attr("x1", dx).attr("x2", dx + 16).attr("y1", dy - 4).attr("y2", dy - 4).attr("stroke", item.cor)
+      .attr("stroke-width", 3).attr("stroke-dasharray", item.traco || null);
+    const texto = g.append("text").attr("x", dx + 22).attr("y", dy).attr("font-size", 12).attr("fill", cores.texto)
+      .text(item.nome);
+    deslocamento += 34 + (texto.node().getComputedTextLength?.() || item.nome.length * 7);
+  });
 }
 
 /* Mapa de calor: linhas × colunas, com o valor em cada célula. */
@@ -434,6 +466,44 @@ function pontoComFaixa(area, largura, cores, o) {
     });
   }
   legenda(b, o.series, cores);
+  return b.svg.node();
+}
+
+/* Matriz de criticidade: severidade (y) por ocorrência (x), de 1 a 10, com o fundo pelo produto S × O. */
+function matrizCriticidade(area, largura, cores, o) {
+  const lado = Math.min(largura, 520);
+  const b = base(area, lado, Math.round(lado * 0.92), cores, { titulo: o.titulo, descricao: o.descricao,
+    margem: { top: 14, left: 52, bottom: 46, right: 14 } });
+  const notas = d3.range(1, 11);
+  const x = d3.scaleBand().domain(notas).range([0, b.largura]).padding(0.04);
+  const y = d3.scaleBand().domain([...notas].reverse()).range([0, b.altura]).padding(0.04);
+  for (const s of notas) {
+    for (const oc of notas) {
+      b.g.append("rect").attr("x", x(oc)).attr("y", y(s)).attr("width", x.bandwidth()).attr("height", y.bandwidth())
+        .attr("rx", 2).attr("fill", d3.interpolateOrRd(0.05 + 0.75 * (s * oc) / 100));
+    }
+  }
+  const eixoX = b.g.append("g").attr("transform", `translate(0,${b.altura})`).call(d3.axisBottom(x).tickSize(0));
+  const eixoY = b.g.append("g").call(d3.axisLeft(y).tickSize(0));
+  for (const eixo of [eixoX, eixoY]) {
+    eixo.select(".domain").remove();
+    eixo.selectAll("text").attr("fill", cores.suave).attr("font-size", 11).attr("font-family", cores.fonte);
+  }
+  b.g.append("text").attr("x", b.largura / 2).attr("y", b.altura + 34).attr("text-anchor", "middle").attr("font-size", 12)
+    .attr("fill", cores.suave).text(o.xRotulo || "Ocorrência (O)");
+  b.g.append("text").attr("transform", `translate(${-36},${b.altura / 2}) rotate(-90)`).attr("text-anchor", "middle")
+    .attr("font-size", 12).attr("fill", cores.suave).text(o.yRotulo || "Severidade (S)");
+  for (const item of o.itens) {
+    const cx = x(item.o) + x.bandwidth() / 2, cy = y(item.s) + y.bandwidth() / 2;
+    b.g.append("circle").attr("cx", cx).attr("cy", cy).attr("r", 7).attr("fill", item.cor).attr("stroke", "#ffffff")
+      .attr("stroke-width", 1.5).attr("tabindex", 0)
+      .on("pointerenter focus", (event) => mostrarDica(event.type === "focus" ? posicao(event.target) : event, item.dica))
+      .on("pointerleave blur", esconderDica);
+    const direita = cx < b.largura * 0.62;
+    b.g.append("text").attr("x", cx + (direita ? 11 : -11)).attr("y", cy + 4).attr("text-anchor", direita ? "start" : "end")
+      .attr("font-size", 12).attr("font-weight", 600).attr("fill", "#0b0b0b").attr("paint-order", "stroke")
+      .attr("stroke", "#ffffff").attr("stroke-width", 3).attr("pointer-events", "none").text(item.rotulo);
+  }
   return b.svg.node();
 }
 

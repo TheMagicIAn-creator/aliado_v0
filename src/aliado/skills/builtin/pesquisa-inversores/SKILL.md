@@ -2,7 +2,7 @@
 name: pesquisa-inversores
 description: Apoiar a pesquisa de mestrado de Rodolfo sobre detecção de falhas em inversores fotovoltaicos, GPVS e comparação de autoencoders Denso e LSTM, com rastreabilidade bibliográfica e metodológica.
 metadata:
-  version: "0.2.0"
+  version: "0.2.1"
   references: "diretrizes-aprovadas-2026-09-22.md"
 ---
 
@@ -41,7 +41,9 @@ uma nova consulta bibliográfica. O registro de 13/09 permanece histórico e nã
   - A ocorrência O não é recalculada pelas taxas. O ranking pelas taxas fica numa leitura separada, sem
     nota agregada, e diverge do O (os contatores têm o maior O e a menor taxa).
   - O resultado dos detectores não altera S, O ou D.
-  - Não há disponibilidade calculada sem fonte de tempo de reparo; MTBF e falhas esperadas vêm das taxas.
+  - A disponibilidade de cada grupo usa dois cenários de reparo, lado a lado (`reparos.json`): o reparo
+    ativo do IEEE 493-2007 (inversores, 26 h, Tab. 10-4, p. 290) e a parada de campo de Baschel et al.
+    (2018), 1 dia para detectar e 5 para reparar (Fig. 7, p. 12). O tempo é o do inversor inteiro.
 - Não derive taxas físicas de NPR, escores de anomalia ou L10 sem hipótese
   explícita e justificativa. Não trate valores de estudos distintos como intervalo
   estatístico. Diferencie horas de operação de horas de calendário.

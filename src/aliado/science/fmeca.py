@@ -111,7 +111,8 @@ def evaluate_fmeca(table: dict, scenarios: dict[str, dict]) -> dict:
             "Falhas esperadas = λ × horas: cada falha é reparada ou trocada por componente equivalente, com a mesma taxa constante.",
             "Chance de falhar = 1 − exp(−λt), sem reparo: ao menos uma falha até o horizonte.",
             "Componentes analisados isoladamente, sem topologia de sistema.",
-            "Disponibilidade não calculada: não há fonte de tempo de reparo (decisão de 27/09/2026).",
+            "A disponibilidade de cada grupo fica na confiabilidade por componente, com os tempos de reparo do "
+            "IEEE 493-2007 e de Baschel et al. (2018) (decisão de 30/09/2026).",
         ],
     }
 

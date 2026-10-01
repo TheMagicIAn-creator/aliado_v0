@@ -93,8 +93,10 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - **Escores por ensaio:** para cada um dos 14 ensaios e o teste saudável, um carrossel (Denso → AE-LSTM → Ambos), com os gráficos no mesmo tamanho. Mostram escore ÷ limiar, as fases, o início nominal e os alarmes.
   - **Métricas por falha:** barras por tipo de falha, mapas de calor por ensaio e as métricas gerais com a faixa dos 5 treinamentos.
   - **Início das falhas:** onde cada falha aparece nos sinais, contra o meio do registro, e os indicadores com cada início. Os números vêm da reanálise dos mesmos escores; a avaliação de 27/09 continua sendo a oficial.
-  - **Confiabilidade:** λ, horas por ano, base e horizonte recalculam R(t) e F(t) sem gravar nada. Para salvar o cenário numa pasta nova, fonte e hipóteses são obrigatórias. Aceita também qualquer cenário em JSON.
-  - **FMECA:** a tabela, as ordens pelo NPR e pela taxa e o relatório numa pasta nova.
+  - **Confiabilidade:** um painel por grupo da FMECA (CCB, contatores, IGBT e ventiladores), com R(t) e F(t) nas duas bases de tempo (4.015 h/ano de operação e 8.760 h/ano de calendário), e um seletor entre elas.
+    - A disponibilidade de cada grupo usa dois cenários de reparo: o reparo ativo do IEEE 493-2007 (26 h) e a parada de campo de Baschel et al. (2018), de 6 dias.
+    - No fim, um explorador de qualquer λ, que salva o cenário numa pasta nova só com fonte e hipóteses. Aceita também qualquer cenário em JSON.
+  - **FMECA:** a tabela, a matriz de criticidade S × O, as ordens pelo NPR e pela taxa e o relatório numa pasta nova.
   - **Explorar:** e se o limiar fosse outro?
     - O limiar usa só a calibração.
     - O alarme reusa os ensaios de teste: serve para explorar, e os números oficiais continuam os de 27/09.
@@ -203,7 +205,7 @@ desenvolvimento e não entram no pacote.
 ## Pendências conhecidas
 
 - A 0.3.0 está em andamento (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)): aba Ciência nova, confiabilidade por componente com disponibilidade, início das falhas no GPVS e resultados no chat.
-- Tempos de reparo e disponibilidade só entram com fonte (lote 25).
+- Nenhuma fonte traz o tempo de reparo de cada componente: a disponibilidade usa o tempo do inversor inteiro, em dois cenários.
 - No GPVS, o início observado vale só para os 8 ensaios de mudança clara. F4 não muda as 24 variáveis, e F6 e F7 mudam pouco: para eles, a falta de detecção é, em boa parte, das variáveis (lote 24).
 - Os alarmes falsos contam com só 52 s saudáveis: a taxa por hora é uma estimativa com intervalo largo.
 - Com a consulta reescrita, a busca acerta as 16 perguntas de referência. São só 16 perguntas: um conjunto maior diria mais. Veja a [validação do lote 22](docs/migracao/validacao-lote-22.md).

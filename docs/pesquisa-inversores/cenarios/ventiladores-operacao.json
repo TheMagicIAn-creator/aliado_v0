@@ -27,6 +27,6 @@
     "Componente analisado isoladamente, sem topologia de sistema, reparo ou substituição.",
     "4.015 h/ano de operação, premissa de Baschel et al. (2018) na conversão do MTBF para anos; a taxa só incide nessas horas.",
     "Não se sabe se a taxa bibliográfica se refere a horas de operação ou de calendário; por isso há dois cenários.",
-    "Horizonte de 20 anos (M12)."
+    "Horizonte de 20 anos, o das diretrizes da pesquisa."
   ]
 }

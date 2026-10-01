@@ -1,0 +1,50 @@
+{
+  "nome": "Tempos de reparo dos quatro grupos da FMECA",
+  "decidida_em": "2026-09-30",
+  "criterio": "Dois cenários, lado a lado: o reparo ativo dá a disponibilidade inerente, e a parada de campo, com o tempo para detectar, dá a disponibilidade com logística. A tela mostra a faixa entre os dois.",
+  "grupos": ["ccb", "contatores", "igbt", "ventiladores"],
+  "cenarios": [
+    {
+      "id": "ieee493",
+      "nome": "Reparo ativo (IEEE 493)",
+      "tipo": "inerente",
+      "deteccao_horas": 0,
+      "reparo_horas": {"ccb": 26, "contatores": 26, "igbt": 26, "ventiladores": 26},
+      "fontes": [
+        "IEEE Std 493-2007 (Gold Book), Tabela 10-4 (continuação), p. 290 do PDF: \"Inverters, all types\" (E25-000), 414,8 unidades-ano, 2 falhas, 0,00482 falha/ano, MTBF de 1.817.016 h e MTTR de 26 h. Conferido na página em 30/09/2026.",
+        "A Tabela 10-4 reproduz o TM 5-698-5 do Departamento do Exército dos EUA (2006), nota 2 da p. 292 do PDF."
+      ],
+      "hipoteses": [
+        "O reparo é feito no nível do inversor: o MTTR do inversor inteiro vale para cada um dos 4 grupos (decisão de 30/09/2026).",
+        "Reparo ativo, sem tempo para detectar a falha nem espera por peças ou pela visita."
+      ],
+      "ressalvas": [
+        "A amostra da norma tem só 2 falhas de inversores; o MTTR de 26 h é incerto.",
+        "Os inversores da norma são de instalações industriais e comerciais, não de usinas fotovoltaicas.",
+        "O IEEE 493 tem uma linha própria de partidas de motor, com contato de 0 a 600 V (Tabela 10-2, p. 283 do PDF: média de 65,1 h e mediana de 24,5 h por falha). Por decisão de 30/09/2026, os contatores usam o mesmo tempo do inversor."
+      ]
+    },
+    {
+      "id": "baschel",
+      "nome": "Parada de campo (Baschel et al., 2018)",
+      "tipo": "com logística",
+      "deteccao_horas": 24,
+      "reparo_horas": {"ccb": 120, "contatores": 120, "igbt": 120, "ventiladores": 120},
+      "fontes": [
+        "Baschel et al. (2018), Energies 11(6), 1579, Figura 7, p. 12: inversor com MTTD de 1 dia e MTTR de 5 dias (parada de 6 dias), pela experiência de campo em grandes usinas fotovoltaicas monitoradas diariamente. Conferido na figura em 30/09/2026."
+      ],
+      "hipoteses": [
+        "Os 4 grupos são reparados numa parada do inversor, com os tempos do inversor (decisão de 30/09/2026).",
+        "A falha é notada em 1 dia, com o monitoramento diário que o artigo supõe."
+      ],
+      "ressalvas": [
+        "O artigo diz que os tempos vêm da experiência de campo e que 3 dias seria uma meta ambiciosa para o reparo do inversor.",
+        "Inclui a logística (visita e peças); não é a disponibilidade inerente."
+      ]
+    }
+  ],
+  "ressalvas": [
+    "Nenhuma das fontes traz tempo de reparo por componente (IGBT, placa de controle, contatores ou ventiladores): o tempo é o do inversor.",
+    "A disponibilidade supõe taxa constante e reparo que devolve o componente ao estado de novo."
+  ]
+}

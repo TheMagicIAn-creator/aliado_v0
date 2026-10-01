@@ -95,7 +95,8 @@ def test_decided_fmeca_keeps_cristaldi_scores_and_reads_the_rates_apart():
     assert operation["horizontes"]["20"]["falhas_esperadas"] == pytest.approx(63.7e-6 * 4015 * 20)
     # Lote 22: a correspondência com o item "PCB" foi conferida no PDF de Cristaldi et al. (2017).
     assert by_id["ccb"]["item_na_fonte"] == "PCB" and "conferido em 30/09/2026" in by_id["ccb"]["ressalvas"][0]
-    assert any("tempo de reparo" in text for text in result["limites"])
+    # Lote 25: a disponibilidade passou a existir, com os tempos de reparo do IEEE 493 e de Baschel.
+    assert any("tempos de reparo" in text and "Baschel" in text for text in result["limites"])
 
 
 def test_cli_exports_and_never_overwrites(tmp_path, capsys):

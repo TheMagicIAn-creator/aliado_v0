@@ -6,7 +6,8 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 ## [Não lançado]
 
 Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correcoes-confianca.md),
-[0023](docs/specs/0023-aba-ciencia-nova.md) e [0024](docs/specs/0024-inicio-das-falhas.md).
+[0023](docs/specs/0023-aba-ciencia-nova.md), [0024](docs/specs/0024-inicio-das-falhas.md) e
+[0025](docs/specs/0025-confiabilidade-por-componente.md).
 
 ### Adicionado
 
@@ -21,6 +22,12 @@ Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correco
   - nos 8 ensaios de mudança clara, a sensibilidade vai de 0,67 para 1,00 nos dois modelos. A demora de 27/09 era a espera até a falha aparecer nas variáveis.
 - **Alarmes falsos estimados pelo encadeamento das janelas** (cadeia de Markov, Brook e Evans, 1972): Denso com 19 por hora (0 a 53) e AE-LSTM com 56 por hora (0 a 263), nos 52 s saudáveis. A cadeia previu 3,9 e 5,3 sequências de 2 janelas, e houve 4 e 5.
 - **Faixa esperada pelo limiar:** com o limiar no 191º de 192 escores de calibração, a chance de alarme por janela fica entre 0,13% e 2,87% (Vovk, 2012). O observado cabe nela.
+- **Confiabilidade por componente:** um painel para cada grupo da FMECA, com R(t) e F(t) nas duas bases de tempo (linha cheia na operação, tracejada no calendário) e um seletor entre elas. Um gráfico reúne os 4 grupos.
+- **Disponibilidade de cada grupo** (`docs/pesquisa-inversores/reparos.json`), em dois cenários conferidos nas páginas:
+  - o reparo ativo do IEEE 493-2007 (inversores, 26 h, Tab. 10-4, p. 290);
+  - a parada de campo de Baschel et al. (2018), com 1 dia para detectar e 5 para reparar (Fig. 7);
+  - a disponibilidade vai de 99,09% a 99,99%, e a CCB para até 80 h por ano.
+- **Matriz de criticidade S × O** na FMECA, com a detecção no rótulo.
 - **Seção "Início das falhas" na aba Ciência**, com o início por ensaio, os indicadores com cada início, a sensibilidade e o atraso por ensaio e a comparação. Os escores ganharam a linha da mudança observada.
 
 - **Aba Ciência nova**, organizada pelas perguntas: Resumo · Escores por ensaio · Métricas por falha · Confiabilidade · FMECA · Explorar · Rodar e arquivos.
@@ -46,6 +53,8 @@ Rumo à 0.3.0 (lotes 22 a 26). Detalhes nas specs [0022](docs/specs/0022-correco
 ### Alterado
 
 - **Resumo da aba Ciência:** os alarmes falsos por hora passam a usar os 52 s saudáveis (o teste saudável e o trecho antes da falha), e não só os 5 s do teste. O limite superior do Denso cai de 2.050 para 207 por hora. Entram também a estimativa pela cadeia e as janelas saudáveis acima do limiar, com a faixa esperada.
+- **Skill do mestrado 0.2.1:** a disponibilidade usa os dois cenários de reparo.
+- **Cenários e FMECA na tela:** "Horizonte de 20 anos (M12)" virou "o das diretrizes da pesquisa", e uma ressalva da FMECA deixou de citar commit e caminho do projeto anterior.
 - **Skill do mestrado** (versão 0.2.0):
   - descreve a situação atual: há memória, o acervo tem os PDFs e a aba Ciência executa o experimento;
   - registra a tabela e a página de cada taxa e das notas da FMECA;

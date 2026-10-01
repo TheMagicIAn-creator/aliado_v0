@@ -643,8 +643,124 @@ function drawAlarms(output, data) {
   output.replaceChildren(...parts);
 }
 
-/* Confiabilidade: explora sem gravar; salvar exige fonte e hipóteses. */
+/* Confiabilidade (lote 25): um painel por grupo da FMECA, nas duas bases de tempo, e a disponibilidade
+   com os dois cenários de reparo. O explorador de um cenário qualquer fica no fim. */
+const BASES_TEMPO = [["ambas", "As duas"], ["operation", "Operação (4.015 h/ano)"], ["calendar", "Calendário (8.760 h/ano)"]];
+const NOME_BASE = { operation: "operação", calendar: "calendário" };
+const NOME_CURTO = { ccb: "CCB", contatores: "Contatores", igbt: "IGBT", ventiladores: "Ventiladores" };
+const TRACO_BASE = { operation: null, calendar: "6 4" };
+const COR_GRUPO = (cores, id) => cores.grupos[id] || cores.denso;
+
+const CURTO_REPARO = { ieee493: "IEEE 493", baschel: "Baschel" };
+function disp(value) { return value === null || value === undefined ? "—" : `${num(100 * value, 5)}%`; }
+
 async function renderReliability(body) {
+  let d;
+  try { d = await carregar("componentes", "/api/ciencia/componentes"); } catch (error) { aviso(body, error.message); return; }
+  const escolha = science.base ||= "ambas";
+  const bases = escolha === "ambas" ? ["operation", "calendar"] : [escolha];
+  const [ieee, baschel] = d.reparo;
+  const estilos = bases.length > 1 ? bases.map((b) => ({ nome: NOME_BASE[b], cor: "#8a8a85", traco: TRACO_BASE[b] })) : [];
+  const porBase = (g, valor, formato) => bases.map((b) => formato(valor(g.bases[b]))).join(" · ");
+  const rotuloBases = bases.map((b) => NOME_BASE[b]).join(" · ");
+  const controls = el("div", { class: "controls" },
+    select("Base de tempo", BASES_TEMPO, escolha, (v) => { science.base = v; openScience("confiabilidade"); }, "base_tempo"));
+
+  const overlay = quadro({ titulo: "Confiabilidade dos quatro grupos", chave: "r_t", arquivo: "confiabilidade-grupos",
+    extra: bases.length > 1 ? "Linha cheia: horas de operação. Tracejada: horas de calendário." : "",
+    desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, {
+      titulo: "R(t) dos quatro grupos da FMECA", proporcao: 0.42, alturaMinima: 240, legenda: true, yDominio: [0, 1],
+      xRotulo: "anos", yRotulo: "R(t)", dicaX: (x) => `${num(x)} anos`, dicaY: (v) => pct(v), legendaExtra: estilos,
+      series: d.grupos.flatMap((g) => bases.map((b, i) => ({ nome: `${NOME_CURTO[g.id] || g.nome} · ${NOME_BASE[b]}`,
+        rotuloLegenda: NOME_CURTO[g.id] || g.nome, legenda: i === 0, cor: COR_GRUPO(cores, g.id), traco: TRACO_BASE[b],
+        pontos: g.bases[b].curva.map((p) => [p.t, p.r]) }))) }),
+    csv: () => [["anos", ...d.grupos.flatMap((g) => bases.map((b) => `R ${g.nome} (${NOME_BASE[b]})`))],
+      ...d.grupos[0].bases[bases[0]].curva.map((p, i) => [p.t, ...d.grupos.flatMap((g) => bases.map((b) => g.bases[b].curva[i].r))])] });
+
+  const panels = el("div", { class: "par-modelos" }, ...d.grupos.map((g) => {
+    const first = g.bases[bases[0]];
+    const chart = quadro({ titulo: `${g.nome}: R(t) e F(t)`, chave: "r_t", extra: GLOSSARIO.f_t, arquivo: `confiabilidade-${g.id}`,
+      desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, {
+        titulo: `${g.nome}: confiabilidade e chance de falhar`, proporcao: 0.5, alturaMinima: 220, legenda: true, yDominio: [0, 1],
+        xRotulo: "anos", yRotulo: "probabilidade", dicaX: (x) => `${num(x)} anos`, dicaY: (v) => pct(v), legendaExtra: estilos,
+        series: bases.flatMap((b, i) => [
+          { nome: `R(t) · ${NOME_BASE[b]}`, rotuloLegenda: "R(t)", legenda: i === 0, cor: COR_GRUPO(cores, g.id), traco: TRACO_BASE[b],
+            pontos: g.bases[b].curva.map((p) => [p.t, p.r]) },
+          { nome: `F(t) · ${NOME_BASE[b]}`, rotuloLegenda: "F(t)", legenda: i === 0, cor: cores.suave, traco: TRACO_BASE[b],
+            pontos: g.bases[b].curva.map((p) => [p.t, p.f]) }]) }),
+      csv: () => [["anos", ...bases.flatMap((b) => [`R (${NOME_BASE[b]})`, `F (${NOME_BASE[b]})`])],
+        ...first.curva.map((p, i) => [p.t, ...bases.flatMap((b) => [g.bases[b].curva[i].r, g.bases[b].curva[i].f])])] });
+    const a = (id) => (x) => x.disponibilidade[id];
+    const cards = el("div", { class: "metrics" },
+      card("λ, taxa de falha", `${num(first.taxa_por_hora)} por hora`,
+        `por ano (${rotuloBases}): ${porBase(g, (x) => x.taxa_por_ano, (v) => num(v))}`, "lambda"),
+      card(`MTBF (${rotuloBases})`, porBase(g, (x) => x.mtbf_anos, (v) => `${num(v)} anos`), null, "mtbf"),
+      card(`F(1 ano) (${rotuloBases})`, porBase(g, (x) => x.f_1_ano, (v) => pct(v, 4)), null, "f_t"),
+      card(`F(${num(d.horizonte_anos)} anos) (${rotuloBases})`, porBase(g, (x) => x.f_horizonte, (v) => pct(v, 4)), null, "f_t"),
+      card(`Falhas esperadas em ${num(d.horizonte_anos)} anos`, porBase(g, (x) => x.falhas_no_horizonte, (v) => num(v)),
+        rotuloBases, "falhas_esperadas"),
+      card("Disponibilidade", porBase(g, (x) => [a(ieee.id)(x).disponibilidade, a(baschel.id)(x).disponibilidade], ([i, s]) => `${disp(i)} a ${disp(s)}`),
+        `${CURTO_REPARO[ieee.id] || ieee.nome} a ${CURTO_REPARO[baschel.id] || baschel.nome}; ${rotuloBases}`, "disponibilidade", `${GLOSSARIO.disponibilidade_inerente} ${GLOSSARIO.disponibilidade_logistica}`),
+      card("Horas paradas por ano", porBase(g, (x) => [a(ieee.id)(x).horas_paradas_por_ano, a(baschel.id)(x).horas_paradas_por_ano],
+        ([i, s]) => `${num(i)} a ${num(s)} h`), `${CURTO_REPARO[ieee.id] || ieee.nome} a ${CURTO_REPARO[baschel.id] || baschel.nome}; ${rotuloBases}`, "horas_paradas"));
+    return el("section", { class: "grupo-painel" },
+      el("h3", { class: "science-h" }, el("span", { class: "marca-grupo", style: `background: var(--g-grupo-${g.id})` }), g.nome),
+      chart, cards);
+  }));
+
+  const rows = d.grupos.flatMap((g) => bases.map((b) => ({ g, b, x: g.bases[b] })));
+  const lowest = d3.min(rows, (r) => Math.min(...d.reparo.map((rep) => r.x.disponibilidade[rep.id].disponibilidade)));
+  const availability = quadro({ titulo: "Disponibilidade de cada grupo nos dois cenários de reparo", chave: "disponibilidade",
+    extra: GLOSSARIO.cenario_reparo, arquivo: "disponibilidade-grupos",
+    desenhar: (area, largura, cores) => linhaDoTempo(area, largura, cores, {
+      titulo: "Disponibilidade: reparo ativo e parada de campo", dominio: [Math.floor(lowest * 1000) / 10, 100],
+      xRotulo: "disponibilidade (%)", xFormato: (v) => BR.format("~g")(v), margemEsquerda: largura < 480 ? 96 : Math.min(230, largura * 0.4),
+      alturaLinha: 28,
+      legenda: [{ nome: ieee.nome, forma: "losango", cor: cores.texto }, { nome: baschel.nome, forma: "circulo", cor: cores.texto, vazado: true }],
+      itens: rows.map(({ g, b, x }) => {
+        const i = x.disponibilidade[ieee.id], s = x.disponibilidade[baschel.id];
+        const cor = COR_GRUPO(cores, g.id);
+        return { id: `${g.id}-${b}`, rotulo: `${NOME_CURTO[g.id] || g.nome} · ${NOME_BASE[b]}`,
+          ligar: [100 * s.disponibilidade, 100 * i.disponibilidade], corLigacao: cor,
+          pontos: [{ x: 100 * i.disponibilidade, forma: "losango", cor, dica: [`${g.nome} · ${NOME_BASE[b]}`, `${ieee.nome}: ${disp(i.disponibilidade)}`,
+            `${num(i.horas_paradas_por_ano)} h paradas por ano`] },
+          { x: 100 * s.disponibilidade, forma: "circulo", cor, vazado: true, dica: [`${g.nome} · ${NOME_BASE[b]}`,
+            `${baschel.nome}: ${disp(s.disponibilidade)}`, `${num(s.horas_paradas_por_ano)} h paradas por ano`] }] };
+      }) }),
+    csv: () => [["grupo", "base", "MTBF (h de calendário)", ...d.reparo.flatMap((rep) => [`parada por falha (h) ${rep.nome}`,
+      `disponibilidade ${rep.nome}`, `horas paradas por ano ${rep.nome}`])],
+      ...rows.map(({ g, b, x }) => [g.nome, NOME_BASE[b], x.disponibilidade[ieee.id].mtbf_calendario_horas,
+        ...d.reparo.flatMap((rep) => [x.disponibilidade[rep.id].parada_horas, x.disponibilidade[rep.id].disponibilidade,
+          x.disponibilidade[rep.id].horas_paradas_por_ano])])] });
+  const availabilityTable = table(["Grupo", "Base", comNota("MTBF (h de calendário)", "mtbf"),
+    ...d.reparo.flatMap((rep) => {
+      const curto = CURTO_REPARO[rep.id] || rep.nome;
+      return [comNota(`Parada por falha · ${curto}`, "parada_falha"),
+        comNota(`Disponibilidade · ${curto}`, rep.id === ieee.id ? "disponibilidade_inerente" : "disponibilidade_logistica"),
+        comNota(`Horas paradas por ano · ${curto}`, "horas_paradas")];
+    })],
+  rows.map(({ g, b, x }) => [g.nome, NOME_BASE[b], num(x.disponibilidade[ieee.id].mtbf_calendario_horas),
+    ...d.reparo.flatMap((rep) => {
+      const r = x.disponibilidade[rep.id];
+      return [`${num(r.parada_horas)} h`, disp(r.disponibilidade), `${num(r.horas_paradas_por_ano)} h`];
+    })]));
+  const sources = el("ul", { class: "science-list" },
+    ...d.reparo.flatMap((rep) => [...rep.fontes, ...rep.hipoteses, ...rep.ressalvas].map((text) => el("li", { text: `${rep.nome}: ${text}` }))),
+    ...[...d.ressalvas, ...d.limites].map((text) => el("li", { text })));
+
+  body.replaceChildren(
+    el("p", { class: "muted" }, "As taxas de falha vêm dos cenários da pesquisa, as mesmas da FMECA, com vida exponencial (taxa constante). ",
+      "As fontes não dizem se a taxa é por hora de operação ou de calendário; por isso há as duas bases ", nota("base_tempo"), "."),
+    controls, overlay,
+    el("h3", { class: "science-h", text: "Um painel por grupo" }), panels,
+    el("h3", { class: "science-h subtitulo-secao" }, "Disponibilidade", nota("cenario_reparo")), availability,
+    el("section", { class: "science-output" }, availabilityTable),
+    el("details", { class: "historico" }, el("summary", { text: "Fontes, hipóteses e ressalvas dos tempos de reparo" }), sources),
+    el("h3", { class: "science-h", text: "Explorar um cenário" }), await reliabilityExplorer());
+}
+
+/* Explorador de um cenário qualquer: explora sem gravar; salvar exige fonte e hipóteses. */
+async function reliabilityExplorer() {
   let presets = [];
   try { presets = await api("/api/ciencia/cenarios"); } catch (error) { toast(error.message); }
   const params = science.reliability ||= { taxa: 8.9e-6, horas_por_ano: 4015, base: "operation", horizonte: 20, nome: "" };
@@ -673,9 +789,11 @@ async function renderReliability(body) {
       (v) => { params.base = v; rerun(); }, "base_tempo"),
     slider("Horizonte", { min: 1, max: 40, step: 1, value: params.horizonte, format: (v) => `${v} anos` },
       (v) => { params.horizonte = v; debounce(rerun); }).node);
-  body.replaceChildren(el("p", { class: "muted", text: "Vida exponencial (taxa constante), calculada pelo serviço de confiabilidade. Explorar não grava nada." }),
+  const box = el("div", { class: "science-output" },
+    el("p", { class: "muted", text: "Um λ qualquer, com vida exponencial, calculado pelo serviço de confiabilidade. Explorar não grava nada." }),
     controls, output, saveScenarioForm(params), scenarioJsonForm());
   await rerun();
+  return box;
 }
 
 function reliabilityChart(rows, unit = "anos") {
@@ -786,12 +904,21 @@ function fmecaView(data) {
       return [item.nome, item.S, item.O, item.D, item.npr, num(item.taxa_por_hora), `${num(r.mtbf_anos, 3)} anos`,
         pct(r.horizontes["1"].chance_de_falhar), pct(r.horizontes["20"].chance_de_falhar)];
     })),
+    quadro({ titulo: "Matriz de criticidade: severidade × ocorrência", chave: "matriz_criticidade", arquivo: "fmeca-matriz-criticidade",
+      desenhar: (area, largura, cores) => matrizCriticidade(area, largura, cores, {
+        titulo: "Matriz de criticidade da FMECA", descricao: "Cada grupo na posição da severidade e da ocorrência, de 1 a 10.",
+        itens: items.map((item) => ({ id: item.id, s: item.S, o: item.O, cor: (cores.grupos || {})[item.id] || cores.denso,
+          rotulo: `${NOME_CURTO[item.id] || item.nome} · D = ${item.D}`,
+          dica: [item.nome, `S = ${item.S}, O = ${item.O}, D = ${item.D}`, `NPR = ${item.npr} (${item.posicoes.npr}º)`] })) }),
+      csv: () => [["grupo", "S", "O", "D", "NPR", "posição pelo NPR"], ...items.map((item) => [item.nome, item.S, item.O, item.D, item.npr,
+        item.posicoes.npr])] }),
     el("div", { class: "science-pair" },
       ranking("Ordem pelo NPR (S × O × D)", "npr", byNpr, (i) => i.npr, (v) => String(v), "fmeca-npr"),
       ranking("Ordem pela taxa de falha (×10⁻⁶ por hora)", "lambda", byRate, (i) => i.taxa_por_hora * 1e6, (v) => dec(v), "fmeca-taxa")),
     el("p", { class: "muted", text: "As duas ordens ficam separadas, sem nota agregada (decisão de 27/09/2026)." }),
     ...(data.pares_discordantes_O_taxa?.length ? [el("h3", { class: "science-h", text: "Pares em que a ocorrência O e a taxa discordam" }),
-      table(["Maior O", "Menor O", "O", "Taxas (1/h)"], data.pares_discordantes_O_taxa.map((p) => [p.maior_O, p.menor_O,
+      table(["Maior O", "Menor O", "O", "Taxas (1/h)"], data.pares_discordantes_O_taxa.map((p) => [
+        items.find((i) => i.id === p.maior_O)?.nome || p.maior_O, items.find((i) => i.id === p.menor_O)?.nome || p.menor_O,
         p.O.join(" × "), p.taxas.map((t) => num(t)).join(" × ")]))] : []),
     el("h3", { class: "science-h", text: "Ressalvas e limites" }),
     el("ul", { class: "science-list" }, ...[...(data.ressalvas || []), ...(data.limites || [])].map((text) => el("li", { text }))));
