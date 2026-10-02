@@ -40,6 +40,7 @@ STATIC = Path(__file__).resolve().parent / "static"
 MAX_QUESTION_CHARS = 20_000
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 UPLOAD_SUFFIXES = {".pdf", ".md", ".json"}
+UPLOAD_BATCH = re.compile(r"[0-9a-f]{8,32}")  # identificador do lote de envios, gerado pela página
 # Respostas locais que não devem voltar ao modelo como histórico.
 OUT_OF_CONTEXT = {"insufficient_evidence", "invalid_citations", "invalid_result_refs"}
 # Resposta com número que não está no resultado citado (lote 26): aparece com aviso e fica fora do histórico.
@@ -186,6 +187,7 @@ def create_app(settings: WebSettings) -> Starlette:
     worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="aliado-biblioteca")
     lock = threading.Lock()
     library_jobs: set[str] = set()  # envios e fichas; enquanto correm, nenhum documento é apagado
+    upload_order: list[str] = []  # envios na ordem de chegada; o lote mais recente alimenta o pop-up da página
     skills = {item.name: item.description for item in list_skills()}
     aliases = {model["alias"] for model in settings.models}
     if settings.memory is not None:
@@ -306,8 +308,9 @@ def create_app(settings: WebSettings) -> Starlette:
                     record_usage(result, settings.usage_log)
                 except OSError:
                     pass
+            # Resposta cortada pelo teto de tamanho (lote 27): aparece com aviso e fica fora do histórico.
             in_context = (result.validation_status not in OUT_OF_CONTEXT and result.provider != "local"
-                          and result.results_status != UNVERIFIED_RESULTS)
+                          and result.results_status != UNVERIFIED_RESULTS and not result.truncated)
             user = {"role": "user", "content": text.strip(), "in_context": in_context,
                     "skill": skill, "apoio": support, "biblioteca": use_library, "web": use_web,
                     "resultados": use_results}
@@ -315,6 +318,8 @@ def create_app(settings: WebSettings) -> Starlette:
                      "provider": result.provider, "model": result.model,
                      "usage": asdict(result.usage) if result.usage else None,
                      "sources": list(result.sources), "validation_status": result.validation_status,
+                     # Lote 27: o que a busca trouxe e a resposta não citou, para a janela de fontes.
+                     "recuperados": [dict(hit) for hit in result.retrieved],
                      "web_sources": [dict(s) for s in result.web_sources],
                      "web_queries": list(result.web_queries),
                      "consulta_biblioteca": search_query,
@@ -322,6 +327,7 @@ def create_app(settings: WebSettings) -> Starlette:
                      "results_status": result.results_status,
                      "numeros_nao_conferidos": list(result.unverified_numbers),
                      "numeros_sem_marca": result.unmarked_numbers,
+                     "cortada": result.truncated,
                      "resultados_faltando": missing,
                      "memorias_usadas": [{"id": m["id"], "kind": m["kind"], "origin": m["origin"],
                                           "text": m["text"]} for m in memories],
@@ -434,12 +440,15 @@ def create_app(settings: WebSettings) -> Starlette:
                                                "ficha", "ficha_origem", "referencia")}
                         | {"ficha_pendente": d["title"] in pending} for d in _documents()]
             return JSONResponse(await run_in_threadpool(listing))
-        form = await request.form(max_files=1, max_fields=3)
+        form = await request.form(max_files=1, max_fields=4)
         upload = form.get("arquivo")
         if upload is None or not getattr(upload, "filename", None):
             return _error("Envie um arquivo PDF, Markdown ou JSON.")
         card_skill = form.get("skill")
         card_skill = card_skill if isinstance(card_skill, str) and card_skill in skills else None
+        # A página manda o mesmo lote para os arquivos escolhidos juntos; o pop-up soma por lote.
+        batch = form.get("lote")
+        batch = batch if isinstance(batch, str) and UPLOAD_BATCH.fullmatch(batch) else uuid.uuid4().hex
         name = Path(upload.filename).name
         if Path(name).suffix.lower() not in UPLOAD_SUFFIXES:
             return _error("Formato não aceito. Envie PDF, Markdown ou JSON.")
@@ -457,8 +466,9 @@ def create_app(settings: WebSettings) -> Starlette:
                     return _error("Arquivo acima de 100 MB.", 413)
                 handle.write(chunk)
         with lock:
-            settings.jobs[job] = {"estado": "na fila", "arquivo": name}
+            settings.jobs[job] = {"estado": "na fila", "arquivo": name, "lote": batch}
             library_jobs.add(job)
+            upload_order.append(job)
 
         def progress(stage: str, current: int, total: int) -> None:
             with lock:
@@ -467,26 +477,54 @@ def create_app(settings: WebSettings) -> Starlette:
         def run():
             with lock:
                 settings.jobs[job]["estado"] = "processando"
+            result = library_ = None
             try:
                 library_ = settings.library_factory()
                 result = library_.add(target, title=name, progress=progress)
                 if result.get("duplicate") and result.get("status") == "failed":
                     # Reenviar um documento que falhou é um pedido de nova tentativa.
                     result = library_.add(target, title=name, reprocess=True, progress=progress)
-                outcome = {"estado": "concluido", "resultado": {k: result[k] for k in (
+                indexed = result.get("status") in {"ready", "partial"}
+                outcome = {"indexado": indexed, "resultado": {k: result[k] for k in (
                     "id", "title", "version", "status", "issues", "duplicate") if k in result}
                     | {"trechos": result.get("chunks")}}
-            except (ValueError, OSError, RuntimeError, ImportError) as exc:
-                outcome = {"estado": "falhou", "erro": str(exc)}
+            except ValueError as exc:
+                outcome = {"estado": "falhou", "erro": str(exc)}  # mensagens escritas pelo projeto
+            except OSError:
+                # O texto do sistema traz código de erro e caminho de pasta: a tela recebe uma frase simples.
+                outcome = {"estado": "falhou", "erro": "Não foi possível ler ou gravar o arquivo. Confira o espaço "
+                                                       "em disco e tente enviar de novo."}
+            except Exception:
+                # Erro não previsto: a tarefa termina com falha, em vez de ficar presa e bloquear o apagar.
+                outcome = {"estado": "falhou", "erro": "Erro inesperado ao processar o documento. Tente enviar de novo."}
             finally:
                 # A biblioteca guarda a própria cópia do original; o arquivo temporário sai.
                 shutil.rmtree(folder, ignore_errors=True)
-            if (outcome["estado"] == "concluido" and not result.get("duplicate")
-                    and result.get("status") in {"ready", "partial"}):
-                outcome["resultado"] |= document_card(library_, result)
-                outcome["resultado"] |= reading_card(library_, result)
+            if not outcome.get("indexado") or result.get("duplicate"):
+                with lock:
+                    settings.jobs[job].update({"estado": "concluido"} | outcome)
+                return
+            # O documento já pode ser buscado e citado: fica pronto aqui (lote 27). As fichas chamam o
+            # modelo e vão para o fim da fila, depois da indexação dos outros arquivos enviados.
             with lock:
                 settings.jobs[job].update(outcome)
+            try:
+                worker.submit(cards, library_, result)
+            except RuntimeError:  # o executor já foi encerrado: as fichas saem agora
+                cards(library_, result)
+
+        def cards(library_, result: dict) -> None:
+            extra: dict = {}
+            try:
+                extra |= document_card(library_, result)
+                extra |= reading_card(library_, result)
+            except Exception:
+                # Uma falha inesperada nas fichas não pode deixar a tarefa presa: ela bloquearia o apagar.
+                extra.setdefault("aviso_ficha", "A ficha de leitura não pôde ser criada agora.")
+            finally:
+                with lock:
+                    current = settings.jobs[job]
+                    current.update({"estado": "concluido", "resultado": current["resultado"] | extra})
 
         def document_card(library_, result: dict) -> dict:
             """Ficha do documento (título, autores, ano e DOI); só na primeira versão de um título."""
@@ -624,15 +662,21 @@ def create_app(settings: WebSettings) -> Starlette:
 
         def run():
             counts = {"fichas": 0, "sem_dados": 0, "falhas": 0}
-            for index, title in enumerate(titles, 1):
-                try:
-                    counts["fichas" if _document_card(library_, title) else "sem_dados"] += 1
-                except (ProviderError, ValueError, OSError, KeyError, TypeError):
-                    counts["falhas"] += 1  # sem registro gravado: a próxima rodada tenta de novo
+            try:
+                for index, title in enumerate(titles, 1):
+                    try:
+                        # Um envio pode ter criado esta ficha enquanto a tarefa esperava: não paga duas vezes.
+                        if title in library_.titles_without_card():
+                            counts["fichas" if _document_card(library_, title) else "sem_dados"] += 1
+                    except Exception:
+                        # Erro previsto ou não: conta como falha, sem registro gravado, e a próxima rodada
+                        # tenta de novo. A tarefa presa bloquearia o apagar de documentos.
+                        counts["falhas"] += 1
+                    with lock:
+                        settings.jobs[job]["atual"] = index
+            finally:
                 with lock:
-                    settings.jobs[job]["atual"] = index
-            with lock:
-                settings.jobs[job].update({"estado": "concluido", "resultado": counts})
+                    settings.jobs[job].update({"estado": "concluido", "resultado": counts})
 
         worker.submit(run)
         return JSONResponse({"tarefa": job, "total": len(titles)}, 202)
@@ -673,8 +717,17 @@ def create_app(settings: WebSettings) -> Starlette:
 
     async def job_status(request: Request):
         with lock:
-            job = settings.jobs.get(request.path_params["job"])
+            # Cópia tirada com a trava: a tarefa continua sendo atualizada por outra thread.
+            job = dict(settings.jobs.get(request.path_params["job"]) or {})
         return JSONResponse(job) if job else _error("Tarefa não encontrada.", 404)
+
+    async def upload_jobs(request: Request):
+        """Envios do lote mais recente, na ordem de chegada: alimenta o pop-up e o traz de volta ao recarregar."""
+        with lock:
+            batch = settings.jobs[upload_order[-1]]["lote"] if upload_order else None
+            items = [{"id": job} | settings.jobs[job] for job in upload_order
+                     if settings.jobs[job]["lote"] == batch]
+        return JSONResponse({"lote": batch, "tarefas": items})
 
     async def document(request: Request):
         if request.path_params["kind"] == "ficha" and request.method == "POST":
@@ -705,6 +758,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/conversas/{cid}", conversation, methods=["GET", "PATCH", "DELETE"]),
         Route("/api/conversas/{cid}/mensagens", message, methods=["POST"]),
         Route("/api/biblioteca", library, methods=["GET", "POST"]),
+        Route("/api/biblioteca/tarefas", upload_jobs),
         Route("/api/biblioteca/tarefas/{job}", job_status),
         Route("/api/biblioteca/fichas", complete_cards, methods=["POST"]),
         Route("/api/biblioteca/{doc}", delete_document, methods=["DELETE"]),

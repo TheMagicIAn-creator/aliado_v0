@@ -246,17 +246,48 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes pulse { 0%, 80%, 100% { opacity: .25; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
 
-/* Envio de documentos */
-.uploads { display: grid; gap: 8px; padding: 0 clamp(16px, 5vw, 56px); }
-.uploads > * { width: 100%; max-width: 760px; margin: 0 auto; }
-.upload-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px dashed var(--border-strong);
-               border-radius: 12px; background: var(--surface); font-size: 13px; }
-.upload-card .name { font-weight: 500; }
-.upload-card .state { color: var(--text-soft); }
-.upload-card .grow { flex: 1; min-width: 0; }
-.upload-card.is-ok { border-style: solid; border-color: var(--accent); }
-.upload-card.is-warn { border-style: solid; border-color: var(--warn-text); }
-.upload-card.is-fail { border-style: solid; border-color: var(--danger-text); }
+/* Envio de documentos (lote 27): pop-up no canto inferior direito, em todas as abas, onde não há botões fixos;
+   no chat, a página o põe logo acima da caixa de mensagem. Fica abaixo do aviso rápido (13), da gaveta
+   estreita (15 e 20) e da janela de fontes (40). */
+.upload-pop { position: fixed; right: 16px; bottom: 16px; z-index: 12; width: min(340px, calc(100vw - var(--rail) - 16px));
+              display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 12px;
+              background: var(--surface); box-shadow: 0 10px 30px rgba(0, 0, 0, .18); font-size: 13px; }
+.upload-pop[hidden] { display: none; }
+/* Com o aviso à vista, a área da aba termina acima dele: a faixa do aviso fica reservada, e nenhum botão
+   fica embaixo. No chat, a faixa fica entre as mensagens e a caixa de mensagem, que não sai do lugar. */
+.app.has-upload-pop .messages, .app.has-upload-pop .library { margin-bottom: var(--upload-space, 0px); }
+.upload-pop-head { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.upload-pop-title { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* O resumo de vários documentos quebra a linha: a contagem de falhas não pode ficar cortada. */
+.upload-pop-title.is-summary { white-space: normal; overflow-wrap: anywhere; }
+.upload-pop-head .icon-button { width: 26px; height: 26px; flex: 0 0 auto; }
+.upload-pop-head .icon-button svg { width: 16px; height: 16px; }
+.upload-pop.is-min #upload-min svg { transform: rotate(180deg); }
+.upload-pop.is-min .upload-pop-details { display: none; }
+.upload-pop-bar { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 5px; border: 0;
+                  border-radius: 3px; overflow: hidden; background: var(--surface-strong); color: var(--accent); }
+.upload-pop-bar::-webkit-progress-bar { background: var(--surface-strong); }
+.upload-pop-bar::-webkit-progress-value { background: var(--accent); transition: width .4s ease; }
+.upload-pop-bar::-moz-progress-bar { background: var(--accent); }
+.upload-pop-bar:indeterminate { background: linear-gradient(90deg, var(--surface-strong) 0 30%, var(--accent) 30% 70%,
+                                var(--surface-strong) 70%) 0 0 / 200% 100%; animation: upload-wait 1.4s infinite linear; }
+.upload-pop-bar:indeterminate::-webkit-progress-bar { background: transparent; }
+.upload-pop-bar:indeterminate::-moz-progress-bar { background: transparent; }
+@keyframes upload-wait { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.upload-pop-details { display: grid; gap: 6px; min-width: 0; }
+.upload-pop-now { margin: 0; color: var(--text-soft); overflow-wrap: anywhere; }
+.upload-pop-issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 40vh; overflow-y: auto; }
+.upload-pop-issues[hidden] { display: none; }
+.upload-pop-issues li { display: flex; align-items: flex-start; gap: 6px; padding: 6px 8px; border-radius: 8px;
+                        border: 1px solid var(--warn-text); overflow-wrap: anywhere; }
+.upload-pop-issues li.is-fail { border-color: var(--danger-text); }
+.upload-pop-issues li > span { flex: 1; min-width: 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+                   clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .upload-pop-bar:indeterminate { animation: none; }
+  .upload-pop-bar::-webkit-progress-value { transition: none; }
+}
 .bar { width: 90px; height: 4px; border-radius: 2px; background: var(--surface-strong); overflow: hidden; }
 .bar i { display: block; width: 40%; height: 100%; background: var(--accent); animation: slide 1.4s infinite ease-in-out; }
 .bar.is-determinate i { animation: none; transition: width .4s ease; }
@@ -289,9 +320,10 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .switch input:checked + .switch-track { background: var(--accent); }
 .switch input:checked + .switch-track::after { transform: translateX(14px); }
 .switch input:focus-visible + .switch-track { box-shadow: var(--focus); }
-.dropzone { position: absolute; inset: 12px; border: 2px dashed var(--accent); border-radius: 18px;
-            background: color-mix(in srgb, var(--accent-soft) 88%, transparent); display: grid; place-items: center;
-            font: 20px var(--serif); color: var(--accent-text); z-index: 5; }
+.dropzone { position: fixed; inset: 68px 12px 12px calc(var(--rail) + 12px); border: 2px dashed var(--accent);
+            border-radius: 18px; background: color-mix(in srgb, var(--accent-soft) 88%, transparent); display: grid;
+            place-items: center; font: 20px var(--serif); color: var(--accent-text); z-index: 30; pointer-events: none; }
+.dropzone[hidden] { display: none; }
 
 /* Janela de fontes e memória, aberta sobre a resposta */
 .popover { position: fixed; z-index: 40; max-height: 60vh; overflow-y: auto; padding: 12px 14px;
@@ -302,9 +334,6 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .note-uncited { background: var(--warn-bg); color: var(--warn-text); }
 .recall-item { border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; display: grid; gap: 3px;
                font-size: 12.5px; }
-.upload-queue { font-size: 12.5px; color: var(--text-soft); }
-.upload-card.is-overflow { display: none; }
-.upload-card.is-leaving { opacity: 0; transition: opacity .4s; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .panel-title { font-size: 12px; font-weight: 500; letter-spacing: .8px; text-transform: uppercase; color: var(--text-faint); margin: 0; }
 .scrim { display: none; }
@@ -315,7 +344,19 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .source-head .cite { vertical-align: 0; }
 .source-title { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .source-loc { color: var(--text-soft); margin-top: 4px; font-size: 12px; }
-.source-text { font: 13.5px/1.55 var(--serif); color: var(--text-soft); margin: 8px 0 0; max-height: 9.5em; overflow: hidden; }
+.source-text { font: 13.5px/1.55 var(--serif); color: var(--text-soft); margin: 8px 0 0; max-height: 14em; overflow-y: auto;
+               white-space: pre-line; overflow-wrap: anywhere; }
+/* Lote 27: trechos que a busca trouxe e a resposta não citou; a passagem abre ao clicar. */
+.source-more > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; cursor: pointer; min-width: 0; }
+.source-more > summary::before { content: "\25B8"; flex: 0 0 auto; color: var(--text-faint); }
+.source-more[open] > summary::before { content: "\25BE"; }
+.source-more > summary .source-title { flex: 1; min-width: 0; }
+.source-more > summary .source-loc { margin-top: 0; flex: 0 0 auto; }
+.source-more > summary .source-peek { flex: 1 0 100%; min-width: 0; font-size: 12px; color: var(--text-soft);
+                                      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-more[open] > summary .source-peek { display: none; }
+/* O título fixo da janela não pode cobrir o cartão ou o grupo para onde a janela rola. */
+.source-card, .source-retrieved { scroll-margin-top: 60px; }
 .source-actions { display: flex; gap: 12px; margin-top: 8px; }
 .link { border: 0; background: none; padding: 0; color: var(--cite-text); font-size: 12.5px; text-decoration: none; }
 .link:hover { text-decoration: underline; }
@@ -340,7 +381,9 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .doc-item:hover, .doc-item.is-current { border-color: var(--accent); }
 .doc-title { font-weight: 500; font-size: 14px; overflow-wrap: anywhere; }
 .doc-ref { font-size: 12.5px; color: var(--accent-text); overflow-wrap: anywhere; }
-.library-head > .library-actions { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; }
+/* Em telas estreitas os dois botões quebram a linha, em vez de alargar a página (lote 27). */
+.library-head > .library-actions { flex: 0 1 auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+                                   max-width: 100%; }
 /* Ficha do documento (lote 19) */
 .doc-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px;
             font-size: 13.5px; }
@@ -433,7 +476,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
 .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg);
-         padding: 10px 16px; border-radius: 10px; font-size: 13.5px; max-width: min(520px, 90vw); z-index: 10; }
+         padding: 10px 16px; border-radius: 10px; font-size: 13.5px; max-width: min(520px, 90vw); z-index: 13; }
 
 /* Telas estreitas: conversas e fontes abrem sobrepostas, sem espremer a resposta. */
 /* Aba Ciência (lote 20) */

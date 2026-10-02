@@ -79,6 +79,15 @@
                       "--resultados", "tmp/lote-26/resultados", "--gpvs", "data/gpvs"],
       "port": 8775,
       "url": "http://127.0.0.1:8775"
+    },
+    {
+      "name": "aliado-web-lote-27",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "aliado", "web", "--env-file", ".env", "--porta", "8776", "--sem-navegador",
+                      "--dados", "tmp/lote-27/dados", "--biblioteca", "tmp/lote-27/biblioteca",
+                      "--resultados", "tmp/lote-27/resultados", "--gpvs", "data/gpvs"],
+      "port": 8776,
+      "url": "http://127.0.0.1:8776"
     }
   ]
 }

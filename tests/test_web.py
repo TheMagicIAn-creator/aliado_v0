@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+import threading
 import time
 from pathlib import Path
 
@@ -523,3 +525,245 @@ def test_a_failing_digest_does_not_break_the_conversation(env):
     env["settings"].results_digest = None
     assert client.get("/api/estado").json()["resultados"]["disponivel"] is False
     assert fim(ask(client, cid)[1])["mensagens"][1]["resultados_faltando"] == []
+
+
+def wait_job(client, job, until=lambda status: status["estado"] in {"concluido", "falhou"}):
+    for _ in range(100):
+        status = client.get(f"/api/biblioteca/tarefas/{job}").json()
+        if until(status):
+            return status
+        time.sleep(0.05)
+    raise AssertionError("A tarefa não chegou ao estado esperado")
+
+
+def post_file(client, name, batch=None):
+    response = client.post("/api/biblioteca", headers=HEADERS, data={"lote": batch} if batch else None,
+                           files={"arquivo": (name, b"%PDF-1.4 conteudo", "application/pdf")})
+    assert response.status_code == 202
+    return response.json()["tarefa"]
+
+
+def test_document_is_marked_ready_before_its_cards(env):
+    client, settings, library = env["client"], env["settings"], env["library"]
+    release, maker = threading.Event(), settings.card_maker
+
+    def slow_maker(**kwargs):
+        release.wait(5)
+        return maker(**kwargs)
+
+    settings.card_maker = slow_maker
+    job = post_file(client, "Sarquis 2020.pdf")
+    ready = wait_job(client, job, lambda status: status.get("indexado"))
+    # Já pode ser buscado e citado: pronto para a tela, com as fichas ainda por fazer.
+    assert ready["estado"] == "processando" and ready["resultado"]["trechos"] == 7
+    assert "fichas" not in ready["resultado"]
+    release.set()
+    done = wait_job(client, job)
+    assert done["estado"] == "concluido" and done["indexado"] is True and done["resultado"]["fichas"] == 1
+    # Extração que falhou: termina sem ficar pronta e sem pedir fichas.
+    cards = len(env["review"]["calls"])
+    library.add = lambda path, **kwargs: {"id": "d9", "title": kwargs["title"], "version": 1, "status": "failed",
+                                          "issues": ["PDF sem texto."], "duplicate": False, "chunks": 0}
+    failed = wait_job(client, post_file(client, "vazio.pdf"))
+    assert failed["estado"] == "concluido" and failed["indexado"] is False
+    assert failed["resultado"]["status"] == "failed" and len(env["review"]["calls"]) == cards
+
+
+def test_queued_uploads_are_indexed_before_the_cards(env):
+    client, settings, library = env["client"], env["settings"], env["library"]
+    order, release = [], threading.Event()
+    add, maker = library.add, settings.card_maker
+
+    def slow_add(path, **kwargs):
+        release.wait(5)
+        order.append(("indexa", kwargs["title"]))
+        return add(path, **kwargs)
+
+    def noting_maker(**kwargs):
+        order.append(("ficha", kwargs["title"]))
+        return maker(**kwargs)
+
+    library.add, settings.card_maker = slow_add, noting_maker
+    jobs = [post_file(client, name, "abcdef0123456789") for name in ("a.pdf", "b.pdf")]
+    release.set()
+    for job in jobs:
+        assert wait_job(client, job)["resultado"]["fichas"] == 1
+    # As fichas chamam o modelo: só vêm depois de todos os arquivos enviados estarem indexados.
+    assert order == [("indexa", "a.pdf"), ("indexa", "b.pdf"), ("ficha", "a.pdf"), ("ficha", "b.pdf")]
+
+
+def test_upload_jobs_route_lists_only_the_current_batch(env):
+    client, settings = env["client"], env["settings"]
+    assert client.get("/api/biblioteca/tarefas").json() == {"lote": None, "tarefas": []}
+    first = [post_file(client, name, "0123456789abcdef") for name in ("a.pdf", "b.pdf")]
+    for job in first:
+        wait_job(client, job)
+    settings.jobs["ciencia"] = {"estado": "processando", "etapa": "treino"}  # tarefa de outra aba: fica de fora
+    listing = client.get("/api/biblioteca/tarefas").json()
+    assert listing["lote"] == "0123456789abcdef" and [job["id"] for job in listing["tarefas"]] == first
+    assert [job["arquivo"] for job in listing["tarefas"]] == ["a.pdf", "b.pdf"]
+    assert all(job["estado"] == "concluido" and job["indexado"] for job in listing["tarefas"])
+    assert "uploads-temporarios" not in json.dumps(listing)  # nenhum caminho do computador
+    other = post_file(client, "c.pdf", "../../etc")  # lote inválido: o servidor cria o dele
+    wait_job(client, other)
+    listing = client.get("/api/biblioteca/tarefas").json()
+    assert [job["id"] for job in listing["tarefas"]] == [other] and re.fullmatch(r"[0-9a-f]{32}", listing["lote"])
+
+
+def test_job_fails_instead_of_hanging_on_an_unexpected_error(env):
+    client, library = env["client"], env["library"]
+
+    def broken(path, **kwargs):
+        raise KeyError("campo que faltou")  # fora dos erros previstos para a leitura do documento
+
+    library.add = broken
+    done = wait_job(client, post_file(client, "estranho.pdf"))
+    assert done["estado"] == "falhou" and "Erro inesperado" in done["erro"] and "KeyError" not in done["erro"]
+    assert not any((env["settings"].data_dir / "uploads-temporarios").iterdir())
+
+
+def test_job_ends_when_the_cards_fail_unexpectedly(env):
+    client, settings = env["client"], env["settings"]
+
+    def broken(**kwargs):
+        raise RuntimeError("falha fora das previstas para a ficha")
+
+    settings.card_maker = broken
+    done = wait_job(client, post_file(client, "Sarquis 2020.pdf"))
+    # A tarefa presa em "processando" bloquearia o apagar de documentos até reiniciar.
+    assert done["estado"] == "concluido" and done["resultado"]["trechos"] == 7
+    assert "não pôde ser criada" in done["resultado"]["aviso_ficha"]
+
+
+def test_complete_cards_does_not_pay_twice_for_a_card_made_meanwhile(env):
+    client, settings, library = env["client"], env["settings"], env["library"]
+    calls, pending = [], iter([["Baschel 2018"]])
+    settings.card_extractor = lambda **kwargs: calls.append(kwargs["title"])
+    # Na hora do clique falta a ficha; quando a tarefa roda, um envio já a criou.
+    library.titles_without_card = lambda: next(pending, [])
+    job = client.post("/api/biblioteca/fichas", headers=HEADERS).json()
+    assert job["total"] == 1
+    assert wait_job(client, job["tarefa"])["resultado"] == {"fichas": 0, "sem_dados": 0, "falhas": 0} and calls == []
+
+
+def test_reply_stores_what_the_search_brought_and_the_answer_did_not_cite(env):
+    client = env["client"]
+    other = SOURCE | {"citation_id": "Kxyz", "title": "IEEE 493", "page": 134, "passagem": "RCM is a logical framework."}
+    env["reply"].update(extra={"retrieved": (other,)})
+    cid = new_conversation(client)
+    reply = fim(ask(client, cid)[1])["mensagens"][1]
+    assert [source["citation_id"] for source in reply["sources"]] == ["Kabc"] and reply["recuperados"] == [other]
+    stored = client.get(f"/api/conversas/{cid}").json()["messages"][1]
+    assert stored["recuperados"][0]["passagem"] == "RCM is a logical framework."
+
+
+def test_page_starts_on_the_welcome_screen_and_has_the_upload_popup(env):
+    client = env["client"]
+    # O fim de linha do arquivo depende do sistema: as travas de mais de uma linha valem nos dois.
+    page, script = client.get("/").text, client.get("/static/app.js").text.replace("\r\n", "\n")
+    assert 'id="upload-pop"' in page and 'id="uploads"' not in page and 'id="upload-status" role="status"' in page
+    # A última conversa não fica mais guardada no navegador: abrir ou recarregar cai na apresentação.
+    assert "aliado.conversation" not in script and "restoreUploads()" in script
+    assert "/api/biblioteca/tarefas" in script and "showChat(); uploadFiles" not in script
+    assert "A busca também trouxe" in script and "documentos que a busca trouxe" in script
+    # A janela de fontes: a passagem ampliada nos dois grupos, o link só quando sobrou documento sem citar, o
+    # grupo dos não citados, e o texto dos documentos sempre como texto (nunca como HTML).
+    assert script.count("text: flowText(source.passagem || source.text)") == 2
+    assert "if (brought.size > cited.size) {" in script and "if (retrieved.length) {" in script
+    assert script.count("innerHTML") == 3  # só HTML gerado no servidor: a resposta, a tabela do resultado e o Markdown
+    # O reenvio de um documento que já estava na biblioteca, indexado em parte, diz isso em vez da contagem.
+    assert "já estava na biblioteca, indexado só em parte" in script and "message.cortada" in script
+    # Uma trava por correção da tela (a suíte não roda o JavaScript): se alguma sair, o teste acusa.
+    for pinned in (
+        "const UPLOAD_PARALLEL = 3;",
+        "uploads.hidden = false;\n  uploads.minimized = false;",
+        'uploadStatus(item) === "andamento") || items.find((item) => !uploadIndexed(item))',
+        '" · com falha"',
+        "const noCards = items.filter(cardWarning).length;",
+        "uploads.earlier = kept;",
+        "if (key !== uploads.issuesKey) {",
+        "if (inside) focusAfterUploads();",
+        'statuses[0] === "parcial" ? cardNotes(',
+        'title.classList.toggle("is-summary", !single || failed > 0);',
+        "error instanceof TypeError",
+        "if (response.status === 404) return null;",
+        "catch { continue; }",
+        "item.messages || item.id === state.conversation?.id",
+        '{ kind: "retrieved" }',
+        'focus?.kind === "retrieved"',
+        "O que a busca na biblioteca trouxe",
+        'class: "source-peek"',
+        'count === 1 ? "1 trecho"',
+        "renderMemoryPanel(message);\n            }",
+        '.replace(/([^\\n])\\n(?!\\n)/g, "$1 ")',
+        '["ficha", "ficha do documento"].includes(item.job?.etapa)) || pending[0]',
+    ):
+        assert pinned in script, pinned
+    assert script.count("raiseUploads();") == 3
+    styles = client.get("/static/app.css").text
+    assert ".source-card, .source-retrieved { scroll-margin-top" in styles
+    assert ".upload-pop-title.is-summary { white-space: normal; overflow-wrap: anywhere; }" in styles
+    # O aviso fica no canto inferior direito, e a área da aba termina acima dele, para não cobrir nenhum botão.
+    assert ".upload-pop { position: fixed; right: 16px; bottom: 16px;" in styles
+    assert (".app.has-upload-pop .messages, .app.has-upload-pop .library { margin-bottom: var(--upload-space, 0px); }"
+            in styles)
+    assert 'app.style.setProperty("--upload-space"' in script and 'app.classList.remove("has-upload-pop");' in script
+    assert "placeUploads();  // devolve o espaço reservado" in script
+    assert 'new ResizeObserver(placeUploads).observe($("composer"));' in script  # a caixa de mensagem cresce
+
+
+def test_resent_partial_document_comes_back_as_a_duplicate_without_a_count(env):
+    client, library = env["client"], env["library"]
+    library.add = lambda path, **kwargs: {"id": "d1", "title": kwargs["title"], "version": 1, "status": "partial",
+                                          "issues": ["Página 2: sem texto utilizável; conferir original."],
+                                          "duplicate": True}
+    done = wait_job(client, post_file(client, "Baschel 2018.pdf"))
+    # A duplicata não traz a contagem de trechos: a página mostra "já estava na biblioteca, indexado só em parte".
+    assert done["estado"] == "concluido" and done["indexado"] is True
+    assert done["resultado"]["duplicate"] is True and done["resultado"]["status"] == "partial"
+    assert done["resultado"]["trechos"] is None and "fichas" not in done["resultado"]
+
+
+def test_file_errors_reach_the_screen_in_plain_words(env):
+    client, library = env["client"], env["library"]
+
+    def broken(path, **kwargs):
+        raise OSError(2, "No such file or directory", "C:\\dados\\uploads-temporarios\\a.md")
+
+    library.add = broken
+    job = post_file(client, "a.pdf")
+    done = wait_job(client, job)
+    listed = client.get("/api/biblioteca/tarefas").json()["tarefas"][0]
+    for shown in (done["erro"], listed["erro"]):
+        assert shown.startswith("Não foi possível ler ou gravar o arquivo")
+        assert "Errno" not in shown and "uploads-temporarios" not in shown and ":\\" not in shown
+    # Mensagem escrita pelo projeto continua chegando como está.
+    library.add = lambda path, **kwargs: (_ for _ in ()).throw(ValueError("PDF protegido; forneça uma cópia acessível."))
+    assert wait_job(client, post_file(client, "b.pdf"))["erro"] == "PDF protegido; forneça uma cópia acessível."
+
+
+def test_complete_cards_ends_even_with_an_unexpected_error(env):
+    client, settings, library = env["client"], env["settings"], env["library"]
+    library.titles_without_card = lambda: ["Baschel 2018"]
+
+    def broken(**kwargs):
+        raise RuntimeError("erro fora dos previstos para a ficha")
+
+    settings.card_extractor = broken
+    library.opening_text = lambda title: "texto"
+    job = client.post("/api/biblioteca/fichas", headers=HEADERS).json()
+    done = wait_job(client, job["tarefa"])
+    # A tarefa presa em andamento manteria o botão girando e bloquearia o apagar de documentos.
+    assert done["estado"] == "concluido" and done["resultado"] == {"fichas": 0, "sem_dados": 0, "falhas": 1}
+
+
+def test_cut_answer_is_flagged_and_stays_out_of_the_history(env):
+    client = env["client"]
+    env["reply"].update(pieces=["A definição é a frase que fic"], sources=(), status="uncited", extra={"truncated": True})
+    cid = new_conversation(client)
+    messages = fim(ask(client, cid)[1])["mensagens"]
+    assert messages[1]["cortada"] is True and [m["in_context"] for m in messages] == [False, False]
+    env["reply"].update(pieces=["Resposta inteira."], extra={})
+    whole = fim(ask(client, cid, "De novo")[1])["mensagens"]
+    assert whole[1]["cortada"] is False and whole[1]["in_context"] is True
+    assert [m["content"] for m in env["calls"][-1]["history"]] == []  # a resposta cortada não voltou ao modelo

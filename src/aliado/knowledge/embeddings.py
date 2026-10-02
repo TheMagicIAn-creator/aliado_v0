@@ -13,6 +13,9 @@ ARTIFACT_HASHES = {
     "tokenizer.json": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8",
     MODEL_FILE: "98a01d88b7de996cdea58c32ca71208c09968d143798814b2ea09d3439dc334f",
 }
+# Textos por chamada ao modelo. O modelo quantizado é sensível ao preenchimento do lote: quem codifica
+# em fatias (a indexação, lote 27) usa múltiplos deste número para obter os mesmos vetores.
+ENCODE_BATCH = 16
 
 
 class LocalEncoder:
@@ -70,8 +73,8 @@ class LocalEncoder:
             options.intra_op_num_threads = 1
             self._session = ort.InferenceSession(str(path), options, providers=["CPUExecutionProvider"])
         outputs = []
-        for start in range(0, len(texts), 16):
-            encoded = tokenizer.encode_batch(texts[start:start + 16])
+        for start in range(0, len(texts), ENCODE_BATCH):
+            encoded = tokenizer.encode_batch(texts[start:start + ENCODE_BATCH])
             if any(len(item.ids) > 128 for item in encoded):
                 raise ValueError("Trecho ou consulta excede 128 tokens; divida o texto.")
             width = max(len(item.ids) for item in encoded)

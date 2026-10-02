@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from aliado.knowledge.embeddings import LocalEncoder
+from aliado.knowledge.embeddings import ENCODE_BATCH, LocalEncoder
 from aliado.knowledge.extraction import extract_document
 from aliado.knowledge.metadata import MAX_CHARS, clean_card, named_documents, reference
 from aliado.knowledge.stopwords import STOPWORDS, plain
@@ -31,6 +31,11 @@ SEARCH_SETTINGS = {
     "por_documento": 2,
     "por_documento_citado": 4,
 }
+# Indexação em fatias (lote 27), para a tela acompanhar o avanço. Só múltiplos do lote interno do
+# encoder dão vetores idênticos aos de uma chamada única.
+INDEX_SLICE = 2 * ENCODE_BATCH
+# Menor sobreposição, em caracteres, para dois trechos vizinhos serem unidos numa passagem.
+MIN_OVERLAP = 12
 
 
 def _hash(data: bytes) -> str:
@@ -55,6 +60,35 @@ def _diverse(candidates: list[tuple[float, dict]], limit: int, named: set[str]) 
         elif len(spare) < limit:
             spare.append(pair)
     return sorted(chosen + spare[:limit - len(chosen)], key=lambda pair: (-pair[0], pair[1]["id"]))
+
+
+def _overlap(left: str, right: str, minimum: int = MIN_OVERLAP, split=None) -> int | None:
+    """Quantos caracteres do fim de `left` repetem o começo de `right`; None se não der para saber.
+
+    Os trechos são fatias do mesmo texto, com cerca de 20 tokens em comum: o fim do primeiro repete o
+    começo do segundo. Sem essa repetição, os textos não são vizinhos.
+    - Um só tamanho serve: é a sobreposição.
+    - Dois tamanhos servem: é prosa em que a parte comum começa e termina com o mesmo termo. Vale o
+      maior, e só se `split` (a divisão que criou os trechos) devolver os dois trechos a partir da união.
+    - Três ou mais servem: o texto é repetitivo (pontilhado de sumário, células iguais de uma tabela), e
+      escolher um tamanho cortaria repetições. Os trechos não são unidos.
+    """
+    sizes = [size for size in range(min(len(left), len(right)), minimum - 1, -1) if left.endswith(right[:size])]
+    if len(sizes) == 1:
+        return sizes[0]
+    if len(sizes) == 2 and split is not None:
+        try:
+            if split(left + right[sizes[0]:]) == [left, right]:
+                return sizes[0]
+        except ValueError:  # encoder indisponível: sem desempate, sem união
+            return None
+    return None
+
+
+def _join(left: str, right: str, minimum: int = MIN_OVERLAP, split=None) -> str | None:
+    """Une dois trechos vizinhos sem repetir a parte comum; None se a sobreposição não for segura."""
+    size = _overlap(left, right, minimum, split)
+    return None if size is None else left + right[size:]
 
 
 def _vector(values) -> list[float]:
@@ -247,9 +281,13 @@ class DocumentLibrary:
                                    "locator": section.locator, "page": section.page,
                                    "method": section.method})
             if chunks:
+                texts, vectors = [c["text"] for c in chunks], []
+                for start in range(0, len(texts), INDEX_SLICE):
+                    if progress:
+                        progress("indexando", start, len(texts))
+                    vectors.extend(self.encoder.encode(texts[start:start + INDEX_SLICE]))
                 if progress:
-                    progress("indexando", 0, len(chunks))
-                vectors = self.encoder.encode([c["text"] for c in chunks])
+                    progress("indexando", len(texts), len(texts))
                 if len(vectors) != len(chunks):
                     raise ValueError("Encoder retornou quantidade incorreta de vetores.")
                 dimensions = {len(vector) for vector in vectors}
@@ -423,6 +461,57 @@ class DocumentLibrary:
                          "text": row["text"], "score": score, "similarity": scores[row["id"]],
                          "referencia": cards.get(row["title"], {}).get("referencia")})
         return hits
+
+    def expand(self, hits: list[dict], *, neighbours: int = 1) -> list[dict]:
+        """Os mesmos resultados, com `passagem`: o trecho unido ao anterior e ao seguinte da mesma página.
+
+        Um trecho tem cerca de 68 palavras e pode cortar uma definição no meio da frase (lote 27). A ordem
+        dos trechos de uma extração é a de gravação. Um vizinho só entra se for da mesma extração e do
+        mesmo localizador (a mesma página), se o texto realmente se sobrepuser e se ele não for outro
+        resultado nem já tiver sido usado. `text` continua sendo o trecho indexado, o que a busca achou.
+        Numa página com texto repetido na extração, o resultado cujo trecho já vai inteiro na passagem
+        de outro melhor colocado não é ampliado, para o mesmo parágrafo não seguir duas vezes.
+        """
+        expanded = [dict(hit) | {"passagem": hit["text"]} for hit in hits]
+        if not hits or neighbours < 1 or not (self.root / "catalog.sqlite3").exists():
+            return expanded
+        ids = [hit["citation_id"] for hit in hits]
+        split = getattr(self.encoder, "split", None)  # a divisão que criou os trechos desempata a união
+        # A linha vizinha na ordem de gravação, numa busca direta pela posição: os trechos de uma extração
+        # são gravados em sequência. A extração e o localizador são conferidos depois, sem varrer a tabela.
+        nearest = {-1: "rowid < ? ORDER BY rowid DESC", 1: "rowid > ? ORDER BY rowid"}
+        with self._connect() as db:
+            rows = {row["id"]: row for row in db.execute(
+                f"SELECT id, rowid AS position, run_id, locator FROM chunks WHERE id IN ({','.join('?' * len(ids))})",
+                ids)}
+            used = set(ids)
+            done = []  # (extração e localizador, passagem) dos resultados melhor colocados
+            for hit in expanded:  # na ordem da busca: o melhor resultado escolhe os vizinhos primeiro
+                row = rows.get(hit["citation_id"])
+                if row is None:
+                    continue
+                place = (row["run_id"], row["locator"])
+                if any(where == place and hit["text"] in passage for where, passage in done):
+                    continue
+                for direction, condition in nearest.items():
+                    position, edge = row["position"], hit["text"]  # o trecho da ponta, que encosta no vizinho
+                    for _ in range(neighbours):
+                        neighbour = db.execute(
+                            f"SELECT id, rowid AS position, text, run_id, locator FROM chunks WHERE {condition} LIMIT 1",
+                            (position,)).fetchone()
+                        if (neighbour is None or (neighbour["run_id"], neighbour["locator"]) != place
+                                or neighbour["id"] in used):
+                            break
+                        size = (_overlap(neighbour["text"], edge, split=split) if direction < 0
+                                else _overlap(edge, neighbour["text"], split=split))
+                        if size is None:
+                            break
+                        hit["passagem"] = (neighbour["text"] + hit["passagem"][size:] if direction < 0
+                                           else hit["passagem"] + neighbour["text"][size:])
+                        used.add(neighbour["id"])
+                        position, edge = neighbour["position"], neighbour["text"]
+                done.append((place, hit["passagem"]))
+        return expanded
 
     def verify(self) -> dict:
         issues = []

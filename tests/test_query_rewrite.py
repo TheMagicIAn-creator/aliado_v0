@@ -66,9 +66,9 @@ def test_the_rewritten_query_drives_the_search_and_falls_back_without_hits():
     library = Library()
     request = prepare_request(QUESTION, library=library, history=HISTORY, search_query=QUERY)
     assert library.queries == [QUERY] and request.metadata["search_query"] == QUERY
-    # Mais opções de fontes: 10 trechos no chat, e o pedido de mostrar a opção de cada fonte.
+    # Mais opções de fontes: 10 trechos no chat, e o pedido de apresentar o que cada documento diz (lote 27).
     assert library.limits == [10]
-    assert any("opção de cada fonte" in m["content"] for m in request.messages if m["role"] == "developer")
+    assert any("apresente o que diz cada um que trata do pedido" in m["content"] for m in request.messages if m["role"] == "developer")
     empty = Library(empty_for={QUERY})
     request = prepare_request(QUESTION, library=empty, history=HISTORY, search_query=QUERY)
     assert empty.queries == [QUERY, QUESTION] and request.metadata["search_query"] == QUESTION

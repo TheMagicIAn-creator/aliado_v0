@@ -152,7 +152,7 @@ def test_catalog_and_context_carry_the_card(tmp_path):
     assert item["titulo"] == "vida.md" and item["titulo_da_obra"] == "Vida útil"
     assert item["autores"] == ["Ana Souza"] and item["ano"] == 2021 and item["referencia"] == "Souza, 2021"
     chunks = next(m["content"] for m in request.messages if m["content"].startswith("Trechos recuperados"))
-    assert json.loads(chunks.split("\n", 1)[1])[0]["referencia"] == "Souza, 2021"
+    assert json.loads(chunks.split("\n", 1)[1])["documentos"][0]["referencia"] == "Souza, 2021"
 
 
 class FakeLibrary:

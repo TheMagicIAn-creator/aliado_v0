@@ -42,6 +42,26 @@
     </button>
   </header>
 
+  <section class="upload-pop" id="upload-pop" aria-label="Envio de documentos" hidden>
+    <div class="upload-pop-head">
+      <strong class="upload-pop-title" id="upload-title"></strong>
+      <button class="icon-button" id="upload-min" type="button" aria-expanded="true"
+              aria-controls="upload-details" aria-label="Recolher o aviso de envio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <button class="icon-button" id="upload-close" type="button" aria-label="Esconder o aviso; o envio continua"
+              title="Esconder o aviso; o envio continua">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <progress class="upload-pop-bar" id="upload-bar" max="1" aria-labelledby="upload-title"></progress>
+    <div class="upload-pop-details" id="upload-details">
+      <p class="upload-pop-now" id="upload-now"></p>
+      <ul class="upload-pop-issues" id="upload-issues" hidden></ul>
+    </div>
+    <p class="visually-hidden" id="upload-status" role="status"></p>
+  </section>
+
   <nav class="rail" aria-label="Seções">
     <button class="rail-item is-active" id="nav-chats" type="button" aria-expanded="true" title="Conversas">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>
@@ -72,7 +92,6 @@
         <div class="welcome-suggestions" id="suggestions"></div>
       </section>
     </div>
-    <div class="uploads" id="uploads"></div>
     <form class="composer" id="composer">
       <textarea id="question" rows="1" placeholder="Pergunte ou solte um PDF para a biblioteca"
                 aria-label="Mensagem"></textarea>
@@ -105,8 +124,8 @@
         </button>
       </div>
     </form>
-    <div class="dropzone" id="dropzone" hidden><p>Solte para adicionar à biblioteca</p></div>
   </main>
+  <div class="dropzone" id="dropzone" hidden><p>Solte para adicionar à biblioteca</p></div>
 
   <div class="popover" id="info-popover" role="dialog" aria-label="Fontes e memória desta resposta" hidden>
     <div class="panel-head">

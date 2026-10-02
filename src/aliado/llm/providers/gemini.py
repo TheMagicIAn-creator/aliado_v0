@@ -33,6 +33,13 @@ def _usage(response) -> LLMUsage | None:
     )
 
 
+def _truncated(response) -> bool:
+    """O modelo parou no teto de tokens de saída (o raciocínio conta nele): o texto ficou cortado."""
+    candidates = getattr(response, "candidates", None) or []
+    reason = getattr(candidates[0], "finish_reason", None) if candidates else None
+    return str(getattr(reason, "name", reason) or "").upper().endswith("MAX_TOKENS")
+
+
 def _grounding(response) -> dict:
     """Fontes, consultas e trechos sustentados da busca na web (grounding), se houver."""
     candidates = getattr(response, "candidates", None) or []
@@ -136,6 +143,7 @@ class GeminiProvider:
                 task_type=request.task_type,
                 structured_data=structured,
                 usage=_usage(response),
+                truncated=_truncated(response),
                 **_grounding(response),
             )
         except (ProviderNotConfiguredError, ValueError):
@@ -154,9 +162,10 @@ class GeminiProvider:
                 content = getattr(item, "text", "") or ""
                 usage = _usage(item)
                 grounding = _grounding(item)
-                if content or usage or grounding:
+                truncated = _truncated(item)
+                if content or usage or grounding or truncated:
                     yield LLMStreamChunk(content, self.name, model_id, request.task_type, usage=usage,
-                                         **grounding)
+                                         truncated=truncated, **grounding)
         except ProviderNotConfiguredError:
             raise
         except Exception as exc:

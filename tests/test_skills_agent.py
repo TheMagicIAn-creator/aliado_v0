@@ -216,3 +216,17 @@ def test_cli_does_not_discover_parent_dotenv(tmp_path, monkeypatch, capsys):
     import os
 
     assert "AL_IADO_OPENAI_MODEL_TERRA" not in os.environ
+
+
+def test_cli_warns_when_the_answer_was_cut(tmp_path, monkeypatch, capsys):
+    answer = LLMResult(content="A definição é a frase que fic", provider="google", model="gemini-teste",
+                       task_type="critical_reasoning", truncated=True)
+    monkeypatch.setattr(Agent, "answer", lambda *args, **kwargs: answer)
+    argv = ["perguntar", "O que é MCC?", "--provider", "google", "--model-alias", "flash",
+            "--registro-uso", str(tmp_path / "uso.jsonl")]
+    assert main(argv) == 0
+    captured = capsys.readouterr()
+    assert "interrompida pelo limite de tamanho" in captured.err and "frase que fic" in captured.out
+    answer = LLMResult(content="Resposta inteira.", provider="google", model="gemini-teste", task_type="critical_reasoning")
+    monkeypatch.setattr(Agent, "answer", lambda *args, **kwargs: answer)
+    assert main(argv) == 0 and "interrompida" not in capsys.readouterr().err

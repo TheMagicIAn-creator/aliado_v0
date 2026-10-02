@@ -152,6 +152,35 @@ def test_gemini_registra_tokens_de_raciocinio_cobrados():
     assert provider.generate(request, model_id="modelo").usage.cached_tokens == 90
 
 
+def test_gemini_avisa_quando_a_resposta_para_no_teto_de_tokens():
+    """O raciocínio conta no teto de saída: o provedor informa o corte no motivo do fim (lote 27)."""
+    cut = [SimpleNamespace(finish_reason=SimpleNamespace(name="MAX_TOKENS"))]
+    whole = [SimpleNamespace(finish_reason=SimpleNamespace(name="STOP"))]
+
+    class Models:
+        def __init__(self, candidates):
+            self.candidates = candidates
+
+        def generate_content(self, **_kwargs):
+            return SimpleNamespace(text="resposta cort", candidates=self.candidates)
+
+        def generate_content_stream(self, **_kwargs):
+            return iter([SimpleNamespace(text="resposta ", candidates=None),
+                         SimpleNamespace(text="", candidates=self.candidates)])
+
+    request = LLMRequest(task_type="simple_chat", messages=[{"content": "oi"}])
+    provider = GeminiProvider(client=SimpleNamespace(models=Models(cut)))
+    assert provider.generate(request, model_id="modelo").truncated is True
+    chunks = list(provider.stream(request, model_id="modelo"))
+    assert [chunk.truncated for chunk in chunks] == [False, True]  # o aviso chega mesmo sem texto no pedaço
+    provider = GeminiProvider(client=SimpleNamespace(models=Models(whole)))
+    assert provider.generate(request, model_id="modelo").truncated is False
+    assert [chunk.truncated for chunk in provider.stream(request, model_id="modelo")] == [False]
+    # Motivo informado como texto, e resposta sem candidatos: sem corte.
+    text_reason = GeminiProvider(client=SimpleNamespace(models=Models([SimpleNamespace(finish_reason="MAX_TOKENS")])))
+    assert text_reason.generate(request, model_id="modelo").truncated is True
+
+
 def test_gemini_stream_informa_tokens_no_fim():
     usage = SimpleNamespace(prompt_token_count=50, candidates_token_count=10,
                             thoughts_token_count=30, total_token_count=90)

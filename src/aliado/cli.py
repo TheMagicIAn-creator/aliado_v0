@@ -208,6 +208,9 @@ def main(argv: list[str] | None = None) -> int:
             supporting_skill_name=args.apoio, library=selected_library, results=results,
         )
         print(result.content)
+        if result.truncated:
+            print("\nAviso: a resposta foi interrompida pelo limite de tamanho e pode estar incompleta. "
+                  "Peça de novo ou restrinja a pergunta.", file=sys.stderr)
         print(f"\nProvedor: {result.provider} | Modelo: {result.model}", file=sys.stderr)
         print(usage_line(result), file=sys.stderr)
         try:

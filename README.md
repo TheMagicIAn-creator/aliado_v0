@@ -66,18 +66,26 @@ indicar, e variáveis do sistema têm precedência sobre ele.
 Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir da pasta do projeto.
 
 - **Conversas:**
+  - Ao abrir ou recarregar, a página mostra a tela de apresentação; as conversas ficam na lista ao lado.
   - Respostas em fluxo, com botão para parar, e os tokens de cada resposta.
   - Escolha da skill e do modelo.
   - Histórico em `data/conversas/`. Conversas apagadas vão para a lixeira e deixam de ser lembradas; as anotações que saíram delas continuam.
   - O link no fim da resposta abre uma janela com as fontes e a memória usada, que fecha com Esc.
 - **Documentos:**
   - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página.
-  - Os envios aparecem numa fila de até 3 cartões, com contador. Os que dão certo somem em 6 s.
+  - Um aviso no canto inferior direito, visível em todas as abas, mostra o avanço dos envios. No chat, ele fica logo acima da caixa de mensagem, e a tela reserva a faixa dele para não cobrir nenhum botão.
+    - Com um documento: o nome, a etapa (leitura das páginas, reconhecimento de texto, indexação e fichas) e a barra.
+    - Com vários: quantos já estão prontos, a barra geral e o documento atual, que muda quando a indexação dele termina.
+    - O documento fica pronto para a busca assim que é indexado; as fichas são criadas depois de todos os arquivos enviados.
+    - Tudo certo some em 6 s. Falhas e documentos indexados só em parte ficam até você fechar. Fechar o aviso não cancela o envio.
+    - Se você recarregar a página no meio do envio, o aviso volta com os totais.
   - Cada documento ganha uma ficha de leitura na memória e uma **ficha do documento** (título, autores, ano e DOI), conferida no próprio texto e editável na aba **Biblioteca**. **Completar fichas** cria as que faltam.
   - **Apagar**, na aba Biblioteca, tira o documento de vez, com todas as versões, a extração e o índice, e revoga as anotações que o agente deduziu dele. As suas anotações ficam. Não tem volta.
   - Com **Usar biblioteca**, o agente recebe a lista dos documentos, com autor e ano, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
   - Antes de buscar, o modelo mais barato reescreve a mensagem com o assunto da conversa, as siglas por extenso e os termos em português e inglês. É uma chamada barata a mais por mensagem, e a janela de fontes mostra o que foi buscado.
-  - A busca traz até 10 trechos. Quando autores diferentes tratam do pedido, a resposta mostra a opção de cada um, com a citação.
+  - A busca traz até 10 trechos, e cada um vai ao modelo com os trechos vizinhos da mesma página, para a frase não chegar cortada.
+  - Em pedidos de definição, conceito ou valor, a resposta apresenta o que cada documento diz, com a citação. Citações diretas vêm no idioma original, com a tradução identificada.
+  - A resposta mostra quantos dos documentos trazidos pela busca ela citou, e a janela de fontes lista os outros em **A busca também trouxe**, com a passagem.
 - **Fonte do texto:** o seletor **Aa**, na barra do topo, troca a letra da interface entre 8 opções. A escolha fica guardada no navegador.
 - **Memória** (`data/memoria/`):
   - O que você diz ou corrige vale na hora; o que o agente deduz fica marcado como "inferida".
@@ -213,6 +221,9 @@ desenvolvimento e não entram no pacote.
 
 - A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat.
 - No chat, a conferência vale para os números com a marca [Rn]. Um número sem marca não é conferido, e o chat não calcula: ele repete o que está gravado.
+- Em pedidos de definição, o modelo maior cita todos os documentos que tratam do assunto; o menor cita cerca de três quartos. A janela de fontes mostra o que ficou de fora. Veja a [validação do lote 27](docs/migracao/validacao-lote-27.md).
+- Com o modelo maior, as respostas a pedidos de definição ficaram com cerca do dobro do tamanho, pelas citações no original com a tradução. Elas não comentam mais os documentos que não tratam do pedido: a janela de fontes mostra o que a busca trouxe e a resposta não usou.
+- Uma resposta que para no limite de tamanho aparece com aviso e fica fora do histórico; a marca do corte só existe para o Gemini.
 - Nenhuma fonte traz o tempo de reparo de cada componente: a disponibilidade usa o tempo do inversor inteiro, em dois cenários.
 - No GPVS, o início observado vale só para os 8 ensaios de mudança clara. F4 não muda as 24 variáveis, e F6 e F7 mudam pouco: para eles, a falta de detecção é, em boa parte, das variáveis.
 - Os alarmes falsos contam com só 52 s saudáveis: a taxa por hora é uma estimativa com intervalo largo.

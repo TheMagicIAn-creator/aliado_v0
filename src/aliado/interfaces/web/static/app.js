@@ -209,7 +209,9 @@ $("use-web").addEventListener("change", () => store.set("aliado.web", String($("
 
 /* Conversas */
 async function loadConversations() {
-  const items = await api("/api/conversas");
+  // Uma primeira pergunta interrompida deixa a conversa vazia; como a página abre sempre na apresentação
+  // (lote 27), ela não seria reaberta. Conversas sem mensagens ficam fora da lista, menos a que está aberta.
+  const items = (await api("/api/conversas")).filter((item) => item.messages || item.id === state.conversation?.id);
   const list = $("chat-list");
   list.replaceChildren(...items.map((item) => el("li", { class: item.id === state.conversation?.id ? "is-current" : "" },
     el("button", { class: "chat-open", type: "button", title: "Duplo clique para renomear",
@@ -242,7 +244,6 @@ async function deleteConversation(item) {
     await api(`/api/conversas/${item.id}`, { method: "DELETE" });
     if (state.conversation?.id === item.id) {
       state.conversation = null;
-      store.set("aliado.conversation", "");
       showChat();
       showWelcome();
     }
@@ -265,10 +266,8 @@ async function openConversation(id) {
     state.conversation = await api(`/api/conversas/${id}`);
   } catch {
     state.conversation = null;
-    store.set("aliado.conversation", "");
     return showWelcome();
   }
-  store.set("aliado.conversation", id);
   showChat();
   const messages = $("messages");
   messages.replaceChildren();
@@ -288,7 +287,6 @@ function showWelcome() {
 
 $("new-chat").addEventListener("click", () => {
   state.conversation = null;
-  store.set("aliado.conversation", "");
   showChat();
   showWelcome();
   loadConversations();
@@ -328,6 +326,12 @@ function renderMessage(message) {
       text: `${n === 1 ? "Há 1 número" : `Há ${n} números`} nesta resposta sem a marca de um resultado e que ` +
         "não aparecem nos resultados enviados: não foram conferidos." }));
   }
+  if (message.cortada) {
+    // Lote 27: o modelo parou no teto de tamanho; a resposta fica fora do histórico.
+    node.append(el("div", { class: "note note-warn",
+      text: "A resposta foi interrompida pelo limite de tamanho e pode estar incompleta. Peça de novo ou restrinja a pergunta. "
+        + "Ela não entra no histórico enviado ao modelo." }));
+  }
   if (message.resultados_faltando?.length) {
     node.append(el("div", { class: "note note-uncited",
       text: `Não entraram nesta resposta: ${message.resultados_faltando.join("; ")}.` }));
@@ -348,6 +352,16 @@ function renderMessage(message) {
   if (message.sources?.length) {
     meta.append(el("button", { class: "link", type: "button", text: `${message.sources.length} fonte(s)`,
       onclick: info }));
+  }
+  // Lote 27: quantos dos documentos que a busca trouxe a resposta citou; os outros ficam na janela de fontes.
+  const cited = new Set((message.sources || []).map((source) => source.title));
+  const brought = new Set([...cited, ...(message.recuperados || []).map((source) => source.title)]);
+  if (brought.size > cited.size) {
+    meta.append(el("button", { class: "link retrieved-link", type: "button",
+      onclick: (event) => openInfo(message, event.currentTarget, { kind: "retrieved" }),
+      title: "A busca na biblioteca traz os trechos mais parecidos com a pergunta; nem todos tratam do assunto. Clique para ver os que a resposta não usou.",
+      text: cited.size ? `citou ${cited.size} dos ${brought.size} documentos que a busca trouxe`
+        : `a busca na biblioteca trouxe ${brought.size} ${brought.size === 1 ? "documento" : "documentos"}` }));
   }
   if (message.web_sources?.length || message.web_queries?.length) {
     const searches = message.web_queries?.length || 0;
@@ -612,11 +626,33 @@ function showSources(message) {
   const query = message?.consulta_biblioteca
     ? [el("p", { class: "muted source-queries", text: `Buscou na biblioteca: ${message.consulta_biblioteca}` })] : [];
   const results = message?.result_sources || [];
-  if (!sources.length && !web.length && !results.length) {
+  const retrieved = message?.recuperados || [];
+  if (!sources.length && !web.length && !results.length && !retrieved.length) {
     list.replaceChildren(...query,
       el("p", { class: "muted", text: "Esta resposta não usou resultados da pesquisa, trechos da biblioteca nem a web." }));
     return;
   }
+  // Abrir a página no original e ver a extração: valem para o trecho citado e para o só recuperado.
+  const sourceActions = (source) => {
+    const actions = el("div", { class: "source-actions" });
+    if (source.document_id) {
+      const page = source.page ? `#page=${source.page}` : "";
+      actions.append(
+        el("a", { class: "link", href: `/api/biblioteca/${source.document_id}/original${page}`, target: "_blank",
+          rel: "noopener", text: "Abrir página" }),
+        el("button", { class: "link", type: "button", text: "Ver Markdown",
+          onclick: () => openLibrary(source.document_id) }));
+    }
+    return actions;
+  };
+  // As quebras de linha do PDF viram espaço; só a linha em branco continua separando parágrafos.
+  const flowText = (value) => String(value || "").replace(/([^\n])\n(?!\n)/g, "$1 ");
+  const sourceFlags = (source) => {
+    const flags = [];
+    if (source.method === "ocr") flags.push("OCR: conferir no original");
+    if (source.status === "partial") flags.push("extração parcial");
+    return flags;
+  };
   const parts = [];
   if (results.length) {
     parts.push(el("h3", { class: "source-group", text: "Resultados da pesquisa" }));
@@ -642,26 +678,34 @@ function showSources(message) {
   parts.push(...sources.map((source, index) => {
     const number = index + 1;
     const where = [source.locator, source.page ? `p. ${source.page}` : null].filter(Boolean).join(" · ");
-    const flags = [];
-    if (source.method === "ocr") flags.push("OCR: conferir no original");
-    if (source.status === "partial") flags.push("extração parcial");
-    const actions = el("div", { class: "source-actions" });
-    if (source.document_id) {
-      const page = source.page ? `#page=${source.page}` : "";
-      actions.append(
-        el("a", { class: "link", href: `/api/biblioteca/${source.document_id}/original${page}`, target: "_blank",
-          rel: "noopener", text: "Abrir página" }),
-        el("button", { class: "link", type: "button", text: "Ver Markdown",
-          onclick: () => openLibrary(source.document_id) }));
-    }
     return el("div", { class: "source-card", "data-source": String(number) },
       el("div", { class: "source-head" }, el("span", { class: "cite", text: String(number) }),
         el("span", { class: "source-title", title: source.title,
           text: source.referencia ? `${source.referencia} · ${source.title}` : source.title })),
-      el("div", { class: "source-loc", text: [`v${source.version}`, where, ...flags].filter(Boolean).join(" · ") }),
-      el("p", { class: "source-text", text: source.text }),
-      actions);
+      el("div", { class: "source-loc", text: [`v${source.version}`, where, ...sourceFlags(source)].filter(Boolean).join(" · ") }),
+      // A passagem enviada ao modelo: o trecho achado pela busca com os vizinhos da mesma página (lote 27).
+      el("p", { class: "source-text", text: flowText(source.passagem || source.text) }),
+      sourceActions(source));
   }));
+  if (retrieved.length) {
+    // O que a busca trouxe e a resposta não citou (lote 27): cada passagem abre ao clicar.
+    parts.push(el("h3", { class: "source-group source-retrieved",
+      text: sources.length ? "A busca também trouxe" : "O que a busca na biblioteca trouxe" }),
+      el("p", { class: "muted source-queries",
+        text: "Trechos que a busca recuperou e a resposta não citou. Nem todos tratam do assunto da pergunta. "
+          + "Clique em um trecho para ler." }));
+    parts.push(...retrieved.map((source) => {
+      const name = source.referencia || source.title;
+      const where = source.page ? `p. ${source.page}` : source.locator;
+      return el("details", { class: "source-card source-more" },
+        el("summary", {}, el("span", { class: "source-title", title: source.title, text: name }),
+          el("span", { class: "source-loc", text: [where, ...sourceFlags(source)].filter(Boolean).join(" · ") }),
+          // O começo do trecho achado pela busca distingue dois trechos da mesma página antes de abrir.
+          el("span", { class: "source-peek", text: flowText(source.text).replace(/\s+/g, " ").slice(0, 140) })),
+        el("p", { class: "source-text", text: flowText(source.passagem || source.text) }),
+        sourceActions(source));
+    }));
+  }
   if (web.length) {
     parts.push(el("h3", { class: "source-group", text: "Na web" }));
     if (message.web_queries?.length) {
@@ -690,7 +734,8 @@ function openInfo(message, anchor, focus) {
   pop.hidden = false;
   state.infoAnchor = anchor;
   placeInfo(anchor);
-  if (focus) highlightSource(focus.number, focus.kind);
+  if (focus?.kind === "retrieved") pop.querySelector(".source-retrieved")?.scrollIntoView({ block: "start" });
+  else if (focus) highlightSource(focus.number, focus.kind);
   else pop.scrollTop = 0;
 }
 
@@ -776,7 +821,6 @@ $("composer").addEventListener("submit", async (event) => {
     if (!state.conversation) {
       state.conversation = await api("/api/conversas", { method: "POST" });
       state.conversation.messages = [];
-      store.set("aliado.conversation", state.conversation.id);
       $("messages").replaceChildren();
     }
     const messages = $("messages");
@@ -828,7 +872,10 @@ $("composer").addEventListener("submit", async (event) => {
             message.memorias_criadas = event.criadas;
             const node = document.querySelector(`[data-message="${event.mensagem}"]`);
             node?.replaceWith(renderMessage(message));
-            if (state.sourcesOf?.id === message.id && !$("info-popover").hidden) showSources(message);
+            if (state.sourcesOf?.id === message.id && !$("info-popover").hidden) {
+              state.sourcesOf = message;
+              renderMemoryPanel(message);
+            }
           }
           if (event.criadas?.length) {
             toast(`${event.criadas.length} anotação(ões) nova(s) na memória.`);
@@ -852,74 +899,289 @@ $("composer").addEventListener("submit", async (event) => {
   }
 });
 
-/* Envio de documentos */
+/* Envio de documentos (lote 27): um pop-up no canto superior direito, visível em todas as abas.
+   Os arquivos escolhidos juntos formam um lote; o servidor indexa os que já recebeu e só depois cria as fichas. */
 const UPLOAD_OK_MS = 6000;
-const queue = { total: 0, done: 0, failed: 0 };
+const UPLOAD_POLL_MS = 1500;
+const UPLOAD_PARALLEL = 3;  // envios simultâneos: os arquivos chegam antes de o primeiro terminar a indexação
+const UPLOAD_READY_NOTE = "Pronto: o documento já pode ser buscado e citado. As fichas são criadas em seguida.";
+const uploads = { lote: null, items: [], earlier: [], polling: false, hidden: false, minimized: false, timer: null,
+  misses: 0, issuesKey: null };
 
-function limitCards() {
-  // No máximo três cartões à vista, os mais recentes; o contador resume o resto.
-  document.querySelectorAll(".upload-card").forEach((card, index) => card.classList.toggle("is-overflow", index >= 3));
+const pieces = (count) => (count === 1 ? "1 trecho" : `${count} trechos`);
+const STAGE_TEXT = {
+  lendo: (job) => `Lendo a página ${job.atual} de ${job.total}`,
+  ocr: (job) => `Reconhecendo o texto da página ${job.atual} de ${job.total}`,
+  indexando: (job) => (job.atual ? `Indexando: ${job.atual} de ${pieces(job.total)}` : `Indexando ${pieces(job.total)}`),
+  "ficha do documento": () => "Criando a ficha do documento",
+  ficha: () => "Criando a ficha de leitura",
+};
+
+function newBatch() {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function renderQueue() {
-  limitCards();
-  let counter = document.querySelector(".upload-queue");
-  const active = queue.done + queue.failed < queue.total;
-  if (!queue.total || (!active && !queue.failed)) {
-    counter?.remove();
-    if (!active) Object.assign(queue, { total: 0, done: 0, failed: 0 });
+// espera (ainda não enviado), envio, fila, andamento, pronto, parcial ou falha.
+function uploadStatus(item) {
+  if (item.error) return "falha";
+  const job = item.job;
+  if (!job) return item.sending ? "envio" : "espera";
+  if (job.estado === "falhou" || job.resultado?.status === "failed") return "falha";
+  if (job.indexado || job.estado === "concluido") return job.resultado?.status === "partial" ? "parcial" : "pronto";
+  return job.estado === "na fila" ? "fila" : "andamento";
+}
+
+const uploadIndexed = (item) => ["pronto", "parcial", "falha"].includes(uploadStatus(item));
+// Terminado de vez: indexado e com as fichas feitas (ou com falha).
+const uploadDone = (item) => Boolean(item.error) || ["concluido", "falhou"].includes(item.job?.estado);
+// Falha ou documento indexado só em parte, com o aviso ainda aberto.
+const uploadOpen = (item) => !item.dismissed && ["falha", "parcial"].includes(uploadStatus(item));
+
+function uploadFraction(item) {
+  const job = item.job;
+  if (!job || job.estado !== "processando" || !job.total) return 0;
+  if (job.etapa === "lendo" || job.etapa === "ocr") return 0.5 * (job.atual / job.total);
+  if (job.etapa === "indexando") return 0.5 + 0.5 * (job.atual / job.total);
+  return 0;
+}
+
+function uploadStage(item) {
+  const status = uploadStatus(item);
+  if (status === "espera") return "Aguardando o envio";
+  if (status === "envio") return "Enviando o arquivo";
+  if (status === "fila") return "Na fila";
+  return STAGE_TEXT[item.job.etapa]?.(item.job) || "Preparando a leitura";
+}
+
+// Documento já indexado, com as fichas ainda por fazer: elas esperam a indexação dos outros arquivos.
+function cardStage(item) {
+  const stage = item.job?.etapa;
+  return stage === "ficha" || stage === "ficha do documento" ? STAGE_TEXT[stage]() : "As fichas vêm em seguida";
+}
+
+// As pendências vêm do servidor; os nomes internos de erro saem do texto mostrado.
+const plainIssues = (issues) => (issues || []).map((issue) => issue.replace(/\s*\((?:\w+Error|\w+Exception|TimeoutExpired)\)/g, "")).join(" ");
+
+function uploadProblem(item) {
+  const result = item.job?.resultado;
+  if (item.error) return item.error;
+  if (item.job?.estado === "falhou") return `Não foi possível indexar: ${item.job.erro}`;
+  if (result?.status === "failed") return `Não foi possível ler o documento. ${plainIssues(result.issues)}`.trim();
+  // O documento reenviado já estava na biblioteca, com a extração incompleta; a duplicata não traz a contagem.
+  if (result?.duplicate) return `Este documento já estava na biblioteca, indexado só em parte. ${plainIssues(result.issues)}`.trim();
+  return `Indexado só em parte (${pieces(result.trechos)}). ${plainIssues(result.issues)}`.trim();
+}
+
+const cardWarning = (item) => item.job?.resultado?.aviso_ficha || item.job?.resultado?.aviso_ficha_documento;
+
+// O que aconteceu com as fichas: as anotações criadas e os avisos de ficha que não pôde ser criada.
+function cardNotes(result) {
+  const parts = [];
+  if (result.fichas) {
+    parts.push(`Ficha de leitura: ${result.fichas === 1 ? "1 anotação inferida" : `${result.fichas} anotações inferidas`} na memória.`);
+  }
+  if (result.aviso_ficha) parts.push(result.aviso_ficha);
+  if (result.aviso_ficha_documento) parts.push(result.aviso_ficha_documento);
+  return parts;
+}
+
+function uploadSummary(item) {
+  const result = item.job?.resultado || {};
+  if (result.duplicate) return "Este documento já estava na biblioteca.";
+  const version = result.version > 1 ? ` (versão ${result.version})` : "";
+  return [`Pronto · ${pieces(result.trechos)}${version}. Ligue “Usar biblioteca” para citá-lo.`, ...cardNotes(result)].join(" ");
+}
+
+// Uma falha reaparece mesmo com o aviso fechado ou recolhido.
+function raiseUploads() {
+  uploads.hidden = false;
+  uploads.minimized = false;
+}
+
+// Para onde o foco vai quando o aviso some: a caixa de mensagem no chat; nas outras abas, o botão da aba aberta.
+function focusAfterUploads() {
+  ($("chat-view").hidden ? document.querySelector(".rail-item.is-active") : $("question"))?.focus();
+}
+
+function renderUploads() {
+  const pop = $("upload-pop");
+  const items = uploads.items;
+  if (!items.length || uploads.hidden) {
+    const inside = pop.contains(document.activeElement);
+    pop.hidden = true;
+    placeUploads();  // devolve o espaço reservado para o aviso
+    if (inside) focusAfterUploads();  // o foco não pode ficar num botão que sumiu
     return;
   }
-  if (!counter) {
-    counter = el("div", { class: "upload-queue" });
-    $("uploads").prepend(counter);
+  const statuses = items.map(uploadStatus);
+  const ready = statuses.filter((status) => status === "pronto" || status === "parcial").length;
+  const failed = statuses.filter((status) => status === "falha").length;
+  // O documento atual é o que o servidor está processando; sem isso, o primeiro que ainda não ficou pronto.
+  const current = items.find((item) => uploadStatus(item) === "andamento") || items.find((item) => !uploadIndexed(item));
+  // Indexado, com as fichas ainda por fazer: de preferência o documento cujas fichas estão sendo criadas agora.
+  const pending = items.filter((item) => !uploadDone(item));
+  const cards = pending.find((item) => ["ficha", "ficha do documento"].includes(item.job?.etapa)) || pending[0];
+  const single = items.length === 1;
+  const title = $("upload-title");
+  title.textContent = single ? `${items[0].name}${failed ? " · com falha" : ""}`
+    : `Documentos: ${ready} de ${items.length} prontos${failed ? ` · ${failed} com falha` : ""}`;
+  title.title = single ? title.textContent : UPLOAD_READY_NOTE;
+  // O resumo de vários documentos e o nome com " · com falha" quebram a linha, para a falha não ficar cortada.
+  title.classList.toggle("is-summary", !single || failed > 0);
+
+  const bar = $("upload-bar");
+  const fraction = (ready + failed + (current ? uploadFraction(current) : 0)) / items.length;
+  // Um documento só, antes de haver páginas ou trechos para contar: a barra fica em movimento.
+  if (single && current && !uploadFraction(current)) bar.removeAttribute("value");
+  else bar.value = Math.min(1, fraction);
+  bar.textContent = `${Math.round(fraction * 100)}%`;
+
+  let now;
+  if (current) now = single ? uploadStage(current) : `Agora: ${current.name} · ${uploadStage(current)}`;
+  else if (cards) now = single ? `Pronto para buscar. ${cardStage(cards)}…` : `Fichas de ${cards.name}: ${cardStage(cards).toLowerCase()}…`;
+  // Um documento indexado só em parte tem o aviso na lista abaixo; aqui fica o que aconteceu com as fichas dele.
+  else if (single) now = failed ? "" : statuses[0] === "parcial" ? cardNotes(items[0].job?.resultado || {}).join(" ") : uploadSummary(items[0]);
+  else if (!ready) now = "";
+  else {
+    const noCards = items.filter(cardWarning).length;
+    now = `${failed ? "Envio terminado" : "Tudo pronto"}. Ligue “Usar biblioteca” para citar os documentos${failed ? " prontos" : ""}.`
+      + (noCards ? ` As fichas de ${noCards === 1 ? "1 documento" : `${noCards} documentos`} não puderam ser criadas agora.` : "");
   }
-  const failed = queue.failed ? ` · ${queue.failed} com falha` : "";
-  counter.textContent = `${queue.done} de ${queue.total} indexados${failed}`;
-}
+  $("upload-now").textContent = now;
+  $("upload-now").hidden = !now;
 
-function finishCard(view, ok) {
-  if (ok) {
-    queue.done += 1;
-    setTimeout(() => {
-      view.card.classList.add("is-leaving");
-      setTimeout(() => { view.card.remove(); renderQueue(); }, 400);
-    }, UPLOAD_OK_MS);
-  } else {
-    queue.failed += 1;  // falhas ficam até serem fechadas
+  // Os avisos do lote e os do lote anterior que ainda não foram fechados.
+  const problems = [...uploads.earlier, ...items].filter(uploadOpen);
+  const key = problems.map((item) => `${item.name}\u0000${uploadProblem(item)}`).join("\u0001");
+  if (key !== uploads.issuesKey) {
+    // Só refaz a lista quando ela muda: refeita a cada consulta, o foco do teclado no "×" se perderia.
+    uploads.issuesKey = key;
+    $("upload-issues").replaceChildren(...problems.map((item) => el("li", { class: uploadStatus(item) === "falha" ? "is-fail" : "is-warn" },
+      el("span", {}, el("b", { text: `${item.name}: ` }), uploadProblem(item)),
+      el("button", { class: "dismiss", type: "button", "aria-label": `Fechar o aviso de ${item.name}`, text: "×",
+        onclick: () => {
+          item.dismissed = true;
+          settleUploads();
+          if (!$("upload-pop").hidden) $("upload-min").focus();
+        } }))));
   }
-  renderQueue();
+  $("upload-issues").hidden = !problems.length;
+
+  pop.classList.toggle("is-min", uploads.minimized);
+  $("upload-min").setAttribute("aria-expanded", String(!uploads.minimized));
+  $("upload-min").setAttribute("aria-label", uploads.minimized ? "Mostrar os detalhes do envio" : "Recolher o aviso de envio");
+  pop.hidden = false;
+  placeUploads();
 }
 
-function uploadCard(name) {
-  const state_ = el("span", { class: "state", text: "Enviando…" });
-  const bar = el("span", { class: "bar" }, el("i"));
-  const close = el("button", { class: "dismiss", type: "button", "aria-label": "Fechar aviso", text: "×",
-    onclick: () => {
-      if (card.classList.contains("is-fail")) queue.failed = Math.max(0, queue.failed - 1);
-      card.remove();
-      renderQueue();
-    } });
-  const card = el("div", { class: "upload-card" },
-    el("div", { class: "grow" }, el("div", { class: "name", text: name }), state_), bar, close);
-  // O mais recente fica no topo; a fila mostra no máximo três cartões e um contador.
-  const counter = document.querySelector(".upload-queue");
-  if (counter) counter.after(card); else $("uploads").prepend(card);
-  limitCards();
-  const setProgress = (fraction) => {
-    bar.classList.toggle("is-determinate", fraction !== null);
-    bar.firstElementChild.style.width = fraction === null ? "" : `${Math.round(fraction * 100)}%`;
-  };
-  return { card, state: state_, bar, setProgress };
+// No canto inferior direito, em todas as abas. No chat fica logo acima da caixa de mensagem. A área da aba
+// termina acima do aviso (uma faixa reservada, do tamanho dele), para ele nunca ficar por cima de um botão.
+function placeUploads() {
+  const pop = $("upload-pop");
+  const app = $("app");
+  if (pop.hidden) {
+    app.classList.remove("has-upload-pop");
+    return;
+  }
+  const chat = !$("chat-view").hidden;
+  const messages = $("messages");
+  const atEnd = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 40;
+  const first = !app.classList.contains("has-upload-pop");
+  const height = Math.round(pop.getBoundingClientRect().height);
+  // No chat a faixa fica entre as mensagens e a caixa de mensagem; nas outras abas, no pé da tela.
+  app.style.setProperty("--upload-space", `${height + (chat ? 6 : 20)}px`);
+  app.classList.add("has-upload-pop");
+  pop.style.bottom = `${chat ? Math.round(window.innerHeight - $("composer").getBoundingClientRect().top) + 8 : 16}px`;
+  if (first && chat && atEnd) messages.scrollTop = messages.scrollHeight;  // o fim da conversa continua à vista
 }
 
-const STAGES = { lendo: "Lendo página", ocr: "OCR na página" };
+function announceUploads(text) { $("upload-status").textContent = text; }
 
-function progressText(job) {
-  if (job.etapa === "ficha") return "Criando a ficha de leitura na memória…";
-  if (job.etapa === "indexando") return `Indexando ${job.total} trechos…`;
-  if (job.etapa in STAGES) return `${STAGES[job.etapa]} ${job.atual} de ${job.total}…`;
-  return "Preparando a extração…";
+async function refreshDocuments() {
+  try {
+    const status = await api("/api/estado");
+    state.documents = status.biblioteca.documentos;
+    updateLibraryLabel();
+    if (!$("library-view").hidden) loadLibrary();
+  } catch { /* o rótulo se atualiza no próximo envio */ }
+}
+
+// A tarefa de um lote que deixou de ser o mais recente (um envio feito em outra aba) é consultada pelo id.
+// Só "não encontrada" quer dizer que o envio se perdeu; outra falha é passageira, e vale a consulta seguinte.
+async function uploadJob(id) {
+  const response = await fetch(`/api/biblioteca/tarefas/${id}`, { headers: { "x-aliado": "1" } });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("consulta sem resposta");
+  return response.json();
+}
+
+async function applyUploadJobs(data) {
+  const jobs = new Map(data.tarefas.map((job) => [job.id, job]));
+  let changed = false;
+  for (const item of uploads.items) {
+    if (!item.id || uploadDone(item)) continue;
+    const before = uploadStatus(item);
+    let job = jobs.get(item.id);
+    if (!job) {
+      try { job = await uploadJob(item.id); } catch { continue; }
+      if (!job) item.error = "O envio se perdeu: o AL-IAdo foi reiniciado. Envie de novo.";
+    }
+    if (job) item.job = job;
+    const after = uploadStatus(item);
+    if (after !== before && ["pronto", "parcial", "falha"].includes(after)) {
+      changed = true;
+      announceUploads(after === "falha" ? `${item.name}: não foi possível indexar.` : `${item.name}: pronto para buscar.`);
+      if (after !== "pronto") raiseUploads();
+    }
+    if (uploadDone(item)) changed = true;  // as fichas terminaram: a lista da biblioteca mostra a referência
+  }
+  if (changed) refreshDocuments();
+}
+
+async function pollUploads() {
+  if (uploads.polling) return;
+  uploads.polling = true;
+  try {
+    while (uploads.items.some((item) => !uploadDone(item))) {
+      if (uploads.items.some((item) => item.id && !uploadDone(item))) {
+        try {
+          await applyUploadJobs(await api("/api/biblioteca/tarefas"));
+          uploads.misses = 0;
+        } catch {
+          uploads.misses += 1;
+          if (uploads.misses >= 4) {
+            raiseUploads();
+            for (const item of uploads.items) {
+              if (item.id && !uploadDone(item)) item.error = "O AL-IAdo não respondeu. Confira o documento na aba Biblioteca.";
+            }
+          }
+        }
+      }
+      renderUploads();
+      await new Promise((resolve) => setTimeout(resolve, UPLOAD_POLL_MS));
+    }
+  } finally {
+    uploads.polling = false;
+  }
+  settleUploads();
+}
+
+// Com tudo terminado: some em 6 s se deu certo; falhas e documentos indexados em parte ficam até serem fechados.
+function settleUploads() {
+  renderUploads();
+  if (!uploads.items.length || uploads.items.some((item) => !uploadDone(item))) return;
+  const open = [...uploads.earlier, ...uploads.items].some(uploadOpen);
+  clearTimeout(uploads.timer);
+  if (uploads.hidden) return clearUploads();
+  if (!open) uploads.timer = setTimeout(clearUploads, uploads.items.every((item) => item.dismissed) ? 0 : UPLOAD_OK_MS);
+  else announceUploads("Envio terminado, com avisos.");
+}
+
+function clearUploads() {
+  clearTimeout(uploads.timer);
+  Object.assign(uploads, { lote: null, items: [], earlier: [], hidden: false, misses: 0, issuesKey: null });
+  renderUploads();
 }
 
 async function uploadFiles(files) {
@@ -928,66 +1190,73 @@ async function uploadFiles(files) {
     if (!ok) toast(`${file.name}: envie PDF, Markdown ou JSON.`);
     return ok;
   });
-  queue.total += accepted.length;
-  renderQueue();
-  for (const file of accepted) {
-    const view = uploadCard(file.name);
+  if (!accepted.length) return;
+  // Arquivos escolhidos enquanto um lote ainda corre entram no mesmo lote; senão, começa outro, e os avisos
+  // do lote anterior que não foram fechados continuam à vista.
+  if (!uploads.items.some((item) => !uploadDone(item))) {
+    const kept = [...uploads.earlier, ...uploads.items].filter(uploadOpen);
+    clearUploads();
+    uploads.earlier = kept;
+  }
+  clearTimeout(uploads.timer);
+  uploads.lote = uploads.lote || newBatch();
+  uploads.hidden = false;
+  // A ficha de leitura herda a skill ativa, para a memória separar pesquisa de engenharia.
+  const skill = $("skill").value;
+  const added = accepted.map((file) => ({ name: file.name, file, id: null, job: null, error: null, sending: false, dismissed: false }));
+  uploads.items.push(...added);
+  renderUploads();
+  pollUploads();
+  const send = async (item) => {
+    item.sending = true;
+    renderUploads();
     try {
       const form = new FormData();
-      form.append("arquivo", file);
-      // A ficha de leitura herda a skill ativa, para a memória separar pesquisa de engenharia.
-      if ($("skill").value !== "nenhuma") form.append("skill", $("skill").value);
+      form.append("arquivo", item.file);
+      form.append("lote", uploads.lote);
+      if (skill !== "nenhuma") form.append("skill", skill);
       const job = await api("/api/biblioteca", { method: "POST", body: form });
-      view.state.textContent = "Na fila para indexação";
-      await pollJob(job.tarefa, view);
+      item.id = job.tarefa;
+      item.job = { estado: "na fila" };
     } catch (error) {
-      view.bar.remove();
-      view.card.classList.add("is-fail");
-      view.state.textContent = error.message;
-      finishCard(view, false);
+      // Sem resposta do servidor, o navegador devolve um texto técnico em inglês: a tela diz em palavras.
+      item.error = error instanceof TypeError ? "Não foi possível enviar: o AL-IAdo não respondeu." : error.message;
+      raiseUploads();
+      announceUploads(`${item.name}: não foi possível enviar.`);
     }
-  }
+    item.sending = false;
+    item.file = null;
+    renderUploads();
+  };
+  // Alguns envios ao mesmo tempo: assim os arquivos do lote entram na fila antes das fichas do primeiro.
+  const waiting = [...added];
+  const lane = async () => { for (let item = waiting.shift(); item; item = waiting.shift()) await send(item); };
+  await Promise.all(Array.from({ length: Math.min(UPLOAD_PARALLEL, added.length) }, lane));
 }
 
-async function pollJob(id, view) {
-  for (;;) {
-    const job = await api(`/api/biblioteca/tarefas/${id}`);
-    if (job.estado === "processando") {
-      view.state.textContent = progressText(job);
-      view.setProgress(job.etapa in STAGES && job.total ? job.atual / job.total : null);
-    }
-    if (job.estado === "concluido" || job.estado === "falhou") {
-      view.bar.remove();
-      if (job.estado === "falhou") {
-        view.card.classList.add("is-fail");
-        view.state.textContent = `Não foi possível indexar: ${job.erro}`;
-        finishCard(view, false);
-        return;
-      }
-      const r = job.resultado;
-      const issues = r.issues?.length ? ` Pendências: ${r.issues.join(" ")}` : "";
-      if (r.duplicate) {
-        view.card.classList.add("is-ok");
-        view.state.textContent = "Este documento já estava na biblioteca.";
-      } else if (r.status === "ready") {
-        view.card.classList.add("is-ok");
-        view.state.textContent = `Indexado · ${r.trechos} trechos · versão ${r.version}. Ligue “Usar biblioteca” para citá-lo.`;
-      } else {
-        view.card.classList.add(r.status === "failed" ? "is-fail" : "is-warn");
-        view.state.textContent = (r.status === "failed" ? "Falha na extração." : `Indexado parcialmente · ${r.trechos} trechos.`) + issues;
-      }
-      if (r.fichas) view.state.textContent += ` Ficha de leitura: ${r.fichas} anotações inferidas na memória.`;
-      if (r.aviso_ficha) view.state.textContent += ` ${r.aviso_ficha}`;
-      const status = await api("/api/estado");
-      state.documents = status.biblioteca.documentos;
-      updateLibraryLabel();
-      if (!$("library-view").hidden) loadLibrary();
-      finishCard(view, r.status !== "failed");
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
+// Ao abrir ou recarregar a página com envios em andamento, o pop-up volta com os totais do lote.
+async function restoreUploads() {
+  try {
+    const data = await api("/api/biblioteca/tarefas");
+    if (!data.tarefas.some((job) => job.estado === "na fila" || job.estado === "processando")) return;
+    uploads.lote = data.lote;
+    uploads.items = data.tarefas.map((job) => ({ name: job.arquivo, file: null, id: job.id, job, error: null,
+      sending: false, dismissed: false }));
+    uploads.hidden = false;
+    renderUploads();
+    pollUploads();
+  } catch { /* sem envios para mostrar */ }
 }
+
+$("upload-min").addEventListener("click", () => { uploads.minimized = !uploads.minimized; renderUploads(); });
+// Fechar só esconde o aviso: o envio continua, e um novo envio ou uma falha o mostra de novo.
+$("upload-close").addEventListener("click", () => {
+  uploads.hidden = true;
+  settleUploads();
+});
+window.addEventListener("resize", placeUploads);
+// A caixa de mensagem cresce com o texto: o aviso sobe junto, para não ficar por cima dela.
+new ResizeObserver(placeUploads).observe($("composer"));
 
 $("attach").addEventListener("click", () => $("file").click());
 $("library-add").addEventListener("click", () => $("file").click());
@@ -1005,7 +1274,8 @@ document.addEventListener("drop", (event) => {
   event.preventDefault();
   dragDepth = 0;
   $("dropzone").hidden = true;
-  if (event.dataTransfer?.files?.length) { showChat(); uploadFiles([...event.dataTransfer.files]); }
+  // O pop-up aparece em qualquer aba: soltar um arquivo não troca mais de tela.
+  if (event.dataTransfer?.files?.length) uploadFiles([...event.dataTransfer.files]);
 });
 
 /* Biblioteca */
@@ -1022,6 +1292,7 @@ function showView(name) {
     ["nav-science", "science"]]) {
     $(id).classList.toggle("is-active", view === name);
   }
+  placeUploads();
 }
 
 function showChat() { showView("chat"); }
@@ -1199,8 +1470,8 @@ $("brand").addEventListener("click", showChat);
   }
   await loadConversations().catch((error) => toast(error.message));
   refreshMemoryBadge();
-  const last = store.get("aliado.conversation", "");
-  if (last) await openConversation(last);
-  else showWelcome();
+  // Abrir ou recarregar cai sempre na tela de apresentação (lote 27); as conversas ficam na lista.
+  showWelcome();
+  restoreUploads();
   $("question").focus();
 })();

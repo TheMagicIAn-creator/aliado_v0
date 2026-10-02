@@ -10,6 +10,7 @@ Regras da conferência:
 - o trecho que termina numa marca de documento [K…] ou da web [Wn] pertence a essa fonte e fica fora;
 - linha de tabela ou item de lista sem marca herda as marcas da linha marcada que os abre;
 - datas, referências (autor e ano, tabela, página, norma) e nomes de ensaio não contam como número;
+- a linha com a tradução de uma citação direta, sem marca de resultado, é da fonte citada e fica fora;
 - número em parágrafo sem marca não é conferido; os que também não estão em nenhum bloco são contados à parte.
 Só usa a biblioteca padrão.
 """
@@ -30,12 +31,19 @@ _DATE_WITH_YEAR = re.compile(r"(?<![\d.,/])(\d{1,2}/\d{1,2})/(\d{2,4})(?![\d/]|[
 _IGNORED = re.compile(
     r"(?<![\d.,/])\d{1,2}/\d{1,2}/\d{2,4}(?![\d/]|[.,]\d)|\b\d{4}-\d{2}-\d{2}\b"            # datas com ano
     rf"|\b\d{{1,2}}º?\s+de\s+{_MONTH}(?:\s+de\s+\d{{4}})?\b|\b{_MONTH}\s+de\s+\d{{4}}\b"      # datas por extenso
-    r"|\((?:19|20)\d{2}[a-z]?\)|\bet\s+al\.?,?\s*\(?(?:19|20)\d{2}[a-z]?\)?"                 # autor e ano
-    r"|\b(?:pp?|pág|págs|Tab|Tabela|Fig|Figura|Eq|Equação|Seção|Cap|Capítulo)\.?\s*(?:\d+(?:[-–.]\d+)*|[IVXLC]+\b)"  # localizadores
-    r"|\b(?:IEEE|IEC|ISO|NBR|ABNT)(?:\s+Std)?\.?\s*\d+(?:[-:–]\d+)*"                        # normas
+    r"|\((?:19|20)\d{2}[a-z]?(?:\)|(?=,\s*pp?\.))|\bet\s+al\.?,?\s*\(?(?:19|20)\d{2}[a-z]?\)?"  # autor e ano
+    r"|\b(?:pp?|pág|págs|Tab|Tabela|Fig|Figura|Eq|Equação|Seção|Cap|Capítulo|item|(?<!\d\s)itens)\.?\s*(?:\d+(?:[-–.]\d+)*|[IVXLC]+\b)"  # localizadores
+    r"|\b(?:IEEE|IEC|ISO|NBR|ABNT)(?:\s+Std)?\.?\s*\d+(?:[-:–]\d+)*|\bMIL-STD-\d+[A-Z]?\b"  # normas
+    r"|\[\d{1,3}(?:\s*[,;–-]\s*\d{1,3})*\]"                                                  # [72]: referência do próprio texto citado
     r"|\b[A-Za-zÀ-ÿ_]+\d+[A-Za-z]?\b",                                                       # F1, F7M, p99
     re.IGNORECASE)
+# "Autor, ano" com o nome em maiúscula: (Lafraia, 2001; IEEE, Inc., 2007), "### 1. Lafraia, 2001". Uma palavra
+# em minúscula antes da vírgula não é autor: "(todas oficiais, 2041)" continua sendo número (lote 27).
+_AUTHOR_YEAR = re.compile(r"\b[A-ZÀ-Ý][\wÀ-ÿ.&-]*,\s(?:19|20)\d{2}[a-z]?(?=\s*(?:[);\],(*_]|$))")
+_PARENTHESES = re.compile(r"\([^()]*\)")
 _LIST_MARKER = re.compile(r"^\s*(?:#+\s*)?(?:\d+[.)]|[-*+])\s+")  # itens de lista e títulos numerados
+# Linha com a tradução de uma citação direta de documento: os números dela são da fonte citada.
+_TRANSLATION = re.compile(r"^\W*tradu[cç][aã]o\b", re.IGNORECASE)
 # O traço depois de %, ) ou ° é de intervalo, não sinal de menos.
 _NUMBER = re.compile(r"(?<![\w.,])(?:(?<![%)°])[-−–])?\d(?:[\d.,]*\d)?(?:[eE][-+−]?\d+)?")
 _SUPERSCRIPT = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺", "0123456789-+")
@@ -83,13 +91,20 @@ def _candidates(token: str) -> set[Decimal]:
     return values
 
 
-def numbers_in(text: str, *, short_dates: frozenset[str] = frozenset()) -> list[tuple[str, set[Decimal]]]:
+def numbers_in(text: str, *, short_dates: frozenset[str] = frozenset(),
+               result_span: bool = False) -> list[tuple[str, set[Decimal]]]:
     """Os números de um texto, como escritos, com os valores possíveis de cada um.
 
     `short_dates` são os dia/mês de datas conhecidas (27/09): só esses contam como data sem o ano.
+    `result_span` é o trecho fechado por uma marca de resultado: nele, "Autor, ano" só é referência entre
+    parênteses, para "Denso, 2041 [R1]" continuar sendo um número a conferir.
     """
-    clean = _ANY_MARK.sub(" ", _LIST_MARKER.sub("", text))
-    clean = _IGNORED.sub(" ", _normalize(clean))
+    clean = _normalize(_ANY_MARK.sub(" ", _LIST_MARKER.sub("", text)))
+    if result_span:
+        clean = _PARENTHESES.sub(lambda match: _AUTHOR_YEAR.sub(" ", match.group(0)), clean)
+    else:
+        clean = _AUTHOR_YEAR.sub(" ", clean)
+    clean = _IGNORED.sub(" ", clean)
     for date in short_dates:
         clean = re.sub(rf"(?<![\d.,/]){re.escape(date)}(?![\d/]|[.,]\d)", " ", clean)
     found = []
@@ -168,7 +183,11 @@ def check_numbers(answer: str, blocks: dict[str, str], shared: str = "") -> dict
             inherited = []  # um parágrafo sem marca encerra a herança
         line_marks = own or (inherited if structured else [])
         # Fica fora o trecho que termina numa marca de documento [K…] ou da web [Wn]: é dessa fonte.
-        texts = [text for text, marks in _spans(line) if not marks or any(mark.startswith("R") for mark in marks)]
+        spans = [(text, bool(marks)) for text, marks in _spans(line)
+                 if not marks or any(mark.startswith("R") for mark in marks)]
+        texts = [text for text, _ in spans]
+        if not own and _TRANSLATION.match(line):
+            continue  # a tradução vem logo depois da citação direta e é da mesma fonte
         if not line_marks:
             # Sem marca, só conta o número que também não está em nenhum resultado enviado.
             unmarked += sum(1 for text in texts for _, values in numbers_in(text, short_dates=known_dates)
@@ -176,8 +195,10 @@ def check_numbers(answer: str, blocks: dict[str, str], shared: str = "") -> dict
             continue
         allowed = set().union(*(allowed_by_block[mark] for mark in line_marks))
         short_dates = frozenset().union(*(dates_by_block[mark] for mark in line_marks))
-        for text in texts:
-            for written, values in numbers_in(text, short_dates=short_dates):
+        # Linha de tabela ou item de lista que herda a marca é trecho de resultado inteiro; um título, não.
+        item = not own and not line.lstrip().startswith("#")
+        for text, closed in spans:
+            for written, values in numbers_in(text, short_dates=short_dates, result_span=closed or item):
                 if not values & allowed and written not in unverified:
                     unverified.append(written)
     return {"used": used, "invalid": invalid, "unverified": unverified, "unmarked": unmarked}

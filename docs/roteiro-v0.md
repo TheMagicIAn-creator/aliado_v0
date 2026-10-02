@@ -155,7 +155,7 @@ antes de começar. A 0.3.0 sai com o lote 26; a tag `v0.3.0` e o envio ao GitHub
 | 23 | Aba Ciência nova, parte 1: navegação pelas perguntas, gráficos com D3, Resumo com as matrizes de confusão, Escores por ensaio, Métricas por falha, Explorar e exportação das figuras | Concluído em 30/09/2026 (commit `745880a`) |
 | 24 | Início das falhas no GPVS: a mudança observada nos sinais, a reanálise dos mesmos escores com ela, os alarmes falsos estimados e a faixa esperada pelo limiar, com a seção nova na aba Ciência | Concluído em 30/09/2026 (commit `0cc8f78`) |
 | 25 | Confiabilidade por componente (um painel por grupo, nas duas bases de tempo), matriz de criticidade S × O na FMECA e disponibilidade com os tempos de reparo do IEEE 493 e de Baschel et al. (2018) | Concluído em 30/09/2026 (commit `36bf84a`) |
-| 26 | Resultados no chat: 8 blocos com os números da aba Ciência, marca [Rn] em cada número e conferência contra o bloco citado; lançamento da 0.3.0 | Concluído em 01/10/2026 |
+| 26 | Resultados no chat: 8 blocos com os números da aba Ciência, marca [Rn] em cada número e conferência contra o bloco citado; lançamento da 0.3.0 | Concluído em 01/10/2026 (commit `ae24885`) |
 
 ### Decisões de 30/09/2026
 
@@ -231,6 +231,40 @@ antes de começar. A 0.3.0 sai com o lote 26; a tag `v0.3.0` e o envio ao GitHub
   - cada pergunta custou cerca de 11 mil tokens de entrada, contra cerca de 5,5 mil sem os resultados.
 - **Limites:** um número sem marca não é conferido, e o chat não calcula.
 - Veja a [validação do lote 26](migracao/validacao-lote-26.md).
+
+## Depois da 0.3.0
+
+A 0.3.0 saiu com o lote 26 (commit `ae24885`). Os lotes seguintes partem do uso real e continuam sendo
+combinados antes de começar.
+
+| Lote | Entrega | Situação |
+|---|---|---|
+| 27 | Tela de apresentação ao abrir ou recarregar; aviso de envios em todas as abas, com o documento pronto antes das fichas; respostas com várias fontes: regra reescrita, trechos agrupados por documento, passagem com os trechos vizinhos e a lista do que a busca trouxe e não foi citado | Concluído em 02/10/2026 |
+
+### Decisões e resultado do lote 27 (01 e 02/10/2026)
+
+- **Origem:** três apontamentos do uso real: a página reabria a última conversa, os envios não mostravam o avanço fora do chat, e a definição de MCC por fonte só veio na quarta pergunta.
+- **Diagnóstico da MCC:**
+  - em 30/09, a busca falhou, e a consulta reescrita do lote 22 já tinha corrigido;
+  - em 01/10, a busca trouxe definição de 4 documentos na primeira pergunta, e a resposta usou um. Não houve falha do provedor.
+- **Decisões:**
+  - entram a tela, o aviso de envios e as três correções das respostas;
+  - uma bateria paga de cerca de 100 chamadas mede o antes e o depois;
+  - a troca de dataset do experimento era só uma pergunta e não virou lote.
+- **Resultado da bateria** (92 respostas, com marcação cega dos documentos que tratam de cada pedido):
+  - o modelo pesa mais que a regra: o Flash cita todos os documentos que tratam do pedido, antes e depois; o Flash-Lite, cerca de três quartos;
+  - no Flash-Lite, as respostas com uma fonte só caíram de 3 em 14 para 1 em 16, e o caso real foi de 1 para 2 fontes;
+  - as citações diretas passaram a vir no idioma original e a conferir com a passagem;
+  - no Flash, as respostas ficaram com o dobro do tamanho e comentavam documentos que não tratam do pedido (tratado na regra ajustada, abaixo).
+- **Revisão por agentes:** interrompida pelo limite de uso e retomada em 02/10. Em três rodadas, com verificação adversarial, confirmou 34 defeitos distintos, quase todos de gravidade baixa; os principais foram uma resposta cortada pelo teto de tamanho, a união errada de trechos em texto repetitivo e avisos falsos de número sem marca.
+- **Complemento da bateria:** com o código final, o pedido de 14 das 17 perguntas é idêntico ao medido. As 3 que mudaram e a resposta cortada foram refeitas (8 chamadas), e a cobertura do Flash ficou em 100%.
+- **Decisões de 02/10:**
+  - **Regra ajustada:** a frase que fazia o Flash comentar documentos fora do assunto foi trocada e medida de novo, só no Flash (21 chamadas). As respostas com esse comentário foram de 13 em 21 para nenhuma; os documentos citados que não tratam do pedido, de 1,28 para 0,56 por resposta; a saída, de 1.033 para 879 tokens. A cobertura ficou em 98%: uma resposta em 18 citou 2 de 3 documentos, e a repetição dela citou os 3.
+  - **Aviso de envios:** foi para o canto inferior direito, na aba Biblioteca e no chat, com a faixa dele reservada. Nas quatro abas, a 1.280 e a 360 px, nada fica embaixo dele.
+  - **Commit** do lote autorizado depois da regra ajustada, e a pasta de teste apagada no fim.
+- **Total de chamadas pagas:** 132 (129 na bateria e 3 no navegador).
+- **Pendências:** no Flash, as respostas a pedidos de definição continuam com cerca do dobro do tamanho de antes do lote; o Flash-Lite continua citando menos fontes.
+- Veja a [validação do lote 27](migracao/validacao-lote-27.md).
 
 ## Fica para a v1
 

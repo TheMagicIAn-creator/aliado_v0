@@ -29,6 +29,24 @@ def test_dates_references_marks_and_names_are_not_numbers():
     assert written(text) == ["0,458"]
     assert written("Na avaliação de 27 de setembro de 2026 e em setembro de 2026, 10 ensaios") == ["10"]
     assert written("Baschel et al. (2018), Tab. 1, p. 5; Sarquis et al., 2020, Tabela III; IEEE Std 493-2007, Fig. 7: 26 h") == ["26"]
+    # Referência entre parênteses, com o autor por extenso: o ano não é um número da resposta (lote 27).
+    assert written("segundo a NASA (National Aeronautics and Space Administration, 2008) e (Lafraia, 2001; IEEE, Inc., 2007)") == []
+    assert written("foram 2026 janelas, 2020 delas (acima de 2000)") == ["2026", "2020", "2000"]
+    # As formas que as respostas por documento usam: título com a referência, ano e página, item e norma militar.
+    assert written("### 1. Lafraia, 2001") == [] and written("Rahman (2017, p. 2) e o item 2.2.1 da MIL-STD-1629A") == []
+    assert written("Institute of Electrical and Electronics Engineers, Inc., 2007, foram 3 casos") == ["3"]
+    # Só nome próprio antes da vírgula é referência: um rótulo em minúscula não esconde o número.
+    assert written("com alarme (todas oficiais, 2041); sem alarme, 1987; total") == ["2041", "1987"]
+    assert written("Engineers, Inc., 2007 (IEEE Std 493)") == [] and written("são 14 itens 11 e os itens 2.2.1") == ["14", "11"]
+    # Título com a referência seguida de itálico, e os números de referência do próprio texto citado.
+    assert written("### 4. National Aeronautics and Space Administration, 2008 *(documento em estado parcial)*") == []
+    assert written('"measured in months or hours [72]. It is the inverse of the failure rate [73, 74]", com 3 casos') == ["3"]
+    # No trecho fechado por uma marca de resultado, "Nome, ano" só é referência entre parênteses.
+    counts = {"R1": "| Denso | 2.050 |\n| LSTM | 1.990 |"}
+    assert check_numbers("Janelas com alarme: Denso, 2041; LSTM, 1987 [R1].", counts)["unverified"] == ["2041", "1987"]
+    assert check_numbers("Resultados [R1]:\n- Denso, 2041", counts)["unverified"] == ["2041"]
+    assert check_numbers("Como em (Lafraia, 2001; IEEE, Inc., 2007), o Denso teve 2.050 janelas [R1].", counts)["unverified"] == []
+    assert check_numbers("Resultados [R1]:\n### 1. Lafraia, 2001", counts)["unverified"] == []
     assert written("1. Primeiro item com 3 janelas") == ["3"] and written("- 10 de 14 ensaios") == ["10", "14"]
     # dia/mês sem ano só é data quando vem de uma data conhecida; senão, são dois números
     assert written("10/14 ensaios") == ["10", "14"] and written("em 27/09", short_dates=frozenset({"27/09"})) == []
@@ -90,6 +108,10 @@ def test_tables_and_lists_inherit_the_marks_of_the_line_that_opens_them():
                            "- item solto com 7", BLOCKS)
     assert report["unverified"] == [] and report["unmarked"] == 2  # sem herança; o 7 está num bloco e não conta
     assert check_numbers("Baschel relata 98,5% [Kabc].", BLOCKS)["unmarked"] == 0  # número de documento não é "sem marca"
+    # A tradução de uma citação direta vem na linha seguinte, sem marca própria: é da mesma fonte (lote 27).
+    quoted = '"The MTBF ranges from 30 to 50 years" [Kabc].\n*(Tradução: O MTBF vai de 30 a 50 anos.)*\n- Tradução: de 30 a 50 anos.'
+    assert check_numbers(quoted, BLOCKS)["unmarked"] == 0
+    assert check_numbers("A sensibilidade é 0,40 [R1].\nTradução: são 0,95 [R1].", BLOCKS)["unverified"] == ["0,40", "0,95"]
 
 
 @pytest.mark.parametrize("text,expected", [

@@ -3,6 +3,48 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Depois da 0.3.0, a partir do uso real. Detalhes na spec [0027](docs/specs/0027-tela-envios-e-fontes.md).
+
+### Adicionado
+
+- **Aviso de envios no canto inferior direito**, visível em todas as abas, no lugar dos cartões que ficavam no chat.
+  - No chat, fica logo acima da caixa de mensagem. A área da aba termina acima dele, e ele não cobre nenhum botão.
+  - Com um documento: o nome, a etapa e a barra. Com vários: quantos estão prontos, a barra geral e o documento atual.
+  - As etapas aparecem em palavras: leitura das páginas, reconhecimento de texto, indexação e fichas.
+  - Falhas e documentos indexados só em parte ficam até serem fechados. Recarregar a página traz o aviso de volta.
+- **Avanço dentro da indexação:** o progresso é informado a cada 32 trechos, com os mesmos vetores de antes.
+- **Passagem com os trechos vizinhos:** cada trecho recuperado vai ao modelo com o anterior e o seguinte da mesma página. A definição da NASA para MCC, que chegava cortada, passa a chegar inteira.
+- **O que a busca trouxe e a resposta não citou:** a resposta mostra "citou 2 dos 6 documentos que a busca trouxe", e a janela de fontes lista os outros, com a passagem.
+
+### Alterado
+
+- **Tela inicial:** abrir ou recarregar a página cai sempre na apresentação. As conversas continuam na lista.
+- **Respostas com várias fontes:**
+  - a regra passa a pedir o que cada documento recuperado diz, mesmo quando o pedido fala em "uma fonte ao menos";
+  - os documentos que não tratam do pedido não são mencionados nem comentados na resposta: a janela de fontes já os mostra;
+  - os trechos vão ao modelo agrupados por documento, com a contagem de documentos distintos;
+  - citações diretas vêm no idioma original, com a tradução identificada.
+- **Fichas depois da indexação:** o documento fica pronto para a busca assim que é indexado. Com vários arquivos, todos são indexados antes de qualquer ficha.
+- **Teto de tamanho da resposta:** de 4.096 para 8.192 tokens, porque o raciocínio do modelo conta nele. Uma resposta cortada aparece com aviso e fica fora do histórico.
+- **Envios:** a página manda até três arquivos de cada vez, e uma falha reaparece mesmo com o aviso fechado ou recolhido.
+- **Medição com 113 respostas pagas**, antes e depois, em 14 pedidos de definição, 2 controles e o caso real:
+  - o Flash já citava todos os documentos que tratam do pedido; o Flash-Lite cita cerca de três quartos, antes e depois;
+  - no Flash-Lite, as respostas com uma fonte só caíram de 3 em 14 para 1 em 16, e o caso real foi de 1 para 2 fontes;
+  - as citações diretas que conferem com a passagem foram de 18 para 83 no Flash e de 0 para 10 no Flash-Lite;
+  - no Flash, a primeira versão da regra fazia 13 de 21 respostas comentarem documentos que não tratam do pedido. Com a frase ajustada, nenhuma comenta, e os documentos citados fora do assunto caíram de 1,28 para 0,56 por resposta;
+  - no Flash, as respostas ficaram com cerca do dobro do tamanho de antes (de 459 para 879 tokens de saída), pelas citações no original com a tradução.
+
+### Corrigido
+
+- Um erro inesperado na leitura ou nas fichas deixava o envio preso em andamento e bloqueava o apagar de documentos.
+- "Completar fichas" podia pagar duas vezes pela ficha de um documento enviado enquanto a tarefa esperava.
+- A aba Biblioteca tinha rolagem lateral em telas estreitas quando havia fichas pendentes.
+- Referências, itens de norma e traduções das respostas por documento eram contados como números sem marca de resultado.
+- A união de trechos vizinhos cortava repetições em texto repetitivo, e uma página com texto repetido mandava o mesmo parágrafo duas vezes ao modelo.
+- Um erro de arquivo no envio chegava à tela com código do sistema e caminho de pasta.
+
 ## [0.3.0] — 2026-10-01
 
 Lotes 22 a 26, a partir da avaliação da 0.2.0 pelo pesquisador para o mestrado. Detalhes nas specs

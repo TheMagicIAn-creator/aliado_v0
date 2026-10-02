@@ -1,0 +1,367 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-02",
+  "batch": "27",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0027-tela-envios-e-fontes.md",
+  "base_commit": "ae24885",
+  "version": "0.3.0 (sem mudança; CHANGELOG em 'Não lançado')",
+  "decisions": {
+    "scope": "tela inicial, pop-up de envios e as três correções das respostas com várias fontes",
+    "measurement": "bateria paga de cerca de 100 chamadas, antes e depois",
+    "dataset": "a troca de dataset era só uma pergunta; não entra em lote nem em registro",
+    "rule_2026_10_02": "ajustar a frase que fazia o Flash comentar documentos fora do assunto e medir de novo, só no Flash",
+    "popup_position_2026_10_02": "canto inferior direito, na aba Biblioteca e no chat, sem cobrir nenhum botão",
+    "commit_2026_10_02": "commit do lote depois da regra ajustada; tmp/lote-27 apagada no fim"
+  },
+  "review": {
+    "agent_review": "interrompida pelo limite de uso em 01/10 e concluída em 02/10, com verificação adversarial",
+    "rounds": [
+      {
+        "round": 1,
+        "fronts": [
+          "passagens"
+        ],
+        "confirmed": 2,
+        "refuted": 0
+      },
+      {
+        "round": 2,
+        "fronts": [
+          "envios-servidor",
+          "envios-tela",
+          "passagens",
+          "pedido-e-citacoes",
+          "fontes-e-testes"
+        ],
+        "confirmed": 23,
+        "distinct": 20,
+        "refuted": 0,
+        "unverified_low_severity": 8
+      },
+      {
+        "round": 3,
+        "fronts": [
+          "tela",
+          "servidor-e-pedido",
+          "testes"
+        ],
+        "confirmed": 12,
+        "refuted": 0
+      }
+    ],
+    "decided_by_researcher": "posição do aviso de envios: canto inferior direito, com a faixa dele reservada",
+    "real_catalog_check": {
+      "chunks": 13852,
+      "exact_page_slice": 13852,
+      "searches": 36,
+      "expand_ms_median": 2.7,
+      "ambiguous_pairs": 89,
+      "joined_by_tie_break": 24
+    }
+  },
+  "battery": {
+    "paid_calls": 129,
+    "rewrites": 16,
+    "answers": 113,
+    "complement": {
+      "calls": 8,
+      "questions_with_changed_request": [
+        "mtbf",
+        "mttf",
+        "controle_preditiva"
+      ],
+      "cut_answer_rerun": "npr no Flash, duas vezes",
+      "requests_identical": "14 de 17"
+    },
+    "questions": {
+      "definition": 14,
+      "controls": 2,
+      "real_case": 1,
+      "repeated": 4
+    },
+    "labels": {
+      "documents": 100,
+      "treat_with_chunk": 51,
+      "treat_with_passage": 57,
+      "labellers": 2,
+      "disputes": 1
+    },
+    "input_tokens": 2009470,
+    "cached_tokens": 654161,
+    "output_tokens": 73328,
+    "reasoning_tokens": 119562,
+    "fourteen_questions": {
+      "flash_before": {
+        "coverage": 1.0,
+        "single_source_when_2plus": "0/14",
+        "cited_not_treating": 0.72,
+        "quotes_matching": "18/19",
+        "output_tokens": 459
+      },
+      "flash_after": {
+        "coverage": 1.0,
+        "single_source_when_2plus": "0/16",
+        "cited_not_treating": 1.28,
+        "quotes_matching": "86/95",
+        "output_tokens": 1033
+      },
+      "flash_lite_before": {
+        "coverage": 0.77,
+        "single_source_when_2plus": "3/14",
+        "cited_not_treating": 0.44,
+        "quotes_matching": "0/3",
+        "invalid_citations": 1,
+        "output_tokens": 416
+      },
+      "flash_lite_after": {
+        "coverage": 0.77,
+        "single_source_when_2plus": "1/16",
+        "cited_not_treating": 0.17,
+        "quotes_matching": "10/16",
+        "invalid_citations": 0,
+        "output_tokens": 441
+      }
+    },
+    "real_case": {
+      "flash_lite": "1 de 4 antes, 2 de 4 depois",
+      "flash": "4 de 4 antes e depois"
+    },
+    "adjusted_rule": {
+      "calls": 21,
+      "model": "flash",
+      "requests_identical_to_final_code": "17 de 17",
+      "input_tokens": 379786,
+      "cached_tokens": 49068,
+      "output_tokens": 17903,
+      "reasoning_tokens": 50693,
+      "fourteen_questions": {
+        "coverage": 0.98,
+        "single_source_when_2plus": "0/16",
+        "cited_not_treating": 0.56,
+        "quotes_matching": "83/85",
+        "invalid_citations": 0,
+        "output_tokens": 879
+      },
+      "answers_commenting_left_out_documents": {
+        "measured_rule": "13 de 21",
+        "adjusted_rule": "0 de 21"
+      },
+      "controls": {
+        "cited_not_treating": "2,5 para 1",
+        "output_tokens": "786 para 588"
+      },
+      "real_case": "4 de 4",
+      "coverage_note": "uma resposta em 18 (taxa de falha) citou 2 de 3 documentos; a repetição citou os 3"
+    },
+    "false_unmarked_number_notes": {
+      "before_fix": "12 de 42",
+      "after_fix": "0 de 113"
+    }
+  },
+  "acceptance": {
+    "browser_paid_calls": 3,
+    "test_server": "127.0.0.1:8777, interface e biblioteca reais com modelo e fichas simulados",
+    "real_server": "127.0.0.1:8776, cópia da biblioteca em tmp/lote-27",
+    "real_question": "Flash-Lite citou 3 dos 6 documentos que a busca trouxe na primeira resposta",
+    "narrow_360px_no_overflow": true,
+    "console_errors": 0,
+    "popup_position_check": {
+      "sizes": [
+        "1280x800, tema claro",
+        "360x740, tema escuro"
+      ],
+      "situations": "quatro abas, aviso aberto e recolhido, em andamento e com falha listada",
+      "controls_under_the_popup": 0,
+      "horizontal_overflow": false,
+      "console_errors": 0,
+      "reserved_space_px": {
+        "open_with_failure": "212 a 260",
+        "collapsed": "65 a 93"
+      }
+    }
+  },
+  "defects_fixed_in_acceptance": [
+    "rolagem lateral na aba Biblioteca a 360 px com fichas pendentes",
+    "contagem de falhas cortada no título do pop-up em tela estreita",
+    "'Tudo pronto' com um documento com falha",
+    "'1 anotações' no resumo da ficha de leitura",
+    "ano de referência '(Autor, 2008)' contado como número sem marca",
+    "tarefa presa num erro inesperado da leitura do documento",
+    "linha do aviso mostrava um documento enquanto as fichas criadas eram de outro"
+  ],
+  "deviations": [
+    "revisão por agentes interrompida pelo limite de uso em 01/10 e concluída em 02/10",
+    "4 perguntas repetidas na bateria, em vez de 6 (os 2 controles não estavam no orçamento)",
+    "marcação dos documentos por dois agentes independentes e um juiz, e não só pelo assistente",
+    "132 chamadas pagas no total (100 na bateria, 8 no complemento e 21 na regra ajustada, autorizados em 02/10, e 3 no navegador)",
+    "aviso de envios no canto inferior direito, e não no superior, por decisão do pesquisador em 02/10"
+  ],
+  "validation": {
+    "pytest_passed": 480,
+    "new_tests": 32,
+    "ruff": "passed",
+    "js_syntax": "passed",
+    "python_versions": [
+      "3.12.14"
+    ]
+  },
+  "git_actions_by_assistant": [],
+  "commit_policy": "Commit do lote 27 feito pelo assistente com a autorização do pesquisador (02/10/2026), no formato dele, sem tag e sem push; a tag v0.3.0 (em ae24885) e o push ficam com ele.",
+  "cleanup": "tmp/lote-27 apagada com a autorização do pesquisador (02/10/2026), depois da medição da regra ajustada.",
+  "public_files": [
+    {
+      "path": ".claude/launch.json",
+      "sha256": "b091d8caae07fa3d3043d1e1135ea1debb4e1020b717192df1a2c3bc7777c3ff",
+      "previous_sha256": "10eeb470f5c466bda84ab0f83cf1659e0c64f3e7be144351c3cb4ca499e46e37",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "36ab0e09f3db385be84f420e1e07fcd723ed1232e4d9d2c5c9f02c0cd7175fd0",
+      "previous_sha256": "18f41f55499a8cb22b30c608c71f47a2436210ad26cd2eb1dc136624a20f55c8",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "b02fd830fe86b6b25fd535454f3fce8ef5cd7e70feca190eba58cb0dc23c902c",
+      "previous_sha256": "08f82594247aa85f4feeffc7e5186c7edd6fb9e16046e88e5cd8c777fe6fcdef",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "2b6bf643607293c04e24da353f4b92cfb806889092348810a819157ea6cfa5da",
+      "previous_sha256": "f008a0121f8716ded113940c94b8204d8b3bc2b9515e4af128f9efb97e41f8be",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "29617dbff666e526286ee7af8f6ec3bd916fe48c1f2c52c9021f43ffa81a1fb5",
+      "previous_sha256": "e3fe80d058cda862fc37be8f674f0a62ac0ffa4e45d885371f7ac87377b0e70c",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "a632fef2b7a3955f29bb523fb0c94cc03ee6187587629ac4a8c80bad34762c85",
+      "previous_sha256": "3b8aff8fca46ef2dda5515485aa01a5fd0e231c7327f677092d5ef4a150bf8d9",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/agent.py",
+      "sha256": "22fc5b130221104971de8c922525048645de2479fd053d8aab9020977e5d06d1",
+      "previous_sha256": "90282ca09180fea8b4f07056f60d0ebdd3657d5242a98c9e7a5a4c0a70264d0e",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "e98770d092978011bc9b18134e08512ca622d71d84972a93d43c466c90cd1967",
+      "previous_sha256": "5414a39db0921baa5086f45f9e374e5b5321c9d24d1d806be94d0ba5b01a9439",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "be09a6fb7025cb3b4282b1dae511fb363551110319356eba95509d5fec02bbb6",
+      "previous_sha256": "63a3863920ba4b50f91d272e54002bdfc81a66abb6d7053d607958830603b3a2",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.css",
+      "sha256": "2a0aa365b1f75872e0e1ffd21521aa50a8a6d1e1759f451defa7ae3a9776ad34",
+      "previous_sha256": "bf22fbdd2fb81811b19b215f1bf0efbb2dddabd80bdb95abb2265f4fa91deb67",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/app.js",
+      "sha256": "05289d499659458f41aae2e3087c5610b6db6b2e54d1fde0bcdefbe5771351aa",
+      "previous_sha256": "ea2c03b10fbdd5efef6b618724c18a186f3d20f58d34e34b9f0053407504c7e5",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/static/index.html",
+      "sha256": "655b4367a47b46483cfddac4a8cfb141c12e48725f60751d20b8aeffc9abc426",
+      "previous_sha256": "d7297f0e85e809c3a667efdd48c7dbde796ce63fd1f0fc98d6725e25c6b08e5b",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/embeddings.py",
+      "sha256": "56fe3c436c6d097e5e1f247f3bd975976d997444707c6daa829a0f6430149af4",
+      "previous_sha256": "5719b85ccc845287f58ef4cd26f2e726aafd317f680c7f1d2f553f2d17bdaaf2",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/knowledge/library.py",
+      "sha256": "35003d6677cc49158cd6e203f81c84980aae0c3b759d04cd79f7fe62a8bbc261",
+      "previous_sha256": "2a275288ece9bafa1d99ad088018479dfab984d969505ee49d13e2697d406026",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/contracts.py",
+      "sha256": "d534194c7a43af66151634fcc16ae989a263af9391dac19b7cbc5e57595f6a5f",
+      "previous_sha256": "9f3db4fa7eecb0469420a9c06e5ba95a3db25ae05b171e9a63a457e039138af0",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/llm/providers/gemini.py",
+      "sha256": "da069b9d1bb92d5e06cea492b0822238389f3485f31e4642d8fd84b6354fe3cb",
+      "previous_sha256": "fbd2585b02160ae15f58af8cda0cda00072e0b73e24185c2cdfd4da5f1cb1a57",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/numbers.py",
+      "sha256": "06f2accf0a32282d5565ad38c3a81f65bb6261163bf8e3f0f47e9fd17ab6389f",
+      "previous_sha256": "fe9940ea97acb08303e6ce92768e475df4602a791d39e19c965ebaa25911f3be",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_numbers.py",
+      "sha256": "e7c562e015446dedb69d374677a3697aae19c8067ec8cb1b49882e0a2cb6c4e9",
+      "previous_sha256": "6ebe5d701ac64e8fc93bf4d513e9dc67954d8a6499426bf9fb932089c291e797",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_providers.py",
+      "sha256": "7d2a95dbc63e14f05cf68751837aebe204231c5066f13b17f1a99fa891e66a0d",
+      "previous_sha256": "771e3ee9bee5de8aab0aa864fbde8c4ac8b1f6d873edfd32dd2a80adb5d7438b",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_query_rewrite.py",
+      "sha256": "b3d3b7ed4cbebbb5141e6e333a2291e0bcca8101f433e9b293d5f204a799e185",
+      "previous_sha256": "56665c41647b3c9c5cb9858a36966f4d3d455cf7b3efe198ed1b4071e1078b5b",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_search_quality.py",
+      "sha256": "71eb0b238b8ddd108444ef78a77603d71afd252d233edda29060581032e42f0c",
+      "previous_sha256": "3b9e4fdce974fbebd4c8db2c556e05d8bdee90809702021ff33e41e871eefe99",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_skills_agent.py",
+      "sha256": "fc2b5b1709e834bcd07266900e7e30717287281326740108238ea6adaed00ea5",
+      "previous_sha256": "0834b26604bdef304842797b627af2a06aed5aa9fa44af0a636e60271ce3d10a",
+      "status": "modified"
+    },
+    {
+      "path": "tests/test_web.py",
+      "sha256": "66fa399941cc51d80d34631868b4c970f3c30ba15d8ce5126b6f5b16ce85b6c0",
+      "previous_sha256": "28665979329787a16dfb73152850e217a987253bf5fa83b2f41e6d379d5921a3",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-27.md",
+      "sha256": "2ff805fdd81db55824fb663e379ff9d6465fbd384e48289a7bbcd1aaae7ef0e6",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0027-tela-envios-e-fontes.md",
+      "sha256": "85378036689853f4ae9afb9b0ab751a04a6d94012073137b306962911d035429",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_passages.py",
+      "sha256": "5bdb96ebcc75bc4234ab94f994b75cef0f7346fa44cdee8670f414a4bab580cd",
+      "status": "new"
+    }
+  ]
+}

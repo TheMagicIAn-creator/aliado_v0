@@ -94,6 +94,10 @@ class LLMResult:
     reviewer_model: str | None = None
     # Trechos da biblioteca efetivamente citados, na ordem de aparição.
     sources: tuple[dict[str, Any], ...] = ()
+    # Trechos que a busca trouxe e a resposta não citou, na ordem da busca (lote 27).
+    retrieved: tuple[dict[str, Any], ...] = ()
+    # O provedor parou no teto de tokens de saída: o texto ficou cortado (lote 27).
+    truncated: bool = False
     # Busca na web: fontes (uri, title, domain), consultas feitas e trechos sustentados.
     web_sources: tuple[dict[str, Any], ...] = ()
     web_queries: tuple[str, ...] = ()
@@ -127,6 +131,8 @@ class LLMStreamChunk:
     web_sources: tuple[dict[str, Any], ...] = ()
     web_queries: tuple[str, ...] = ()
     web_supports: tuple[dict[str, Any], ...] = ()
+    # O provedor parou no teto de tokens de saída; chega no último pedaço do fluxo.
+    truncated: bool = False
 
 
 def _partes_de_sequencia(valores):

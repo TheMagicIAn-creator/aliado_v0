@@ -285,6 +285,10 @@ Não houve migração de código da origem. O `mestrado-utfpr` (`src/ml/confiabi
 
 Não houve migração de código da origem. O resumo dos resultados e a conferência dos números foram escritos aqui: o resumo usa as mesmas funções da aba Ciência, e a conferência, só a biblioteca padrão. Nenhum relatório, dado ou memória da origem entrou. Consulte a [spec 0026](../specs/0026-resultados-no-chat.md), o [manifesto](lote-26.json) e a [validação](validacao-lote-26.md).
 
+## Lote 27 — tela inicial, aviso de envios e respostas com várias fontes
+
+Não houve migração de código da origem. O aviso de envios, a passagem com os trechos vizinhos e a lista do que a busca trouxe foram escritos aqui, sem dependência nova. A bateria de medição usou a biblioteca do pesquisador só para leitura. Consulte a [spec 0027](../specs/0027-tela-envios-e-fontes.md), o [manifesto](lote-27.json) e a [validação](validacao-lote-27.md).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |
