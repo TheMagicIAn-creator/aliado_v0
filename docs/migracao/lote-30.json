@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-04",
+  "batch": "30",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0030-leitura-integral.md",
+  "base_commit": "85dce50",
+  "release": {
+    "version": "0.4.1",
+    "lots": "30",
+    "wheel": "dist/v0.4.1/aliado-0.4.1-py3-none-any.whl",
+    "wheel_files": 97,
+    "wheel_sha256": "a3595dc13e2774e683aef9a34ae499f05bb298c9bd3b6fc874076b2adb09f4d1"
+  },
+  "decisions": {
+    "reading": "documentos inteiros: a busca escolhe os documentos; artigos vão inteiros, livros e normas em blocos de páginas inteiras",
+    "images": "de todas as páginas enviadas",
+    "budget": "400 mil tokens por pergunta, ajustável na tela (150 mil, 400 mil ou o limite do modelo)",
+    "library_tab": "sai; um painel no chat fica com a lista, a ficha, as figuras e apagar",
+    "budget_rule": "deixada com o assistente (03/10/2026)"
+  },
+  "changes_from_plan": [
+    {"plan": "o texto guardado de cada página segue junto com o PDF", "done": "só as primeiras palavras de cada página", "why": "o texto seria dois terços do custo; com o teto de 150 mil, 234 a 242 páginas lidas sem o texto e 89 a 97 com ele"},
+    {"plan": "blocos em volta das páginas achadas", "done": "blocos fixos de 10 páginas", "why": "recortes diferentes a cada pergunta teriam de ser enviados de novo (20 a 96 MB)"},
+    {"plan": "serviço de arquivos só acima de 20 MB", "done": "todo PDF pelo serviço de arquivos", "why": "as leituras do piloto tinham de 18 a 93 MB; o envio é reaproveitado por até 48 horas"},
+    {"plan": "documentos na ordem da busca até o teto acabar", "done": "todo documento da busca recebe um mínimo", "why": "sem o mínimo, o documento esperado ficava de fora em 1 das 12 perguntas"},
+    {"plan": "a lista do painel mostra as páginas de cada documento", "done": "referência, arquivo, estado, versão e data", "why": "a contagem pede a leitura da extração de cada documento a cada abertura"}
+  ],
+  "origin": "nenhum código de seleção de páginas, de envio de documentos ou de painel do repositório de origem",
+  "what_leaves_the_computer": "na leitura integral, os PDFs dos documentos lidos vão ao Gemini e ficam no serviço de arquivos do Google por até 48 horas; o registro local fica em data/uso/arquivos-google.json, sem o conteúdo",
+  "paid_calls": {
+    "authorized": {"calls": 30, "input_tokens": 5000000},
+    "used": {"calls": 30, "input_tokens": 4513105, "output_tokens": 23729, "reasoning_tokens": 74069, "cached_input_tokens": 481112},
+    "model": "gemini-3.8-flash",
+    "breakdown": {
+      "calibration": {"calls": 2, "input_tokens": 123212},
+      "passages_mode": {"calls": 12, "input_tokens": 137832},
+      "whole_documents": {"calls": 12, "input_tokens": 3207059},
+      "cut_answers_repeated": {"calls": 2, "input_tokens": 770661},
+      "with_stored_text": {"calls": 2, "input_tokens": 274341}
+    },
+    "interrupted_attempt": "uma tentativa parada durante o envio dos arquivos, antes da chamada ao modelo",
+    "usage_log": "tmp/lote-30/uso.jsonl",
+    "free_calls": {"token_counts": 13, "test_upload": 1},
+    "files_service": {"uploaded": 179, "deleted_at_the_end": 179}
+  },
+  "measurements": {
+    "library": {"documents": 26, "pages": 2216, "documents_up_to_40_pages": 22},
+    "token_cost": {"pdf_page": 560, "stored_text_chars_per_token": [2.35, 3.67],
+                   "article_16_pages": {"pdf": 8961, "stored_text": 18517, "both": 27477}},
+    "selection_12_questions": {
+      "first_rule": {"expected_document": 11, "expected_page_of_6": 6},
+      "blocks_of_20_pages": {"expected_document": 12, "expected_page_of_6": 5},
+      "blocks_of_10_pages": {"expected_document": 12, "expected_page_of_6": 6},
+      "seconds_per_question": [5, 7]
+    },
+    "pilot": {
+      "questions": ["P1", "P4", "P7", "E2", "E5", "E8", "F1", "F7", "F10", "F11", "T1", "T3"],
+      "passages": {"median_input_tokens": 11366, "seconds": [7, 13], "median_seconds": 10,
+                   "cited_expected_document": "12/12", "cited_expected_page": "5/6"},
+      "whole_documents": {"median_input_tokens": 266987, "seconds": [31, 749], "median_seconds": 64,
+                          "cited_expected_document": "12/12", "cited_expected_page": "6/6",
+                          "budget_150k": {"documents": [9, 11], "whole": [6, 9], "pages": [234, 242], "input_tokens": [147348, 151581]},
+                          "budget_400k": {"documents": [8, 11], "whole": [5, 8], "pages": [637, 642], "input_tokens": [382393, 388000]},
+                          "real_over_estimate": [0.948, 0.981],
+                          "direct_quotes_on_cited_page": "10/10"},
+      "with_stored_text": {"questions": ["T3", "F11"], "pages": [89, 97], "cited_expected_page": "1/2"},
+      "cut_answers": [{"question": "P7", "limit": 8192, "reasoning_tokens": 6162},
+                      {"question": "F1", "limit": 16384, "reasoning_tokens": 15728}],
+      "provider_reuse": [{"question": "P1", "cached": 60397, "of": 61606}, {"question": "F1", "cached": 385448, "of": 388000}],
+      "same_request_twice": {"question": "P7", "seconds": [94, 749]},
+      "report": "tmp/lote-30/relatorio-piloto-lote-30.html"
+    }
+  },
+  "not_verified": [
+    "o Gemini real pela via com fluxo, que é a da tela (o piloto usou a via sem fluxo, com o mesmo pedido)",
+    "a leitura integral junto com a busca na web (fora do lote: com a web ligada, a leitura segue por trechos)"
+  ],
+  "first_use": {
+    "date": "2026-10-04",
+    "report": "o pesquisador pediu a definição de autoencoder; uma resposta disse que o documento de Pertile (2023) não estava na busca, e a seguinte, que ele não menciona o termo",
+    "findings": [
+      "o servidor da porta 8765 não tinha sido reiniciado: a página era a do lote 30, e o programa, o anterior; as respostas saíram por trechos (12,5 a 14,6 mil tokens)",
+      "a consulta reescrita trocou 'pertile' por 'percentil percentile thresholding', e a busca não trouxe o documento",
+      "o documento de Pertile não traz 'autoencoder' nem 'codificador' em nenhuma das 77 páginas nem nas 63 descrições de figuras",
+      "o termo aparece em 6 dos 26 documentos: Ibrahim et al. (16), Ahirwar e Nandanwar (14), Francisti et al. (8), Kull et al. (3), Sharma et al. (2) e Marangis et al. (1)"
+    ],
+    "fixes": [
+      "agent._keep_named: a referência do documento citado na mensagem volta à consulta reescrita que a perdeu",
+      "a página avisa quando o programa em execução é anterior a ela (estado com a hora de início) e esconde os controles de leitura"
+    ],
+    "paid_calls": 0
+  },
+  "tests": {"total": 664, "new": 29, "files": ["tests/test_reading.py", "tests/test_providers.py", "tests/test_web.py"]},
+  "files": {
+    "new": [
+      "src/aliado/knowledge/reading.py",
+      "tests/test_reading.py",
+      "docs/specs/0030-leitura-integral.md",
+      "docs/migracao/validacao-lote-30.md",
+      "docs/migracao/lote-30.json"
+    ],
+    "changed": [
+      "src/aliado/agent.py",
+      "src/aliado/cli.py",
+      "src/aliado/knowledge/library.py",
+      "src/aliado/llm/contracts.py",
+      "src/aliado/llm/usage_log.py",
+      "src/aliado/llm/providers/gemini.py",
+      "src/aliado/llm/providers/gateway.py",
+      "src/aliado/interfaces/web/app.py",
+      "src/aliado/interfaces/web/conversations.py",
+      "src/aliado/interfaces/web/static/index.html",
+      "src/aliado/interfaces/web/static/app.js",
+      "src/aliado/interfaces/web/static/app.css",
+      "tests/test_providers.py",
+      "tests/test_web.py",
+      "pyproject.toml",
+      "CHANGELOG.md",
+      "README.md",
+      "AGENTS.md",
+      "docs/biblioteca/uso.md",
+      "docs/roteiro-v0.md",
+      "docs/arquitetura/modulos.md",
+      "docs/migracao/README.md",
+      ".claude/launch.json"
+    ],
+    "outside_git": [
+      "tmp/lote-30/ (piloto, relatório, medições e servidores de teste)",
+      "dist/v0.4.1/"
+    ],
+    "untouched": [
+      "data/bibliotecas/principal (usada só para leitura)",
+      "data/uso/chamadas.jsonl (as chamadas do piloto ficaram em tmp/lote-30/uso.jsonl)"
+    ]
+  },
+  "not_done_by_assistant": ["commit", "push", "tag"]
+}

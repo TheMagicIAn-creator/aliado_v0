@@ -310,3 +310,154 @@ def test_gemini_json_cortado_no_teto_de_tokens_segue_para_o_registro_de_uso():
     provider = GeminiProvider(client=SimpleNamespace(models=SimpleNamespace(generate_content=lambda **_: whole)))
     with pytest.raises(ValueError):  # JSON inválido sem corte continua sendo erro
         provider.generate(request, model_id="modelo")
+
+
+def pdf_part(key: str, size: int = 20) -> dict:
+    return {"type": "document", "mime_type": "application/pdf", "key": key, "data": b"%PDF" + b"x" * size}
+
+
+def reading_request(*parts, **changes) -> LLMRequest:
+    base = {"task_type": "critical_reasoning", "multimodal": True,
+            "messages": [{"role": "user", "content": [{"type": "text", "text": "Documento:"}, *parts]},
+                         {"role": "user", "content": "O que diz o documento?"}]}
+    return LLMRequest(**(base | changes))
+
+
+class Recorder:
+    """Modelo de teste que guarda o pedido recebido."""
+
+    def __init__(self):
+        self.seen = []
+
+    def generate_content(self, **kwargs):
+        self.seen.append(kwargs)
+        return SimpleNamespace(text="resposta")
+
+    def generate_content_stream(self, **kwargs):
+        self.seen.append(kwargs)
+        return iter([SimpleNamespace(text="resposta")])
+
+
+def test_gemini_aceita_documento_pdf_so_em_pedido_multimodal_do_usuario():
+    """Leitura integral (lote 30): o PDF pequeno segue dentro do pedido, como a imagem."""
+    models = Recorder()
+    provider = GeminiProvider(client=SimpleNamespace(models=models))
+    part = pdf_part("abc:1-3")
+    provider.generate(reading_request(part), model_id="modelo")
+    assert "".join(chunk.content for chunk in provider.stream(reading_request(part), model_id="modelo")) == "resposta"
+    for seen in models.seen:
+        assert seen["contents"][0] == {"role": "user", "parts": [
+            {"text": "Documento:"}, {"inline_data": {"mime_type": "application/pdf", "data": part["data"]}}]}
+        assert seen["contents"][1] == {"role": "user", "parts": [{"text": "O que diz o documento?"}]}
+
+    def refused(*parts, **changes):
+        with pytest.raises(ValueError):
+            provider.generate(reading_request(*parts, **changes), model_id="modelo")
+
+    refused(part, multimodal=False)
+    refused(messages=[{"role": "assistant", "content": [part]}, {"role": "user", "content": "e agora?"}])
+    refused(part | {"mime_type": "application/msword"})
+    refused(part | {"data": "texto"})
+    refused(part | {"data": b""})
+    # O conteúdo pode vir numa função, lida só se for preciso; a que falha ou não traz nada recusa o pedido.
+    provider.generate(reading_request(part | {"data": lambda: part["data"]}), model_id="modelo")
+    assert models.seen[-1]["contents"][0]["parts"][1] == {"inline_data": {"mime_type": "application/pdf", "data": part["data"]}}
+    refused(part | {"data": lambda: b""})
+    refused(part | {"data": lambda: 1 / 0})
+
+
+def test_gemini_envia_os_documentos_pelo_servico_de_arquivos(tmp_path, monkeypatch):
+    """Com registro de envios, todo PDF sobe pelo serviço de arquivos e é reaproveitado enquanto vale."""
+    import json
+    from datetime import datetime, timedelta, timezone
+
+    from aliado.llm.providers import gemini
+
+    monkeypatch.setattr(gemini, "INLINE_BYTES", 100)
+    monkeypatch.setattr(gemini.time, "sleep", lambda _seconds: None)
+    uploads, deleted, polls = [], [], []
+
+    class Files:
+        def upload(self, *, file, config):
+            size = len(file.read())
+            uploads.append((size, config))
+            # O arquivo maior ainda está sendo recebido: o adapter espera antes de usar.
+            return SimpleNamespace(name=f"files/f{size}", uri=f"https://exemplo.test/f{size}",
+                                   state=SimpleNamespace(name="PROCESSING" if size > 100 else "ACTIVE"),
+                                   expiration_time=datetime.now(timezone.utc) + timedelta(hours=48))
+
+        def get(self, *, name):
+            polls.append(name)
+            return SimpleNamespace(name=name, uri=f"https://exemplo.test/{name.split('/')[1]}",
+                                   state=SimpleNamespace(name="ACTIVE"),
+                                   expiration_time=datetime.now(timezone.utc) + timedelta(hours=48))
+
+        def delete(self, *, name):
+            deleted.append(name)
+
+    models, registry = Recorder(), tmp_path / "uso" / "arquivos-google.json"
+    provider = GeminiProvider(client=SimpleNamespace(models=models, files=Files()), files=registry)
+    big, small = pdf_part("aaa:1-90", 300), pdf_part("bbb:1-2", 50)
+    provider.generate(reading_request(big, small), model_id="modelo")
+    config = {"mime_type": "application/pdf"}
+    assert sorted(uploads) == [(54, config), (304, config)] and polls == ["files/f304"]
+    assert models.seen[-1]["contents"][0]["parts"][1:] == [
+        {"file_data": {"file_uri": "https://exemplo.test/f304", "mime_type": "application/pdf"}},
+        {"file_data": {"file_uri": "https://exemplo.test/f54", "mime_type": "application/pdf"}}]
+    # O registro local guarda a chave, o nome e a validade, nunca o conteúdo.
+    stored = registry.read_text(encoding="utf-8")
+    assert "%PDF" not in stored and set(json.loads(stored)["arquivos"]) == {"aaa:1-90", "bbb:1-2"}
+    assert set(json.loads(stored)["arquivos"]["aaa:1-90"]) == {"nome", "endereco", "bytes", "enviado", "expira"}
+    # A pergunta seguinte reaproveita os envios, também no fluxo, sem ler os documentos de novo.
+    unread = [part | {"data": lambda: 1 / 0} for part in (big, small)]
+    list(provider.stream(reading_request(*unread), model_id="modelo"))
+    assert len(uploads) == 2 and models.seen[-1]["contents"][0]["parts"][1]["file_data"]["file_uri"].endswith("/f304")
+    assert sorted(item["chave"] for item in provider.uploaded()) == ["aaa:1-90", "bbb:1-2"]
+    # Um envio perto do fim do prazo não é reaproveitado.
+    entries = json.loads(stored)["arquivos"]
+    entries["aaa:1-90"]["expira"] = (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat()
+    registry.write_text(json.dumps({"arquivos": entries}), encoding="utf-8")
+    provider.generate(reading_request(big, unread[1]), model_id="modelo")
+    assert sorted(uploads) == [(54, config), (304, config), (304, config)]
+    # Um envio novo tira do registro os que o serviço já apagou pelo prazo.
+    entries = json.loads(registry.read_text(encoding="utf-8"))["arquivos"]
+    entries["velho:1-5"] = entries["bbb:1-2"] | {"expira": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()}
+    registry.write_text(json.dumps({"arquivos": entries}), encoding="utf-8")
+    provider.generate(reading_request(big, small, pdf_part("ccc:1-4", 70)), model_id="modelo")
+    assert sorted(item["chave"] for item in provider.uploaded()) == ["aaa:1-90", "bbb:1-2", "ccc:1-4"]
+    # Apagar tira do serviço e do registro.
+    assert provider.forget_uploads() == {"apagados": 3, "falhas": 0}
+    assert sorted(deleted) == ["files/f304", "files/f54", "files/f74"]
+    assert provider.uploaded() == [] and json.loads(registry.read_text(encoding="utf-8")) == {"arquivos": {}}
+    # Sem registro, nada sobe: o PDF segue dentro do pedido, e acima do limite direto o pedido é recusado.
+    plain = GeminiProvider(client=SimpleNamespace(models=models, files=Files()))
+    plain.generate(reading_request(small), model_id="modelo")
+    assert models.seen[-1]["contents"][0]["parts"][1] == {"inline_data": {"mime_type": "application/pdf", "data": small["data"]}}
+    with pytest.raises(ValueError):
+        plain.generate(reading_request(big, small), model_id="modelo")
+    assert len(uploads) == 4 and plain.uploaded() == [] and plain.forget_uploads() == {"apagados": 0, "falhas": 0}
+
+
+def test_gemini_classifica_a_falha_do_servico_de_arquivos(tmp_path, monkeypatch):
+    from aliado.llm.providers import gemini
+
+    monkeypatch.setattr(gemini, "INLINE_BYTES", 10)
+
+    class Broken:
+        def upload(self, *, file, config):
+            raise RuntimeError("503 unavailable")
+
+    models = Recorder()
+    provider = GeminiProvider(client=SimpleNamespace(models=models, files=Broken()), files=tmp_path / "arquivos.json")
+    with pytest.raises(ProviderError) as captured:
+        provider.generate(reading_request(pdf_part("aaa:1-9", 300)), model_id="modelo")
+    assert captured.value.transient is True and models.seen == [] and provider.uploaded() == []
+
+    class Refused:
+        def upload(self, *, file, config):
+            return SimpleNamespace(name="files/f1", uri="https://exemplo.test/f1", state="FAILED")
+
+    provider = GeminiProvider(client=SimpleNamespace(models=models, files=Refused()), files=tmp_path / "arquivos.json")
+    with pytest.raises(ProviderError):
+        list(provider.stream(reading_request(pdf_part("aaa:1-9", 300)), model_id="modelo"))
+    assert models.seen == [] and provider.uploaded() == []

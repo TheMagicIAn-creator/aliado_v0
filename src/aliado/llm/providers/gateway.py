@@ -97,10 +97,11 @@ def _model_id(*names: str, default: str | None = None) -> str | None:
     return default
 
 
-def build_default_gateway() -> ProviderGateway:
+def build_default_gateway(*, files=None) -> ProviderGateway:
+    """`files`: o registro local do que for enviado ao serviço de arquivos do Google (leitura integral, lote 30)."""
     gateway = ProviderGateway()
     gateway.register_provider("openai", OpenAIProvider())
-    gateway.register_provider("google", GeminiProvider())
+    gateway.register_provider("google", GeminiProvider(files=files))
 
     openai_models = {
         "luna": _model_id("AL_IADO_OPENAI_MODEL_LUNA"),

@@ -68,26 +68,38 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 - **Conversas:**
   - Ao abrir ou recarregar, a página mostra a tela de apresentação; as conversas ficam na lista ao lado.
   - Respostas em fluxo, com botão para parar, e os tokens de cada resposta.
-  - Escolha da skill e do modelo.
+  - **Escolha automática** da skill, do modelo e da leitura dos documentos: antes de gastar tokens, um roteador local decide o que a mensagem precisa. A linha sob cada resposta mostra a escolha, e o motivo aparece ao passar o mouse. Os seletores da tela fixam uma skill, um modelo ou uma leitura.
   - Histórico em `data/conversas/`. Conversas apagadas vão para a lixeira e deixam de ser lembradas; as anotações que saíram delas continuam.
   - O link no fim da resposta abre uma janela com as fontes e a memória usada, que fecha com Esc.
 - **Documentos:**
-  - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página.
+  - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página, e fica **fixado** naquela conversa: vai inteiro ao modelo em todas as perguntas dela. As etiquetas acima da caixa de mensagem mostram os fixados, com o × para soltar.
+  - O botão **Documentos**, ao lado de **Usar biblioteca**, abre o painel com a lista da biblioteca. Por documento: fixar na conversa, abrir o original, a ficha, as figuras e apagar. A aba Biblioteca não existe mais.
   - Um aviso no canto inferior direito, visível em todas as abas, mostra o avanço dos envios. No chat, ele fica logo acima da caixa de mensagem, e a tela reserva a faixa dele para não cobrir nenhum botão.
     - Com um documento: o nome, a etapa (leitura das páginas, reconhecimento de texto, indexação e fichas) e a barra.
     - Com vários: quantos já estão prontos, a barra geral e o documento atual, que muda quando a indexação dele termina.
     - O documento fica pronto para a busca assim que é indexado; as fichas são criadas depois de todos os arquivos enviados.
     - Tudo certo some em 6 s. Falhas e documentos indexados só em parte ficam até você fechar. Fechar o aviso não cancela o envio.
     - Se você recarregar a página no meio do envio, o aviso volta com os totais.
-  - Cada documento ganha uma ficha de leitura na memória e uma **ficha do documento** (título, autores, ano e DOI), conferida no próprio texto e editável na aba **Biblioteca**. **Completar fichas** cria as que faltam.
+  - Cada documento ganha uma ficha de leitura na memória e uma **ficha do documento** (título, autores, ano e DOI), conferida no próprio texto e editável no painel **Documentos**. **Completar fichas** cria as que faltam.
   - **Figuras e tabelas:** o texto dentro das figuras é reconhecido no seu computador ao indexar. Na ficha do documento, **Descrever figuras e tabelas** envia ao modelo cada página com figura, desenho, tabela ou legenda, como imagem, numa chamada por página. O aviso diz quantas chamadas são antes de enviar, e dá para parar no meio.
     - A descrição entra na busca marcada como automática. A resposta a usa para dizer o que a figura mostra, com o aviso de conferir no original, e a janela de fontes leva à página.
     - O rótulo e a legenda só ficam se estiverem no texto da página.
   - **Trechos:** os trechos da busca são frases inteiras, sem os cabeçalhos e rodapés repetidos das páginas. O sumário e a lista de referências ficam fora da busca comum e voltam quando a pergunta os pede.
-  - **Apagar**, na aba Biblioteca, tira o documento de vez, com todas as versões, a extração e o índice, e revoga as anotações que o agente deduziu dele. As suas anotações ficam. Não tem volta.
-  - Com **Usar biblioteca**, o agente recebe a lista dos documentos, com autor e ano, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
+  - **Apagar**, no painel Documentos, tira o documento de vez, com todas as versões, a extração e o índice, e revoga as anotações que o agente deduziu dele. As suas anotações ficam. Não tem volta.
+  - **Usar biblioteca** permite a consulta: o AL-IAdo só vai aos documentos quando a pergunta pede. As respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
   - Antes de buscar, o modelo mais barato reescreve a mensagem com o assunto da conversa, as siglas por extenso e os termos em português e inglês. É uma chamada barata a mais por mensagem, e a janela de fontes mostra o que foi buscado.
-  - A busca traz até 10 trechos, e cada um vai ao modelo com os trechos vizinhos da mesma página, para a frase não chegar cortada.
+  - **Leitura dos documentos:** ao lado de **Usar biblioteca**, a **Leitura automática** (padrão) começa pelo mais barato que responde à pergunta e só lê mais quando preciso.
+    - **Sem a biblioteca:** conversa, memória, tarefas e resultados da pesquisa. Uma mensagem de conversa custa menos de mil tokens.
+    - **Só trechos:** a busca traz até 10 trechos, e cada um vai ao modelo com os vizinhos da mesma página. Cerca de 5 a 8 mil tokens.
+    - **Páginas inteiras:** as 10 páginas mais próximas da pergunta, em PDF, com figuras, tabelas e fórmulas. É o que vai quando a pergunta fala de figura ou tabela, ou quando os trechos não bastaram. Cerca de 11 a 12 mil tokens.
+    - **Documento inteiro:** o documento citado na pergunta, se for pequeno, ou o fixado na conversa. De 11 a 17 mil tokens num artigo.
+    - **Leitura ampla:** os documentos que a busca escolher, inteiros, de 150 a 400 mil tokens e de 31 segundos a 12 minutos por pergunta. Só por escolha sua.
+    - **Acima de 30 mil tokens,** a tela mostra a estimativa e pergunta antes de enviar. Depois de 300 mil tokens no dia, toda leitura acima dos trechos pergunta.
+    - **Ler mais fundo**, sob a resposta, refaz a pergunta no degrau seguinte, com o custo estimado no botão.
+    - Os PDFs lidos sobem para o serviço de arquivos do Google e ficam lá por até 48 horas, para as perguntas seguintes não enviarem de novo. O painel **Documentos** mostra quantos estão lá e tem o botão **Apagar de lá**.
+    - Com **Buscar na web** ligada, a leitura segue por trechos.
+  - **Perguntas já respondidas:** quando uma pergunta tem o mesmo assunto e o mesmo pedido de uma já respondida, o modelo recebe aquela troca e as páginas que ela citou, sem nova busca, e escreve uma resposta nova. A linha da resposta diz "partiu de uma resposta anterior".
+  - **Contagem exata:** em perguntas sobre o acervo ("há alguma literatura sobre…"), o modelo recebe em quais documentos e páginas o termo aparece, na biblioteca inteira.
   - Em pedidos de definição, conceito ou valor, a resposta apresenta o que cada documento diz, com a citação. Citações diretas vêm no idioma original, com a tradução identificada.
   - A resposta mostra quantos dos documentos trazidos pela busca ela citou, e a janela de fontes lista os outros em **A busca também trouxe**, com a passagem.
 - **Fonte do texto:** o seletor **Aa**, na barra do topo, troca a letra da interface entre 8 opções. A escolha fica guardada no navegador.
@@ -232,7 +244,7 @@ uma avaliação independente (M14).
 ## Pacote
 
 ```powershell
-.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.4.0
+.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.5.0
 ```
 
 O wheel inclui a interface, com o KaTeX e o D3 v7 (licença ISC, copiada junto), e as skills do AL-IAdo. Documentação, cenários e dados
@@ -248,7 +260,12 @@ desenvolvimento e não entram no pacote.
 
 ## Pendências conhecidas
 
-- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase.
+- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura.
+- O roteador erra: quando ele escolhe uma leitura menor do que a pergunta pedia, a resposta sai sem o que precisava. Os remédios são **Ler mais fundo** e fixar a escolha nos seletores. Uma pergunta sobre os resultados da pesquisa sem as palavras que ele conhece ("GPVS", "nossos resultados", "ensaios") vai sem eles. Veja a [validação do lote 31](docs/migracao/validacao-lote-31.md).
+- A leitura por páginas inteiras lê 10 páginas. Se a resposta estiver em outras, ela diz quais leu, e **Ler mais fundo** lê o documento.
+- Uma pergunta já respondida parte das páginas que a resposta anterior citou: se aquela resposta ficou incompleta, a nova também fica. Refazer a pergunta em seguida, na mesma conversa, ou **Ler mais fundo** fazem uma leitura nova.
+- A leitura ampla demora: no piloto, de 31 segundos a 12 minutos por pergunta, sem relação com o tamanho do pedido. Ela custa de 13 a 34 vezes o modo de trechos, e os PDFs lidos ficam no serviço de arquivos do Google por até 48 horas. Veja a [validação do lote 30](docs/migracao/validacao-lote-30.md).
+- Na leitura de documentos inteiros, a busca continua escolhendo os documentos, e de um livro só os blocos escolhidos são lidos. O modelo pode citar a página errada: o código confere que a página citada foi enviada, e não que a afirmação está nela.
 - A descrição de uma figura é feita por um modelo e pode errar. O que o código confere são o rótulo, a legenda e as palavras que também estão no texto da página; a ligação entre os elementos de um diagrama não tem como ser conferida. Veja a [validação do lote 29](docs/migracao/validacao-lote-29.md).
 - Uma página digitalizada sem legenda não entra na descrição das figuras, e uma tabela com mais de 40 linhas é transcrita até a 40ª.
 - Com a consulta reescrita do chat, algumas perguntas sobre uma figura específica não acham a página dela: a reescrita troca a referência à figura por termos gerais.

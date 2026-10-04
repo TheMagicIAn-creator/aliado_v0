@@ -108,6 +108,8 @@ class LLMResult:
     unverified_numbers: tuple[str, ...] = ()
     # Quantos números ficaram em parágrafos sem marca de resultado: não foram conferidos.
     unmarked_numbers: int = 0
+    # Leitura integral (lote 30): os documentos enviados inteiros ou em blocos, sem o texto das páginas.
+    reading: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.content, str):

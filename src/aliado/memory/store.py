@@ -32,10 +32,50 @@ MAX_PREFERENCES = 10
 MAX_PROFILE = 15
 MAX_QUESTION = 500
 MAX_ANSWER = 1500
+# Trilhas (lote 31): a pergunta nova é comparada com as já respondidas, pela consulta de busca de cada uma
+# (o assunto, já sem "traga", "com citação direta" e o resto da frase). Nas consultas gravadas até 04/10/2026,
+# o mesmo pedido ficou entre 0,88 e 0,95 (um caso em 0,66); outro pedido do mesmo assunto, em 0,67 ou menos;
+# e assuntos diferentes, em 0,3 ou menos.
+TRAIL_STRONG = 0.86
+TRAIL_WEAK = 0.62
+# O mesmo assunto não basta para responder pelas páginas de antes: "os princípios da MCC" e "o conceito de MCC"
+# têm consultas quase iguais (0,94). A frase da pergunta também tem de ser parecida com a da troca anterior.
+TRAIL_QUESTION = 0.75
+MAX_TRAIL_PAGES = 12
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _clean_pages(pages) -> list[dict]:
+    """As páginas de uma trilha, sem repetição: resumo do arquivo, número da página e título."""
+    seen, kept = set(), []
+    for page in pages or ():
+        key = (page.get("sha256"), page.get("page"))
+        if not key[0] or key[1] is None or key in seen:
+            continue
+        seen.add(key)
+        kept.append({"sha256": str(key[0]), "page": int(key[1]), "title": str(page.get("title") or "")[:250]})
+    return kept[:MAX_TRAIL_PAGES]
+
+
+def trail_pages(matches: list[dict], *, limit: int = MAX_TRAIL_PAGES) -> list[dict]:
+    """As páginas das trocas parecidas, da mais citada para a menos (o reforço das trilhas).
+
+    Cada troca soma a semelhança dela às páginas que citou, e a mais recente conta em dobro: a página que
+    volta a ser citada sobe, e a que deixa de ser citada desce."""
+    latest = max((match["created_at"] for match in matches), default=None)
+    weights: dict[tuple, float] = {}
+    pages: dict[tuple, dict] = {}
+    for match in matches:
+        weight = match["similaridade"] * (2 if match["created_at"] == latest else 1)
+        for page in match["pages"]:
+            key = (page["sha256"], page["page"])
+            weights[key] = weights.get(key, 0.0) + weight
+            pages.setdefault(key, page)
+    order = sorted(pages, key=lambda key: -weights[key])  # no empate, vale a ordem em que foram citadas
+    return [pages[key] for key in order[:limit]]
 
 
 def _normalize(vector) -> list[float]:
@@ -67,6 +107,11 @@ class MemoryStore:
                     question TEXT NOT NULL, answer TEXT NOT NULL, skill TEXT,
                     created_at TEXT NOT NULL, vector TEXT, forgotten INTEGER NOT NULL DEFAULT 0);
             """)
+            # Trilhas (lote 31): as páginas citadas e o vetor só da pergunta, em bancos criados antes.
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(exchanges)")}
+            for name in ("pages", "qvector"):
+                if name not in columns:
+                    connection.execute(f"ALTER TABLE exchanges ADD COLUMN {name} TEXT")
             # Uma transação por operação: tudo ou nada (ex.: nova versão + antiga superada).
             with connection:
                 yield connection
@@ -107,6 +152,7 @@ class MemoryStore:
         with self._db() as db:
             notes = db.execute("SELECT id, text FROM memories WHERE vector IS NULL").fetchall()
             exchanges = db.execute("SELECT message_id, question, answer FROM exchanges WHERE vector IS NULL").fetchall()
+            questions = db.execute("SELECT message_id, question FROM exchanges WHERE qvector IS NULL").fetchall()
         filled = 0
         for row in notes:
             vector = self._vector(row["text"])
@@ -120,6 +166,11 @@ class MemoryStore:
                 with self._db() as db:
                     db.execute("UPDATE exchanges SET vector=? WHERE message_id=?", (vector, row["message_id"]))
                 filled += 1
+        for row in questions:  # o vetor só da pergunta, para as trilhas das trocas anteriores ao lote 31
+            vector = self._vector(row["question"])
+            if vector:
+                with self._db() as db:
+                    db.execute("UPDATE exchanges SET qvector=? WHERE message_id=?", (vector, row["message_id"]))
         return filled
 
     @staticmethod
@@ -262,19 +313,61 @@ class MemoryStore:
     # Memória de conversas (lote 18)
 
     def remember_exchange(self, *, conversation_id: str, message_id: str, question: str, answer: str,
-                          skill: str | None = None, created_at: str | None = None) -> bool:
-        """Guarda uma troca exibida (pergunta e resposta); devolve False se já estava guardada."""
+                          skill: str | None = None, created_at: str | None = None, pages=None,
+                          key: str | None = None) -> bool:
+        """Guarda uma troca exibida (pergunta e resposta); devolve False se já estava guardada.
+
+        `pages` são as páginas que a resposta citou, pelo conteúdo do arquivo e pelo número: a trilha da
+        pergunta (lote 31). `key` é a consulta de busca da pergunta, pela qual a trilha é achada; sem ela,
+        vale a própria pergunta. Uma troca já guardada sem trilha ganha a dela."""
         question = str(question or "").strip()[:MAX_QUESTION]
         answer = str(answer or "").strip()[:MAX_ANSWER]
         if not question or not answer:
             return False
+        trail = json.dumps(_clean_pages(pages), ensure_ascii=False) if pages else None
         with self._db() as db:
             if db.execute("SELECT 1 FROM exchanges WHERE message_id=?", (message_id,)).fetchone():
+                if trail:
+                    db.execute("""UPDATE exchanges SET pages=?, qvector=COALESCE(?, qvector)
+                        WHERE message_id=? AND pages IS NULL""", (trail, self._vector(key) if key else None, message_id))
                 return False
-            db.execute("INSERT INTO exchanges VALUES (?,?,?,?,?,?,?,0)", (
+            db.execute("""INSERT INTO exchanges (message_id, conversation_id, question, answer, skill, created_at,
+                    vector, forgotten, pages, qvector) VALUES (?,?,?,?,?,?,?,0,?,?)""", (
                 message_id, conversation_id, question, answer, skill, created_at or _now(),
-                self._exchange_vector(question, answer)))
+                self._exchange_vector(question, answer), trail, self._vector(key or question)))
         return True
+
+    def trail(self, key: str, *, question: str | None = None, limit: int = 3,
+              min_similarity: float = TRAIL_WEAK) -> list[dict]:
+        """Trocas já respondidas com páginas citadas, das mais parecidas com a pergunta para as menos.
+
+        `key` é a consulta de busca da pergunta de agora (ou a pergunta, se não houver consulta); `similaridade`
+        compara os assuntos. Com `question`, cada troca traz também `pergunta_parecida`: a semelhança entre a
+        frase de agora e a da troca. Vale qualquer conversa, inclusive a atual. As páginas vêm na ordem em que
+        foram citadas."""
+        query = json.loads(self._vector(key) or "[]")
+        if not query:
+            return []
+        with self._db() as db:
+            rows = db.execute("SELECT * FROM exchanges WHERE forgotten=0 AND pages IS NOT NULL AND qvector IS NOT NULL").fetchall()
+        scored = []
+        for row in rows:
+            vector = json.loads(row["qvector"])
+            if len(vector) == len(query):
+                similarity = sum(a * b for a, b in zip(query, vector))
+                if similarity >= min_similarity:
+                    scored.append((similarity, row))
+        scored.sort(key=lambda pair: (-pair[0], pair[1]["created_at"]))
+        asked = self._embedding(question) if question else []
+
+        def alike(text: str) -> float:
+            other = self._embedding(text)
+            return round(sum(a * b for a, b in zip(asked, other)), 3) if len(other) == len(asked) else 0.0
+
+        return [{"message_id": row["message_id"], "conversation_id": row["conversation_id"], "question": row["question"],
+                 "answer": row["answer"], "created_at": row["created_at"], "similaridade": round(similarity, 3),
+                 "pages": json.loads(row["pages"])} | ({"pergunta_parecida": alike(row["question"])} if asked else {})
+                for similarity, row in scored[:limit]]
 
     def recall(self, question: str, *, exclude_conversation: str | None = None, limit: int = 3,
                min_similarity: float = 0.40) -> list[dict]:
@@ -293,7 +386,7 @@ class MemoryStore:
                 if similarity >= min_similarity:
                     scored.append((similarity, row))
         scored.sort(key=lambda pair: -pair[0])
-        return [{key: row[key] for key in row.keys() if key not in {"vector", "forgotten"}}
+        return [{key: row[key] for key in row.keys() if key not in {"vector", "forgotten", "pages", "qvector"}}
                 | {"similaridade": round(similarity, 3)} for similarity, row in scored[:limit]]
 
     def forget_conversation(self, conversation_id: str) -> int:

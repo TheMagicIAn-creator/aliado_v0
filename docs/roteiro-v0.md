@@ -235,14 +235,19 @@ antes de começar. A 0.3.0 sai com o lote 26; a tag `v0.3.0` e o envio ao GitHub
 ## Depois da 0.3.0
 
 A 0.3.0 saiu com o lote 26 (commit `ae24885`). Os lotes seguintes partem do uso real e continuam sendo
-combinados antes de começar. A 0.4.0 sai com o lote 29 e reúne os lotes 27 a 29; a tag `v0.4.0` e o envio
-ao GitHub ficam com o pesquisador.
+combinados antes de começar. A 0.4.0 sai com o lote 29 e reúne os lotes 27 a 29; a 0.5.0 sai com o lote 31 e
+reúne os lotes 30 e 31 (a 0.4.1, preparada no lote 30, não chegou a ser lançada).
+As tags e o envio ao GitHub ficam com o pesquisador.
 
 | Lote | Entrega | Situação |
 |---|---|---|
 | 27 | Tela de apresentação ao abrir ou recarregar; aviso de envios em todas as abas, com o documento pronto antes das fichas; respostas com várias fontes: regra reescrita, trechos agrupados por documento, passagem com os trechos vizinhos e a lista do que a busca trouxe e não foi citado | Concluído em 02/10/2026 |
 | 28 | Espelho para o Obsidian em `data/obsidian/`: uma nota por conversa, uma por documento e uma de anotações por fonte, ligadas por links e refeitas depois de cada resposta | Concluído em 03/10/2026 |
 | 29 | Indexação: cabeçalhos, sumário e referências fora dos trechos; trechos por frase; texto reconhecido dentro das figuras; descrição de figuras e tabelas pelo modelo, por pedido; lançamento da 0.4.0 | Concluído em 03/10/2026 |
+
+| 30 | Leitura integral: a busca escolhe os documentos, e o modelo recebe o PDF das páginas inteiras, dentro de um teto por pergunta; documentos fixados na conversa; a aba Biblioteca dá lugar ao painel de documentos | Concluído em 04/10/2026 |
+| 31 | Roteador local e escada de leitura: o AL-IAdo escolhe a skill, o modelo e a leitura antes de gastar; confirmação acima de 30 mil tokens e aviso diário em 300 mil; parte fixa enxuta; contagem exata de termos; trilhas das perguntas já respondidas; lançamento da 0.5.0 | Concluído em 04/10/2026 |
+| 32 | Busca em memória (hoje leva cerca de 4 s por pergunta); reordenação local das páginas por uma segunda rede; revisor de memória só quando há o que guardar | A combinar |
 
 ### Decisões e resultado do lote 27 (01 e 02/10/2026)
 
@@ -305,6 +310,49 @@ ao GitHub ficam com o pesquisador.
 - **Limpeza:** a biblioteca real foi reindexada três vezes no lote, para corrigir a divisão das descrições; as duas extrações intermediárias foram apagadas com a autorização do pesquisador, e a pasta ficou com 1,0 GB (era 0,53 GB antes do lote).
 - **Pendências:** a busca mais rápida; a consulta reescrita, que perde a página em perguntas sobre uma figura específica; duas páginas que o modelo não conseguiu descrever.
 - Veja a [validação do lote 29](migracao/validacao-lote-29.md).
+
+### Decisões e resultado do lote 30 (03 e 04/10/2026)
+
+- **Origem:** o pesquisador pediu que o AL-IAdo lesse os documentos como os assistentes leem um anexo: inteiros, com as imagens, sem fracionar, mesmo custando mais. E que a aba Biblioteca saísse.
+- **Diagnóstico:** só cerca de 10 trechos iam ao modelo por pergunta. A biblioteca inteira não cabe num pedido, mas os documentos cabem um a um. Uma página de PDF custa 560 tokens no Gemini.
+- **Decisões:**
+  - a busca escolhe os documentos; artigos vão inteiros, livros e normas em blocos de páginas inteiras;
+  - imagem de todas as páginas enviadas; teto de 400 mil tokens por pergunta, ajustável;
+  - a aba Biblioteca sai, e um painel no chat fica com a lista, a ficha, as figuras e apagar;
+  - a regra que reparte o teto ficou com o assistente.
+- **O que mudou do plano, pelas medições:**
+  - o texto guardado não segue junto com o PDF, só as primeiras palavras de cada página: ele seria dois terços do custo;
+  - os documentos grandes vão em blocos fixos de 10 páginas, para o envio ser reaproveitado;
+  - todo PDF sobe pelo serviço de arquivos do Google, onde fica por até 48 horas;
+  - todo documento que a busca traz recebe um mínimo do teto.
+- **Piloto pago** com 12 perguntas nos dois modos, no Flash (30 chamadas, 4,5 milhões de tokens de entrada):
+  - as duas formas citaram o documento esperado nas 12; a página esperada, 5 de 6 por trechos e 6 de 6 com os documentos inteiros;
+  - em três perguntas, o modo de trechos disse que o dado não estava no material ou trouxe parte dele, e a leitura integral trouxe as escalas, a linha da tabela e a tabela completa;
+  - o custo foi de 11 mil para 150 ou 385 mil tokens de entrada por pergunta;
+  - o tempo foi de 7 a 13 segundos para 31 segundos a 12,5 minutos, sem relação com o tamanho do pedido.
+- **Primeiro uso (04/10):** o pesquisador usou a tela nova com o programa antigo ainda em execução, e as respostas saíram por trechos sem aviso; numa delas a consulta reescrita trocou "pertile" por "percentil". Duas correções: o documento citado na mensagem volta à consulta, e a tela avisa quando o programa é anterior a ela. A verificação pedida: o documento de Pertile (2023) não fala de autoencoder; o termo aparece em 6 dos 26 documentos.
+- **Pendências:** o tempo de resposta; a busca na web junto com a leitura integral; a busca mais rápida; uma contagem exata de um termo na biblioteca inteira.
+- Veja a [validação do lote 30](migracao/validacao-lote-30.md).
+
+### Decisões e resultado do lote 31 (04/10/2026)
+
+- **Origem:** "gastamos metade do orçamento total em um dia". O pesquisador pediu o gasto mínimo de tokens e que o AL-IAdo escolhesse o modelo e a skill, como era a ideia do roteamento.
+- **Diagnóstico:** a regra do lote 30 lia até 400 mil tokens em toda pergunta com a biblioteca ligada (uma pergunta de conversa custou 386 mil); e a parte fixa de uma pergunta comum era maior que os trechos.
+- **Decisões:** escada automática de leitura; teto de 30 mil tokens sem confirmação; o AL-IAdo escolhe o modelo e a skill e mostra a escolha; aviso diário em 300 mil; trilhas das perguntas já respondidas, sem botão e sem repetir a resposta antiga.
+- **O que mudou do plano:**
+  - a trilha é achada pela consulta de busca (o assunto) e pela frase (o pedido), e a consulta continua sendo reescrita: a frase sozinha confundia pedidos de assuntos diferentes;
+  - o documento citado só vai inteiro se for pequeno; de um livro, vão as páginas mais próximas;
+  - os resultados da pesquisa e o material de referência da skill só seguem quando a pergunta é de resultados ou de método.
+- **Medição paga** (30 chamadas e 281 mil tokens de entrada, do limite de 30 e 500 mil), com as 12 perguntas do piloto do lote 30:
+  - 144 mil tokens de entrada nas 12, contra 3,2 milhões da leitura ampla e 138 mil dos trechos;
+  - documento esperado citado nas 12, e página esperada nas 6 que têm uma;
+  - as três respostas que só a leitura ampla completava saíram completas;
+  - 10 a 35 segundos por pergunta, contra 7 a 13 dos trechos e 31 segundos a 12,5 minutos da leitura ampla;
+  - uma mensagem de conversa custou 459 tokens, no modelo menor.
+- **Correção vinda da medição:** do documento citado que é grande iam as 10 páginas mais próximas de toda a biblioteca, e a tabela pedida de uma norma de 426 páginas ficava de fora. Agora vão as páginas do documento citado, e a tabela entra.
+- **Com o Gemini, depois da primeira entrega** (7 das 30 chamadas): a pergunta já respondida foi reconhecida com a consulta reescrita; a subida de degrau e a confirmação acima do teto funcionaram. A trilha não poupou tokens (5.962 contra 4.086 por trechos), e subir um degrau num assunto ausente custou 20 mil tokens.
+- **Pendências:** a busca leva cerca de 4 segundos; a pergunta já respondida repete o alcance da resposta anterior e não poupa tokens; o roteador foi ajustado nas mesmas mensagens em que foi medido, e deixa sem os resultados da pesquisa 3 de 10 perguntas escritas de outro jeito.
+- Veja a [validação do lote 31](migracao/validacao-lote-31.md).
 
 ## Fica para a v1
 

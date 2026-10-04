@@ -12,6 +12,8 @@ from pathlib import Path
 
 _ID = re.compile(r"[0-9a-f]{32}")
 MAX_TITLE = 80
+# Documentos fixados numa conversa (lote 30): vão inteiros ao modelo em todas as perguntas dela.
+MAX_PINNED = 12
 
 
 def _now() -> str:
@@ -77,6 +79,20 @@ class ConversationStore:
         with self._lock:
             data = self.get(conversation_id)
             data["title"], data["updated_at"] = title.strip()[:MAX_TITLE], _now()
+            self._write(data)
+        return data
+
+    def pin(self, conversation_id: str, document_ids) -> dict:
+        """Troca os documentos fixados na conversa (lote 30); a ordem dada é a ordem de leitura."""
+        if not isinstance(document_ids, list) or any(
+                not isinstance(item, str) or not _ID.fullmatch(item) for item in document_ids):
+            raise ValueError("Lista de documentos inválida.")
+        pinned = list(dict.fromkeys(document_ids))
+        if len(pinned) > MAX_PINNED:
+            raise ValueError(f"Uma conversa fixa no máximo {MAX_PINNED} documentos.")
+        with self._lock:
+            data = self.get(conversation_id)
+            data["fixados"] = pinned
             self._write(data)
         return data
 

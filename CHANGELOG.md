@@ -3,6 +3,60 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.5.0] — 2026-10-04
+
+Lotes 30 e 31, a partir do uso real. Detalhes nas specs [0030](docs/specs/0030-leitura-integral.md) e
+[0031](docs/specs/0031-roteador-e-escada.md) e nas validações dos lotes [30](docs/migracao/validacao-lote-30.md)
+e [31](docs/migracao/validacao-lote-31.md). A 0.4.1, preparada no lote 30, não foi lançada: o padrão dela (ler
+até 400 mil tokens em toda pergunta) gastou demais no primeiro dia de uso.
+
+### Adicionado
+
+- **Escolha automática do modelo, da skill e da leitura** (lote 31). Antes de qualquer chamada paga, um roteador local decide o que a mensagem precisa, por regras e por frases de exemplo comparadas pelo modelo local de busca.
+  - **Modelo:** o menor, com pouco raciocínio, para conversa, perguntas sobre o acervo e fatos pontuais; o maior para síntese, figuras, tabelas, método e resultados.
+  - **Skill:** a da conversa fica até a mensagem mudar de assunto; conversa solta vai sem skill.
+  - A linha sob a resposta mostra a rota, com o motivo ao passar o mouse. Os seletores ganharam "automático", que é o padrão, e continuam servindo para fixar uma escolha.
+- **Escada de leitura** (lote 31): sem a biblioteca, só trechos, páginas inteiras (as 10 mais próximas da pergunta, em PDF), o documento citado ou fixado e a leitura ampla.
+  - A leitura automática começa pelo degrau mais barato. Se a resposta por trechos não cita nenhum documento, ela sobe para as páginas inteiras, dentro de 30 mil tokens.
+  - **Acima de 30 mil tokens estimados,** o servidor não chama o modelo: a tela mostra o custo e os documentos e pergunta antes. Depois de 300 mil tokens no dia, toda leitura acima dos trechos pergunta.
+  - **Ler mais fundo**, sob a resposta, refaz a pergunta no degrau seguinte, com o custo estimado no botão.
+- **Perguntas já respondidas** (lote 31): cada resposta com citações conferidas guarda as páginas citadas. Uma pergunta com o mesmo assunto e o mesmo pedido recebe aquela troca e as páginas dela, sem nova busca, e o modelo escreve uma resposta nova. As conversas já gravadas ganham as trilhas na primeira abertura.
+- **Contagem exata de termos** (lote 31): em perguntas sobre o acervo e nas que citam um documento, o modelo recebe em quais documentos e páginas cada termo aparece, na biblioteca inteira, pelo índice de palavras.
+- **Na medição do lote 31,** com as 12 perguntas do piloto pela leitura automática: 144 mil tokens de entrada, contra 3,2 milhões da leitura ampla; documento esperado citado nas 12 e página esperada nas 6 que têm uma; as três respostas que só a leitura ampla completava saíram completas; de 10 a 35 segundos por pergunta. Uma mensagem de conversa custou 459 tokens.
+- **Leitura ampla dos documentos** (lote 30), uma das escolhas da leitura. Antes, só cerca de 10 trechos iam ao modelo por pergunta.
+  - A busca escolhe os documentos, e o modelo recebe o PDF das páginas inteiras, com figuras, tabelas e fórmulas.
+  - Um documento de até 40 páginas vai inteiro. Um livro ou uma norma vai em blocos fixos de 10 páginas: os blocos em que a busca achou algo e os vizinhos.
+  - Um **teto** por pergunta, escolhido na tela: 150 mil tokens, 400 mil (padrão) ou o limite do modelo. Uma página de PDF custa 560 tokens. Todo documento que a busca traz recebe um mínimo, e nenhum leva mais de um quarto do teto antes de os outros entrarem.
+  - A resposta cita a página, com um identificador por página que não muda de uma pergunta para a outra. A linha "leu 9 documentos (7 inteiros e 2 em parte) · 640 páginas" abre a lista do que foi lido e do que não coube.
+  - O modo anterior continua na tela, como **Só trechos**.
+- **Documentos fixados na conversa:** o arquivo solto na conversa, ou anexado pelo clipe, fica fixado nela e vai inteiro nas perguntas que consultam os documentos, com a biblioteca ligada ou não. Etiquetas acima da caixa de mensagem mostram os fixados; o painel de documentos e a janela de fontes também fixam.
+- **Painel Documentos** no chat, aberto pelo botão ao lado de **Usar biblioteca**: a lista da biblioteca e, por documento, fixar na conversa, abrir o original, a ficha, as figuras e apagar.
+- **Envio pelo serviço de arquivos do Google:** os PDFs lidos sobem uma vez e servem às perguntas seguintes por até 48 horas. O painel mostra quantos estão lá, com o botão **Apagar de lá**, e há o comando `biblioteca arquivos` (`--apagar` tira de lá).
+- **No piloto do lote 30** com 12 perguntas da lista de referência, por trechos e pela leitura ampla:
+  - as duas formas citaram o documento esperado nas 12; a página esperada, 5 de 6 por trechos e 6 de 6 com os documentos inteiros;
+  - em três perguntas, o modo de trechos disse que o dado não estava no material ou trouxe só parte dele, e a leitura integral trouxe as escalas, a linha da tabela e a tabela completa;
+  - com o teto de 150 mil, o modelo leu de 234 a 242 páginas por pergunta; com o de 400 mil, de 637 a 642.
+
+### Alterado
+
+- **A aba Biblioteca saiu.** O que ela fazia está no painel Documentos. A visualização da extração em Markdown saiu da tela.
+- **O que sai do computador mudou:** nas leituras por páginas e por documentos, os PDFs das páginas lidas vão ao Gemini e ficam no serviço de arquivos do Google por até 48 horas. Antes, só trechos de texto iam, e nada ficava guardado.
+- **A parte fixa de cada pergunta encolheu** (lote 31):
+  - a lista completa dos documentos só segue em perguntas sobre o acervo; nas outras, só os nomes;
+  - o material de referência da skill e os **resultados da pesquisa** só seguem em perguntas de método ou de resultados. O botão **Usar resultados** passa a permitir o envio, e não a enviar sempre;
+  - uma conversa anterior lembrada, em vez de três, nas perguntas à biblioteca.
+- **Usar biblioteca** começa ligado e passa a permitir a consulta: o AL-IAdo só vai aos documentos quando a pergunta pede.
+- **O contador "Hoje"** vira à meia-noite deste computador; antes, virava no horário de Greenwich.
+- **Custo e tempo da leitura ampla:** de cerca de 11 mil para 150 ou 385 mil tokens de entrada por pergunta, e de 7 a 13 segundos para 31 segundos a 12,5 minutos, sem relação com o tamanho do pedido.
+- A descrição automática das figuras (lote 29) não vai ao modelo nas leituras por páginas e por documentos, porque a página vai como ela é. Ela continua servindo à busca e ao modo de trechos.
+- O limite de tamanho da resposta é de 32.768 tokens nas leituras por páginas e por documentos: o modelo raciocina mais com as páginas inteiras, e duas respostas do piloto foram cortadas com limites menores.
+- Com **Buscar na web** ligada, a leitura segue por trechos, e a resposta avisa.
+
+### Corrigido
+
+- **O documento citado na mensagem fica na busca.** "E o pertile?" virou "percentil" na consulta reescrita, e a busca não trouxe o documento de Pertile. A referência do documento citado pelo autor, pelo título ou pelo DOI volta à consulta quando a reescrita a perde.
+- **Aviso de reinício:** a página é lida do disco a cada carga, e o programa em execução só muda quando é reiniciado. Com a página nova e o programa antigo, a tela mostrava escolhas que não tinham efeito. Agora ela avisa e pede para reiniciar.
+
 ## [0.4.0] — 2026-10-03
 
 Lotes 27 a 29, a partir do uso real. Detalhes nas specs [0027](docs/specs/0027-tela-envios-e-fontes.md),

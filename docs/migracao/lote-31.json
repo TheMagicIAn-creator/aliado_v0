@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-04",
+  "batch": "31",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0031-roteador-e-escada.md",
+  "base_commit": "85dce50",
+  "base_note": "sobre o lote 30, ainda sem commit; os lotes 30 e 31 saem juntos na 0.5.0",
+  "release": {
+    "version": "0.5.0",
+    "lots": "30-31",
+    "wheel": "dist/v0.5.0/aliado-0.5.0-py3-none-any.whl",
+    "wheel_files": 99,
+    "wheel_sha256": "24f6cd2ec32fe53b7067c0de8ec837664264b1ed9b645e66a4a79e00981bd027",
+    "replaces": "0.4.1, preparada no lote 30 e não lançada"
+  },
+  "decisions": {
+    "default_reading": "escada automática: começa barato e só sobe quando preciso",
+    "ceiling_without_confirmation": "30 mil tokens por pergunta; acima, a tela mostra a estimativa e pede um clique",
+    "model_and_skill": "o AL-IAdo escolhe e mostra; os seletores ficam para fixar uma escolha",
+    "daily_limit": "aviso em 300 mil tokens; depois dele, toda leitura acima dos trechos pede confirmação",
+    "trails": "entram no lote, de forma natural: sem botão e sem repetir a resposta antiga (04/10/2026)"
+  },
+  "ladder": {
+    "0": "nada da biblioteca",
+    "1": "os trechos que a busca achou",
+    "2": "as 10 páginas mais próximas da pergunta, inteiras, em PDF",
+    "3": "o documento citado ou fixado, inteiro; os outros, por trechos",
+    "4": "a leitura ampla do lote 30, só por escolha do pesquisador"
+  },
+  "changes_from_plan": [
+    {
+      "plan": "a pergunta muito parecida dispensa a busca e a reescrita da consulta",
+      "done": "dispensa a busca; a consulta continua sendo reescrita, e a trilha é achada por ela (o assunto) e pela frase (o pedido)",
+      "why": "a frase sozinha confunde pedidos de assuntos diferentes; só o assunto confunde pedidos diferentes do mesmo assunto (0,94 entre 'os princípios da MCC' e 'o conceito de MCC')"
+    },
+    {
+      "plan": "a página citada de novo ganha peso, a que deixa de ser citada perde",
+      "done": "soma das trocas parecidas, a mais recente em dobro",
+      "why": "o mesmo efeito sem um contador a mais"
+    },
+    {
+      "plan": "o degrau 2 pode virar o padrão das consultas de texto",
+      "done": "o degrau 1 é o padrão",
+      "why": "páginas inteiras levaram de 24 a 31 s, e trechos, de 10 a 18 s"
+    },
+    {
+      "plan": "a contagem de termos ajuda a escolher as páginas do degrau 2",
+      "done": "vai só ao modelo",
+      "why": "a busca já usa o índice de palavras"
+    },
+    {
+      "plan": "documento citado vai inteiro",
+      "done": "só se couber em 18 mil tokens; senão, as 10 páginas dele mais próximas da pergunta",
+      "why": "um livro citado pelo autor pediria confirmação a cada pergunta"
+    },
+    {
+      "plan": "não previsto",
+      "done": "os resultados da pesquisa e o material de referência da skill só seguem em perguntas de resultados ou de método",
+      "why": "os resultados eram a maior parte fixa: 15,3 mil letras em toda pergunta"
+    },
+    {
+      "plan": "não previsto",
+      "done": "uma conversa lembrada, em vez de três, nas perguntas à biblioteca",
+      "why": "até 6 mil letras por pergunta"
+    }
+  ],
+  "origin": "nenhum código do repositório de origem; a ideia de decidir antes de gastar veio de roteador_llm.py e roteamento_ferramentas.py",
+  "free_measurements": {
+    "router_on_labelled_messages": {
+      "total": 80,
+      "accepted_rung": 79,
+      "real_messages": "47/48",
+      "reference_questions": "32/32",
+      "caveat": "as regras foram ajustadas nas mesmas mensagens"
+    },
+    "model_choice": {
+      "flash_lite": 26,
+      "flash": 54
+    },
+    "input_tokens_before_after": {
+      "real_messages_48": {
+        "before_mean": 18069,
+        "after_mean": 5372,
+        "after_median": 726,
+        "sum": [
+          867311,
+          257871
+        ]
+      },
+      "reference_questions_16": {
+        "before_mean": 18422,
+        "after_mean": 11425,
+        "sum": [
+          294744,
+          182802
+        ],
+        "wide_reading_mean": 374182
+      },
+      "figure_questions_16": {
+        "before_mean": 18556,
+        "after_mean": 12038,
+        "sum": [
+          296889,
+          192606
+        ],
+        "wide_reading_mean": 409588
+      },
+      "note": "antes: pedido por trechos com a parte fixa inteira e os resultados; sem memória nos dois lados; as estimativas das perguntas que citam um documento grande são anteriores à correção das páginas do documento citado"
+    },
+    "estimate_over_real": [
+      -0.1,
+      0.06
+    ],
+    "fixed_part_chars": {
+      "results_digest": 15347,
+      "catalog": 9066,
+      "document_names": 617,
+      "skill_instructions": 8563,
+      "skill_references": 4979,
+      "library_rules": 2096,
+      "core_instructions": 2045
+    },
+    "trails_on_stored_conversations": {
+      "exchanges": 52,
+      "with_trail": 14,
+      "same_request_recognised": "1/4",
+      "other_request_or_subject_taken_as_answered": "0/6",
+      "thresholds": {
+        "subject": 0.86,
+        "phrase": 0.75,
+        "weak": 0.62
+      },
+      "caveat": "as consultas das perguntas novas foram escritas à mão, no estilo do reescritor"
+    },
+    "results_questions_in_other_words": {
+      "recognised": "7/10",
+      "date": "2026-10-04"
+    }
+  },
+  "paid_calls": {
+    "authorized": {
+      "calls": 30,
+      "input_tokens": 500000
+    },
+    "used": {
+      "calls": 30,
+      "input_tokens": 280691,
+      "output_tokens": 18798,
+      "reasoning_tokens": 42047,
+      "cached_input_tokens": 17599
+    },
+    "models": [
+      "gemini-3.8-flash",
+      "gemini-3.5-flash-lite"
+    ],
+    "breakdown": {
+      "conversation_message": {
+        "calls": 1,
+        "input_tokens": 459
+      },
+      "twelve_questions_first_round": {
+        "calls": 12,
+        "input_tokens": 146672
+      },
+      "asked_again_in_another_conversation": {
+        "calls": 2,
+        "input_tokens": 21187
+      },
+      "three_questions_again_through_trails_and_one_new_reading": {
+        "calls": 6,
+        "input_tokens": 43515
+      },
+      "two_questions_again_with_clean_data": {
+        "calls": 2,
+        "input_tokens": 21748
+      },
+      "three_functions_with_the_real_model": {
+        "calls": 7,
+        "input_tokens": 47110,
+        "authorized": "na conversa de 04/10/2026, depois da primeira entrega"
+      }
+    },
+    "twelve_questions": {
+      "first_round": {
+        "input_tokens": 146672,
+        "seconds": [
+          10,
+          55
+        ],
+        "cited_expected_document": "12/12",
+        "cited_expected_page": "5/6"
+      },
+      "final_code": {
+        "input_tokens": 143639,
+        "seconds": [
+          10,
+          35
+        ],
+        "median_seconds": 22,
+        "cited_expected_document": "12/12",
+        "cited_expected_page": "6/6",
+        "by_rung": {
+          "1": 2,
+          "2": 5,
+          "3": 5
+        }
+      },
+      "lot_30_passages": {
+        "input_tokens": 137832,
+        "seconds": [
+          7,
+          13
+        ],
+        "cited_expected_page": "5/6"
+      },
+      "lot_30_wide_reading": {
+        "input_tokens": 3207059,
+        "seconds": [
+          31,
+          749
+        ],
+        "cited_expected_page": "6/6"
+      },
+      "answers_only_the_wide_reading_completed": {
+        "E2": "completa",
+        "T1": "completa",
+        "T3": "parcial na primeira rodada; completa no código final"
+      }
+    },
+    "defect_found": "do documento citado que é grande iam as 10 páginas mais próximas de toda a biblioteca; a página 202 da IEEE 493 ficava de fora. Corrigido: as páginas do documento citado vêm antes",
+    "trail_with_real_model": {
+      "P4": {
+        "passages": [
+          7749,
+          10.3
+        ],
+        "trail": [
+          4649,
+          8.4
+        ]
+      },
+      "finding": "a trilha repete o alcance da resposta anterior: T3 saiu parcial de novo quando partiu da trilha"
+    },
+    "conversation_message": {
+      "input_tokens": 459,
+      "seconds": 4,
+      "model": "gemini-3.5-flash-lite",
+      "lot_30": 386375
+    },
+    "usage_logs": [
+      "tmp/lote-31/piloto/dados/uso/chamadas.jsonl",
+      "tmp/lote-31/piloto/dados-limpos/uso/chamadas.jsonl",
+      "tmp/lote-31/piloto/dados-verificacao/uso/chamadas.jsonl"
+    ],
+    "files_service": {
+      "uploaded": 107,
+      "deleted_at_the_end": 107
+    },
+    "verification_with_real_model": {
+      "trail_with_rewritten_query": {
+        "recognised": true,
+        "subject": 0.98,
+        "phrase": 0.96,
+        "same_pages_cited": 5,
+        "input_tokens": {
+          "passages_answer": 4086,
+          "trail_answer": 5962,
+          "rewrite": [
+            242,
+            245
+          ]
+        },
+        "finding": "a trilha não poupou tokens: as páginas inteiras custam mais que os trechos"
+      },
+      "climb": {
+        "worked": true,
+        "question_subject_absent_from_library": true,
+        "input_tokens": [
+          8909,
+          10999
+        ],
+        "seconds": 29,
+        "finding": "subir num assunto ausente custa duas chamadas para dizer que não há"
+      },
+      "confirmation": {
+        "worked": true,
+        "ceiling_in_this_step": 10000,
+        "estimated_tokens": 17984,
+        "real_input_tokens": 16667,
+        "stored_before_confirming": 0
+      }
+    }
+  },
+  "not_verified": [
+    "a confirmação com o teto de 30 mil (o aviso foi conferido com o Gemini com o teto em 10 mil)",
+    "a trilha em perguntas refeitas com palavras bem diferentes, com a consulta reescrita pelo modelo (um par medido)",
+    "o acerto do roteador em mensagens novas",
+    "o aviso diário com o uso real de um dia"
+  ],
+  "tests": {
+    "total": 684,
+    "new": 20,
+    "adjusted": 5,
+    "files": [
+      "tests/test_routing.py",
+      "tests/test_web.py",
+      "tests/test_query_rewrite.py"
+    ]
+  },
+  "files": {
+    "new": [
+      "src/aliado/routing.py",
+      "src/aliado/routing_examples.py",
+      "tests/test_routing.py",
+      "docs/specs/0031-roteador-e-escada.md",
+      "docs/migracao/validacao-lote-31.md",
+      "docs/migracao/lote-31.json"
+    ],
+    "changed": [
+      "src/aliado/agent.py",
+      "src/aliado/knowledge/library.py",
+      "src/aliado/knowledge/reading.py",
+      "src/aliado/memory/store.py",
+      "src/aliado/interfaces/web/app.py",
+      "src/aliado/interfaces/web/static/index.html",
+      "src/aliado/interfaces/web/static/app.js",
+      "src/aliado/interfaces/web/static/app.css",
+      "tests/test_web.py",
+      "tests/test_query_rewrite.py",
+      "pyproject.toml",
+      "CHANGELOG.md",
+      "README.md",
+      "AGENTS.md",
+      "docs/biblioteca/uso.md",
+      "docs/roteiro-v0.md",
+      "docs/arquitetura/modulos.md",
+      "docs/migracao/README.md",
+      ".claude/launch.json"
+    ],
+    "outside_git": [
+      "tmp/lote-31/ (roteiros de medição, medição paga, servidor de teste e o pacote instalado para conferência)",
+      "dist/v0.5.0/",
+      "dist/v0.4.1/ (do lote 30, não lançado)"
+    ],
+    "untouched": [
+      "data/bibliotecas/principal (usada só para leitura)",
+      "data/conversas e data/memoria (lidas em cópias temporárias, apagadas no fim)",
+      "data/uso/chamadas.jsonl (as chamadas da medição ficaram em tmp/lote-31/piloto/)"
+    ]
+  },
+  "after_restart": "a memória de conversas em data/memoria ganha duas colunas (páginas citadas e vetor da consulta) e as trilhas das conversas já gravadas, na primeira abertura",
+  "not_done_by_assistant": [
+    "commit",
+    "push",
+    "tag"
+  ]
+}

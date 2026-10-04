@@ -74,6 +74,11 @@ def main(argv: list[str] | None = None) -> int:
         if name == "buscar":
             operation.add_argument("consulta")
             operation.add_argument("--limite", type=int, default=6)
+    uploads = library_commands.add_parser(
+        "arquivos", help="O que a leitura de documentos inteiros deixou no serviço de arquivos do Google")
+    uploads.add_argument("--dados", type=Path, default=Path("data"), help="Pasta dos dados, onde fica o registro dos envios")
+    uploads.add_argument("--apagar", action="store_true", help="Apaga do serviço o que foi enviado; sem isto, só lista")
+    uploads.add_argument("--env-file", type=Path, help="Arquivo .env, necessário com --apagar")
     web = commands.add_parser("web", help="Interface local no navegador (127.0.0.1)")
     web.add_argument("--env-file", type=Path, help="Arquivo .env explicitamente selecionado")
     web.add_argument("--porta", type=int, default=8765)
@@ -129,6 +134,8 @@ def main(argv: list[str] | None = None) -> int:
 
             if args.operation == "preparar-modelo":
                 payload = prepare_model(args.diretorio)
+            elif args.operation == "arquivos":
+                payload = _uploads(args)
             else:
                 library = DocumentLibrary(args.biblioteca)
                 if args.operation == "adicionar":
@@ -299,6 +306,28 @@ def _figures(library, args) -> dict:
                 library, document["id"], execute, limit=args.paginas,
                 record=lambda result: record_usage(result, args.registro_uso))
     return {"enviado": True, "modelo": args.modelo, "documentos": documents}
+
+
+def _uploads(args) -> dict:
+    """O que o registro local diz estar no serviço de arquivos do Google (lote 30); com `--apagar`, tira de lá.
+
+    A leitura de documentos inteiros envia os PDFs por esse serviço, que os guarda por até 48 horas."""
+    from aliado.llm.providers.gemini import GeminiProvider
+    from aliado.llm.usage_log import FILES_LOG_NAME
+
+    if args.apagar:
+        if args.env_file is None or not args.env_file.is_file():
+            raise ValueError("Com --apagar, informe o .env com --env-file.")
+        from dotenv import load_dotenv
+
+        load_dotenv(args.env_file, override=False)
+    provider = GeminiProvider(files=args.dados / "uso" / FILES_LOG_NAME)
+    listed = provider.uploaded()
+    payload = {"arquivos": len(listed), "bytes": sum(item.get("bytes") or 0 for item in listed),
+               "itens": [{key: item.get(key) for key in ("chave", "bytes", "enviado", "expira")} for item in listed]}
+    if args.apagar:
+        payload["resultado"] = provider.forget_uploads()
+    return payload
 
 
 def _rewriter(args):

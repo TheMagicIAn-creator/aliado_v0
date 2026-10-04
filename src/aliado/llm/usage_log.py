@@ -10,6 +10,8 @@ from pathlib import Path
 from aliado.llm.contracts import LLMResult, LLMUsage
 
 DEFAULT_USAGE_LOG = Path("data/uso/chamadas.jsonl")
+# Registro do que a leitura integral enviou ao serviço de arquivos do Google (lote 30), ao lado do de uso.
+FILES_LOG_NAME = "arquivos-google.json"
 
 
 def usage_line(result: LLMResult) -> str:

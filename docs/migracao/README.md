@@ -297,11 +297,19 @@ Não houve migração de código da origem. A origem tinha um espelho da memóri
 
 Não houve migração de código da origem. A limpeza das páginas, a divisão em frases, o reconhecimento do texto das figuras e a descrição pelo modelo foram escritos do zero. O adapter Gemini, que veio da origem só com texto e JSON, passou a aceitar imagens na mensagem do usuário de um pedido multimodal. Veja a [spec](../specs/0029-indexacao-figuras-e-frases.md), a [validação](validacao-lote-29.md) e o [manifesto](lote-29.json).
 
+## Lote 30 — leitura integral dos documentos e saída da aba Biblioteca
+
+Não houve migração de código da origem. A seleção dos documentos dentro de um teto, o recorte dos PDFs em blocos, o identificador por página e o painel de documentos foram escritos do zero. O adapter Gemini passou a aceitar documentos em PDF na mensagem do usuário e a enviá-los pelo serviço de arquivos do Google, com um registro local do que subiu. O piloto usou a biblioteca do pesquisador só para leitura. Veja a [spec](../specs/0030-leitura-integral.md), a [validação](validacao-lote-30.md) e o [manifesto](lote-30.json).
+
+## Lote 31 — roteador local e escada de leitura
+
+Não houve migração de código da origem. O repositório de origem tinha um roteador de modelos por tipo de tarefa (`src/conhecimento/roteador_llm.py`) e regras rápidas antes do modelo (`roteamento_ferramentas.py`); a ideia de decidir antes de gastar veio de lá, e o código foi escrito do zero: regras, frases de exemplo comparadas pelo modelo local de busca, a escada de leitura, a confirmação acima do teto, a contagem exata de termos e as trilhas na memória de conversas. A medição usou a biblioteca e as conversas do pesquisador só para leitura, em cópias. Veja a [spec](../specs/0031-roteador-e-escada.md), a [validação](validacao-lote-31.md) e o [manifesto](lote-31.json).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |
 |---|---|
-| Router e observabilidade | Avaliar a política de modelos, retries, fallback e auditoria antes de migrar, preservando controle de custos. |
+| Router e observabilidade | O roteador local do lote 31 escolhe o modelo, a skill e a leitura, sem código da origem. Continuam em aberto: retries, fallback entre provedores e auditoria. |
 | RAG híbrido e evidências | Avaliar qualidade no acervo escolhido e ampliar a recuperação conforme evidências de uso. |
 | Memória e Obsidian | Reaproveitar mecanismos; revisar dados e regras antes de qualquer importação. O espelho para o Obsidian foi feito no lote 28, sem código da origem; a importação das memórias antigas continua em aberto. |
 | Ferramentas científicas e ML | Definir parâmetros físicos por perguntas e respostas; treino/avaliação de detectores será lote separado. |

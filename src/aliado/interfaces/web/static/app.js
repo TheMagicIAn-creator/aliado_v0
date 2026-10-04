@@ -3,9 +3,11 @@
 const $ = (id) => document.getElementById(id);
 // A tela inicial sai do DOM quando há mensagens; a referência permite recolocá-la.
 const WELCOME = $("welcome");
+// pendingPins: documentos fixados antes de a conversa existir (tela de apresentação); seguem na primeira pergunta.
 const state ={ conversation: null, models: [], skills: [], documents: 0, busy: false, sourcesOf: null,
-  infoAnchor: null };
+  infoAnchor: null, reading: null, readingAvailable: true, pendingPins: [], router: true, confirmed: {} };
 const SKILL_LABELS = {
+  "auto": "Skill automática",
   "pesquisa-inversores": "Pesquisa · inversores",
   "engenharia": "Engenharia",
   "confiabilidade": "Confiabilidade",
@@ -34,8 +36,9 @@ async function api(path, options = {}) {
   return data;
 }
 
-// Resposta em fluxo: linhas JSON {tipo: texto|erro|fim|memoria}. "fim" chega antes do revisor
-// de memória, então a resposta aparece sem esperar as anotações novas.
+// Resposta em fluxo: linhas JSON {tipo: texto|erro|fim|memoria|recomeco|confirmar}. "fim" chega antes do
+// revisor de memória, então a resposta aparece sem esperar as anotações novas. "confirmar" (lote 31) encerra
+// o fluxo sem resposta: a leitura passa do teto, e a tela pergunta antes de gastar.
 async function streamMessage(cid, body, handlers, signal) {
   const response = await fetch(`/api/conversas/${cid}/mensagens`, {
     method: "POST", signal, body: JSON.stringify(body),
@@ -64,6 +67,8 @@ async function streamMessage(cid, body, handlers, signal) {
         if (!final) throw new Error(event.erro);
       } else if (event.tipo === "fim") { final = event; handlers.onFinal(event); }
       else if (event.tipo === "memoria") handlers.onMemory?.(event);
+      else if (event.tipo === "recomeco") handlers.onRestart?.(event);
+      else if (event.tipo === "confirmar") { final = event; handlers.onConfirm?.(event); }
     }
   }
   if (!final) throw new Error("A resposta foi interrompida. Tente de novo.");
@@ -146,27 +151,70 @@ async function loadState() {
   state.skills = data.skills;
   state.models = data.modelos;
   state.documents = data.biblioteca.documentos;
+  // Roteador (lote 31): com ele, "automático" é o padrão da skill, do modelo e da leitura; um programa anterior
+  // não o conhece, e a tela fica com as escolhas manuais.
+  state.router = Boolean(data.leitura?.modos);
   const skill = $("skill");
-  skill.replaceChildren(...[...data.skills.map((s) => s.name).filter((n) => n !== "confiabilidade"),
+  skill.replaceChildren(...[...(state.router ? ["auto"] : []),
+    ...data.skills.map((s) => s.name).filter((n) => n !== "confiabilidade"),
     "confiabilidade", "nenhuma"].map((name) => el("option", { value: name, text: SKILL_LABELS[name] || name })));
-  skill.value = store.get("aliado.skill", "pesquisa-inversores");
-  if (!skill.value) skill.value = "pesquisa-inversores";
+  skill.value = state.router ? store.get("aliado.rota.skill", "auto") : store.get("aliado.skill", "pesquisa-inversores");
+  if (!skill.value) skill.value = state.router ? "auto" : "pesquisa-inversores";
   const model = $("model");
-  model.replaceChildren(...data.modelos.map((m) => el("option", { value: m.alias, text: m.model_id })));
+  model.replaceChildren(...(state.router && data.modelos.length ? [el("option", { value: "auto", text: "Modelo automático" })] : []),
+    ...data.modelos.map((m) => el("option", { value: m.alias, text: m.model_id })));
   if (!data.modelos.length) {
     model.replaceChildren(el("option", { value: "", text: "nenhum modelo" }));
     toast("Nenhum modelo Gemini configurado. Confira o .env e reinicie.");
   }
-  const savedModel = store.get("aliado.model", "flash");
-  if (data.modelos.some((m) => m.alias === savedModel)) model.value = savedModel;
+  const savedModel = state.router ? store.get("aliado.rota.model", "auto") : store.get("aliado.model", "flash");
+  if (savedModel === "auto" ? state.router : data.modelos.some((m) => m.alias === savedModel)) model.value = savedModel;
   $("support").setAttribute("aria-pressed", store.get("aliado.support", "false"));
-  $("use-library").checked = store.get("aliado.library", "false") === "true";
+  // Com o roteador, a biblioteca começa ligada: ele só a consulta quando a pergunta pede.
+  $("use-library").checked = store.get("aliado.library", state.router ? "true" : "false") === "true";
   $("use-web").checked = store.get("aliado.web", "false") === "true";
   state.results = data.resultados || { disponivel: false };
+  // Leitura dos documentos (lote 30): o modo e o teto ficam neste navegador; sem escolha, valem os do servidor.
+  state.reading = data.leitura || { modo: "integral", teto: 400000, tetos: [400000] };
+  state.readingAvailable = Boolean(data.leitura);
+  checkServerAge(data);
+  const budgets = state.reading.tetos;
+  $("reading-budget").replaceChildren(...budgets.map((value, index) => el("option", { value: String(value),
+    text: budgets.length > 1 && index === budgets.length - 1 ? "até o limite do modelo" : `até ${formatTokens(value / 1000)} mil tokens` })));
+  const modes = state.reading.modos || ["integral", "trechos"];
+  for (const option of [...$("reading-mode").options]) if (!modes.includes(option.value)) option.remove();
+  $("reading-mode").value = store.get(state.router ? "aliado.rota.reading" : "aliado.reading", state.reading.modo);
+  if (!$("reading-mode").value) $("reading-mode").value = state.reading.modo;
+  $("reading-budget").value = store.get("aliado.budget", String(state.reading.teto));
+  if (!$("reading-budget").value) $("reading-budget").value = String(state.reading.teto);
   updateResultsSwitch();
   updateSupportVisibility();
   updateLibraryLabel();
+  updateReadingControls();
   showUsage(data.uso);
+}
+
+// O modo aparece com a biblioteca ligada; o teto, só na leitura ampla (antes do lote 31, também com um fixado).
+function updateReadingControls() {
+  const library = $("use-library").checked;
+  const whole = library && $("reading-mode").value === "integral";
+  // Um programa anterior ao lote 30 ignora o modo e o teto: os controles somem, em vez de prometer o que não vem.
+  $("reading-box").hidden = !library || !state.readingAvailable;
+  $("budget-box").hidden = !(whole || (!state.router && pins().length)) || !state.readingAvailable;
+}
+
+// A página é lida do disco a cada carga; o programa em execução só muda quando é reiniciado. Se a página é mais
+// nova que ele, as escolhas novas da tela seriam ignoradas sem aviso: a tela pede o reinício.
+async function checkServerAge(data) {
+  let stale = !data.leitura?.modos || !data.iniciado;
+  if (!stale) {
+    try {
+      const response = await fetch("/static/app.js", { method: "HEAD", cache: "no-store" });
+      const changed = Date.parse(response.headers.get("last-modified") || "");
+      stale = Number.isFinite(changed) && changed > Date.parse(data.iniciado) + 2000;
+    } catch { /* sem a data do arquivo, não há o que comparar */ }
+  }
+  $("restart-note").hidden = !stale;
 }
 
 function showUsage(uso) {
@@ -176,14 +224,15 @@ function showUsage(uso) {
 function updateSupportVisibility() {
   const skill = $("skill").value;
   // A pesquisa já carrega confiabilidade; o apoio só faz sentido para as demais.
-  $("support").hidden = skill === "pesquisa-inversores" || skill === "confiabilidade";
+  $("support").hidden = skill === "pesquisa-inversores" || skill === "confiabilidade" || skill === "auto";
 }
 
 /* Resultados da pesquisa no chat (lote 26): ligado por padrão só na skill do mestrado; a escolha fica por skill. */
 function updateResultsSwitch() {
   const skill = $("skill").value;
   $("results-switch").hidden = !state.results?.disponivel;
-  $("use-results").checked = store.get(`aliado.results.${skill}`, String(skill === state.results?.skill)) === "true";
+  $("use-results").checked = store.get(`aliado.results.${skill}`,
+    String(skill === state.results?.skill || skill === "auto")) === "true";
 }
 
 function updateLibraryLabel() {
@@ -192,20 +241,75 @@ function updateLibraryLabel() {
 }
 
 $("skill").addEventListener("change", () => {
-  store.set("aliado.skill", $("skill").value);
+  store.set(state.router ? "aliado.rota.skill" : "aliado.skill", $("skill").value);
   updateSupportVisibility();
   updateResultsSwitch();
 });
 $("use-results").addEventListener("change", () =>
   store.set(`aliado.results.${$("skill").value}`, String($("use-results").checked)));
-$("model").addEventListener("change", () => store.set("aliado.model", $("model").value));
+$("model").addEventListener("change", () => store.set(state.router ? "aliado.rota.model" : "aliado.model", $("model").value));
 $("support").addEventListener("click", () => {
   const next = $("support").getAttribute("aria-pressed") !== "true";
   $("support").setAttribute("aria-pressed", String(next));
   store.set("aliado.support", String(next));
 });
-$("use-library").addEventListener("change", () => store.set("aliado.library", String($("use-library").checked)));
+$("use-library").addEventListener("change", () => {
+  store.set("aliado.library", String($("use-library").checked));
+  updateReadingControls();
+});
 $("use-web").addEventListener("change", () => store.set("aliado.web", String($("use-web").checked)));
+$("reading-mode").addEventListener("change", () => {
+  store.set(state.router ? "aliado.rota.reading" : "aliado.reading", $("reading-mode").value);
+  updateReadingControls();
+});
+$("reading-budget").addEventListener("change", () => store.set("aliado.budget", $("reading-budget").value));
+
+/* Documentos fixados na conversa (lote 30): vão inteiros ao modelo nas perguntas dela que consultam os documentos. */
+function pins() { return state.conversation ? (state.conversation.fixados || []) : state.pendingPins; }
+
+async function setPins(list) {
+  if (!state.conversation) {
+    state.pendingPins = list;
+  } else {
+    try {
+      const data = await api(`/api/conversas/${state.conversation.id}`,
+        { method: "PATCH", json: { fixados: list.map((doc) => doc.id) } });
+      state.conversation.fixados = data.fixados;
+    } catch (error) { toast(error.message); }
+  }
+  renderPins();
+}
+
+function pinDocument(doc) {
+  if (pins().some((item) => item.id === doc.id)) return Promise.resolve();
+  return setPins([...pins(), { id: doc.id, title: doc.title, referencia: doc.referencia || null }]);
+}
+
+function unpinDocument(id) { return setPins(pins().filter((item) => item.id !== id)); }
+
+// A ficha do documento chega depois de ele ser fixado: a etiqueta troca o nome do arquivo pela referência.
+function refreshPin(doc) {
+  const list = pins();
+  const index = list.findIndex((item) => item.id === doc.id);
+  if (index < 0 || list[index].referencia === doc.referencia) return;
+  list[index] = { ...list[index], referencia: doc.referencia };
+  renderPins();
+}
+
+function renderPins() {
+  const list = pins();
+  $("pinned").hidden = !list.length;
+  $("pinned").replaceChildren(...list.map((doc) => {
+    const name = doc.referencia || doc.title;
+    return el("span", { class: "pin", title: `${doc.title}: lido inteiro nas perguntas desta conversa que consultam os documentos` },
+      el("span", { class: "pin-name", text: name }),
+      el("button", { class: "pin-remove", type: "button", "aria-label": `Soltar ${name} desta conversa`,
+        title: "Soltar desta conversa", text: "×", onclick: () => unpinDocument(doc.id) }));
+  }));
+  updateReadingControls();
+  if (!$("docs-panel").hidden) markPinnedDocuments();
+  placeUploads();
+}
 
 /* Conversas */
 async function loadConversations() {
@@ -244,6 +348,7 @@ async function deleteConversation(item) {
     await api(`/api/conversas/${item.id}`, { method: "DELETE" });
     if (state.conversation?.id === item.id) {
       state.conversation = null;
+      renderPins();
       showChat();
       showWelcome();
     }
@@ -262,12 +367,15 @@ async function renameConversation(item) {
 }
 
 async function openConversation(id) {
+  state.pendingPins = [];
   try {
     state.conversation = await api(`/api/conversas/${id}`);
   } catch {
     state.conversation = null;
+    renderPins();
     return showWelcome();
   }
+  renderPins();
   showChat();
   const messages = $("messages");
   messages.replaceChildren();
@@ -287,6 +395,8 @@ function showWelcome() {
 
 $("new-chat").addEventListener("click", () => {
   state.conversation = null;
+  state.pendingPins = [];
+  renderPins();
   showChat();
   showWelcome();
   loadConversations();
@@ -341,7 +451,25 @@ function renderMessage(message) {
   }
   const usage = message.usage || {};
   const meta = el("div", { class: "meta" });
-  if (message.model && message.provider !== "local") meta.append(el("span", { text: message.model }));
+  const route = message.provider !== "local" ? message.rota : null;
+  if (route) {
+    // Lote 31: o que o AL-IAdo escolheu para esta resposta (modelo, skill e leitura), com o motivo na dica.
+    const auto = route.automatico || {};
+    const who = (flag, what) => `${what}: ${flag ? "escolha do AL-IAdo" : "fixado por você"}`;
+    const earlier = (route.tentativas || []).map((item) =>
+      ` Antes, uma leitura por ${item.leitura} (${formatTokens(item.tokens)} tokens) não achou a resposta.`).join("");
+    meta.append(el("span", { class: "route",
+      title: `${who(auto.modelo, "Modelo")}; ${who(auto.skill, "skill")}; ${who(auto.leitura, "leitura")}. `
+        + `Motivo: ${(route.reasons || []).join("; ")}.${earlier} Para fixar uma escolha, use os seletores da tela.`,
+      text: [message.model, SKILL_LABELS[route.skill || "nenhuma"] || route.skill, route.leitura].filter(Boolean).join(" · ") }));
+    if (route.trilha) {
+      meta.append(el("span", { class: "route",
+        title: `Pergunta muito parecida com a de ${new Date(route.trilha.data).toLocaleDateString("pt-BR")}: `
+          + `“${route.trilha.pergunta}”. O modelo recebeu aquela troca e as páginas que ela citou, sem nova busca, `
+          + "e escreveu uma resposta nova.",
+        text: "partiu de uma resposta anterior" }));
+    }
+  } else if (message.model && message.provider !== "local") meta.append(el("span", { text: message.model }));
   if (usage.total_tokens) meta.append(el("span", { text: `${formatTokens(usage.total_tokens)} tokens` }));
   if (usage.reasoning_tokens) meta.append(el("span", { text: `${formatTokens(usage.reasoning_tokens)} de raciocínio` }));
   const info = (event) => openInfo(message, event.currentTarget);
@@ -353,10 +481,28 @@ function renderMessage(message) {
     meta.append(el("button", { class: "link", type: "button", text: `${message.sources.length} fonte(s)`,
       onclick: info }));
   }
+  // Lote 30: o que o modelo leu inteiro ou em parte nesta resposta; a lista fica na janela de fontes.
+  const read = message.leitura?.documentos || [];
+  if (read.length) {
+    const pages = read.reduce((sum, doc) => sum + doc.paginas, 0);
+    const whole = read.filter((doc) => doc.inteiro).length;
+    const parts = [whole ? `${whole} ${whole === 1 ? "inteiro" : "inteiros"}` : "",
+      read.length - whole ? `${read.length - whole} em parte` : ""].filter(Boolean).join(" e ");
+    meta.append(el("button", { class: "link reading-link", type: "button",
+      onclick: (event) => openInfo(message, event.currentTarget, { kind: "reading" }),
+      title: "Documentos enviados ao modelo nesta resposta, com as páginas inteiras. Clique para ver quais e quais páginas.",
+      text: message.leitura.paginas_soltas
+        ? `leu ${pages === 1 ? "1 página inteira" : `${formatTokens(pages)} páginas inteiras`} de ${read.length === 1 ? "1 documento" : `${read.length} documentos`}`
+        : `leu ${read.length === 1 ? "1 documento" : `${read.length} documentos`} (${parts}) · ${formatTokens(pages)} páginas` }));
+  }
+  if (message.leitura_por_trechos) {
+    meta.append(el("span", { title: "Com a busca na web ligada, os documentos seguem por trechos, e os fixados não são enviados.",
+      text: "com a busca na web, a leitura foi por trechos" }));
+  }
   // Lote 27: quantos dos documentos que a busca trouxe a resposta citou; os outros ficam na janela de fontes.
   const cited = new Set((message.sources || []).map((source) => source.title));
   const brought = new Set([...cited, ...(message.recuperados || []).map((source) => source.title)]);
-  if (brought.size > cited.size) {
+  if (brought.size > cited.size && !read.length) {
     meta.append(el("button", { class: "link retrieved-link", type: "button",
       onclick: (event) => openInfo(message, event.currentTarget, { kind: "retrieved" }),
       title: "A busca na biblioteca traz os trechos mais parecidos com a pergunta; nem todos tratam do assunto. Clique para ver os que a resposta não usou.",
@@ -378,6 +524,23 @@ function renderMessage(message) {
     text: `usou ${used} ${used === 1 ? "memória" : "memórias"}`, onclick: info }));
   if (created) meta.append(el("button", { class: "link memory-link is-new", type: "button",
     text: `${created} ${created === 1 ? "anotação nova" : "anotações novas"}`, onclick: info }));
+  const deeper = message.id ? message.aprofundar : null;
+  if (deeper) {
+    // Lote 31: o degrau seguinte da escada de leitura, com o custo estimado antes do clique.
+    const what = { paginas: "Envia as 10 páginas mais próximas da pergunta, inteiras, com figuras e tabelas.",
+      documento: `Envia ${deeper.titulo || "o documento mais citado"} inteiro, ou em blocos de páginas se for grande.`,
+      integral: "Leitura ampla: os documentos que a busca escolher, inteiros, até o teto." }[deeper.leitura];
+    const size = `${deeper.ate ? "até" : "cerca de"} ${formatTokens(Math.round(deeper.tokens / 1000))} mil tokens`;
+    meta.append(el("button", { class: "link deeper-link", type: "button", text: `Ler mais fundo (${size})`,
+      title: `${what} A pergunta é refeita com essa leitura; acima de ${formatTokens(state.reading?.limite || 30000)} tokens, a tela pergunta antes.`,
+      onclick: () => {
+        const list = state.conversation?.messages || [];
+        const question = list[list.findIndex((m) => m.id === message.id) - 1];
+        if (question?.role === "user" && !state.busy) {
+          submitQuestion(question.content, { leitura: deeper.leitura, documentos: deeper.documentos });
+        }
+      } }));
+  }
   if (message.id && message.provider !== "local") {
     meta.append(el("button", { class: "link", type: "button", text: "Lembrar…",
       onclick: () => openRemember() }));
@@ -627,21 +790,26 @@ function showSources(message) {
     ? [el("p", { class: "muted source-queries", text: `Buscou na biblioteca: ${message.consulta_biblioteca}` })] : [];
   const results = message?.result_sources || [];
   const retrieved = message?.recuperados || [];
-  if (!sources.length && !web.length && !results.length && !retrieved.length) {
+  const read = message?.leitura?.documentos || [];
+  if (!sources.length && !web.length && !results.length && !retrieved.length && !read.length) {
     list.replaceChildren(...query,
-      el("p", { class: "muted", text: "Esta resposta não usou resultados da pesquisa, trechos da biblioteca nem a web." }));
+      el("p", { class: "muted", text: "Esta resposta não usou resultados da pesquisa, documentos da biblioteca nem a web." }));
     return;
   }
-  // Abrir a página no original e ver a extração: valem para o trecho citado e para o só recuperado.
+  // Abrir a página no original e fixar o documento na conversa: valem para o citado e para o só recuperado.
   const sourceActions = (source) => {
     const actions = el("div", { class: "source-actions" });
     if (source.document_id) {
       const page = source.page ? `#page=${source.page}` : "";
+      const fixed = pins().some((doc) => doc.id === source.document_id);
       actions.append(
         el("a", { class: "link", href: `/api/biblioteca/${source.document_id}/original${page}`, target: "_blank",
           rel: "noopener", text: "Abrir página" }),
-        el("button", { class: "link", type: "button", text: "Ver Markdown",
-          onclick: () => openLibrary(source.document_id) }));
+        fixed ? el("span", { class: "muted", text: "Fixado nesta conversa" })
+          : el("button", { class: "link", type: "button", text: "Fixar nesta conversa",
+            title: "O documento passa a ir inteiro ao modelo nas perguntas desta conversa que consultam os documentos.",
+            onclick: () => pinDocument({ id: source.document_id, title: source.title, referencia: source.referencia })
+              .then(() => { if (state.sourcesOf === message) showSources(message); }) }));
     }
     return actions;
   };
@@ -657,6 +825,10 @@ function showSources(message) {
     if (source.method === "descricao") flags.push(["descrição automática de figura ou tabela: conferir no original",
       "Texto escrito por um modelo a partir da imagem da página. Não é texto do documento: confira a figura ou a tabela no original antes de usar."]);
     if (source.status === "partial") flags.push(["extração parcial", "Parte das páginas deste documento não pôde ser lida."]);
+    if (source.leitura === "pagina") flags.push(["página lida inteira",
+      "O modelo recebeu esta página inteira, no PDF. O texto abaixo é o que foi extraído dela; as figuras e as tabelas estão em Abrir página."]);
+    if (source.method === "imagem") flags.push(["sem texto extraído",
+      "Nenhum texto pôde ser extraído desta página: o modelo a leu pela imagem. Confira em Abrir página."]);
     return flags;
   };
   const sourceLine = (tag, parts, source) => el(tag, { class: "source-loc" }, parts.filter(Boolean).join(" · "),
@@ -682,7 +854,27 @@ function showSources(message) {
     }));
   }
   parts.push(...query);
-  if (sources.length && (web.length || results.length)) parts.push(el("h3", { class: "source-group", text: "Seus documentos" }));
+  if (read.length) {
+    // Lote 30: o que foi enviado inteiro ou em parte, e o que não coube no teto.
+    const reading = message.leitura;
+    const spent = message.usage?.input_tokens;
+    parts.push(el("h3", { class: "source-group source-reading", text: "O que o modelo leu" }),
+      el("p", { class: "muted source-queries",
+        title: "O teto limita quantos tokens de documentos vão ao modelo numa pergunta; uma página de PDF custa cerca de 600.",
+        text: `Páginas inteiras, com figuras e tabelas, até o teto de ${formatTokens(reading.teto)} tokens`
+          + (spent ? `; o pedido todo usou ${formatTokens(spent)} tokens de entrada.` : ".") }),
+      el("ul", { class: "reading-list" }, ...read.map((doc) => el("li", {},
+        el("span", { class: "source-title", title: doc.titulo, text: doc.titulo }),
+        el("span", { class: "source-loc", text: [
+          doc.inteiro ? `inteiro: ${doc.paginas} ${doc.pdf === false ? "seções" : "páginas"}`
+            : `páginas ${doc.blocos}, de ${doc.total}`,
+          doc.fixado ? "fixado nesta conversa" : null].filter(Boolean).join(" · ") })))));
+    if (reading.fora?.length) {
+      parts.push(el("p", { class: "muted source-queries",
+        text: `Não couberam no teto: ${reading.fora.join("; ")}. Aumente o teto ou fixe o documento na conversa.` }));
+    }
+  }
+  if (sources.length && (web.length || results.length || read.length)) parts.push(el("h3", { class: "source-group", text: "Páginas e trechos citados" }));
   parts.push(...sources.map((source, index) => {
     const number = index + 1;
     const where = [source.locator, source.page ? `p. ${source.page}` : null].filter(Boolean).join(" · ");
@@ -743,6 +935,7 @@ function openInfo(message, anchor, focus) {
   state.infoAnchor = anchor;
   placeInfo(anchor);
   if (focus?.kind === "retrieved") pop.querySelector(".source-retrieved")?.scrollIntoView({ block: "start" });
+  else if (focus?.kind === "reading") pop.querySelector(".source-reading")?.scrollIntoView({ block: "start" });
   else if (focus) highlightSource(focus.number, focus.kind);
   else pop.scrollTop = 0;
 }
@@ -815,11 +1008,46 @@ function setBusy(busy) {
 
 function nearBottom(node) { return node.scrollHeight - node.scrollTop - node.clientHeight < 120; }
 
-$("composer").addEventListener("submit", async (event) => {
+$("composer").addEventListener("submit", (event) => {
   event.preventDefault();
   if (state.busy) { state.controller?.abort(); return; }
   const text = $("question").value.trim();
-  if (!text) return;
+  if (text) submitQuestion(text);
+});
+
+// A leitura passou do teto (lote 31): a tela diz quanto custa e o que vai, e só envia com a sua escolha.
+function confirmReading(event, text, extra, bubble) {
+  const thousand = (value) => `${formatTokens(Math.round(value / 1000))} mil`;
+  const read = event.leitura?.documentos || [];
+  const what = read.length ? ` (${read.slice(0, 4).map((doc) => `${doc.titulo}: ${doc.paginas} ${doc.paginas === 1 ? "página" : "páginas"}`).join("; ")}`
+    + `${read.length > 4 ? `; e mais ${read.length - 4}` : ""})` : "";
+  const why = event.motivo === "dia"
+    ? `Hoje já foram usados ${thousand(event.hoje)} tokens (o aviso é em ${thousand(event.aviso_diario)}). `
+    : "";
+  const box = el("div", { class: "note note-ask" });
+  const close = () => { box.remove(); bubble.remove(); };
+  box.append(
+    el("span", { text: `${why}Esta leitura envia cerca de ${thousand(event.tokens)} tokens ao modelo${what}.` }),
+    el("span", { class: "ask-actions" },
+      el("button", { class: "secondary", type: "button", text: "Ler assim",
+        title: event.lembrar ? "Envia como está. Nesta conversa, a mesma leitura não pergunta de novo."
+          : "Envia como está. Depois do aviso diário, cada leitura pergunta de novo.",
+        onclick: () => {
+          close();
+          if (event.lembrar && state.conversation) state.confirmed[state.conversation.id] = event.chave;
+          submitQuestion(text, { ...extra, confirmado: event.chave });
+        } }),
+      el("button", { class: "secondary", type: "button", text: "Responder só com os trechos",
+        title: "Refaz a pergunta no modo barato: só os trechos que a busca achou.",
+        onclick: () => { close(); submitQuestion(text, { leitura: "trechos" }); } }),
+      el("button", { class: "link", type: "button", text: "Cancelar",
+        onclick: () => { close(); $("question").value = text; autosize(); $("question").focus(); } })));
+  bubble.after(box);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+async function submitQuestion(text, extra = {}) {
+  if (state.busy) return;
   if (!$("model").value) return toast("Nenhum modelo configurado. Confira o .env e reinicie.");
   setBusy(true);
   state.controller = new AbortController();
@@ -830,16 +1058,22 @@ $("composer").addEventListener("submit", async (event) => {
       state.conversation = await api("/api/conversas", { method: "POST" });
       state.conversation.messages = [];
       $("messages").replaceChildren();
+      // Os documentos fixados antes da primeira pergunta passam para a conversa que acaba de nascer.
+      const waiting = state.pendingPins;
+      state.pendingPins = [];
+      if (waiting.length) await setPins(waiting);
     }
     const messages = $("messages");
     if (WELCOME.isConnected) WELCOME.remove();
     messages.append(renderMessage({ role: "user", content: text }));
-    const thinking = el("div", { class: "thinking" }, el("span", { class: "dots" }, el("i"), el("i"), el("i")),
-      el("span", { text: "AL-IAdo está pensando…" }));
+    // Com documentos inteiros, a resposta demora mais: o aviso diz o que está acontecendo.
+    const mode = extra.leitura || $("reading-mode").value;
+    const whole = !$("use-web").checked && $("use-library").checked && (mode === "integral" || mode === "documento");
+    const thinkingText = el("span", { text: whole ? "AL-IAdo está lendo os documentos: pode levar alguns minutos…" : "AL-IAdo está pensando…" });
+    const thinking = el("div", { class: "thinking" }, el("span", { class: "dots" }, el("i"), el("i"), el("i")), thinkingText);
     messages.append(thinking);
     messages.scrollTop = messages.scrollHeight;
-    $("question").value = "";
-    autosize();
+    if ($("question").value.trim() === text) { $("question").value = ""; autosize(); }
     const skill = $("skill").value;
     const supportOn = !$("support").hidden && $("support").getAttribute("aria-pressed") === "true";
     const userBubble = messages.lastElementChild.previousElementSibling;
@@ -848,11 +1082,28 @@ $("composer").addEventListener("submit", async (event) => {
     let written = "";
     let shown = false;
     try {
+      const remembered = state.confirmed[state.conversation.id];
       await streamMessage(state.conversation.id, {
         texto: text, skill, apoio: supportOn ? "confiabilidade" : null, modelo: $("model").value,
         biblioteca: $("use-library").checked, web: $("use-web").checked,
         resultados: !$("results-switch").hidden && $("use-results").checked,
+        leitura: $("reading-mode").value, teto: Number($("reading-budget").value),
+        ...(remembered ? { confirmado: remembered } : {}), ...extra,
       }, {
+        onRestart(event) {
+          // A primeira leitura não achou a resposta: o texto parcial sai, e o aviso diz que a leitura subiu.
+          written = "";
+          live.textContent = "";
+          thinkingText.textContent = event.texto;
+          if (liveNode.isConnected) liveNode.replaceWith(thinking);
+        },
+        onConfirm(event) {
+          shown = true;
+          if (state.token === token) { setBusy(false); state.controller = null; }
+          thinking.remove();
+          liveNode.remove();
+          confirmReading(event, text, extra, userBubble);
+        },
         onText(piece) {
           const follow = nearBottom(messages);
           if (thinking.isConnected) thinking.replaceWith(liveNode);
@@ -905,7 +1156,7 @@ $("composer").addEventListener("submit", async (event) => {
   } finally {
     if (state.token === token) setBusy(false);
   }
-});
+}
 
 /* Envio de documentos (lote 27): um pop-up no canto superior direito, visível em todas as abas.
    Os arquivos escolhidos juntos formam um lote; o servidor indexa os que já recebeu e só depois cria as fichas. */
@@ -998,9 +1249,11 @@ function cardNotes(result) {
 
 function uploadSummary(item) {
   const result = item.job?.resultado || {};
-  if (result.duplicate) return "Este documento já estava na biblioteca.";
+  // Lote 30: o arquivo solto na conversa fica fixado nela e vai inteiro ao modelo a cada pergunta.
+  const next = item.pinned ? "Fixado nesta conversa: é lido inteiro a cada pergunta." : "Ligue “Usar biblioteca” para citá-lo.";
+  if (result.duplicate) return `Este documento já estava na biblioteca.${item.pinned ? ` ${next}` : ""}`;
   const version = result.version > 1 ? ` (versão ${result.version})` : "";
-  return [`Pronto · ${pieces(result.trechos)}${version}. Ligue “Usar biblioteca” para citá-lo.`, ...cardNotes(result)].join(" ");
+  return [`Pronto · ${pieces(result.trechos)}${version}. ${next}`, ...cardNotes(result)].join(" ");
 }
 
 // Uma falha reaparece mesmo com o aviso fechado ou recolhido.
@@ -1113,7 +1366,7 @@ async function refreshDocuments() {
     const status = await api("/api/estado");
     state.documents = status.biblioteca.documentos;
     updateLibraryLabel();
-    if (!$("library-view").hidden) loadLibrary();
+    if (!$("docs-panel").hidden && $("doc-viewer").hidden) loadLibrary();
   } catch { /* o rótulo se atualiza no próximo envio */ }
 }
 
@@ -1139,12 +1392,22 @@ async function applyUploadJobs(data) {
     }
     if (job) item.job = job;
     const after = uploadStatus(item);
+    // O arquivo solto na conversa fica fixado nela assim que pode ser lido, se ela continua aberta (lote 30).
+    const sent = job?.resultado;
+    if (item.pin && !item.pinned && sent?.id && ["pronto", "parcial"].includes(after)
+        && (state.conversation?.id || null) === item.conversation) {
+      item.pinned = true;
+      pinDocument({ id: sent.id, title: sent.title, referencia: sent.referencia });
+    }
     if (after !== before && ["pronto", "parcial", "falha"].includes(after)) {
       changed = true;
       announceUploads(after === "falha" ? `${item.name}: não foi possível indexar.` : `${item.name}: pronto para buscar.`);
       if (after !== "pronto") raiseUploads();
     }
-    if (uploadDone(item)) changed = true;  // as fichas terminaram: a lista da biblioteca mostra a referência
+    if (uploadDone(item)) {
+      changed = true;  // as fichas terminaram: a lista de documentos e a etiqueta do fixado mostram a referência
+      if (item.pinned && sent?.referencia) refreshPin(sent);
+    }
   }
   if (changed) refreshDocuments();
 }
@@ -1163,7 +1426,7 @@ async function pollUploads() {
           if (uploads.misses >= 4) {
             raiseUploads();
             for (const item of uploads.items) {
-              if (item.id && !uploadDone(item)) item.error = "O AL-IAdo não respondeu. Confira o documento na aba Biblioteca.";
+              if (item.id && !uploadDone(item)) item.error = "O AL-IAdo não respondeu. Confira o documento na lista de documentos.";
             }
           }
         }
@@ -1194,7 +1457,8 @@ function clearUploads() {
   renderUploads();
 }
 
-async function uploadFiles(files) {
+// `pin`: o arquivo veio pela conversa (clipe ou arrastar) e fica fixado nela; pelo painel de documentos, não.
+async function uploadFiles(files, pin = true) {
   const accepted = files.filter((file) => {
     const ok = /\.(pdf|md|json)$/i.test(file.name);
     if (!ok) toast(`${file.name}: envie PDF, Markdown ou JSON.`);
@@ -1213,7 +1477,9 @@ async function uploadFiles(files) {
   uploads.hidden = false;
   // A ficha de leitura herda a skill ativa, para a memória separar pesquisa de engenharia.
   const skill = $("skill").value;
-  const added = accepted.map((file) => ({ name: file.name, file, id: null, job: null, error: null, sending: false, dismissed: false }));
+  const conversation = state.conversation?.id || null;
+  const added = accepted.map((file) => ({ name: file.name, file, id: null, job: null, error: null, sending: false,
+    dismissed: false, pin, pinned: false, conversation }));
   uploads.items.push(...added);
   renderUploads();
   pollUploads();
@@ -1268,14 +1534,18 @@ window.addEventListener("resize", placeUploads);
 // A caixa de mensagem cresce com o texto: o aviso sobe junto, para não ficar por cima dela.
 new ResizeObserver(placeUploads).observe($("composer"));
 
-$("attach").addEventListener("click", () => $("file").click());
-$("library-add").addEventListener("click", () => $("file").click());
-$("file").addEventListener("change", () => { uploadFiles([...$("file").files]); $("file").value = ""; });
+// O clipe anexa à conversa (o documento fica fixado nela); o botão do painel só põe na biblioteca.
+let attachToConversation = true;
+$("attach").addEventListener("click", () => { attachToConversation = true; $("file").click(); });
+$("library-add").addEventListener("click", () => { attachToConversation = false; $("file").click(); });
+$("file").addEventListener("change", () => { uploadFiles([...$("file").files], attachToConversation); $("file").value = ""; });
 
 let dragDepth = 0;
 document.addEventListener("dragenter", (event) => {
   if (![...(event.dataTransfer?.types || [])].includes("Files")) return;
   dragDepth += 1;
+  $("dropzone").firstElementChild.textContent = $("chat-view").hidden
+    ? "Solte para adicionar à biblioteca" : "Solte para ler nesta conversa";
   $("dropzone").hidden = false;
 });
 document.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $("dropzone").hidden = true; });
@@ -1284,22 +1554,23 @@ document.addEventListener("drop", (event) => {
   event.preventDefault();
   dragDepth = 0;
   $("dropzone").hidden = true;
-  // O pop-up aparece em qualquer aba: soltar um arquivo não troca mais de tela.
-  if (event.dataTransfer?.files?.length) uploadFiles([...event.dataTransfer.files]);
+  // O pop-up aparece em qualquer aba: soltar um arquivo não troca mais de tela. Solto na conversa, o
+  // documento fica fixado nela (lote 30); nas outras abas, só entra na biblioteca.
+  if (event.dataTransfer?.files?.length) uploadFiles([...event.dataTransfer.files], !$("chat-view").hidden);
 });
 
-/* Biblioteca */
+/* Abas: conversa, ciência e memória. A biblioteca deixou de ser uma aba (lote 30): os documentos ficam num
+   painel aberto pelo botão "Documentos", ao lado de "Usar biblioteca". */
 function showView(name) {
   const app = $("app");
   app.classList.toggle("library-mode", name !== "chat");
   app.classList.remove("drawer-open-small");
   closeInfo();
+  closeDocuments();
   $("chat-view").hidden = name !== "chat";
-  $("library-view").hidden = name !== "library";
   $("memory-view").hidden = name !== "memory";
   $("science-view").hidden = name !== "science";
-  for (const [id, view] of [["nav-chats", "chat"], ["nav-library", "library"], ["nav-memory", "memory"],
-    ["nav-science", "science"]]) {
+  for (const [id, view] of [["nav-chats", "chat"], ["nav-memory", "memory"], ["nav-science", "science"]]) {
     $(id).classList.toggle("is-active", view === name);
   }
   placeUploads();
@@ -1307,19 +1578,96 @@ function showView(name) {
 
 function showChat() { showView("chat"); }
 
-async function openLibrary(selectId) {
-  showView("library");
+/* Painel de documentos: a lista da biblioteca e, por documento, fixar na conversa, abrir o original,
+   a ficha, as figuras e apagar. */
+async function openDocuments(selectId) {
+  const panel = $("docs-panel");
+  panel.hidden = false;
+  $("docs-open").setAttribute("aria-expanded", "true");
+  placeDocuments();
+  showDocumentList();
+  loadGoogleFiles();
   await loadLibrary(selectId);
+  placeDocuments();
+}
+
+function closeDocuments() {
+  $("docs-panel").hidden = true;
+  $("docs-open").setAttribute("aria-expanded", "false");
+}
+
+// O painel abre acima do botão, dentro da área da conversa, e nunca passa da altura da tela.
+function placeDocuments() {
+  const panel = $("docs-panel");
+  if (panel.hidden) return;
+  const area = $("chat-view").getBoundingClientRect();
+  const rect = $("composer").getBoundingClientRect();
+  // Em telas muito estreitas, o painel encolhe e fica sempre dentro da janela.
+  const width = Math.min(560, Math.max(240, area.width - 24), window.innerWidth - 16);
+  panel.style.width = `${width}px`;
+  panel.style.left = `${Math.max(8, Math.min(Math.max(rect.left, area.left + 12), area.right - width - 12))}px`;
+  panel.style.bottom = `${Math.round(window.innerHeight - rect.top) + 8}px`;
+  panel.style.maxHeight = `${Math.max(200, Math.min(rect.top - 76, window.innerHeight * 0.72))}px`;
+}
+
+function showDocumentList() {
+  $("doc-viewer").hidden = true;
+  $("doc-viewer").replaceChildren();
+  $("doc-list").hidden = false;
+  markPinnedDocuments();
+}
+
+const megabytes = (bytes) => `${(bytes / 1048576).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
+
+// O que a leitura de documentos inteiros deixou no serviço de arquivos do Google, e o botão de apagar de lá.
+async function loadGoogleFiles() {
+  const line = $("docs-files");
+  let info;
+  try { info = await api("/api/biblioteca/arquivos"); } catch { line.hidden = true; return; }
+  line.hidden = !info.disponivel;
+  if (!info.disponivel) return;
+  const note = "Para o modelo ler um documento inteiro, o PDF é enviado ao serviço de arquivos do Google, que o guarda "
+    + "por até 48 horas. Enquanto está lá, as próximas perguntas não precisam enviá-lo de novo.";
+  if (!info.arquivos) {
+    line.replaceChildren(el("span", { title: note, text: "Nenhum documento seu está guardado no Google agora." }));
+    return;
+  }
+  const until = new Date(info.expira).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  line.replaceChildren(
+    el("span", { title: note,
+      text: `Guardado no Google para a leitura: ${info.arquivos} ${info.arquivos === 1 ? "arquivo" : "arquivos"} `
+        + `(${megabytes(info.bytes)}), até ${until}. ` }),
+    el("button", { class: "link danger", type: "button", text: "Apagar de lá",
+      title: "Apaga do serviço do Google o que foi enviado. A biblioteca não muda; a próxima leitura envia de novo.",
+      onclick: async () => {
+        try {
+          const done = await api("/api/biblioteca/arquivos", { method: "DELETE" });
+          toast(done.falhas ? `${done.apagados} apagados; ${done.falhas} não puderam ser apagados agora.`
+            : "Apagado do serviço de arquivos do Google.");
+        } catch (error) { toast(error.message); }
+        loadGoogleFiles();
+      } }));
 }
 
 const STATUS = { ready: ["pronto", "badge-ok"], partial: ["parcial", "badge-warn"], failed: ["falhou", "badge-fail"] };
 let libraryDocuments = [];
+
+function markPinnedDocuments() {
+  const fixed = new Set(pins().map((doc) => doc.id));
+  document.querySelectorAll("#doc-list .doc-item").forEach((item) => {
+    item.querySelector(".doc-pinned").hidden = !fixed.has(item.dataset.doc);
+  });
+}
 
 async function loadLibrary(selectId) {
   let documents = [];
   try { documents = await api("/api/biblioteca"); } catch (error) { toast(error.message); }
   libraryDocuments = documents;
   const list = $("doc-list");
+  const pending = documents.filter((doc) => doc.ficha_pendente).length;
+  $("library-cards").hidden = !pending;
+  $("library-cards").textContent = `Completar fichas (${pending})`;
+  $("library-cards").dataset.pending = String(pending);
   if (!documents.length) {
     list.replaceChildren(el("li", { class: "empty",
       text: "A biblioteca está vazia. Adicione um PDF aqui ou solte o arquivo na conversa." }));
@@ -1329,15 +1677,13 @@ async function loadLibrary(selectId) {
     const [label, badge] = STATUS[doc.status] || [doc.status, ""];
     return el("li", {}, el("button", { class: "doc-item", type: "button", "data-doc": doc.id,
       onclick: () => showDocument(doc) },
-      el("span", { class: "doc-title", text: doc.title }),
-      ...(doc.referencia ? [el("span", { class: "doc-ref", text: doc.referencia })] : []),
+      el("span", { class: "doc-title", text: doc.referencia || doc.title }),
+      ...(doc.referencia ? [el("span", { class: "doc-ref", text: doc.title })] : []),
       el("span", { class: "doc-meta" }, el("span", { class: `badge ${badge}`, text: label }),
-        el("span", { text: `v${doc.version}` }), el("span", { text: relativeDate(doc.created_at) }))));
+        el("span", { text: `v${doc.version}` }), el("span", { text: relativeDate(doc.created_at) }),
+        el("span", { class: "badge badge-ok doc-pinned", text: "fixado nesta conversa", hidden: true }))));
   }));
-  const pending = documents.filter((doc) => doc.ficha_pendente).length;
-  $("library-cards").hidden = !pending;
-  $("library-cards").textContent = `Completar fichas (${pending})`;
-  $("library-cards").dataset.pending = String(pending);
+  markPinnedDocuments();
   const chosen = documents.find((doc) => doc.id === selectId);
   if (chosen) showDocument(chosen);
   else if (selectId) toast("Este documento não está mais na biblioteca: ele pode ter sido apagado.");
@@ -1364,8 +1710,11 @@ async function deleteDocument(doc) {
     toast(`«${result.apagado}» foi apagado` +
       (revoked ? `; ${revoked} ${revoked === 1 ? "anotação revogada" : "anotações revogadas"}` : "") +
       (result.sobras.length ? ". Alguns arquivos não puderam ser removidos agora." : "."));
-    $("doc-viewer").replaceChildren(el("p", { class: "muted", text: "Escolha um documento para ver a versão em Markdown." }));
+    // O documento apagado sai dos fixados: da conversa aberta agora, e das outras quando forem abertas.
+    if (pins().some((item) => ids.includes(item.id))) await setPins(pins().filter((item) => !ids.includes(item.id)));
+    showDocumentList();
     loadLibrary();
+    refreshDocuments();
   } catch (error) {
     toast(error.message);
   }
@@ -1519,35 +1868,53 @@ async function followFigures(doc, job) {
         (r.falhas ? `; ${r.falhas} não puderam ser lidas e ficam para outra vez` : "") +
         (r.interrompido ? "; parado antes do fim" : "") + "." + (status.aviso ? ` ${status.aviso}` : ""));
       // A lista traz as contagens novas; o documento aberto é redesenhado com elas.
-      if (document.querySelector(".doc-item.is-current")?.dataset.doc === doc.id) loadLibrary(doc.id);
+      if (!$("docs-panel").hidden && $("doc-viewer").dataset.doc === doc.id) loadLibrary(doc.id);
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 1500));
   }
 }
 
-async function showDocument(doc) {
-  document.querySelectorAll(".doc-item").forEach((item) => item.classList.toggle("is-current", item.dataset.doc === doc.id));
+// Um documento do painel: o que fazer com ele (fixar, abrir, apagar), a ficha, as figuras e as pendências.
+function showDocument(doc) {
   const viewer = $("doc-viewer");
-  viewer.replaceChildren(el("p", { class: "muted", text: "Carregando a extração…" }));
-  try {
-    const data = await api(`/api/biblioteca/${doc.id}/markdown`);
-    const body = el("div", { class: "answer" });
-    body.innerHTML = data.html; // Markdown da extração renderizado no servidor, sem HTML bruto
-    renderMath(body);
-    const issues = doc.issues?.length ? el("div", { class: "note note-warn", text: `Pendências: ${doc.issues.join(" ")}` }) : null;
-    viewer.replaceChildren(
-      el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: "Extração em Markdown · confira fórmulas, tabelas e OCR no original" }),
-        el("span", { class: "doc-viewer-actions" },
-          el("a", { class: "link", href: `/api/biblioteca/${doc.id}/original`, target: "_blank", rel: "noopener", text: "Abrir original" }),
-          el("button", { class: "link danger", type: "button", text: "Apagar", onclick: () => deleteDocument(doc) }))),
-      cardBox(doc), ...(doc.title.toLowerCase().endsWith(".pdf") ? [figuresBox(doc)] : []), ...(issues ? [issues] : []), body);
-  } catch (error) {
-    viewer.replaceChildren(el("p", { class: "muted", text: error.message }));
-  }
+  viewer.dataset.doc = doc.id;
+  const fixed = pins().some((item) => item.id === doc.id);
+  const issues = doc.issues?.length ? el("div", { class: "note note-warn", text: `Pendências: ${plainIssues(doc.issues)}` }) : null;
+  const pin = el("button", { class: fixed ? "secondary" : "primary", type: "button",
+    text: fixed ? "Soltar desta conversa" : "Fixar nesta conversa",
+    title: fixed ? "O documento deixa de ir inteiro ao modelo nesta conversa."
+      : "O documento vai inteiro ao modelo nas perguntas desta conversa que consultam os documentos, com a biblioteca ligada ou não.",
+    onclick: async () => {
+      await (fixed ? unpinDocument(doc.id) : pinDocument(doc));
+      if (!viewer.hidden && viewer.dataset.doc === doc.id) showDocument(doc);
+    } });
+  viewer.replaceChildren(
+    el("button", { class: "link doc-back", type: "button", text: "‹ Todos os documentos", onclick: showDocumentList }),
+    el("h3", { class: "doc-detail-title", text: doc.referencia || doc.title }),
+    ...(doc.referencia ? [el("p", { class: "muted doc-detail-file", text: `${doc.title} · versão ${doc.version}` })] : []),
+    el("div", { class: "doc-detail-actions" }, pin,
+      el("a", { class: "link", href: `/api/biblioteca/${doc.id}/original`, target: "_blank", rel: "noopener", text: "Abrir original" }),
+      el("button", { class: "link danger", type: "button", text: "Apagar", onclick: () => deleteDocument(doc) })),
+    ...(issues ? [issues] : []),
+    cardBox(doc), ...(doc.title.toLowerCase().endsWith(".pdf") ? [figuresBox(doc)] : []));
+  $("doc-list").hidden = true;
+  viewer.hidden = false;
+  $("docs-panel").scrollTop = 0;
 }
 
-$("nav-library").addEventListener("click", () => openLibrary());
+$("docs-open").addEventListener("click", () => ($("docs-panel").hidden ? openDocuments() : closeDocuments()));
+$("docs-close").addEventListener("click", closeDocuments);
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeDocuments(); });
+document.addEventListener("click", (event) => {
+  const panel = $("docs-panel");
+  // Clicar fora fecha o painel; os avisos, o envio de arquivos e as confirmações não contam como fora.
+  if (panel.hidden || panel.contains(event.target) || !event.target.isConnected
+    || event.target.closest("#docs-open, #upload-pop, #toast, .pin")) return;
+  closeDocuments();
+});
+window.addEventListener("resize", placeDocuments);
+new ResizeObserver(placeDocuments).observe($("composer"));
 $("nav-chats").addEventListener("click", () => {
   if ($("chat-view").hidden) return showChat();
   const small = SMALL.matches;

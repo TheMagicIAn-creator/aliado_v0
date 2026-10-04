@@ -28,15 +28,18 @@ from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Stream
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
+from aliado import routing
 from aliado.interfaces.web.conversations import ConversationStore
 from aliado.interfaces.web.gpvs_runs import gpvs_routes
 from aliado.interfaces.web.obsidian import ObsidianSync, build_notes, write_vault
 from aliado.interfaces.web.rendering import render_markdown
 from aliado.interfaces.web.science import science_routes
-from aliado.knowledge import figures
+from aliado.knowledge import figures, reading
 from aliado.knowledge.metadata import reference
+from aliado.knowledge.stopwords import plain
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.usage_log import record_usage
+from aliado.memory.store import TRAIL_QUESTION, TRAIL_STRONG, trail_pages
 from aliado.skills.library import list_skills, load_skill
 
 STATIC = Path(__file__).resolve().parent / "static"
@@ -57,6 +60,27 @@ MEMORY_VIEW_KEYS = ("id", "kind", "text", "origin", "status", "skill", "source",
 # e os nomes mostrados no aviso antes de enviar.
 FIGURE_ALIAS = "flash"
 MODEL_NAMES = {"flash": "Flash", "flash_lite": "Flash-Lite"}
+# Leitura dos documentos numa pergunta. "auto" (lote 31) é o padrão: o roteador escolhe o degrau da escada.
+# Os outros fixam um degrau: trechos, páginas inteiras, o documento citado ou fixado, e a leitura ampla do lote 30.
+READING_MODES = ("auto", "trechos", "paginas", "documento", "integral")
+RUNG_OF = {"trechos": routing.PASSAGES, "paginas": routing.PAGES, "documento": routing.DOCUMENT,
+           "integral": routing.WIDE}
+MODE_OF = {rung: mode for mode, rung in RUNG_OF.items()}
+# Tipos de pergunta cuja resposta vem dos documentos: deixam trilha e, sem citação, sobem um degrau.
+LIBRARY_INTENTS = {"fato", "sintese", "metodo", "visual", "documento"}
+# A trilha é achada pela consulta de busca, que diz o assunto. Sem ela, uma pergunta com menos palavras que
+# isto não deixa nem segue trilha ("Traga outra fonte." serve a qualquer assunto).
+TRAIL_WORDS = 5
+# Quantas páginas de uma resposta anterior voltam ao modelo; e quantas das páginas de uma leitura ficam
+# reservadas para as de respostas parecidas, sem tirar o lugar das que a busca achou.
+TRAIL_PAGES = 6
+RESERVED_PAGES = 3
+# Teto de tokens de documentos nos degraus das páginas e do documento.
+DOCUMENT_BUDGET = 60_000
+# Na escolha automática, o documento citado só vai inteiro se couber nesta parte do teto sem confirmação.
+DOCUMENT_SHARE = 0.6
+# Custo de uma página inteira com a sua linha na lista, para a estimativa do botão "Ler mais fundo".
+PAGE_ESTIMATE = reading.PAGE_TOKENS + 55
 
 
 def _memory_view(memory: dict) -> dict:
@@ -104,6 +128,16 @@ class WebSettings:
     # modelo, para o aviso antes de enviar. Só por pedido do usuário, nunca sozinha.
     figure_reader: Callable[[object], object] | None = None
     figure_model: str | None = None
+    # Leitura integral (lote 30): o modo e o teto de tokens que valem quando a página não diz outro; e o que
+    # ficou no serviço de arquivos do Google: () -> lista dos envios, e () -> apaga de lá e limpa o registro.
+    reading_mode: str = "auto"
+    reading_budget: int = reading.DEFAULT_BUDGET
+    # Escada de leitura (lote 31): acima de `ceiling` tokens estimados, uma leitura pede confirmação; depois de
+    # `daily_warning` tokens no dia, toda leitura acima dos trechos pede.
+    ceiling: int = 30_000
+    daily_warning: int = 300_000
+    uploaded_files: Callable[[], list[dict]] | None = None
+    forget_files: Callable[[], dict] | None = None
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -169,8 +203,16 @@ def _view(message: dict) -> dict:
     return view
 
 
+def _local_day(stamp: str) -> str:
+    """O dia de um registro no horário deste computador: o "hoje" da tela vira à meia-noite daqui."""
+    try:
+        return datetime.fromisoformat(stamp).astimezone().date().isoformat()
+    except ValueError:
+        return stamp[:10]
+
+
 def _usage_totals(path: Path) -> dict:
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now().astimezone().date().isoformat()
     totals = {"hoje": 0, "total": 0, "chamadas": 0}
     if not path.is_file():
         return totals
@@ -182,9 +224,72 @@ def _usage_totals(path: Path) -> dict:
         tokens = entry.get("total_tokens") or 0
         totals["total"] += tokens
         totals["chamadas"] += 1
-        if str(entry.get("timestamp", "")).startswith(today):
+        if _local_day(str(entry.get("timestamp", ""))) == today:
             totals["hoje"] += tokens
     return totals
+
+
+def _trail(question: str, sources, status: str | None, key: str | None = None) -> list[dict] | None:
+    """As páginas que uma resposta conferida citou: a trilha da pergunta (lote 31). Sem a consulta de busca,
+    que diz o assunto, uma pergunta curta não deixa trilha."""
+    if status != "citation_ids_verified" or (not key and len(question.split()) < TRAIL_WORDS):
+        return None
+    pages = [{"sha256": source.get("sha256"), "page": source.get("page"),
+              "title": source.get("referencia") or source.get("title")} for source in sources or ()]
+    return [page for page in pages if page["sha256"] and page["page"] is not None] or None
+
+
+def _mentions(library_, terms: list[str], cards: dict, named, total: int) -> dict | None:
+    """A contagem exata dos termos da pergunta (lote 31), enxuta para o modelo. O nome de um autor citado não
+    é assunto; um termo que aparece em mais da metade dos documentos vai só com o número."""
+    skip = {plain(word) for title in named
+            for word in re.findall(r"[^\W\d_]+", (cards.get(title) or {}).get("referencia") or "")}
+    wanted = [term for term in terms if plain(term) not in skip]
+    if not wanted:
+        return None
+    try:
+        found = library_.mentions(wanted)
+    except (ValueError, sqlite3.DatabaseError):
+        return None
+    view = {}
+    for term, entry in found.items():
+        if total and entry["documentos"] > total / 2:
+            view[term] = {"documentos": entry["documentos"], "de": total}
+            continue
+        names = [(item["referencia"] or item["title"], item) for item in entry["onde"]]
+        view[term] = {"documentos": entry["documentos"], "de": total, "onde": [
+            f"{name}: {item['locais']} página(s)" + (f" ({', '.join(map(str, item['paginas']))})" if item["paginas"] else "")
+            + (", só em figura" if item["so_em_figura"] else "") for name, item in names[:8]]}
+        if names[8:]:
+            view[term]["outros"] = [name for name, _ in names[8:]]
+    return view or None
+
+
+def _passage_tokens(hits) -> int:
+    return sum(len(hit.get("passagem") or hit.get("text") or "") for hit in hits) // reading.CHARS_PER_TOKEN
+
+
+def _deeper(rung: int, result, library_, budget: int) -> dict | None:
+    """O degrau seguinte da escada e quanto ele custaria, para o botão "Ler mais fundo" (lote 31)."""
+    if library_ is None or not routing.PASSAGES <= rung < routing.WIDE or result.provider == "local":
+        return None
+    used = (result.usage.input_tokens if result.usage else 0) or 0
+    read = getattr(result, "reading", None) or {}
+    sent = read.get("tokens_estimados") or 0 if read else _passage_tokens([*result.sources, *result.retrieved])
+    base = max(used - sent, 0)
+    if rung == routing.PASSAGES:
+        return {"leitura": "paginas", "tokens": base + reading.TOP_PAGES * PAGE_ESTIMATE}
+    if rung == routing.PAGES:
+        top = next((hit.get("document_id") for hit in [*result.sources, *result.retrieved] if hit.get("document_id")), None)
+        try:
+            record = library_.pages(top) if top else None
+        except (ValueError, AttributeError):
+            record = None
+        if record:
+            cost = sum(reading.page_cost(unit["text"], record["pdf"]) for unit in record["units"])
+            return {"leitura": "documento", "tokens": base + min(cost, DOCUMENT_BUDGET), "documentos": [top],
+                    "titulo": record["referencia"] or record["title"]}
+    return {"leitura": "integral", "tokens": base + budget, "ate": True}
 
 
 def _index_conversations(store: ConversationStore, memory) -> int:
@@ -201,12 +306,18 @@ def _index_conversations(store: ConversationStore, memory) -> int:
                     question.get("in_context", True) and answer.get("in_context", True):
                 added += memory.remember_exchange(
                     conversation_id=item["id"], message_id=answer["id"], question=question["content"],
-                    answer=answer["content"], skill=question.get("skill"), created_at=answer.get("created_at"))
+                    answer=answer["content"], skill=question.get("skill"), created_at=answer.get("created_at"),
+                    key=answer.get("consulta_biblioteca"),
+                    pages=_trail(question["content"], answer.get("sources"), answer.get("validation_status"),
+                                 answer.get("consulta_biblioteca")))
     memory.fill_missing_vectors()
     return added
 
 
 def create_app(settings: WebSettings) -> Starlette:
+    # A página é lida do disco a cada carga, e este programa só muda quando é reiniciado. Com a hora em que
+    # ele começou, a página sabe se é mais nova do que ele e pede o reinício (lote 30).
+    started = datetime.now(timezone.utc).isoformat(timespec="seconds")
     store = ConversationStore(settings.data_dir / "conversas")
     uploads = settings.data_dir / "uploads-temporarios"
     worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="aliado-biblioteca")
@@ -243,6 +354,9 @@ def create_app(settings: WebSettings) -> Starlette:
             "biblioteca": {"documentos": len(documents)},
             # Só diz se há de onde tirar os resultados; o resumo é montado na primeira pergunta.
             "resultados": {"disponivel": settings.results_digest is not None, "skill": RESULTS_SKILL},
+            "leitura": {"modo": settings.reading_mode, "teto": settings.reading_budget, "tetos": list(reading.BUDGETS),
+                        "modos": list(READING_MODES), "limite": settings.ceiling, "aviso_diario": settings.daily_warning},
+            "iniciado": started,
             "uso": _usage_totals(settings.usage_log),
         })
 
@@ -265,13 +379,21 @@ def create_app(settings: WebSettings) -> Starlette:
                 return JSONResponse({"apagada": True})
             if request.method == "PATCH":
                 body = await request.json()
-                data = store.rename(request.path_params["cid"], body.get("title"))
-                obsidian()
+                if "fixados" in body:
+                    # Só entram documentos que estão na biblioteca; a ordem dada é a ordem de leitura.
+                    known = {document["id"] for document in await run_in_threadpool(_documents)}
+                    wanted = body["fixados"]
+                    data = store.pin(request.path_params["cid"],
+                                     [item for item in wanted if item in known] if isinstance(wanted, list) else wanted)
+                if "title" in body or "fixados" not in body:
+                    data = store.rename(request.path_params["cid"], body.get("title"))
+                    obsidian()
             else:
                 data = store.get(request.path_params["cid"])
         except (ValueError, AttributeError) as exc:
             return _error(str(exc), 404 if "encontrada" in str(exc) else 400)
-        return JSONResponse(data | {"messages": [_view(m) for m in data["messages"]]})
+        pinned = await run_in_threadpool(_pinned, data)
+        return JSONResponse(data | {"messages": [_view(m) for m in data["messages"]], "fixados": pinned})
 
     async def message(request: Request):
         cid = request.path_params["cid"]
@@ -295,41 +417,208 @@ def create_app(settings: WebSettings) -> Starlette:
         use_results = bool(body["resultados"]) if "resultados" in body else skill == RESULTS_SKILL
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_QUESTION_CHARS:
             return _error("Escreva uma pergunta de até 20 mil caracteres.")
-        if skill != "nenhuma" and skill not in skills or support and support not in skills:
+        # "auto" (lote 31): o roteador escolhe a skill, o modelo ou a leitura; um nome fixa a escolha.
+        if skill not in {"nenhuma", "auto"} and skill not in skills or support and support not in skills:
             return _error("Skill desconhecida.")
-        if alias not in aliases:
+        if alias != "auto" and alias not in aliases or not aliases:
             return _error("Modelo não configurado. Confira o .env.")
-        library = settings.library_factory() if use_library else None
+        if "resultados" not in body:
+            use_results = skill in {RESULTS_SKILL, "auto"}
+        mode = body.get("leitura") or settings.reading_mode
+        budget = body.get("teto") or settings.reading_budget
+        if mode not in READING_MODES or budget not in reading.BUDGETS:
+            return _error("Modo de leitura ou teto desconhecido.")
+        confirmed = body.get("confirmado") if isinstance(body.get("confirmado"), str) else None
+        asked = [item for item in body.get("documentos") or () if isinstance(item, str)] \
+            if isinstance(body.get("documentos"), list) else []
+        pinned = [item for item in data.get("fixados") or () if isinstance(item, str)]
         history = store.history(data)
+        last_user = next((m for m in reversed(data["messages"]) if m.get("role") == "user"), None)
+        last_reply = next((m for m in reversed(data["messages"]) if m.get("role") == "assistant"), None)
+        # A rota da resposta anterior: uma mensagem curta continua o assunto e a leitura dela.
+        before = (last_reply or {}).get("rota") or {}
+        # Uma leitura cara, escolhida por você, não é herdada sozinha: a continuação vai até as páginas.
+        previous = {"rung": min(before.get("rung", routing.PASSAGES if (last_user or {}).get("biblioteca")
+                                           else routing.NONE), routing.PAGES),
+                    "results": bool(before.get("results"))} if last_reply else None
+        words = len(text.split())
 
         def line(payload: dict) -> str:
             return json.dumps(payload, ensure_ascii=False) + "\n"
 
-        memory_skill = None if skill == "nenhuma" else skill
-
         def events():
             # Gerador síncrono: o Starlette o consome numa thread, sem travar o servidor.
-            result = None
+            source = settings.library_factory() if use_library or pinned else None
+            try:
+                documents = source.documents() if hasattr(source, "documents") else []
+                cards = source.cards() if hasattr(source, "cards") else {}
+            except (ValueError, OSError, sqlite3.DatabaseError):
+                documents, cards = [], {}  # sem o catálogo, a rota sai só das regras e da mensagem
+            # Roteador local (lote 31): sem custo, decide o que a mensagem precisa antes de qualquer chamada paga.
+            found = routing.route(
+                text, encoder=getattr(source, "encoder", None), cards=cards, skills=list(skills),
+                current_skill=(last_user or {}).get("skill") if skill == "auto" else skill,
+                library=source is not None, results=use_results, previous=previous)
+            reasons = list(found.reasons)
+            chosen = (found.skill or "nenhuma") if skill == "auto" else skill
+            memory_skill = None if chosen == "nenhuma" else chosen
+            model = alias if alias != "auto" else found.model if found.model in aliases else sorted(aliases)[0]
+            rung = found.rung if mode == "auto" else RUNG_OF[mode] if source is not None else routing.NONE
+            ids = {document.get("title"): document["id"] for document in documents if document.get("id")}
+            known = set(ids.values())
+            named = [ids[title] for title in found.named if title in ids]
+            fixed = list(dict.fromkeys([*pinned, *(item for item in asked if item in known)]))
+            focus = []
+            if rung == routing.DOCUMENT and mode == "auto" and not fixed:
+                try:
+                    cost = sum(reading.page_cost(unit["text"], record["pdf"])
+                               for record in map(source.pages, named) for unit in record["units"])
+                except (ValueError, AttributeError):
+                    cost = 0
+                if cost > settings.ceiling * DOCUMENT_SHARE:
+                    # Um livro citado pelo autor não vai inteiro sem você pedir: vão as páginas mais próximas.
+                    rung, focus = routing.PAGES, named
+                    reasons.append("o documento citado é grande: foram lidas as páginas dele mais próximas da pergunta")
+            if rung == routing.PASSAGES and fixed:
+                rung = routing.DOCUMENT  # os fixados na conversa vão inteiros, e o resto, por trechos
+            by_passages = bool(use_web and (fixed or rung > routing.PASSAGES))
+            if use_web:
+                # Com a busca na web ligada, o pedido segue por trechos (lote 30).
+                rung = min(rung, routing.PASSAGES)
+            searches = rung > routing.NONE and use_library
+            search_query = rewrite() if searches else None
+            # Trilhas (lote 31): uma pergunta já respondida leva de volta às páginas que a resposta citou.
+            trail, priority, reserve, strong = None, [], [], False
+            follows = mode == "auto" and rung in {routing.PASSAGES, routing.PAGES} and found.intent in LIBRARY_INTENTS \
+                and (search_query or words >= TRAIL_WORDS) and settings.memory is not None
+            if follows:
+                try:
+                    matches = settings.memory.trail(search_query or text, question=text, limit=5)
+                except (ValueError, OSError, sqlite3.DatabaseError, AttributeError):
+                    matches = []
+
+                def same(match: dict) -> bool:
+                    # O mesmo assunto e o mesmo pedido: só assim as páginas de antes respondem à pergunta de agora.
+                    return match["similaridade"] >= TRAIL_STRONG and match.get("pergunta_parecida", 1.0) >= TRAIL_QUESTION
+                by_sha = {document["sha256"]: document["id"] for document in documents
+                          if document.get("sha256") and document.get("id")}
+
+                def located(pages) -> list[tuple]:
+                    # Documento apagado sai da trilha: só valem as páginas de arquivos que estão na biblioteca.
+                    return [(by_sha[page["sha256"]], page["page"]) for page in pages if page["sha256"] in by_sha]
+
+                best = next((match for match in matches if same(match)), None)
+                if last_reply and any(match["message_id"] == last_reply.get("id") and same(match) for match in matches):
+                    # A mesma pergunta, feita de novo logo em seguida: a resposta não bastou.
+                    rung, priority = routing.PAGES, located(trail_pages(matches))[:TRAIL_PAGES]
+                    reasons.append("a pergunta foi refeita em seguida: leitura mais funda")
+                elif best and located(best["pages"]):
+                    strong, trail, priority = True, best, located(best["pages"])[:TRAIL_PAGES]
+                    reasons.append("pergunta muito parecida com uma já respondida: partiu das páginas daquela resposta")
+                elif rung == routing.PAGES:
+                    reserve = located(trail_pages(matches))[:RESERVED_PAGES]
+
+            def reading_of(step: int, *, from_trail: bool = False, first: list | None = None,
+                           kept: list | None = None) -> dict | None:
+                """As opções de leitura de um degrau; None é o pedido por trechos (ou sem biblioteca)."""
+                if from_trail:
+                    return {"budget": DOCUMENT_BUDGET, "fixed": [], "whole": False, "search": False,
+                            "pages": TRAIL_PAGES, "priority": first or []}
+                if step == routing.PAGES:
+                    return {"budget": DOCUMENT_BUDGET, "fixed": fixed, "whole": False, "search": use_library,
+                            "pages": reading.TOP_PAGES, "priority": first or []} | ({"reserve": kept} if kept else {}) \
+                        | ({"focus": focus} if focus else {})
+                if step == routing.DOCUMENT:
+                    return {"budget": DOCUMENT_BUDGET, "fixed": list(dict.fromkeys([*fixed, *named])), "whole": False,
+                            "search": use_library, "top": 1}
+                if step == routing.WIDE:
+                    return {"budget": budget, "fixed": fixed, "whole": True, "search": use_library}
+                return None
+
             memories, recalled = [], []
             if settings.memory is not None:
                 try:
                     memories = settings.memory.relevant(text, skill=memory_skill)
-                    recalled = settings.memory.recall(text, exclude_conversation=cid)
+                    # Numa pergunta à biblioteca, uma conversa anterior basta; na conversa solta, vão até três.
+                    recalled = settings.memory.recall(text, exclude_conversation=cid,
+                                                      **({"limit": 1} if rung > routing.NONE else {}))
                 except (ValueError, OSError, sqlite3.DatabaseError):
                     memories, recalled = [], []  # a conversa segue sem memória em vez de falhar
-            search_query = rewrite() if library is not None else None
-            digest, missing = results_for_request()
-            extra = {"results": digest} if digest else {}
-            try:
-                for kind, value in settings.stream(
-                        text, model_alias=alias, skill_name=memory_skill,
-                        supporting_skill_name=support, library=library, history=history,
-                        memories=memories, web_search=use_web, recalled=recalled,
-                        search_query=search_query, **extra):
+            if trail:
+                recalled = [item for item in recalled if item["message_id"] != trail["message_id"]]
+            digest, missing = results_for_request() if found.results else (None, [])
+            mentions = None
+            if rung > routing.NONE and found.intent in {"acervo", "documento"} and hasattr(source, "mentions"):
+                mentions = _mentions(source, routing.terms(f"{text} {search_query or ''}"), cards, found.named,
+                                     len({document.get("title") for document in documents}))
+            today = _usage_totals(settings.usage_log)["hoje"]
+            over = today >= settings.daily_warning
+
+            def options(step: int, read: dict | None, *, alias_: str, limit: int | None) -> dict:
+                extra = ({"results": digest} if digest else {}) | ({"reading": read} if read else {})
+                extra |= {} if found.catalog or step == routing.NONE else {"catalog": False}
+                extra |= {} if found.references else {"references": False}
+                extra |= {"reasoning_level": found.reasoning} if found.reasoning and alias_ == found.model else {}
+                extra |= {"mentions": mentions} if mentions else {}
+                if limit is not None:
+                    extra |= {"ceiling": limit, "salt": "dia" if over else ""} | ({"confirmed": confirmed} if confirmed else {})
+                return {"model_alias": alias_, "skill_name": memory_skill, "supporting_skill_name": support,
+                        "library": source if step > routing.NONE else None, "history": history, "memories": memories,
+                        "web_search": use_web, "recalled": recalled, "search_query": search_query} | extra
+
+            def run(call: dict, before: str | None = None):
+                """Uma chamada ao modelo em fluxo; devolve ("final", resultado) ou ("confirmar", estimativa)."""
+                final = None
+                for kind, value in settings.stream(text, **call):
+                    if kind == "confirmar":
+                        return kind, value
+                    if before is not None:
+                        yield before
+                        before = None
+                    if kind == "inicio":
+                        continue  # o pedido passou pelo teto e seguiu ao modelo
                     if kind == "texto":
                         yield line({"tipo": "texto", "texto": value})
                     else:
-                        result = value
+                        final = value
+                return "final", final
+
+            # Acima do teto, uma leitura pede confirmação; depois do aviso diário, toda leitura acima dos trechos.
+            limit = None if rung <= routing.PASSAGES else 0 if over else settings.ceiling
+            first = reading_of(rung, from_trail=strong, first=priority, kept=reserve)
+            call = options(rung, first, alias_=model, limit=limit) | ({"trail": trail} if trail and trail[
+                "conversation_id"] != cid else {})
+            attempts, result = [], None
+            try:
+                kind, result = yield from run(call)
+                if kind == "confirmar":
+                    yield line({"tipo": "confirmar", "tokens": result["tokens"], "chave": result.get("chave"),
+                                "limite": settings.ceiling, "motivo": "dia" if over else "teto", "hoje": today,
+                                "aviso_diario": settings.daily_warning, "lembrar": not over,
+                                "modo": MODE_OF.get(rung, "trechos"), "leitura": result.get("leitura")})
+                    return
+                climbs = (result is not None and mode == "auto" and not use_web and not over and not result.truncated
+                          and result.validation_status == "uncited" and found.intent in LIBRARY_INTENTS
+                          and (rung == routing.PASSAGES or strong))
+                if climbs:
+                    # A resposta não citou nenhum documento: sobe um degrau, se o total couber no teto.
+                    spent = (result.usage.total_tokens if result.usage else 0) or 0
+                    stronger = model if alias != "auto" else routing.STRONG if routing.STRONG in aliases else model
+                    second = options(routing.PAGES, reading_of(routing.PAGES), alias_=stronger,
+                                     limit=max(settings.ceiling - spent, 0)) | {"search_query": search_query}
+                    second.pop("confirmed", None)
+                    kind, better = yield from run(second, before=line({
+                        "tipo": "recomeco", "texto": "Os trechos não bastaram: lendo as páginas inteiras…"}))
+                    if kind == "final" and better is not None:
+                        attempts.append({"leitura": "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung],
+                                         "tokens": spent})
+                        if result.provider != "local":
+                            try:
+                                record_usage(result, settings.usage_log)
+                            except OSError:
+                                pass
+                        result, rung, model, strong, trail = better, routing.PAGES, stronger, False, None
+                        reasons.append("a primeira leitura não achou a resposta: subiu um degrau")
             except ProviderNotConfiguredError:
                 yield line({"tipo": "erro", "erro": "Configure a chave do Gemini no .env e reinicie."})
                 return
@@ -352,8 +641,16 @@ def create_app(settings: WebSettings) -> Starlette:
             in_context = (result.validation_status not in OUT_OF_CONTEXT and result.provider != "local"
                           and result.results_status != UNVERIFIED_RESULTS and not result.truncated)
             user = {"role": "user", "content": text.strip(), "in_context": in_context,
-                    "skill": skill, "apoio": support, "biblioteca": use_library, "web": use_web,
-                    "resultados": use_results}
+                    "skill": chosen, "apoio": support, "biblioteca": use_library, "web": use_web,
+                    "resultados": use_results, "leitura": mode, "teto": budget}
+            # A rota (lote 31): o que o roteador decidiu, o que foi escolha sua e o que foi lido de fato.
+            route_view = found.view() | {
+                "rung": rung, "leitura": "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung],
+                "skill": memory_skill, "model": model, "reasons": reasons, "results": bool(digest),
+                "automatico": {"modelo": alias == "auto", "skill": skill == "auto", "leitura": mode == "auto"},
+                "tentativas": attempts,
+                "trilha": {"data": trail["created_at"], "pergunta": " ".join(trail["question"].split())[:200],
+                           "conversa": trail["conversation_id"]} if trail else None}
             reply = {"role": "assistant", "content": result.content, "in_context": in_context,
                      "provider": result.provider, "model": result.model,
                      "usage": asdict(result.usage) if result.usage else None,
@@ -368,6 +665,11 @@ def create_app(settings: WebSettings) -> Starlette:
                      "numeros_nao_conferidos": list(result.unverified_numbers),
                      "numeros_sem_marca": result.unmarked_numbers,
                      "cortada": result.truncated,
+                     # Lote 30: os documentos lidos inteiros ou em blocos; e se a web fez a leitura cair para trechos.
+                     "leitura": getattr(result, "reading", None),
+                     "leitura_por_trechos": by_passages,
+                     "rota": route_view,
+                     "aprofundar": None if use_web else _deeper(rung, result, source, budget),
                      "resultados_faltando": missing,
                      "memorias_usadas": [{"id": m["id"], "kind": m["kind"], "origin": m["origin"],
                                           "text": m["text"]} for m in memories],
@@ -385,7 +687,10 @@ def create_app(settings: WebSettings) -> Starlette:
                     settings.memory.remember_exchange(
                         conversation_id=cid, message_id=stored["messages"][-1]["id"], question=text,
                         answer=result.content, skill=memory_skill,
-                        created_at=stored["messages"][-1].get("created_at"))
+                        created_at=stored["messages"][-1].get("created_at"),
+                        # A trilha: as páginas citadas, quando a pergunta é das que os documentos respondem.
+                        **({"pages": pages, "key": search_query} if found.intent in LIBRARY_INTENTS and (
+                            pages := _trail(text, result.sources, result.validation_status, search_query)) else {}))
                 except (OSError, sqlite3.DatabaseError):
                     pass  # a resposta já foi guardada; a memória de conversas não deve derrubá-la
             obsidian()  # antes do aviso de fim: vale mesmo se a página for fechada em seguida
@@ -422,6 +727,8 @@ def create_app(settings: WebSettings) -> Starlette:
             """Revisor depois da resposta: a conversa já está salva, e uma falha aqui não a afeta."""
             reply_id = stored["messages"][-1]["id"]
             try:
+                memory_skill = stored["messages"][-2].get("skill")
+                memory_skill = None if memory_skill == "nenhuma" else memory_skill
                 skill_text = load_skill(memory_skill).instructions if memory_skill else ""
                 notes, review_result = settings.reviewer(
                     question=text, answer=result.content, skill=memory_skill, skill_text=skill_text,
@@ -463,6 +770,15 @@ def create_app(settings: WebSettings) -> Starlette:
         if not (settings.library_dir / "catalog.sqlite3").exists():
             return []
         return settings.library_factory().documents()
+
+    def _pinned(data: dict) -> list[dict]:
+        """Os documentos fixados na conversa que ainda estão na biblioteca, com o nome a mostrar."""
+        wanted = [item for item in data.get("fixados") or () if isinstance(item, str)]
+        if not wanted:
+            return []
+        known = {document["id"]: document for document in _documents()}
+        return [{"id": item, "title": known[item]["title"], "referencia": known[item].get("referencia")}
+                for item in wanted if item in known]
 
     def _document_card(library_, title: str) -> dict:
         """Ficha do documento pelo Flash-Lite, conferida no texto; grava mesmo vazia (tentativa feita)."""
@@ -841,6 +1157,27 @@ def create_app(settings: WebSettings) -> Starlette:
         threading.Thread(target=run, name="aliado-figuras", daemon=True).start()
         return JSONResponse({"tarefa": job, "total": pending}, 202)
 
+    async def google_files(request: Request):
+        """O que a leitura integral deixou no serviço de arquivos do Google (lote 30): quantos e até quando.
+
+        DELETE apaga de lá o que este computador enviou; os documentos da biblioteca não mudam."""
+        if settings.uploaded_files is None:
+            return JSONResponse({"disponivel": False, "arquivos": 0, "bytes": 0, "expira": None})
+        if request.method == "DELETE":
+            if settings.forget_files is None:
+                return _error("O serviço de arquivos não está configurado.")
+            try:
+                counts = await run_in_threadpool(settings.forget_files)
+            except ProviderError:
+                return _error("O serviço de arquivos do Google não respondeu. Tente de novo em instantes.", 502)
+            return JSONResponse(counts)
+        listed = await run_in_threadpool(settings.uploaded_files)
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        alive = [item for item in listed if str(item.get("expira") or "") > now]
+        return JSONResponse({"disponivel": True, "arquivos": len(alive),
+                             "bytes": sum(item.get("bytes") or 0 for item in alive),
+                             "expira": max((item["expira"] for item in alive), default=None)})
+
     async def job_status(request: Request):
         with lock:
             # Cópia tirada com a trava: a tarefa continua sendo atualizada por outra thread.
@@ -889,6 +1226,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/biblioteca/tarefas", upload_jobs),
         Route("/api/biblioteca/tarefas/{job}", job_status),
         Route("/api/biblioteca/fichas", complete_cards, methods=["POST"]),
+        Route("/api/biblioteca/arquivos", google_files, methods=["GET", "DELETE"]),
         Route("/api/biblioteca/{doc}", delete_document, methods=["DELETE"]),
         Route("/api/biblioteca/{doc}/{kind:str}", document, methods=["GET", "POST", "DELETE"]),
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
@@ -913,11 +1251,14 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     from aliado.knowledge.metadata import extract_card
     from aliado.knowledge.rewrite import rewrite_query
     from aliado.llm.providers.gateway import build_default_gateway
+    from aliado.llm.usage_log import FILES_LOG_NAME
     from aliado.memory.reviewer import check_memory, reading_card, review_exchange
     from aliado.memory.store import MemoryStore
     from aliado.science import digest
 
-    gateway = build_default_gateway()
+    # O registro do que for enviado ao serviço de arquivos fica ao lado do registro de uso (lote 30).
+    gateway = build_default_gateway(files=Path(data_dir) / "uso" / FILES_LOG_NAME)
+    google = gateway.registry.provider("google")
     agent = Agent(gateway)
     models = [{"alias": m["alias"], "model_id": m["model_id"]}
               for m in gateway.registry.status()["models"]
@@ -954,5 +1295,6 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir),
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
                        figure_reader=read_figures if figure_alias else None,
-                       figure_model=MODEL_NAMES.get(figure_alias, figure_alias))
+                       figure_model=MODEL_NAMES.get(figure_alias, figure_alias),
+                       uploaded_files=google.uploaded, forget_files=google.forget_uploads)
     return settings

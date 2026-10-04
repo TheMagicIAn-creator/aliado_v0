@@ -240,6 +240,10 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .meta { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--text-faint); }
 .note { font: 13px/1.5 var(--sans); border-radius: 8px; padding: 8px 12px; }
 .note-warn { background: var(--warn-bg); color: var(--warn-text); }
+/* Lote 31: a rota de cada resposta e a confirmação de uma leitura acima do teto. */
+.route { cursor: help; border-bottom: 1px dotted var(--border-strong); }
+.note-ask { display: grid; gap: 8px; background: var(--surface-muted); color: var(--text); border: 1px solid var(--border-strong); }
+.ask-actions { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
 .thinking { display: flex; align-items: center; gap: 10px; color: var(--text-soft); font: italic 15px var(--serif); }
 .dots { display: inline-flex; gap: 4px; }
 .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite ease-in-out; }
@@ -365,7 +369,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .badge-warn { background: var(--warn-bg); color: var(--warn-text); }
 .badge-fail { background: var(--danger-bg); color: var(--danger-text); }
 
-/* Biblioteca */
+/* Abas de página inteira (Memória e Ciência) e o painel de documentos */
 .library { grid-area: library; display: flex; flex-direction: column; min-height: 0; padding: 24px clamp(16px, 4vw, 40px); gap: 18px; }
 .library-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 16px; }
 .library-head > div { flex: 1 1 280px; min-width: 0; }
@@ -374,16 +378,12 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .primary { height: 38px; padding: 0 16px; border-radius: var(--radius); border: 0; background: var(--accent); color: #fff; font-weight: 500; }
 :root[data-theme="dark"] .primary { color: #0b2a22; }
 .primary:hover { background: var(--accent-hover); }
-.library-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 18px; }
 .doc-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: grid; gap: 8px; align-content: start; }
 .doc-item { width: 100%; text-align: left; border: 1px solid var(--border); background: var(--surface);
             border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 4px; }
 .doc-item:hover, .doc-item.is-current { border-color: var(--accent); }
 .doc-title { font-weight: 500; font-size: 14px; overflow-wrap: anywhere; }
 .doc-ref { font-size: 12.5px; color: var(--accent-text); overflow-wrap: anywhere; }
-/* Em telas estreitas os dois botões quebram a linha, em vez de alargar a página (lote 27). */
-.library-head > .library-actions { flex: 0 1 auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
-                                   max-width: 100%; }
 /* Ficha do documento (lote 19) */
 .doc-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px;
             font-size: 13.5px; }
@@ -397,12 +397,49 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .doc-card dd { margin: 0; overflow-wrap: anywhere; }
 .doc-card .field input { border: 1px solid var(--border-strong); border-radius: 10px; padding: 8px 10px;
                          background: var(--surface); }
-.doc-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-faint); }
+.doc-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--text-faint); }
+/* Lista e visualizador lado a lado: a seção Explorar da aba Ciência. */
+.library-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 18px; }
 .doc-viewer { overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
               padding: 20px 26px; }
 .doc-viewer .answer { font-size: 15.5px; }
 .doc-viewer-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
-.doc-viewer-actions { display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
+.badge[hidden], .doc-list[hidden], .doc-detail[hidden] { display: none; }
+
+/* Painel de documentos (lote 30): abre sobre a conversa, acima da caixa de mensagem. */
+.docs-panel { max-height: 72vh; }
+.docs-panel .doc-list { overflow: visible; }
+.panel-actions { display: flex; align-items: center; gap: 12px; }
+.panel-actions .icon-button { width: 28px; height: 28px; }
+.docs-files { font-size: 12px; margin: 0 0 10px; }
+.docs-files span { cursor: help; }
+.doc-back { display: inline-block; margin-bottom: 8px; }
+.doc-detail-title { font: 500 15px/1.35 var(--sans); margin: 0 0 2px; overflow-wrap: anywhere; }
+.doc-detail-file { font-size: 12px; margin: 0; overflow-wrap: anywhere; }
+.doc-detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 10px 0 14px; }
+.doc-detail-actions .primary { height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; }
+
+/* Aviso de que o programa em execução é anterior à página (lote 30) */
+.restart-note { margin: 0 auto 8px; width: calc(100% - 2 * clamp(16px, 5vw, 56px)); max-width: 760px; }
+
+/* Documentos fixados na conversa e modo de leitura (lote 30) */
+.pinned { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 2px 8px; }
+.pinned[hidden], .reading[hidden] { display: none; }
+.pin { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; height: 26px; padding: 0 4px 0 10px;
+       border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px; cursor: help; }
+.pin-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.pin-remove { flex: none; width: 20px; height: 20px; border: 0; border-radius: 50%; background: none; color: inherit;
+              font-size: 15px; line-height: 1; display: grid; place-items: center; cursor: pointer; }
+.pin-remove:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.reading { cursor: help; }
+.reading select { height: 28px; max-width: 100%; border: 1px solid var(--border-strong); border-radius: 8px;
+                  background: var(--surface); color: var(--text-soft); font-size: 12.5px; padding: 0 6px; cursor: pointer; }
+.chip-docs { height: 28px; font-size: 12.5px; color: var(--text-soft); background: var(--surface); }
+.chip-docs:hover, .chip-docs[aria-expanded="true"] { color: var(--accent-text); border-color: var(--accent); background: var(--accent-soft); }
+.reading-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.reading-list li { display: grid; gap: 1px; min-width: 0; }
+.reading-list .source-loc { margin-top: 0; }
+.source-reading { scroll-margin-top: 60px; }
 .empty { border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: 18px; color: var(--text-soft); font-size: 13.5px; }
 
 /* Web */

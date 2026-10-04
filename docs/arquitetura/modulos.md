@@ -6,10 +6,11 @@ SDKs, downloads, OCR, modelos ou gravação de estado.
 
 | Módulo | Responsabilidade | Dependência permitida por desenho |
 |---|---|---|
-| `aliado.knowledge` | Catálogo SQLite, extração/OCR, versões, limpeza das páginas, trechos por frase, figuras e busca híbrida local | Extra `knowledge`, Tesseract e encoder local; sem interface ou regras do mestrado. A descrição das figuras monta um pedido neutro (`aliado.llm.contracts`) e recebe de quem chama a função que o envia: o módulo não conhece provedores. |
-| `aliado.memory` | Memórias aprovadas, origem e revisão | Armazenamento explícito por usuário/projeto; sem indexar automaticamente relatórios de triagem. |
+| `aliado.knowledge` | Catálogo SQLite, extração/OCR, versões, limpeza das páginas, trechos por frase, figuras, busca híbrida local e seleção das páginas da leitura integral | Extra `knowledge`, Tesseract e encoder local; sem interface ou regras do mestrado. A descrição das figuras monta um pedido neutro (`aliado.llm.contracts`) e recebe de quem chama a função que o envia: o módulo não conhece provedores. A leitura integral (`reading.py`) escolhe as páginas e monta as partes do pedido; o envio dos PDFs é do adapter. |
+| `aliado.memory` | Memórias aprovadas, origem e revisão; memória de conversas e trilhas (as páginas que cada resposta citou) | Armazenamento explícito por usuário/projeto; sem indexar automaticamente relatórios de triagem. |
+| `aliado.routing` | Roteador local (lote 31): o que a mensagem precisa, a skill, o modelo e o degrau de leitura, por regras e por frases de exemplo | Só o encoder local e as fichas dos documentos, recebidos de quem chama; não conhece provedores, a interface nem a memória. |
 | `aliado.science` | Cálculos RAM explícitos e exportação JSON/CSV/MD/PNG | Biblioteca padrão para cálculo, matplotlib opcional para PNG; sem LLM ou ML. |
-| `aliado.interfaces.web` | Conversa, biblioteca e gestão de conta | Consome o agente e os serviços; não define fórmulas científicas ou fontes bibliográficas. |
+| `aliado.interfaces.web` | Conversa, documentos da biblioteca (painel do chat) e gestão de conta | Consome o agente e os serviços; não define fórmulas científicas ou fontes bibliográficas. |
 
 O pacote `aliado.interfaces` apenas organiza interfaces futuras. A CLI permanece
 em `aliado.cli`; novos comandos consomem os serviços. `Agent.answer` aceita uma
@@ -28,6 +29,13 @@ distintas das especializações em `aliado.skills.builtin`.
    muda o índice ativo, preservando originais, registros e artefatos anteriores.
 5. Recuperar trechos da biblioteca escolhida, inserir como dados no pedido e
    conferir os identificadores citados na resposta. Acervo vazio evita consulta paga.
+6. Na leitura integral (lote 30), a busca escolhe os documentos, e o pedido leva o PDF das
+   páginas inteiras, dentro de um teto de tokens, com um identificador por página. Os PDFs
+   sobem pelo serviço de arquivos do provedor, com registro local do que foi enviado.
+7. Desde o lote 31, o servidor pede uma rota ao roteador antes de montar o pedido. A rota diz
+   o degrau de leitura (nada, trechos, páginas soltas, documento, leitura ampla) e o que da
+   parte fixa segue (lista dos documentos, material de referência, resultados). O agente
+   estima os tokens do pedido e, acima do teto, devolve a estimativa em vez de chamar o modelo.
 
 Não existe scanner de pastas, upload pelo chat ou restauração automática de snapshots.
 O registro histórico do pesquisador permanece arquivado no pacote, sem compor

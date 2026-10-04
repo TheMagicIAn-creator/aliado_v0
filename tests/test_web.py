@@ -70,6 +70,13 @@ def env(tmp_path):
         calls.append({"question": question, **kwargs})
         if reply["error"]:
             raise reply["error"]
+        # Lote 31: acima do teto, o agente devolve a estimativa em vez de chamar o modelo.
+        if reply.get("confirm") is not None and kwargs.get("ceiling") is not None \
+                and reply["confirm"] > kwargs["ceiling"] and kwargs.get("confirmed") != "chave1":
+            yield "confirmar", {"tokens": reply["confirm"], "chave": "chave1", "leitura": None}
+            return
+        if reply.get("statuses"):
+            reply["status"] = reply["statuses"].pop(0)
         for piece in reply["pieces"]:
             yield "texto", piece
         content = reply["content"] or "".join(reply["pieces"])
@@ -465,6 +472,8 @@ RESULT_BLOCK = {"citation_id": "R1", "titulo": "Avaliação oficial", "fonte": "
                 "data": "2026-09-27", "estatuto": "oficial", "secao": "resumo", "texto": "| Denso | 10 de 14 |\n|---|---|",
                 "notas": [{"nome": "Ensaios detectados", "texto": "Ensaios com alarme a partir do início da falha."}]}
 RESULTS_DIGEST = {"cabecalho": "c", "blocos": [RESULT_BLOCK], "faltando": ["a reanálise com o início observado das falhas"]}
+# Lote 31: os resultados só seguem quando a pergunta é sobre eles.
+RESULTS_QUESTION = "Quais foram os nossos resultados no GPVS?"
 
 
 def test_results_switch_reaches_the_agent_and_defaults_to_the_research_skill(env):
@@ -473,16 +482,19 @@ def test_results_switch_reaches_the_agent_and_defaults_to_the_research_skill(env
     state = client.get("/api/estado").json()["resultados"]
     assert state == {"disponivel": True, "skill": "pesquisa-inversores"} and not built  # o estado não monta o resumo
     cid = new_conversation(client)
-    ask(client, cid, resultados=True)
+    ask(client, cid, RESULTS_QUESTION, resultados=True)
     assert env["calls"][-1]["results"] is RESULTS_DIGEST and len(built) == 1
-    ask(client, cid)  # sem o campo, vale ligado na skill do mestrado
+    ask(client, cid, RESULTS_QUESTION)  # sem o campo, vale ligado na skill do mestrado
     assert env["calls"][-1]["results"] is RESULTS_DIGEST
-    ask(client, cid, skill="engenharia")
+    ask(client, cid, RESULTS_QUESTION, skill="engenharia")
     assert "results" not in env["calls"][-1]
-    ask(client, cid, resultados=False)
+    ask(client, cid, RESULTS_QUESTION, resultados=False)
     assert "results" not in env["calls"][-1]
+    # Lote 31: ligado, o resumo só segue quando a pergunta é sobre os resultados.
+    ask(client, cid, "Obrigado, ficou claro.", resultados=True)
+    assert "results" not in env["calls"][-1] and len(built) == 2
     stored = client.get(f"/api/conversas/{cid}").json()["messages"]
-    assert [m["resultados"] for m in stored if m["role"] == "user"] == [True, True, False, False]
+    assert [m["resultados"] for m in stored if m["role"] == "user"] == [True, True, False, False, True]
 
 
 def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_history(env):
@@ -491,7 +503,7 @@ def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_hist
     env["reply"].update(pieces=["O Denso detectou 10 de 14 [R1]."], sources=(), status=None,
                         extra={"result_sources": (RESULT_BLOCK,), "results_status": "conferido"})
     cid = new_conversation(client)
-    reply = fim(ask(client, cid)[1])["mensagens"][1]
+    reply = fim(ask(client, cid, RESULTS_QUESTION)[1])["mensagens"][1]
     assert 'class="cite cite-result" data-result="R1"' in reply["html"] and reply["results_status"] == "conferido"
     assert reply["result_sources"][0]["citation_id"] == "R1" and "<table>" in reply["result_sources"][0]["html"]
     assert reply["resultados_faltando"] == RESULTS_DIGEST["faltando"] and reply["in_context"] is True
@@ -503,7 +515,7 @@ def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_hist
     flagged = fim(ask(client, cid, "E a sensibilidade?")[1])["mensagens"]
     assert [m["in_context"] for m in flagged] == [False, False] and flagged[1]["numeros_nao_conferidos"] == ["0,45"]
     ask(client, cid, "Continue")
-    assert [m["content"] for m in env["calls"][-1]["history"]] == ["Qual a taxa?", "O Denso detectou 10 de 14 [R1]."]
+    assert [m["content"] for m in env["calls"][-1]["history"]] == [RESULTS_QUESTION, "O Denso detectou 10 de 14 [R1]."]
     env["reply"].update(pieces=["Aviso local."], status="invalid_result_refs", extra={"results_status": "invalid_result_refs"})
     assert fim(ask(client, cid, "De novo")[1])["mensagens"][1]["in_context"] is False
 
@@ -517,10 +529,10 @@ def test_a_failing_digest_does_not_break_the_conversation(env):
             raise error
 
         env["settings"].results_digest = broken
-        reply = fim(ask(client, cid)[1])["mensagens"][1]
+        reply = fim(ask(client, cid, RESULTS_QUESTION)[1])["mensagens"][1]
         assert "results" not in env["calls"][-1] and "não foi possível" in reply["resultados_faltando"][0]
     env["settings"].results_digest = lambda: {"cabecalho": "c", "blocos": [], "faltando": ["tudo"]}
-    reply = fim(ask(client, cid)[1])["mensagens"][1]
+    reply = fim(ask(client, cid, RESULTS_QUESTION)[1])["mensagens"][1]
     assert "results" not in env["calls"][-1] and reply["resultados_faltando"] == ["tudo"]
     env["settings"].results_digest = None
     assert client.get("/api/estado").json()["resultados"]["disponivel"] is False
@@ -669,8 +681,8 @@ def test_page_starts_on_the_welcome_screen_and_has_the_upload_popup(env):
     # A janela de fontes: a passagem ampliada nos dois grupos, o link só quando sobrou documento sem citar, o
     # grupo dos não citados, e o texto dos documentos sempre como texto (nunca como HTML).
     assert script.count("text: flowText(source.passagem || source.text)") == 2
-    assert "if (brought.size > cited.size) {" in script and "if (retrieved.length) {" in script
-    assert script.count("innerHTML") == 3  # só HTML gerado no servidor: a resposta, a tabela do resultado e o Markdown
+    assert "if (brought.size > cited.size && !read.length) {" in script and "if (retrieved.length) {" in script
+    assert script.count("innerHTML") == 2  # só HTML gerado no servidor: a resposta e a tabela do resultado
     # O reenvio de um documento que já estava na biblioteca, indexado em parte, diz isso em vez da contagem.
     assert "já estava na biblioteca, indexado só em parte" in script and "message.cortada" in script
     # Uma trava por correção da tela (a suíte não roda o JavaScript): se alguma sair, o teste acusa.
@@ -767,3 +779,315 @@ def test_cut_answer_is_flagged_and_stays_out_of_the_history(env):
     whole = fim(ask(client, cid, "De novo")[1])["mensagens"]
     assert whole[1]["cortada"] is False and whole[1]["in_context"] is True
     assert [m["content"] for m in env["calls"][-1]["history"]] == []  # a resposta cortada não voltou ao modelo
+
+
+def test_reading_mode_budget_and_fixed_documents_reach_the_agent(env):
+    """Lote 30: o modo, o teto e os documentos fixados seguem ao agente. Desde o lote 31, a leitura ampla é uma
+    escolha ("integral"), e não o padrão."""
+    client, calls, library = env["client"], env["calls"], env["library"]
+    assert client.get("/api/estado").json()["leitura"] == {
+        "modo": "auto", "teto": 400_000, "tetos": [150_000, 400_000, 900_000], "limite": 30_000,
+        "modos": ["auto", "trechos", "paginas", "documento", "integral"], "aviso_diario": 300_000}
+    cid = new_conversation(client)
+    env["reply"]["extra"] = {"reading": {"teto": 400_000, "tokens_estimados": 9000, "fora": [],
+                                         "documentos": [{"titulo": "Baschel et al., 2018", "paginas": 16, "total": 16,
+                                                         "inteiro": True, "blocos": "1–16", "fixado": False}]}}
+    user, reply = fim(ask(client, cid, leitura="integral")[1])["mensagens"]
+    assert calls[-1]["reading"] == {"budget": 400_000, "fixed": [], "whole": True, "search": True}
+    assert (user["leitura"], user["teto"]) == ("integral", 400_000)
+    assert reply["leitura"]["documentos"][0]["paginas"] == 16 and reply["leitura_por_trechos"] is False
+    # "Só trechos" é o pedido de sempre; o teto escolhido na página vale para a pergunta.
+    ask(client, cid, leitura="trechos")
+    assert "reading" not in calls[-1] and calls[-1]["library"] is library
+    ask(client, cid, leitura="integral", teto=150_000)
+    assert calls[-1]["reading"]["budget"] == 150_000
+    assert ask(client, cid, leitura="tudo")[0].status_code == 400 and ask(client, cid, teto=123)[0].status_code == 400
+    # Fixar na conversa: só documentos que estão na biblioteca, e o título da conversa não muda.
+    pinned = "a" * 32
+    library.documents = lambda: [{"id": pinned, "title": "baschel.pdf", "version": 1, "status": "ready", "issues": [],
+                                  "sha256": "f" * 64,
+                                  "created_at": "2026-10-03T00:00:00+00:00", "referencia": "Baschel et al., 2018"}]
+    data = client.patch(f"/api/conversas/{cid}", json={"fixados": [pinned, "b" * 32]}, headers=HEADERS).json()
+    assert data["fixados"] == [{"id": pinned, "title": "baschel.pdf", "referencia": "Baschel et al., 2018"}]
+    assert data["title"] == "Qual a taxa?" and client.get(f"/api/conversas/{cid}").json()["fixados"] == data["fixados"]
+    assert client.patch(f"/api/conversas/{cid}", json={"fixados": "tudo"}, headers=HEADERS).status_code == 400
+    assert client.patch(f"/api/conversas/{cid}", json={"fixados": ["x"]}, headers=HEADERS).json()["fixados"] == []
+    client.patch(f"/api/conversas/{cid}", json={"fixados": [pinned]}, headers=HEADERS)
+    # Com a biblioteca desligada, o fixado continua indo inteiro, sem busca.
+    ask(client, cid, "Qual é a taxa de falha dos ventiladores de refrigeração do inversor central?", biblioteca=False)
+    assert calls[-1]["reading"] == {"budget": 60_000, "fixed": [pinned], "whole": False, "search": False, "top": 1}
+    assert calls[-1]["library"] is library and calls[-1]["search_query"] is None
+    # No modo de trechos, o fixado vai inteiro e a busca segue por trechos.
+    ask(client, cid, leitura="trechos")
+    assert calls[-1]["reading"] == {"budget": 60_000, "fixed": [pinned], "whole": False, "search": True, "top": 1}
+    # Com a busca na web, o pedido segue por trechos, e a resposta guarda esse aviso.
+    env["reply"]["extra"] = {}
+    _, reply = fim(ask(client, cid, web=True)[1])["mensagens"]
+    assert "reading" not in calls[-1] and reply["leitura_por_trechos"] is True and reply["leitura"] is None
+    # Soltar o documento volta ao pedido sem fixados; renomear continua funcionando.
+    assert client.patch(f"/api/conversas/{cid}", json={"fixados": []}, headers=HEADERS).json()["fixados"] == []
+    assert client.patch(f"/api/conversas/{cid}", json={"title": "Taxas"}, headers=HEADERS).json()["title"] == "Taxas"
+    assert client.patch(f"/api/conversas/{cid}", json={}, headers=HEADERS).status_code == 400
+    with pytest.raises(ValueError):
+        ConversationStore(env["tmp"] / "dados" / "conversas").pin(cid, [f"{n:032x}" for n in range(13)])
+
+
+def test_google_files_route_counts_and_forgets(env):
+    """Lote 30: o que a leitura integral deixou no serviço de arquivos do Google, e o botão de apagar."""
+    from datetime import datetime, timedelta, timezone
+
+    client, settings = env["client"], env["settings"]
+    assert client.get("/api/biblioteca/arquivos").json() == {"disponivel": False, "arquivos": 0, "bytes": 0, "expira": None}
+    now = datetime.now(timezone.utc)
+    later, past = ((now + delta).isoformat(timespec="seconds") for delta in (timedelta(hours=40), timedelta(hours=-1)))
+    forgotten = []
+    settings.uploaded_files = lambda: [{"chave": "a:1-3", "bytes": 10, "expira": later},
+                                       {"chave": "b:1-2", "bytes": 5, "expira": past}]
+    settings.forget_files = lambda: forgotten.append(1) or {"apagados": 2, "falhas": 0}
+    # Só o que ainda está no prazo conta; a resposta não traz chave nem endereço.
+    assert client.get("/api/biblioteca/arquivos").json() == {"disponivel": True, "arquivos": 1, "bytes": 10, "expira": later}
+    assert client.delete("/api/biblioteca/arquivos").status_code == 403 and forgotten == []
+    assert client.delete("/api/biblioteca/arquivos", headers=HEADERS).json() == {"apagados": 2, "falhas": 0}
+
+    def broken():
+        raise ProviderError("https://exemplo.test/?key=segredo", transient=True)
+
+    settings.forget_files = broken
+    failed = client.delete("/api/biblioteca/arquivos", headers=HEADERS)
+    assert failed.status_code == 502 and "segredo" not in failed.text
+
+
+def test_library_tab_gave_place_to_the_documents_panel(env):
+    """Lote 30: a aba Biblioteca saiu; os documentos ficam num painel do chat, com a leitura e os fixados."""
+    client = env["client"]
+    page, script = client.get("/").text, client.get("/static/app.js").text.replace("\r\n", "\n")
+    assert 'id="nav-library"' not in page and 'id="library-view"' not in page and "Biblioteca</span></button>" not in page
+    for wanted in ('id="docs-panel"', 'id="docs-open"', 'id="docs-files"', 'id="pinned"', 'id="reading-mode"',
+                   'id="reading-budget"', '<option value="auto">Leitura automática</option>', '<option value="integral">Leitura ampla</option>',
+                   '<option value="trechos">Só trechos</option>', 'id="library-add"', 'id="library-cards"'):
+        assert wanted in page, wanted
+    assert "openLibrary" not in script and "nav-library" not in script and "/markdown" not in script
+    # Uma trava por comportamento da tela (a suíte não roda o JavaScript).
+    for pinned in (
+        'leitura: $("reading-mode").value, teto: Number($("reading-budget").value),',
+        "if (waiting.length) await setPins(waiting);",
+        'json: { fixados: list.map((doc) => doc.id) }',
+        "pinDocument({ id: sent.id, title: sent.title, referencia: sent.referencia });",
+        "(state.conversation?.id || null) === item.conversation",
+        'uploadFiles([...$("file").files], attachToConversation)',
+        'uploadFiles([...event.dataTransfer.files], !$("chat-view").hidden)',
+        '{ kind: "reading" }',
+        "Não couberam no teto:",
+        'api("/api/biblioteca/arquivos", { method: "DELETE" })',
+        "por até 48 horas",
+        "com a busca na web, a leitura foi por trechos",
+        '$("budget-box").hidden = !(whole || (!state.router && pins().length)) || !state.readingAvailable;',
+        "‹ Todos os documentos",
+    ):
+        assert pinned in script, pinned
+
+
+def test_page_asks_for_a_restart_when_the_server_is_older(env):
+    """Lote 30: a página é lida do disco a cada carga; se o programa em execução é anterior a ela, a tela avisa.
+
+    Em 04/10/2026 a tela nova rodou com o programa antigo: mostrava "Documentos inteiros", e as respostas
+    saíram por trechos, sem aviso."""
+    from datetime import datetime, timezone
+
+    client = env["client"]
+    started = datetime.fromisoformat(client.get("/api/estado").json()["iniciado"])
+    assert started.tzinfo is not None and abs((datetime.now(timezone.utc) - started).total_seconds()) < 600
+    page, script = client.get("/").text, client.get("/static/app.js").text.replace("\r\n", "\n")
+    assert 'id="restart-note"' in page and "hidden>O AL-IAdo em execução é anterior a" in page
+    assert client.head("/static/app.js").headers.get("last-modified")  # a data que a página compara
+    for pinned in (
+        "let stale = !data.leitura?.modos || !data.iniciado;",
+        'fetch("/static/app.js", { method: "HEAD", cache: "no-store" })',
+        "changed > Date.parse(data.iniciado) + 2000",
+        '$("restart-note").hidden = !stale;',
+        "state.readingAvailable = Boolean(data.leitura);",
+        '$("reading-box").hidden = !library || !state.readingAvailable;',
+    ):
+        assert pinned in script, pinned
+
+
+
+# --- Lote 31: roteador, escada de leitura, confirmação e trilhas ---
+
+from datetime import datetime, timezone  # noqa: E402
+
+LIBRARY_QUESTION = "Com base na literatura, o que são autoencoders e para que servem?"
+
+
+def two_models(env):
+    """O mesmo servidor, com os dois modelos configurados."""
+    env["settings"].models = [{"alias": "flash", "model_id": "gemini-grande"}, {"alias": "flash_lite", "model_id": "gemini-pequeno"}]
+    return TestClient(create_app(env["settings"]), base_url=BASE)
+
+
+def test_router_chooses_model_skill_and_reading_and_the_reply_keeps_the_route(env):
+    client, calls = two_models(env), env["calls"]
+    cid = new_conversation(client)
+    auto = {"skill": "auto", "modelo": "auto", "leitura": "auto"}
+    _, reply = fim(ask(client, cid, "Obrigado, era isso.", **auto)[1])["mensagens"]
+    assert calls[-1]["library"] is None and calls[-1]["model_alias"] == "flash_lite" and calls[-1]["skill_name"] is None
+    assert calls[-1]["reasoning_level"] == "low" and calls[-1]["references"] is False and "reading" not in calls[-1]
+    assert "ceiling" not in calls[-1] and "results" not in calls[-1]
+    route = reply["rota"]
+    assert (route["rung"], route["leitura"], route["model"], route["skill"]) == (0, "sem a biblioteca", "flash_lite", None)
+    assert route["automatico"] == {"modelo": True, "skill": True, "leitura": True} and route["reasons"]
+    assert reply["aprofundar"] is None
+    # Figura ou tabela: páginas inteiras, com o modelo maior; o teto sem confirmação acompanha o pedido.
+    ask(client, cid, "O que mostra a Figura 2 do artigo sobre os inversores?", **auto)
+    assert calls[-1]["reading"] == {"budget": 60_000, "fixed": [], "whole": False, "search": True, "pages": 10, "priority": []}
+    assert calls[-1]["model_alias"] == "flash" and calls[-1]["ceiling"] == 30_000 and calls[-1]["catalog"] is False
+    assert calls[-1]["library"] is env["library"]
+    # Pergunta sobre o acervo: trechos, o catálogo completo e o modelo menor.
+    ask(client, cid, "Quais documentos temos na biblioteca sobre inversores?", **auto)
+    assert "reading" not in calls[-1] and "catalog" not in calls[-1] and calls[-1]["model_alias"] == "flash_lite"
+    # Um nome nos seletores fixa a escolha, e a rota registra de quem ela foi.
+    _, reply = fim(ask(client, cid, "Obrigado, era isso.", skill="engenharia", modelo="flash", leitura="auto")[1])["mensagens"]
+    assert calls[-1]["model_alias"] == "flash" and calls[-1]["skill_name"] == "engenharia" and "reasoning_level" not in calls[-1]
+    assert reply["rota"]["automatico"] == {"modelo": False, "skill": False, "leitura": True}
+    stored = client.get(f"/api/conversas/{cid}").json()["messages"]
+    assert [m["skill"] for m in stored if m["role"] == "user"][:2] == ["nenhuma", "pesquisa-inversores"]
+    assert ask(client, cid, modelo="outro")[0].status_code == 400 and ask(client, cid, skill="outra")[0].status_code == 400
+    assert ask(client, cid, leitura="tudo")[0].status_code == 400
+
+
+def test_a_reading_above_the_ceiling_asks_first_and_the_daily_warning_asks_every_time(env):
+    client, calls = env["client"], env["calls"]
+    cid = new_conversation(client)
+    env["reply"]["confirm"] = 46_000
+    _, events = ask(client, cid, leitura="documento")
+    assert [event["tipo"] for event in events] == ["confirmar"]
+    assert (events[0]["tokens"], events[0]["chave"], events[0]["limite"], events[0]["motivo"], events[0]["lembrar"]) == (
+        46_000, "chave1", 30_000, "teto", True)
+    assert events[0]["modo"] == "documento" and client.get(f"/api/conversas/{cid}").json()["messages"] == []  # nada gravado
+    assert calls[-1]["ceiling"] == 30_000 and calls[-1]["reading"]["top"] == 1
+    assert fim(ask(client, cid, leitura="documento", confirmado="chave1")[1])["mensagens"][1]["rota"]["rung"] == 3
+    # Por trechos, não há teto a conferir: é o modo barato.
+    ask(client, cid, leitura="trechos")
+    assert "ceiling" not in calls[-1] and "reading" not in calls[-1]
+    # Depois do aviso diário, toda leitura acima dos trechos pergunta, e a chave não é reaproveitada.
+    env["reply"]["confirm"] = 9_000
+    assert [event["tipo"] for event in ask(client, cid, leitura="paginas")[1]][:3] == ["texto", "texto", "fim"]
+    log = env["settings"].usage_log
+    log.write_text(log.read_text(encoding="utf-8") + json.dumps({
+        "timestamp": datetime.now(timezone.utc).isoformat(), "total_tokens": 300_000}) + "\n", encoding="utf-8")
+    _, events = ask(client, cid, leitura="paginas")
+    assert (events[0]["tipo"], events[0]["motivo"], events[0]["lembrar"]) == ("confirmar", "dia", False)
+    assert events[0]["hoje"] >= 300_000 and (calls[-1]["ceiling"], calls[-1]["salt"]) == (0, "dia")
+    assert fim(ask(client, cid, leitura="trechos")[1])  # os trechos seguem sem perguntar
+
+
+def test_an_answer_without_citations_climbs_one_rung_inside_the_ceiling(env):
+    client, calls = env["client"], env["calls"]
+    cid = new_conversation(client)
+    env["reply"].update(statuses=["uncited", "citation_ids_verified"])
+    _, events = ask(client, cid, LIBRARY_QUESTION, leitura="auto")
+    kinds = [event["tipo"] for event in events]
+    assert kinds.count("recomeco") == 1 and kinds.index("recomeco") > kinds.index("texto") and kinds[-2] == "fim"
+    first, second = calls[-2:]
+    assert "reading" not in first and second["reading"]["pages"] == 10 and second["ceiling"] == 30_000 - 320
+    route = fim(events)["mensagens"][1]["rota"]
+    assert route["rung"] == 2 and route["tentativas"] == [{"leitura": "trechos", "tokens": 320}]
+    assert "subiu um degrau" in route["reasons"][-1]
+    usage = [json.loads(line)["task_type"] for line in env["settings"].usage_log.read_text(encoding="utf-8").splitlines()]
+    assert usage.count("critical_reasoning") == 2  # as duas chamadas ficam no registro de uso
+    # Com o degrau fixado por você, a resposta sem citação fica como veio.
+    before = len(calls)
+    env["reply"].update(statuses=["uncited"])
+    reply = fim(ask(client, cid, LIBRARY_QUESTION, leitura="trechos")[1])["mensagens"][1]
+    assert len(calls) == before + 1 and reply["validation_status"] == "uncited" and reply["rota"]["tentativas"] == []
+    # Se a subida passar do teto, vale a primeira resposta.
+    env["reply"].update(statuses=["uncited"], confirm=31_000)
+    reply = fim(ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="auto")[1])["mensagens"][1]
+    assert reply["rota"]["rung"] == 1 and reply["aprofundar"]["leitura"] == "paginas"
+
+
+def test_an_answered_question_leaves_a_trail_that_a_similar_one_follows(env):
+    from test_routing import Words
+
+    client, calls, library = env["client"], env["calls"], env["library"]
+    env["settings"].memory = memory = MemoryStore(env["tmp"] / "trilhas", encoder=Words())
+    sha = "a" * 64
+    library.documents = lambda: [{"id": "d1", "title": "Baschel 2018", "version": 1, "status": "ready", "issues": [],
+                                  "sha256": sha, "created_at": "2026-10-03T00:00:00+00:00"}]
+    env["reply"]["sources"] = (SOURCE | {"sha256": sha, "page": 5},)
+    first = new_conversation(client)
+    reply = fim(ask(client, first, LIBRARY_QUESTION, leitura="auto")[1])["mensagens"][1]
+    assert "reading" not in calls[-1] and reply["rota"]["trilha"] is None
+    assert memory.trail(LIBRARY_QUESTION)[0]["pages"] == [{"sha256": sha, "page": 5, "title": "Baschel 2018"}]
+    # A mesma pergunta, em outra conversa: sem busca, com a troca anterior e as páginas que ela citou.
+    second = new_conversation(client)
+    reply = fim(ask(client, second, "O que são autoencoders e para que servem, com base na literatura?", leitura="auto")[1])["mensagens"][1]
+    assert calls[-1]["reading"] == {"budget": 60_000, "fixed": [], "whole": False, "search": False, "pages": 6,
+                                    "priority": [("d1", 5)]}
+    assert calls[-1]["trail"]["question"] == LIBRARY_QUESTION and "ceiling" not in calls[-1]
+    assert reply["rota"]["trilha"]["conversa"] == first and reply["rota"]["leitura"] == "páginas de uma resposta anterior"
+    assert "já respondida" in reply["rota"]["reasons"][-1]
+    # Refeita logo em seguida, na mesma conversa: a resposta não bastou, e a leitura sobe para as páginas.
+    ask(client, second, "O que são autoencoders e para que servem, com base na literatura?", leitura="auto")
+    assert calls[-1]["reading"]["pages"] == 10 and calls[-1]["reading"]["search"] is True and "trail" not in calls[-1]
+    assert calls[-1]["reading"]["priority"] == [("d1", 5)]
+    # Outro assunto não pega trilha; pergunta curta, também não; e o documento apagado sai das trilhas.
+    ask(client, new_conversation(client), "Com base na literatura, qual é o tempo de reparo do transformador?", leitura="auto")
+    assert "reading" not in calls[-1] and "trail" not in calls[-1]
+    library.documents = lambda: []
+    ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="auto")
+    assert "reading" not in calls[-1] and "trail" not in calls[-1]
+
+
+def test_a_large_named_document_goes_by_its_own_pages_without_asking(env):
+    client, calls, library = env["client"], env["calls"], env["library"]
+    library.documents = lambda: [{"id": "d1", "title": "livro.pdf", "version": 1, "status": "ready", "issues": [],
+                                  "sha256": "a" * 64, "created_at": "2026-10-03T00:00:00+00:00"}]
+    library.cards = lambda: {"livro.pdf": {"ficha": {"titulo": "Manual de confiabilidade", "autores": ["Lafraia, J."]},
+                                           "referencia": "Lafraia, 2001"}}
+    pages = {"pdf": True, "title": "livro.pdf", "referencia": "Lafraia, 2001", "units": [{"text": "x" * 300}] * 369}
+    library.pages = lambda doc_id: pages
+    cid = new_conversation(client)
+    reply = fim(ask(client, cid, "De acordo com Lafraia, o que é a disponibilidade?", leitura="auto")[1])["mensagens"][1]
+    assert calls[-1]["reading"] == {"budget": 60_000, "fixed": [], "whole": False, "search": True, "pages": 10,
+                                    "priority": [], "focus": ["d1"]}
+    assert reply["rota"]["rung"] == 2 and "é grande" in reply["rota"]["reasons"][-1]
+    # Um documento citado que cabe no teto vai inteiro.
+    pages["units"] = pages["units"][:12]
+    ask(client, cid, "De acordo com Lafraia, o que é a mantenabilidade?", leitura="auto")
+    assert calls[-1]["reading"] == {"budget": 60_000, "fixed": ["d1"], "whole": False, "search": True, "top": 1}
+
+
+def test_reply_offers_the_next_rung_with_its_cost(env):
+    client = env["client"]
+    cid = new_conversation(client)
+    reply = fim(ask(client, cid, LIBRARY_QUESTION, leitura="trechos")[1])["mensagens"][1]
+    assert reply["aprofundar"] == {"leitura": "paginas", "tokens": 100 - len("IGBT...") // 3 + 10 * (560 + 55)}
+    reply = fim(ask(client, cid, LIBRARY_QUESTION, leitura="documento", documentos=["d1", "x"])[1])["mensagens"][1]
+    assert env["calls"][-1]["reading"]["fixed"] == ["d1"]  # o documento pedido pelo botão, se está na biblioteca
+    assert reply["aprofundar"]["leitura"] == "integral" and reply["aprofundar"]["ate"] is True
+    assert fim(ask(client, cid, LIBRARY_QUESTION, leitura="integral")[1])["mensagens"][1]["aprofundar"] is None
+    assert fim(ask(client, cid, LIBRARY_QUESTION, leitura="trechos", web=True)[1])["mensagens"][1]["aprofundar"] is None
+
+
+def test_page_has_the_automatic_choices_the_route_line_and_the_confirmation(env):
+    client = env["client"]
+    page, script = client.get("/").text, client.get("/static/app.js").text.replace("\r\n", "\n")
+    for wanted in ('<option value="auto">Leitura automática</option>', '<option value="paginas">Páginas inteiras</option>',
+                   '<option value="documento">Documento inteiro</option>'):
+        assert wanted in page, wanted
+    for pinned in (
+        'state.router = Boolean(data.leitura?.modos);',
+        'el("option", { value: "auto", text: "Modelo automático" })',
+        '"auto": "Skill automática",',
+        'store.get("aliado.rota.skill", "auto")',
+        'else if (event.tipo === "confirmar") { final = event; handlers.onConfirm?.(event); }',
+        'else if (event.tipo === "recomeco") handlers.onRestart?.(event);',
+        'submitQuestion(text, { ...extra, confirmado: event.chave });',
+        'submitQuestion(text, { leitura: "trechos" })',
+        'submitQuestion(question.content, { leitura: deeper.leitura, documentos: deeper.documentos });',
+        '...(remembered ? { confirmado: remembered } : {}), ...extra,',
+        'text: "partiu de uma resposta anterior"',
+        "Ler mais fundo (",
+    ):
+        assert pinned in script, pinned

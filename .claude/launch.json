@@ -95,6 +95,27 @@
       "runtimeArgs": ["tmp/lote-29/servidor_teste.py", "--limpar"],
       "port": 8777,
       "url": "http://127.0.0.1:8777"
+    },
+    {
+      "name": "aliado-web-lote-30",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["tmp/lote-30/servidor_teste.py", "--limpar"],
+      "port": 8778,
+      "url": "http://127.0.0.1:8778"
+    },
+    {
+      "name": "aliado-web-lote-30-biblioteca-real",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["tmp/lote-30/servidor_real.py"],
+      "port": 8779,
+      "url": "http://127.0.0.1:8779"
+    },
+    {
+      "name": "aliado-web-lote-31",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["tmp/lote-31/servidor_teste.py", "--limpar"],
+      "port": 8780,
+      "url": "http://127.0.0.1:8780"
     }
   ]
 }

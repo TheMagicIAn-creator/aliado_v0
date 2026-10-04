@@ -117,7 +117,9 @@ def web(tmp_path):
 
 
 def ask(client, cid, **extra):
-    body = {"texto": QUESTION, "skill": "pesquisa-inversores", "modelo": "flash", "biblioteca": True} | extra
+    # "trechos" fixa o degrau: a resposta simulada não cita documentos, e a escada subiria sozinha (lote 31).
+    body = {"texto": QUESTION, "skill": "pesquisa-inversores", "modelo": "flash", "biblioteca": True,
+            "leitura": "trechos"} | extra
     response = client.post(f"/api/conversas/{cid}/mensagens", json=body, headers={"x-aliado": "1"})
     return [json.loads(line) for line in response.text.splitlines() if line.strip()]
 

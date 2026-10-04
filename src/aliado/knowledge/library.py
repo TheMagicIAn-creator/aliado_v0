@@ -44,6 +44,8 @@ INDEX_SLICE = 2 * ENCODE_BATCH
 MIN_OVERLAP = 12
 # Quantos trechos de cada lado a passagem de uma descrição de figura ou tabela alcança (lote 29).
 DESCRIPTION_REACH = 12
+# Quantas páginas por documento a busca informa à leitura integral (lote 30).
+RANKED_PAGES = 20
 # Como as seções de figuras aparecem no Markdown da extração; as de texto seguem como "native" e "ocr".
 METHOD_NAMES = {figures.FIGURE_TEXT: "texto reconhecido na figura", figures.DESCRIPTION: "descrição automática"}
 
@@ -252,6 +254,38 @@ class DocumentLibrary:
             if len(text) >= limit:
                 break
         return text[:limit]
+
+    def pages(self, doc_id: str) -> dict:
+        """O texto guardado de cada página da extração ativa de um documento, para a leitura integral (lote 30).
+
+        Num PDF, toda página entra, mesmo a que ficou sem texto (uma figura de página inteira): o modelo a
+        lê pela imagem. Nos outros formatos, cada seção do texto é uma unidade. O texto de figura e a
+        descrição automática ficam de fora: a página vai como ela é."""
+        if not (self.root / "catalog.sqlite3").exists():
+            raise ValueError("Documento não encontrado na biblioteca.")
+        with self._connect() as db:
+            row = db.execute("""SELECT d.*, r.status, r.json_path FROM documents d
+                JOIN runs r ON r.id=d.active_run WHERE d.id=?""", (doc_id,)).fetchone()
+        if row is None:
+            raise ValueError("Documento não encontrado na biblioteca.")
+        original = self._path(row["original"])
+        if not original.is_file() or _hash(original.read_bytes()) != row["sha256"]:
+            raise ValueError("Original ausente ou alterado; execute biblioteca verificar.")
+        extraction = json.loads(self._path(row["json_path"]).read_text(encoding="utf-8"))
+        sections = [section for section in extraction["sections"] if section["method"] in figures.TEXT_METHODS]
+        pdf = original.suffix.lower() == ".pdf"
+        if pdf:
+            by_page = {section["page"]: section for section in sections if section.get("page")}
+            units = [{"number": number, "locator": f"página PDF {number}", "page": number,
+                      "method": by_page[number]["method"] if number in by_page else "imagem",
+                      "text": by_page[number]["text"] if number in by_page else ""}
+                     for number in range(1, max(extraction.get("pages") or 0, max(by_page, default=0)) + 1)]
+        else:
+            units = [{"number": number, "locator": section["locator"], "page": None, "method": section["method"],
+                      "text": section["text"]} for number, section in enumerate(sections, 1)]
+        return {"document_id": row["id"], "title": row["title"], "version": row["version"], "sha256": row["sha256"],
+                "original": original, "status": row["status"], "pdf": pdf, "units": units,
+                "referencia": self.cards().get(row["title"], {}).get("referencia")}
 
     def add(self, source: str | Path, *, title: str | None = None,
             force_ocr=False, reprocess=False, progress=None) -> dict:
@@ -643,9 +677,13 @@ class DocumentLibrary:
         return {"title": row["title"], "original": self._path(row["original"]),
                 "markdown": self._path(row["md_path"])}
 
-    def search(self, query: str, *, limit=6, min_similarity=0.30) -> list[dict]:
+    def search(self, query: str, *, limit=6, min_similarity=0.30, ranked: dict | None = None) -> list[dict]:
+        """`ranked`, se for um dicionário, recebe por documento as páginas dos candidatos, da melhor para a
+        pior: a leitura integral (lote 30) parte delas para montar os blocos de um documento grande."""
         if not query.strip() or not 1 <= limit <= 20:
             raise ValueError("Consulta vazia ou limite fora de 1–20.")
+        if ranked is not None:
+            ranked.clear()
         if not (self.root / "catalog.sqlite3").exists():
             return []
         cards = self.cards()
@@ -705,6 +743,12 @@ class DocumentLibrary:
                 score += weights["peso_documento_citado"] / (k + named_ranks[key])
             candidates.append((score, row))
         candidates.sort(key=lambda pair: (-pair[0], pair[1]["id"]))
+        if ranked is not None:
+            for _, row in candidates:
+                places = ranked.setdefault(row["document_id"], [])
+                place = row["page"] if row["page"] is not None else row["locator"]
+                if len(places) < RANKED_PAGES and place not in places:
+                    places.append(place)
         # O começo da descrição de cada figura ou tabela, por extração, página e rótulo (lote 29).
         described: dict[tuple, sqlite3.Row] = {}
         for row in rows:
@@ -745,6 +789,48 @@ class DocumentLibrary:
                 alone = len(labels) == 1 and figures.squash(row["text"]) in figures.squash(description["text"])
                 hits[-1 if alone else len(hits):] = [hit(description, score)]
         return hits[:limit]
+
+    def mentions(self, terms, *, documents: int = 8, pages: int = 12) -> dict[str, dict]:
+        """Contagem exata (lote 31): em quais documentos e páginas cada termo aparece, na biblioteca inteira.
+
+        Sai do índice de palavras, sem modelo e sem custo. Uma palavra só vale também para as que começam por
+        ela ("autoencoder" acha "autoencoders"); mais de uma palavra é procurada como expressão. Sumário e
+        lista de referências ficam de fora, e o que só aparece no texto de uma figura ou na descrição
+        automática dela é contado à parte."""
+        found: dict[str, dict] = {}
+        if not (self.root / "catalog.sqlite3").exists():
+            return found
+        cards = self.cards()
+        with self._connect() as db:
+            for term in dict.fromkeys(str(term).strip() for term in terms):
+                words = re.findall(r"[^\W_]+", term, re.UNICODE)
+                if not words:
+                    continue
+                match = f'"{words[0]}"*' if len(words) == 1 else '"' + " ".join(words) + '"'
+                rows = db.execute("""SELECT d.id AS document_id, d.title, c.page, c.locator, c.method
+                        FROM chunk_fts f JOIN chunks c ON c.id=f.id JOIN runs r ON r.id=c.run_id
+                        JOIN documents d ON d.id=r.document_id WHERE chunk_fts MATCH ? AND d.active_run=r.id
+                        AND d.version=(SELECT MAX(v.version) FROM documents v WHERE v.title=d.title)""",
+                                  (match,)).fetchall()
+                by_document: dict[str, dict] = {}
+                for row in rows:
+                    if chunking.support(row["locator"]):
+                        continue
+                    entry = by_document.setdefault(row["document_id"], {
+                        "document_id": row["document_id"], "title": row["title"],
+                        "referencia": cards.get(row["title"], {}).get("referencia"), "texto": set(), "figura": set()})
+                    place = row["page"] if row["page"] is not None else row["locator"]
+                    entry["texto" if row["method"] in figures.TEXT_METHODS else "figura"].add(place)
+                where = []
+                for entry in by_document.values():
+                    text, figure = entry.pop("texto"), entry.pop("figura")
+                    places = text or figure
+                    numbers = sorted(place for place in places if isinstance(place, int))
+                    where.append(entry | {"locais": len(places), "paginas": numbers[:pages],
+                                          "so_em_figura": not text})
+                where.sort(key=lambda entry: (entry["so_em_figura"], -entry["locais"], entry["title"]))
+                found[term] = {"documentos": len(where), "onde": where[:documents]}
+        return found
 
     def expand(self, hits: list[dict], *, neighbours: int = 1) -> list[dict]:
         """Os mesmos resultados, com `passagem`: o trecho unido ao anterior e ao seguinte da mesma página.
