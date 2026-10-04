@@ -20,6 +20,8 @@ ENCODE_BATCH = 16
 
 class LocalEncoder:
     fingerprint = f"{MODEL}@{REVISION}:onnx-quint8:mean-normalized:chunks110-overlap20-v1"
+    # Tokens por trecho de documento (lote 29); o modelo aceita 128 com os dois tokens especiais.
+    chunk_tokens = 110
 
     def __init__(self, directory: str | Path | None = None):
         self.directory = Path(directory or os.getenv("AL_IADO_EMBEDDINGS_DIR", "data/models/minilm"))
@@ -48,8 +50,12 @@ class LocalEncoder:
             self._tokenizer.no_padding()
         return self._tokenizer
 
+    def token_spans(self, text: str) -> list[tuple[int, int]]:
+        """Onde cada token começa e termina no texto; os trechos por frase contam tokens por aqui."""
+        return self._load_tokenizer().encode(text, add_special_tokens=False).offsets
+
     def split(self, text: str) -> list[str]:
-        offsets = self._load_tokenizer().encode(text, add_special_tokens=False).offsets
+        offsets = self.token_spans(text)
         pieces = []
         for start in range(0, len(offsets), 90):
             end = min(start + 110, len(offsets))

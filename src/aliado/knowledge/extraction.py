@@ -10,8 +10,13 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+
+# O PDFium não aceita chamadas simultâneas de threads diferentes: os envios, o reconhecimento de texto e a
+# descrição das figuras passam todos por esta trava.
+PDFIUM = threading.RLock()
 
 
 @dataclass
@@ -41,42 +46,64 @@ class TesseractOCR:
         self.executable = str(candidate.resolve() if candidate.is_file() else candidate)
         self.languages = languages
 
-    def extract(self, path: Path, page: int) -> tuple[str, float | None]:
+    def available(self) -> bool:
+        return Path(self.executable).is_file() or bool(shutil.which(self.executable))
+
+    def _words(self, path: Path, page: int, *, psm: int, crop=(0, 0, 0, 0)) -> list[tuple[tuple[str, ...], str, float]]:
+        """Palavras reconhecidas na página (ou num recorte dela): a linha a que pertencem, o texto e a confiança."""
         import pypdfium2 as pdfium
 
-        if not Path(self.executable).is_file() and not shutil.which(self.executable):
+        if not self.available():
             raise ValueError("Tesseract não encontrado; configure AL_IADO_TESSERACT_CMD.")
         with tempfile.TemporaryDirectory(prefix="aliado-ocr-") as folder:
             target = Path(folder) / "page.png"
-            with pdfium.PdfDocument(str(path)) as document:
+            with PDFIUM, pdfium.PdfDocument(str(path)) as document:
                 pdf_page = document[page - 1]
-                bitmap = pdf_page.render(scale=300 / 72)
+                bitmap = pdf_page.render(scale=300 / 72, crop=crop)
                 image = bitmap.to_pil()
                 image.save(target)
                 image.close()
                 bitmap.close()
                 pdf_page.close()
             result = subprocess.run(
-                [self.executable, str(target), "stdout", "-l", self.languages, "--psm", "3", "tsv"],
+                [self.executable, str(target), "stdout", "-l", self.languages, "--psm", str(psm), "tsv"],
                 capture_output=True, encoding="utf-8", errors="replace", timeout=120,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
-            if result.returncode:
-                raise ValueError("OCR falhou; confira o executável e os idiomas por/eng.")
-            lines: dict[tuple[str, ...], list[str]] = {}
-            confidence = []
-            for row in csv.DictReader(io.StringIO(result.stdout), delimiter="\t"):
-                text = (row.get("text") or "").strip()
-                if not text:
-                    continue
+        if result.returncode:
+            raise ValueError("OCR falhou; confira o executável e os idiomas por/eng.")
+        words = []
+        for row in csv.DictReader(io.StringIO(result.stdout), delimiter="\t"):
+            text = (row.get("text") or "").strip()
+            if text:
                 key = tuple(row.get(k, "") for k in ("block_num", "par_num", "line_num"))
-                lines.setdefault(key, []).append(text)
-                value = float(row.get("conf", "-1"))
-                if value >= 0:
-                    confidence.append(value)
-            return "\n".join(" ".join(words) for words in lines.values()), (
-                sum(confidence) / len(confidence) if confidence else None
-            )
+                words.append((key, text, float(row.get("conf", "-1"))))
+        return words
+
+    def extract(self, path: Path, page: int) -> tuple[str, float | None]:
+        lines: dict[tuple[str, ...], list[str]] = {}
+        confidence = []
+        for key, text, value in self._words(path, page, psm=3):
+            lines.setdefault(key, []).append(text)
+            if value >= 0:
+                confidence.append(value)
+        return "\n".join(" ".join(words) for words in lines.values()), (
+            sum(confidence) / len(confidence) if confidence else None
+        )
+
+    def extract_region(self, path: Path, page: int, box, size, *, minimum: float = 60.0) -> list[tuple[str, float]]:
+        """Linhas reconhecidas num recorte da página (uma figura), em modo de texto esparso (lote 29).
+
+        `box` é (esquerda, base, direita, topo) e `size` a largura e a altura da página, em pontos do PDF.
+        Só ficam as palavras com confiança de `minimum` ou mais; cada linha vem com a sua média."""
+        (left, bottom, right, top), (width, height) = box, size
+        crop = (max(0.0, left), max(0.0, bottom), max(0.0, width - right), max(0.0, height - top))
+        lines: dict[tuple[str, ...], list[tuple[str, float]]] = {}
+        for key, text, value in self._words(path, page, psm=11, crop=crop):
+            if value >= minimum:
+                lines.setdefault(key, []).append((text, value))
+        return [(" ".join(text for text, _ in words), sum(value for _, value in words) / len(words))
+                for words in lines.values()]
 
 
 def extract_document(path: Path, *, ocr=None, force_ocr: bool = False, progress=None) -> Extraction:

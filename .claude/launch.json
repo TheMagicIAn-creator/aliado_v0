@@ -88,6 +88,13 @@
                       "--resultados", "tmp/lote-27/resultados", "--gpvs", "data/gpvs"],
       "port": 8776,
       "url": "http://127.0.0.1:8776"
+    },
+    {
+      "name": "aliado-web-lote-29",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["tmp/lote-29/servidor_teste.py", "--limpar"],
+      "port": 8777,
+      "url": "http://127.0.0.1:8777"
     }
   ]
 }

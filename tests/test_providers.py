@@ -222,3 +222,91 @@ def test_gemini_provider_sem_configuracao(monkeypatch):
     request = LLMRequest(task_type="simple_chat", messages=[{"content": "oi"}])
     with pytest.raises(ProviderNotConfiguredError):
         provider.generate(request, model_id="modelo")
+
+
+def test_gemini_aceita_imagem_so_em_pedido_multimodal_do_usuario():
+    seen = {}
+
+    class Models:
+        def generate_content(self, **kwargs):
+            seen.update(kwargs)
+            return SimpleNamespace(text='{"itens": []}')
+
+    provider = GeminiProvider(client=SimpleNamespace(models=Models()))
+    image = {"type": "image", "mime_type": "image/jpeg", "data": b"\xff\xd8imagem"}
+    content = [{"type": "text", "text": "Página do documento:"}, image]
+    request = LLMRequest(task_type="biblioteca-figuras", multimodal=True, structured_output={"type": "object"},
+                         messages=[{"role": "developer", "content": "Descreva as figuras."},
+                                   {"role": "user", "content": content}], metadata={"media_resolution": "medium"})
+    assert provider.generate(request, model_id="modelo").structured_data == {"itens": []}
+    assert seen["contents"] == [{"role": "user", "parts": [
+        {"text": "Página do documento:"}, {"inline_data": {"mime_type": "image/jpeg", "data": b"\xff\xd8imagem"}}]}]
+    assert seen["config"]["media_resolution"] == "MEDIA_RESOLUTION_MEDIUM"
+    assert seen["config"]["system_instruction"] == "Descreva as figuras."
+
+    def refused(**changes):
+        base = {"task_type": "biblioteca-figuras", "multimodal": True, "messages": [{"role": "user", "content": content}]}
+        with pytest.raises(ValueError):
+            provider.generate(LLMRequest(**(base | changes)), model_id="modelo")
+
+    refused(multimodal=False)  # imagem sem o pedido marcado como multimodal
+    refused(messages=[{"role": "assistant", "content": content}, {"role": "user", "content": "e agora?"}])
+    refused(messages=[{"role": "developer", "content": content}, {"role": "user", "content": "leia"}])
+    refused(messages=[{"role": "user", "content": [{"type": "image", "mime_type": "image/gif", "data": b"GIF"}]}])
+    refused(messages=[{"role": "user", "content": [{"type": "image", "mime_type": "image/png", "data": "texto"}]}])
+    refused(messages=[{"role": "user", "content": [{"type": "audio", "data": b"x"}]}])
+    refused(messages=[{"role": "user", "content": []}])
+    refused(metadata={"media_resolution": "enorme"})
+    refused(tools=[{"name": "busca"}])
+    # Sem imagem, a resolução não é enviada.
+    seen.clear()
+    provider.generate(LLMRequest(task_type="simple_chat", messages=[{"content": "oi"}],
+                                 metadata={"media_resolution": "low"}), model_id="modelo")
+    assert "media_resolution" not in seen["config"]
+
+
+def test_modelos_gemini_declaram_a_capacidade_multimodal(monkeypatch):
+    from aliado.llm.providers.gateway import build_default_gateway
+
+    monkeypatch.setenv("AL_IADO_GEMINI_MODEL_FLASH", "modelo-flash")
+    monkeypatch.setenv("AL_IADO_GEMINI_MODEL_FLASH_LITE", "modelo-flash-lite")
+    models = {model["alias"]: model for model in build_default_gateway().registry.status()["models"]}
+    assert "multimodal" in models["flash"]["capabilities"] and "multimodal" in models["flash_lite"]["capabilities"]
+    assert "multimodal" not in models["luna"]["capabilities"]
+
+
+def test_gemini_cria_um_cliente_so_com_varias_threads(monkeypatch):
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    genai = pytest.importorskip("google.genai")
+    created = []
+
+    class Client:
+        def __init__(self, api_key):
+            time.sleep(0.02)  # tempo para as outras threads chegarem antes de o cliente existir
+            created.append(self)
+
+    monkeypatch.setattr(genai, "Client", Client)
+    provider = GeminiProvider(api_key="chave-de-teste")
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        clients = list(pool.map(lambda _: provider._get_client(), range(16)))
+    # Um cliente descartado fecharia a conexão de um pedido em andamento.
+    assert len(created) == 1 and all(client is created[0] for client in clients)
+
+
+def test_gemini_json_cortado_no_teto_de_tokens_segue_para_o_registro_de_uso():
+    usage = SimpleNamespace(prompt_token_count=1500, candidates_token_count=4096, total_token_count=5596,
+                            thoughts_token_count=0, cached_content_token_count=None)
+    cut = SimpleNamespace(text='{"itens": [{"tipo": "tabela", "descricao": "Tab', usage_metadata=usage,
+                          candidates=[SimpleNamespace(finish_reason=SimpleNamespace(name="MAX_TOKENS"))])
+    whole = SimpleNamespace(text='{"itens": [', usage_metadata=usage,
+                            candidates=[SimpleNamespace(finish_reason=SimpleNamespace(name="STOP"))])
+    request = LLMRequest(task_type="biblioteca-figuras", messages=[{"content": "leia"}], structured_output={"type": "object"})
+    provider = GeminiProvider(client=SimpleNamespace(models=SimpleNamespace(generate_content=lambda **_: cut)))
+    result = provider.generate(request, model_id="modelo")
+    # A chamada foi cobrada: o resultado volta sem os dados, marcado como cortado, com os tokens.
+    assert result.truncated and result.structured_data is None and result.usage.output_tokens == 4096
+    provider = GeminiProvider(client=SimpleNamespace(models=SimpleNamespace(generate_content=lambda **_: whole)))
+    with pytest.raises(ValueError):  # JSON inválido sem corte continua sendo erro
+        provider.generate(request, model_id="modelo")

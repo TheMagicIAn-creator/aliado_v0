@@ -1,13 +1,14 @@
 """Adapter Gemini extraído da origem, com papéis e contexto explícitos.
 
-O lote inicial aceita texto e JSON. Ferramentas e conteúdo multimodal serão
-adaptados e validados em seus próprios lotes.
+Aceita texto, JSON e, num pedido multimodal, imagens na mensagem do usuário (lote 29).
+Ferramentas serão adaptadas e validadas em seu próprio lote.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import threading
 from collections.abc import Iterator
 from typing import Any
 
@@ -66,45 +67,71 @@ def _grounding(response) -> dict:
     return {"web_sources": tuple(sources), "web_queries": queries, "web_supports": tuple(supports)}
 
 
+IMAGE_TYPES = {"image/png", "image/jpeg"}
+MEDIA_RESOLUTIONS = {"low": "MEDIA_RESOLUTION_LOW", "medium": "MEDIA_RESOLUTION_MEDIUM", "high": "MEDIA_RESOLUTION_HIGH"}
+
+
+def _parts(content, role: str, multimodal: bool) -> list[dict[str, Any]]:
+    """As partes de uma mensagem: texto ou, num pedido multimodal, texto e imagens do usuário."""
+    if isinstance(content, str):
+        return [{"text": content}]
+    if not multimodal or role != "user" or not isinstance(content, list) or not content:
+        raise ValueError("Conteúdo Gemini deve ser texto; imagem, só em mensagem do usuário de um pedido multimodal.")
+    parts: list[dict[str, Any]] = []
+    for item in content:
+        kind = item.get("type") if isinstance(item, dict) else None
+        if kind == "text" and isinstance(item.get("text"), str):
+            parts.append({"text": item["text"]})
+        elif kind == "image" and isinstance(item.get("data"), bytes) and item.get("mime_type") in IMAGE_TYPES:
+            parts.append({"inline_data": {"mime_type": item["mime_type"], "data": item["data"]}})
+        else:
+            raise ValueError("Parte de mensagem não suportada: use texto ou imagem PNG ou JPEG.")
+    return parts
+
+
 class GeminiProvider:
     name = "google"
 
     def __init__(self, api_key: str | None = None, *, client=None):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
         self._client = client
+        self._lock = threading.Lock()
 
     @property
     def configured(self) -> bool:
         return bool(self.api_key or self._client is not None)
 
     def _get_client(self):
-        if self._client is not None:
+        # Com várias threads no primeiro pedido (a descrição das figuras, lote 29), cada uma criava o seu
+        # cliente, e o que era descartado fechava a conexão de um pedido em andamento.
+        with self._lock:
+            if self._client is not None:
+                return self._client
+            if not self.api_key:
+                raise ProviderNotConfiguredError(self.name)
+            try:
+                from google import genai
+            except ImportError as exc:
+                raise ProviderNotConfiguredError(self.name) from exc
+            self._client = genai.Client(api_key=self.api_key)
             return self._client
-        if not self.api_key:
-            raise ProviderNotConfiguredError(self.name)
-        try:
-            from google import genai
-        except ImportError as exc:
-            raise ProviderNotConfiguredError(self.name) from exc
-        self._client = genai.Client(api_key=self.api_key)
-        return self._client
 
     @staticmethod
     def _kwargs(request: LLMRequest, model_id: str) -> dict[str, Any]:
-        if request.tools or request.multimodal:
-            raise ValueError("O adapter Gemini deste lote aceita apenas texto e JSON.")
+        if request.tools:
+            raise ValueError("O adapter Gemini não aceita ferramentas.")
         instructions: list[str] = []
         contents: list[dict[str, Any]] = []
         for message in normalized_messages(request):
             role, content = message["role"], message["content"]
-            if not isinstance(content, str):
-                raise ValueError("Conteúdo Gemini deve ser texto neste lote.")
             if role in {"system", "developer"}:
+                if not isinstance(content, str):
+                    raise ValueError("Instruções Gemini devem ser texto.")
                 instructions.append(content)
             elif role in {"user", "assistant"}:
                 contents.append({
                     "role": "model" if role == "assistant" else "user",
-                    "parts": [{"text": content}],
+                    "parts": _parts(content, role, request.multimodal),
                 })
             else:
                 raise ValueError(f"Papel não suportado: {role}")
@@ -122,6 +149,11 @@ class GeminiProvider:
         if request.structured_output:
             config["response_mime_type"] = "application/json"
             config["response_json_schema"] = request.structured_output
+        resolution = request.metadata.get("media_resolution") if request.multimodal else None
+        if resolution is not None:
+            if resolution not in MEDIA_RESOLUTIONS:
+                raise ValueError("Resolução de imagem desconhecida: use low, medium ou high.")
+            config["media_resolution"] = MEDIA_RESOLUTIONS[resolution]
         if request.web_search:
             if request.structured_output:
                 raise ValueError("Busca na web e saída estruturada não são combinadas neste adapter.")
@@ -133,17 +165,25 @@ class GeminiProvider:
         try:
             response = self._get_client().models.generate_content(**kwargs)
             content = getattr(response, "text", "") or ""
-            structured = json.loads(content) if request.structured_output else None
-            if request.structured_output and not isinstance(structured, dict):
+            truncated = _truncated(response)
+            try:
+                structured = json.loads(content) if request.structured_output else None
+            except json.JSONDecodeError:
+                if not truncated:
+                    raise
+                # Cortada no teto de tokens, o JSON vem pela metade. A chamada foi cobrada: o resultado
+                # segue, sem os dados e marcado como cortado, para o uso entrar no registro (lote 29).
+                structured = None
+            if request.structured_output and not truncated and not isinstance(structured, dict):
                 raise ValueError("A saída estruturada Gemini deve ser um objeto JSON.")
             return LLMResult(
                 content=content,
                 provider=self.name,
                 model=model_id,
                 task_type=request.task_type,
-                structured_data=structured,
+                structured_data=structured if isinstance(structured, dict) else None,
                 usage=_usage(response),
-                truncated=_truncated(response),
+                truncated=truncated,
                 **_grounding(response),
             )
         except (ProviderNotConfiguredError, ValueError):

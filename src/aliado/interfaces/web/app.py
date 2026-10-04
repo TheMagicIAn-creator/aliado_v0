@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -29,8 +30,10 @@ from starlette.staticfiles import StaticFiles
 
 from aliado.interfaces.web.conversations import ConversationStore
 from aliado.interfaces.web.gpvs_runs import gpvs_routes
+from aliado.interfaces.web.obsidian import ObsidianSync, build_notes, write_vault
 from aliado.interfaces.web.rendering import render_markdown
 from aliado.interfaces.web.science import science_routes
+from aliado.knowledge import figures
 from aliado.knowledge.metadata import reference
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.usage_log import record_usage
@@ -50,6 +53,10 @@ RESULTS_SKILL = "pesquisa-inversores"
 EXPLICIT_MEMORY = re.compile(r"^\s*lembr[ae](?:-se)?(?:\s+de)?\s+que\b", re.IGNORECASE)
 MEMORY_VIEW_KEYS = ("id", "kind", "text", "origin", "status", "skill", "source", "diverges_skill",
                     "conflict_with", "supersedes", "superseded_by", "created_at")
+# Modelo que descreve as figuras e tabelas (lote 29), escolhido pelo pesquisador no piloto de 03/10/2026,
+# e os nomes mostrados no aviso antes de enviar.
+FIGURE_ALIAS = "flash"
+MODEL_NAMES = {"flash": "Flash", "flash_lite": "Flash-Lite"}
 
 
 def _memory_view(memory: dict) -> dict:
@@ -91,6 +98,12 @@ class WebSettings:
     gpvs_command: Callable[..., tuple[int, str]] | None = None
     # Resultados no chat (lote 26): () -> resumo com os blocos [R1]…; montado sob demanda, em cache.
     results_digest: Callable[[], dict] | None = None
+    # Espelho para o Obsidian (lote 28): pasta das notas, refeitas a cada mudança; None desliga.
+    obsidian_dir: Path | None = None
+    # Descrição de figuras e tabelas (lote 29): pedido com a imagem da página -> resultado; e o nome do
+    # modelo, para o aviso antes de enviar. Só por pedido do usuário, nunca sozinha.
+    figure_reader: Callable[[object], object] | None = None
+    figure_model: str | None = None
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -99,6 +112,18 @@ class WebSettings:
         self.results_dir = Path(self.results_dir or self.data_dir / "resultados").resolve()
         self.gpvs_dir = Path(self.gpvs_dir).resolve()
         self.reference_dir = Path(self.reference_dir).resolve()
+        if self.obsidian_dir is not None:
+            self.obsidian_dir = Path(self.obsidian_dir).resolve()
+            # No Windows, "Conversas" e "conversas" são a mesma pasta: o espelho não pode cair sobre os dados,
+            # nem dentro nem em volta de uma pasta que o AL-IAdo usa.
+            owned = [self.data_dir / name for name in (
+                "conversas", "memoria", "uploads-temporarios", "uso", "resultados", "ciencia", "bibliotecas", "gpvs",
+                "models", "tools", "memory-review", "avaliacao-busca")] + [
+                self.usage_log.parent, self.library_dir, self.results_dir, self.gpvs_dir, self.reference_dir]
+            if self.obsidian_dir == self.data_dir or self.obsidian_dir in self.data_dir.parents or any(
+                    self.obsidian_dir == folder or folder in self.obsidian_dir.parents
+                    or self.obsidian_dir in folder.parents for folder in owned):
+                raise ValueError("A pasta do Obsidian precisa ser uma pasta própria, separada dos dados do AL-IAdo.")
 
 
 class LocalOnly(BaseHTTPMiddleware):
@@ -186,13 +211,26 @@ def create_app(settings: WebSettings) -> Starlette:
     uploads = settings.data_dir / "uploads-temporarios"
     worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="aliado-biblioteca")
     lock = threading.Lock()
-    library_jobs: set[str] = set()  # envios e fichas; enquanto correm, nenhum documento é apagado
+    library_jobs: set[str] = set()  # envios, fichas e figuras; enquanto correm, nenhum documento é apagado
+    figure_jobs: dict[str, dict] = {}  # documento -> tarefa de descrição das figuras em andamento e o seu "parar"
     upload_order: list[str] = []  # envios na ordem de chegada; o lote mais recente alimenta o pop-up da página
     skills = {item.name: item.description for item in list_skills()}
     aliases = {model["alias"] for model in settings.models}
     if settings.memory is not None:
         # Conversas anteriores ao lote 18 entram na memória de conversas uma vez, sem travar a abertura.
         worker.submit(_index_conversations, store, settings.memory)
+
+    def export_obsidian() -> dict:
+        # Tudo é lido antes de gravar: uma falha de leitura deixa o cofre anterior como estava.
+        memories = settings.memory.list() if settings.memory is not None else []
+        return write_vault(settings.obsidian_dir, build_notes(store.snapshot(), _documents(), memories))
+
+    sync = ObsidianSync(export_obsidian) if settings.obsidian_dir is not None else None
+
+    def obsidian() -> None:
+        """Pede a atualização das notas do Obsidian; a rodada corre em fila própria, fora do pedido."""
+        if sync is not None:
+            sync.request()
 
     async def index(request: Request):
         return FileResponse(STATIC / "index.html")
@@ -223,10 +261,12 @@ def create_app(settings: WebSettings) -> Starlette:
                         settings.memory.forget_conversation(request.path_params["cid"])
                     except (OSError, sqlite3.DatabaseError):
                         pass
+                obsidian()
                 return JSONResponse({"apagada": True})
             if request.method == "PATCH":
                 body = await request.json()
                 data = store.rename(request.path_params["cid"], body.get("title"))
+                obsidian()
             else:
                 data = store.get(request.path_params["cid"])
         except (ValueError, AttributeError) as exc:
@@ -348,6 +388,7 @@ def create_app(settings: WebSettings) -> Starlette:
                         created_at=stored["messages"][-1].get("created_at"))
                 except (OSError, sqlite3.DatabaseError):
                     pass  # a resposta já foi guardada; a memória de conversas não deve derrubá-la
+            obsidian()  # antes do aviso de fim: vale mesmo se a página for fechada em seguida
             yield line({"tipo": "fim", "conversa": {k: stored[k] for k in ("id", "title", "updated_at")},
                         "mensagens": [_view(m) for m in stored["messages"][-2:]]})
             if in_context and settings.memory is not None and settings.reviewer is not None:
@@ -411,6 +452,8 @@ def create_app(settings: WebSettings) -> Starlette:
                 store.annotate(cid, reply_id, memorias_criadas=views)
             except ValueError:
                 pass  # conversa apagada nesse meio-tempo; as anotações continuam na memória
+            if views:
+                obsidian()
             return {"tipo": "memoria", "mensagem": reply_id, "criadas": views}
 
         return StreamingResponse(events(), media_type="application/x-ndjson",
@@ -436,9 +479,11 @@ def create_app(settings: WebSettings) -> Starlette:
             def listing():
                 library_ = settings.library_factory()
                 pending = set(library_.titles_without_card()) if settings.card_extractor else set()
+                summary = getattr(library_, "figures_summary", dict)()
                 return [{k: d.get(k) for k in ("id", "title", "version", "status", "issues", "created_at",
                                                "ficha", "ficha_origem", "referencia")}
-                        | {"ficha_pendente": d["title"] in pending} for d in _documents()]
+                        | {"ficha_pendente": d["title"] in pending, "figuras": summary.get(d.get("sha256"))}
+                        for d in _documents()]
             return JSONResponse(await run_in_threadpool(listing))
         form = await request.form(max_files=1, max_fields=4)
         upload = form.get("arquivo")
@@ -503,11 +548,13 @@ def create_app(settings: WebSettings) -> Starlette:
             if not outcome.get("indexado") or result.get("duplicate"):
                 with lock:
                     settings.jobs[job].update({"estado": "concluido"} | outcome)
+                obsidian()  # uma versão nova que não pôde ser lida também aparece na nota do documento
                 return
             # O documento já pode ser buscado e citado: fica pronto aqui (lote 27). As fichas chamam o
             # modelo e vão para o fim da fila, depois da indexação dos outros arquivos enviados.
             with lock:
                 settings.jobs[job].update(outcome)
+            obsidian()
             try:
                 worker.submit(cards, library_, result)
             except RuntimeError:  # o executor já foi encerrado: as fichas saem agora
@@ -525,6 +572,7 @@ def create_app(settings: WebSettings) -> Starlette:
                 with lock:
                     current = settings.jobs[job]
                     current.update({"estado": "concluido", "resultado": current["resultado"] | extra})
+                obsidian()
 
         def document_card(library_, result: dict) -> dict:
             """Ficha do documento (título, autores, ano e DOI); só na primeira versão de um título."""
@@ -583,6 +631,7 @@ def create_app(settings: WebSettings) -> Starlette:
                     memory.add, kind=body.get("tipo"), text=body.get("texto"), origin="comando",
                     skill=skill_ if skill_ in skills else None,
                     source={"manual": True, "conversation_id": body.get("conversa")})
+                obsidian()
                 return JSONResponse(_memory_view(created), 201)
             status = request.query_params.get("estado") or None
             origin = request.query_params.get("origem") or None
@@ -619,6 +668,7 @@ def create_app(settings: WebSettings) -> Starlette:
                 return _error("Recurso não encontrado.", 404)
         except ValueError as exc:
             return _error(str(exc), 404 if "encontrada" in str(exc) else 400)
+        obsidian()
         return JSONResponse(_memory_view(changed))
 
     async def check(memory, memory_id: str):
@@ -646,6 +696,7 @@ def create_app(settings: WebSettings) -> Starlette:
                         "title": (verdict["fontes"][0].get("title") or verdict["fontes"][0].get("domain"))
                         if verdict["fontes"] else None,
                         "url": verdict["fontes"][0].get("uri") if verdict["fontes"] else None})
+            obsidian()
         return JSONResponse(verdict | {"criada": _memory_view(created) if created else None,
                                        "buscas": len(result.web_queries)})
 
@@ -677,6 +728,7 @@ def create_app(settings: WebSettings) -> Starlette:
             finally:
                 with lock:
                     settings.jobs[job].update({"estado": "concluido", "resultado": counts})
+                obsidian()
 
         worker.submit(run)
         return JSONResponse({"tarefa": job, "total": len(titles)}, 202)
@@ -691,6 +743,7 @@ def create_app(settings: WebSettings) -> Starlette:
             saved = await run_in_threadpool(lambda: library_.set_card(files["title"], body, edited=True))
         except ValueError as exc:
             return _error(str(exc), 404)
+        obsidian()
         return JSONResponse(saved)
 
     async def delete_document(request: Request):
@@ -712,8 +765,81 @@ def create_app(settings: WebSettings) -> Starlette:
                 revoked = len(await run_in_threadpool(settings.memory.revoke_from_documents, result["ids"]))
             except (OSError, sqlite3.DatabaseError):
                 revoked = None  # o documento já saiu; as deduções podem ser revogadas na aba Memória
+        obsidian()
         return JSONResponse({"apagado": result["title"], "versoes": result["versions"], "trechos": result["chunks"],
                              "anotacoes_revogadas": revoked, "sobras": result["leftovers"]})
+
+    async def document_figures(request: Request):
+        """Descrição das figuras e tabelas de um documento pelo modelo (lote 29).
+
+        GET diz quantas páginas há e se uma leitura está em andamento; POST começa, uma chamada por página
+        com conteúdo visual ainda não lida; DELETE pede para parar antes das páginas que não começaram."""
+        doc = request.path_params["doc"]
+        library_ = settings.library_factory()
+        if request.method == "DELETE":
+            with lock:
+                running = figure_jobs.get(doc)
+            if running is None:
+                return _error("Nenhuma descrição de figuras em andamento neste documento.", 404)
+            running["parar"].set()
+            return JSONResponse({"parando": True})
+        try:
+            target = await run_in_threadpool(library_.figure_pages, doc)
+        except ValueError as exc:
+            return _error(str(exc), 404)
+        pending = sum(1 for page in target["pages"] if not page["read"])
+        if request.method == "GET":
+            with lock:
+                running = figure_jobs.get(doc)
+            return JSONResponse({"paginas": len(target["pages"]), "por_ler": pending,
+                                 "tarefa": running["tarefa"] if running else None,
+                                 "modelo": settings.figure_model, "disponivel": settings.figure_reader is not None,
+                                 "tokens_por_pagina": figures.TOKENS_PER_PAGE})
+        if settings.figure_reader is None:
+            return _error("A descrição de figuras não está configurada.")
+        if not pending:
+            return _error("Não há páginas por descrever neste documento.")
+        job, stop = uuid.uuid4().hex, threading.Event()
+        with lock:
+            if doc in figure_jobs:
+                return _error("As figuras deste documento já estão sendo descritas.", 409)
+            figure_jobs[doc] = {"tarefa": job, "parar": stop}
+            settings.jobs[job] = {"estado": "processando", "etapa": "descrevendo", "atual": 0, "total": pending,
+                                  "documento": doc}
+            library_jobs.add(job)
+
+        def progress(stage: str, current: int, total: int) -> None:
+            with lock:
+                settings.jobs[job].update({"etapa": stage, "atual": current, "total": total})
+
+        def record(result) -> None:
+            record_usage(result, settings.usage_log)
+
+        def run():
+            outcome: dict = {}
+            try:
+                counts = figures.describe(library_, doc, settings.figure_reader, progress=progress,
+                                          stopped=stop.is_set, record=record, reindex=False)
+                outcome = {"resultado": counts}
+                if counts["lidas"]:
+                    progress("indexando", 0, 1)
+                    try:
+                        # A extração nova é gravada pela fila da biblioteca, como os envios.
+                        worker.submit(library_.reindex, doc).result()
+                    except Exception:
+                        outcome["aviso"] = ("As descrições foram guardadas, mas o índice não pôde ser refeito agora. "
+                                            "Elas entram na busca na próxima reindexação do documento.")
+            except Exception:
+                # Erro não previsto: a tarefa termina, em vez de ficar presa e bloquear o apagar.
+                outcome = {"erro": "Não foi possível descrever as figuras agora. Tente de novo."}
+            finally:
+                with lock:
+                    figure_jobs.pop(doc, None)
+                    settings.jobs[job].update({"estado": "concluido"} | outcome)
+                obsidian()
+
+        threading.Thread(target=run, name="aliado-figuras", daemon=True).start()
+        return JSONResponse({"tarefa": job, "total": pending}, 202)
 
     async def job_status(request: Request):
         with lock:
@@ -732,6 +858,8 @@ def create_app(settings: WebSettings) -> Starlette:
     async def document(request: Request):
         if request.path_params["kind"] == "ficha" and request.method == "POST":
             return await edit_card(request)
+        if request.path_params["kind"] == "figuras":
+            return await document_figures(request)
         if request.path_params["kind"] not in {"original", "markdown"} or request.method != "GET":
             return _error("Recurso não encontrado.", 404)
         try:
@@ -762,7 +890,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/biblioteca/tarefas/{job}", job_status),
         Route("/api/biblioteca/fichas", complete_cards, methods=["POST"]),
         Route("/api/biblioteca/{doc}", delete_document, methods=["DELETE"]),
-        Route("/api/biblioteca/{doc}/{kind:str}", document, methods=["GET", "POST"]),
+        Route("/api/biblioteca/{doc}/{kind:str}", document, methods=["GET", "POST", "DELETE"]),
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
         Route("/api/memoria/{mid}/{acao}", memory_action, methods=["GET", "POST"]),
         *science_routes(settings, worker, lock),
@@ -771,11 +899,13 @@ def create_app(settings: WebSettings) -> Starlette:
     ]
     app = Starlette(routes=routes, middleware=[Middleware(LocalOnly, port=settings.port)])
     app.state.worker = worker
+    app.state.obsidian = sync
+    obsidian()  # ao abrir o servidor: o cofre começa em dia com os dados
     return app
 
 
 def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_dir: Path | None = None,
-                     gpvs_dir: Path = Path("data/gpvs")) -> WebSettings:
+                     gpvs_dir: Path = Path("data/gpvs"), obsidian: bool = True) -> WebSettings:
     """Gateway e biblioteca reais; o .env já deve ter sido carregado explicitamente."""
     from aliado.agent import Agent
     from aliado.knowledge.embeddings import LocalEncoder
@@ -803,6 +933,13 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     def execute(request):
         return gateway.execute(request, provider="google", model_alias=helper_alias)
 
+    # Descrição das figuras (lote 29): o modelo escolhido no piloto, ou o de AL_IADO_FIGURE_MODEL.
+    wanted = os.getenv("AL_IADO_FIGURE_MODEL", FIGURE_ALIAS)
+    figure_alias = wanted if wanted in aliases else (helper_alias if aliases else None)
+
+    def read_figures(request):
+        return gateway.execute(request, provider="google", model_alias=figure_alias)
+
     def stream(question, **kwargs):
         return agent.stream_answer(question, provider="google", append_sources=False, **kwargs)
 
@@ -814,5 +951,8 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
                        query_rewriter=lambda **kwargs: rewrite_query(execute, **kwargs),
                        results_dir=results_dir, gpvs_dir=gpvs_dir,
-                       results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir))
+                       results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir),
+                       obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
+                       figure_reader=read_figures if figure_alias else None,
+                       figure_model=MODEL_NAMES.get(figure_alias, figure_alias))
     return settings

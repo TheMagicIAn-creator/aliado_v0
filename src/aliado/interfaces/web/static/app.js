@@ -647,12 +647,20 @@ function showSources(message) {
   };
   // As quebras de linha do PDF viram espaço; só a linha em branco continua separando parágrafos.
   const flowText = (value) => String(value || "").replace(/([^\n])\n(?!\n)/g, "$1 ");
+  // Os avisos de um trecho, cada um com a sua nota ao passar o mouse.
   const sourceFlags = (source) => {
     const flags = [];
-    if (source.method === "ocr") flags.push("OCR: conferir no original");
-    if (source.status === "partial") flags.push("extração parcial");
+    if (source.method === "ocr") flags.push(["OCR: conferir no original",
+      "O texto desta página veio do reconhecimento de texto sobre a imagem: pode ter letras trocadas."]);
+    if (source.method === "figura") flags.push(["texto reconhecido dentro de figura: conferir no original",
+      "Palavras que o computador leu dentro de uma figura da página. Não é texto corrido do documento."]);
+    if (source.method === "descricao") flags.push(["descrição automática de figura ou tabela: conferir no original",
+      "Texto escrito por um modelo a partir da imagem da página. Não é texto do documento: confira a figura ou a tabela no original antes de usar."]);
+    if (source.status === "partial") flags.push(["extração parcial", "Parte das páginas deste documento não pôde ser lida."]);
     return flags;
   };
+  const sourceLine = (tag, parts, source) => el(tag, { class: "source-loc" }, parts.filter(Boolean).join(" · "),
+    ...sourceFlags(source).flatMap(([label, note]) => [" · ", el("span", { class: "source-flag", title: note, text: label })]));
   const parts = [];
   if (results.length) {
     parts.push(el("h3", { class: "source-group", text: "Resultados da pesquisa" }));
@@ -682,7 +690,7 @@ function showSources(message) {
       el("div", { class: "source-head" }, el("span", { class: "cite", text: String(number) }),
         el("span", { class: "source-title", title: source.title,
           text: source.referencia ? `${source.referencia} · ${source.title}` : source.title })),
-      el("div", { class: "source-loc", text: [`v${source.version}`, where, ...sourceFlags(source)].filter(Boolean).join(" · ") }),
+      sourceLine("div", [`v${source.version}`, where], source),
       // A passagem enviada ao modelo: o trecho achado pela busca com os vizinhos da mesma página (lote 27).
       el("p", { class: "source-text", text: flowText(source.passagem || source.text) }),
       sourceActions(source));
@@ -699,7 +707,7 @@ function showSources(message) {
       const where = source.page ? `p. ${source.page}` : source.locator;
       return el("details", { class: "source-card source-more" },
         el("summary", {}, el("span", { class: "source-title", title: source.title, text: name }),
-          el("span", { class: "source-loc", text: [where, ...sourceFlags(source)].filter(Boolean).join(" · ") }),
+          sourceLine("span", [where], source),
           // O começo do trecho achado pela busca distingue dois trechos da mesma página antes de abrir.
           el("span", { class: "source-peek", text: flowText(source.text).replace(/\s+/g, " ").slice(0, 140) })),
         el("p", { class: "source-text", text: flowText(source.passagem || source.text) }),
@@ -912,6 +920,7 @@ const pieces = (count) => (count === 1 ? "1 trecho" : `${count} trechos`);
 const STAGE_TEXT = {
   lendo: (job) => `Lendo a página ${job.atual} de ${job.total}`,
   ocr: (job) => `Reconhecendo o texto da página ${job.atual} de ${job.total}`,
+  figuras: (job) => `Lendo o texto das figuras: ${job.atual} de ${job.total}`,
   indexando: (job) => (job.atual ? `Indexando: ${job.atual} de ${pieces(job.total)}` : `Indexando ${pieces(job.total)}`),
   "ficha do documento": () => "Criando a ficha do documento",
   ficha: () => "Criando a ficha de leitura",
@@ -942,6 +951,7 @@ function uploadFraction(item) {
   const job = item.job;
   if (!job || job.estado !== "processando" || !job.total) return 0;
   if (job.etapa === "lendo" || job.etapa === "ocr") return 0.5 * (job.atual / job.total);
+  if (job.etapa === "figuras") return 0.5;
   if (job.etapa === "indexando") return 0.5 + 0.5 * (job.atual / job.total);
   return 0;
 }
@@ -1429,6 +1439,93 @@ $("library-cards").addEventListener("click", async () => {
   }
 });
 
+/* Figuras e tabelas (lote 29): o que o computador leu dentro das figuras e a descrição pelo modelo. */
+const pagesText = (count) => (count === 1 ? "1 página" : `${count} páginas`);
+
+function figuresBox(doc) {
+  const box = el("section", { class: "doc-card doc-figures" });
+  const draw = (info) => {
+    const read = doc.figuras || { com_texto: 0 };
+    const rows = [
+      ["Páginas com figura ou tabela", String(info.paginas),
+        "Páginas com imagem embutida, desenho ou legenda de figura, tabela, quadro ou gráfico."],
+      ["Com texto lido nas figuras", String(read.com_texto || 0),
+        "Páginas em que o computador reconheceu, sem custo, palavras dentro de uma figura."],
+      ["Descritas pelo modelo", `${info.paginas - info.por_ler} de ${info.paginas}`,
+        "Páginas enviadas ao modelo como imagem. A descrição entra na busca marcada como automática."],
+    ];
+    const when = read.data ? ` · ${read.modelo || "modelo"} em ${new Date(read.data).toLocaleDateString("pt-BR")}` : "";
+    const actions = [];
+    if (info.tarefa) {
+      actions.push(el("span", { class: "muted", id: "figures-progress", text: "Descrevendo as páginas…" }),
+        el("button", { class: "link danger", type: "button", text: "Parar", onclick: () => stopFigures(doc) }));
+    } else if (info.disponivel && info.por_ler) {
+      actions.push(el("button", { class: "secondary", type: "button",
+        text: `Descrever figuras e tabelas (${pagesText(info.por_ler)})`, onclick: () => describeFigures(doc, info, redraw) }));
+    } else if (info.por_ler) {
+      actions.push(el("span", { class: "muted", text: "A descrição pelo modelo não está configurada." }));
+    }
+    box.replaceChildren(
+      el("div", { class: "doc-card-head" }, el("h2", { class: "panel-title", text: "Figuras e tabelas" }),
+        el("span", { class: "muted", text: info.paginas ? `conferir sempre no original${when}` : "nenhuma encontrada" })),
+      ...(info.paginas ? [el("dl", {}, ...rows.flatMap(([label, value, note]) =>
+        [el("dt", { title: note, text: label }), el("dd", { title: note, text: value })]))] : []),
+      ...(actions.length ? [el("div", { class: "doc-figures-actions" }, ...actions)] : []));
+    if (info.tarefa) followFigures(doc, info.tarefa);
+  };
+  const redraw = () => api(`/api/biblioteca/${doc.id}/figuras`).then(draw).catch(() => box.remove());
+  box.append(el("div", { class: "doc-card-head" }, el("h2", { class: "panel-title", text: "Figuras e tabelas" })));
+  redraw();
+  return box;
+}
+
+async function describeFigures(doc, info, redraw) {
+  const tokens = info.tokens_por_pagina || { entrada: 0, saida: 0 };
+  const total = formatTokens(info.por_ler * (tokens.entrada + tokens.saida));
+  if (!window.confirm(`Descrever as figuras e tabelas de «${doc.title}»?\n\n` +
+    `São ${info.por_ler} chamada(s) ao modelo ${info.modelo || ""}, uma por página com figura ou tabela ` +
+    `(cerca de ${total} tokens). Cada página é enviada como imagem.\n\n` +
+    "As descrições entram na busca marcadas como automáticas, para conferir no original. Dá para parar no meio: " +
+    "o que já foi lido fica guardado.")) return;
+  try {
+    await api(`/api/biblioteca/${doc.id}/figuras`, { method: "POST", json: {} });
+    redraw();
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function stopFigures(doc) {
+  try {
+    await api(`/api/biblioteca/${doc.id}/figuras`, { method: "DELETE" });
+    toast("Parando: as páginas que já começaram ainda terminam.");
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+async function followFigures(doc, job) {
+  for (;;) {
+    let status;
+    try { status = await api(`/api/biblioteca/tarefas/${job}`); } catch { return; }
+    const line = $("figures-progress");
+    if (line) line.textContent = status.etapa === "indexando" ? "Refazendo o índice do documento…"
+      : `Descrevendo: ${status.atual || 0} de ${pagesText(status.total || 0)}`;
+    if (status.estado === "concluido") {
+      const r = status.resultado;
+      if (status.erro) toast(status.erro);
+      else toast(`${pagesText(r.lidas)} ${r.lidas === 1 ? "descrita" : "descritas"}, com ${r.itens} ` +
+        (r.itens === 1 ? "figura ou tabela" : "figuras ou tabelas") +
+        (r.falhas ? `; ${r.falhas} não puderam ser lidas e ficam para outra vez` : "") +
+        (r.interrompido ? "; parado antes do fim" : "") + "." + (status.aviso ? ` ${status.aviso}` : ""));
+      // A lista traz as contagens novas; o documento aberto é redesenhado com elas.
+      if (document.querySelector(".doc-item.is-current")?.dataset.doc === doc.id) loadLibrary(doc.id);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+}
+
 async function showDocument(doc) {
   document.querySelectorAll(".doc-item").forEach((item) => item.classList.toggle("is-current", item.dataset.doc === doc.id));
   const viewer = $("doc-viewer");
@@ -1444,7 +1541,7 @@ async function showDocument(doc) {
         el("span", { class: "doc-viewer-actions" },
           el("a", { class: "link", href: `/api/biblioteca/${doc.id}/original`, target: "_blank", rel: "noopener", text: "Abrir original" }),
           el("button", { class: "link danger", type: "button", text: "Apagar", onclick: () => deleteDocument(doc) }))),
-      cardBox(doc), ...(issues ? [issues] : []), body);
+      cardBox(doc), ...(doc.title.toLowerCase().endsWith(".pdf") ? [figuresBox(doc)] : []), ...(issues ? [issues] : []), body);
   } catch (error) {
     viewer.replaceChildren(el("p", { class: "muted", text: error.message }));
   }

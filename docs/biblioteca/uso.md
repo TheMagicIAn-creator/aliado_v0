@@ -34,7 +34,8 @@ O CLI documental usa variáveis do processo; não procura arquivos `.env`.
 
 `preparar` mostra o pedido sem enviá-lo. `perguntar` usa as mesmas opções e exige
 provedor, alias e configuração. Somente os trechos recuperados são incluídos na
-consulta; OCR, extração e embeddings não enviam o acervo a uma API.
+consulta; OCR, extração e embeddings não enviam o acervo a uma API. A descrição das figuras e
+tabelas pelo modelo (lote 29) é diferente: envia páginas como imagem, e só quando você pede.
 
 Cada biblioteca contém `originals/`, `extracted/` e `catalog.sqlite3`. O nome do
 arquivo identifica o documento por padrão; `--titulo` permite um identificador
@@ -96,13 +97,61 @@ que ele não está mais na biblioteca.
 lexical. Processamentos antigos continuam auditáveis. Fórmulas, tabelas, colunas
 e figuras não são interpretadas com garantia; compare com o original.
 
+## Limpeza, trechos por frase e figuras
+
+Desde o lote 29, o que vira trecho de busca passa por três cuidados. O texto guardado de cada
+página continua inteiro, e a extração anterior fica preservada.
+
+- **Limpeza (PDFs):**
+  - as linhas de cabeçalho e de rodapé que se repetem nas bordas das páginas saem dos trechos: as que
+    aparecem em 30% das páginas ou mais, e as que trazem o número da página;
+  - o sumário e a lista de referências ficam marcados no local ("página PDF 5 · sumário",
+    "página PDF 14 · referências") e fora da busca comum. Eles voltam quando a pergunta os pede por
+    palavra (sumário, capítulos, referências, bibliografia, cita);
+  - um trecho repetido palavra por palavra no mesmo documento entra uma vez.
+- **Trechos por frase:** frases inteiras até 110 tokens. Uma tabela ou lista sem pontuação é cortada
+  nas quebras de linha. A legenda de figura ou de tabela começa sempre um trecho novo.
+- **Texto dentro das figuras:** nas páginas com imagem embutida, o Tesseract lê o recorte de cada
+  figura, e o que a página ainda não tem entra como trecho próprio ("página PDF 3 · texto das
+  figuras"). Roda no envio, sem custo. Sem Tesseract, a etapa é pulada.
+- **Descrição pelo modelo:** na ficha do documento, o quadro **Figuras e tabelas** mostra quantas
+  páginas têm figura, desenho, tabela ou legenda, e o botão **Descrever figuras e tabelas** envia
+  cada uma ao modelo, como imagem, numa chamada por página.
+  - O aviso antes de enviar diz o número de chamadas, o modelo e a estimativa de tokens. Dá para
+    parar no meio: cada página é gravada ao chegar.
+  - O código confere o que o modelo propõe: o rótulo ("Figure 2") e a legenda só ficam se estiverem
+    no texto da página.
+  - Cada figura ou tabela tem o seu local ("página PDF 3 · Figure 2") e é marcada como descrição
+    automática. Na busca, a legenda achada no texto traz a descrição junto. As descrições não entram na
+    parte da busca que compara palavras: concorrem pelo significado.
+  - A resposta trata a descrição como descrição: sem aspas, e com o aviso de conferir no original.
+  - O modelo é o Flash; `AL_IADO_FIGURE_MODEL=flash_lite` troca pelo mais barato.
+
+```powershell
+.\.venv\Scripts\python.exe -m aliado biblioteca reindexar --biblioteca data/bibliotecas/principal
+.\.venv\Scripts\python.exe -m aliado biblioteca figuras --biblioteca data/bibliotecas/principal
+.\.venv\Scripts\python.exe -m aliado biblioteca figuras --biblioteca data/bibliotecas/principal --documento ID --executar --env-file .env
+```
+
+- **`reindexar`** refaz os trechos a partir do texto de página já guardado: não lê o arquivo de novo,
+  não repete o reconhecimento de texto e aproveita o vetor dos trechos que não mudaram. Com
+  `--documento`, só um. Serve para uma biblioteca indexada antes do lote 29.
+- **`figuras`** sem `--executar` só mostra as páginas por descrever e a estimativa de tokens; nada é
+  enviado. Com `--executar`, chama o modelo (`--modelo flash` ou `flash_lite`) e reindexa o
+  documento no fim. `--paginas N` limita as páginas por documento.
+
+A descrição é feita por um modelo e pode errar: confira a figura no original, pelo link
+**Abrir página** da janela de fontes.
+
 ## Busca e limites
 
 O [MiniLM multilíngue](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)
 usa a revisão `e8f8c211226b894fcb81acc59f3b34ba3efd5f42`, ONNX quantizado, 384
 dimensões, média dos tokens e normalização. Os hashes dos dois artefatos são
-conferidos. Trechos têm até 110 tokens, sobreposição de 20, sem atravessar seção
-ou página; consultas longas combinam os vetores de seus trechos.
+conferidos. Desde o lote 29, os trechos são frases inteiras, com até 110 tokens e sem
+sobreposição, sem atravessar seção ou página. Um documento indexado antes continua com as
+fatias de 110 tokens e sobreposição de 20 até ser reindexado, e os dois convivem na busca.
+Consultas longas combinam os vetores de suas fatias.
 
 BM25/FTS5 e cosseno são combinados por soma de posições recíprocas, constante 60.
 Os parâmetros abaixo são do lote 19 e foram fixados antes da medição:

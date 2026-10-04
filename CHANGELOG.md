@@ -3,11 +3,31 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
-## [Não lançado]
+## [0.4.0] — 2026-10-03
 
-Depois da 0.3.0, a partir do uso real. Detalhes na spec [0027](docs/specs/0027-tela-envios-e-fontes.md).
+Lotes 27 a 29, a partir do uso real. Detalhes nas specs [0027](docs/specs/0027-tela-envios-e-fontes.md),
+[0028](docs/specs/0028-grafo-no-obsidian.md) e [0029](docs/specs/0029-indexacao-figuras-e-frases.md).
 
 ### Adicionado
+
+- **Figuras e tabelas na biblioteca.** Antes, de uma página com figura o índice guardava só a legenda.
+  - **Texto dentro das figuras:** ao indexar, o Tesseract lê o recorte de cada figura embutida, e o que a página ainda não tem entra como trecho próprio. Sem custo.
+  - **Descrição pelo modelo:** na ficha do documento, **Descrever figuras e tabelas** envia cada página com figura, desenho, tabela ou legenda ao modelo, como imagem, numa chamada por página. Só por pedido: o aviso diz o número de chamadas, o modelo e a estimativa de tokens, e dá para parar no meio sem perder o que já foi lido.
+  - O modelo propõe e o código confere: o rótulo ("Figure 2") e a legenda só ficam se estiverem no texto da página, e a parcela das palavras e dos números que também aparecem na página fica registrada.
+  - Cada figura ou tabela vira um trecho próprio, marcado como descrição automática. A legenda achada na busca traz a descrição junto, e a resposta a usa sem aspas, com o aviso de conferir no original.
+  - Comandos `biblioteca figuras` (sem `--executar`, só mostra as páginas e a estimativa) e `biblioteca reindexar`.
+- **Trechos por frase:** os trechos da busca passam a ser frases inteiras, com até 110 tokens e sem repetir o fim do anterior. A legenda de figura ou tabela começa sempre um trecho novo. Trechos sem pontuação no fim caíram de 86% para 25%; os que restam são linhas de tabela, fórmulas, legendas e frases que continuam na página seguinte.
+- **Reindexar sem ler de novo:** `biblioteca reindexar` refaz os trechos a partir do texto de página já guardado, sem repetir o reconhecimento de texto e aproveitando os vetores que não mudaram. A extração anterior continua guardada.
+- **Na biblioteca de hoje,** 1.291 das 1.293 páginas com figura ou tabela foram descritas pelo modelo maior: 1.539 figuras e tabelas, com 2,0 milhões de tokens de entrada e 1,4 milhão de saída.
+- **Perguntas de referência sobre figuras e tabelas:** 16 perguntas novas, medidas pela página esperada. Antes, nenhuma trazia o conteúdo da figura; agora 12 trazem com a pergunta direta e 9 com a consulta reescrita do chat.
+
+- **Espelho para o Obsidian** em `data/obsidian/`, para ver no grafo como as conversas, os documentos e as anotações se ligam e crescem.
+  - Uma nota por conversa, uma por documento da biblioteca e uma de anotações por fonte (documento ou conversa). Cada documento citado numa resposta vira um link.
+  - As notas são refeitas sozinhas depois de cada resposta e quando a biblioteca ou a memória mudam, sem chamadas pagas.
+  - O caminho é um só, do AL-IAdo para o Obsidian: edições nas notas geradas são substituídas, e as suas notas não são tocadas.
+  - Cada arquivo leva a data do registro, para a animação do grafo mostrar o crescimento real (no Windows). As cores do grafo por pasta são criadas na primeira vez.
+  - As notas não levam caminhos de pasta do computador, e o texto das respostas é limpo do que o Obsidian executaria ou buscaria na rede.
+  - `aliado web --sem-obsidian` desliga o espelho.
 
 - **Aviso de envios no canto inferior direito**, visível em todas as abas, no lugar dos cartões que ficavam no chat.
   - No chat, fica logo acima da caixa de mensagem. A área da aba termina acima dele, e ele não cobre nenhum botão.
@@ -20,6 +40,10 @@ Depois da 0.3.0, a partir do uso real. Detalhes na spec [0027](docs/specs/0027-t
 
 ### Alterado
 
+- **Índice limpo:** as linhas de cabeçalho e de rodapé que se repetem nas bordas das páginas saem dos trechos (3.292 linhas na biblioteca de hoje). O sumário e a lista de referências ficam marcados e fora da busca comum; voltam quando a pergunta os pede. Um trecho repetido palavra por palavra entra uma vez. O texto guardado de cada página não muda.
+- **O que sai do computador:** a descrição das figuras envia páginas dos documentos ao Gemini como imagem. Antes, só trechos de texto iam. Ela nunca roda sozinha.
+- **Busca:** as descrições de figuras ficam fora da parte da busca que compara palavras e chegam pelo significado ou junto com a legenda. Com elas, a biblioteca de hoje foi de 13.953 para 20.000 trechos, e cada busca de 2,65 s para 3,9 s.
+- **Perguntas de referência do lote 19:** com a consulta reescrita, as 16 continuam acertando; em 3 delas o documento esperado desceu de posição (de 0,94 para 0,84 na média do primeiro acerto). Com a pergunta direta, os acertos foram de 13 para 14.
 - **Tela inicial:** abrir ou recarregar a página cai sempre na apresentação. As conversas continuam na lista.
 - **Respostas com várias fontes:**
   - a regra passa a pedir o que cada documento recuperado diz, mesmo quando o pedido fala em "uma fonte ao menos";
@@ -44,6 +68,10 @@ Depois da 0.3.0, a partir do uso real. Detalhes na spec [0027](docs/specs/0027-t
 - Referências, itens de norma e traduções das respostas por documento eram contados como números sem marca de resultado.
 - A união de trechos vizinhos cortava repetições em texto repetitivo, e uma página com texto repetido mandava o mesmo parágrafo duas vezes ao modelo.
 - Um erro de arquivo no envio chegava à tela com código do sistema e caminho de pasta.
+- No Windows, ler uma conversa no instante em que ela era regravada podia fazer a gravação falhar. Leitura e gravação do mesmo arquivo de conversa não se cruzam mais.
+- O leitor de PDF não aceita chamadas simultâneas, e o processo podia cair com um envio e uma descrição de figuras ao mesmo tempo. Todo uso dele passa por uma trava.
+- Com vários pedidos ao Gemini começando juntos, a conexão de um podia ser fechada pela criação da de outro.
+- Uma resposta do Gemini cortada no meio de uma saída estruturada não entrava no registro de uso, embora fosse cobrada.
 
 ## [0.3.0] — 2026-10-01
 

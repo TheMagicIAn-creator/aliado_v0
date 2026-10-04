@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-03",
+  "batch": "28",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0028-grafo-no-obsidian.md",
+  "base_commit": "436582a",
+  "version": "0.3.0 (sem mudança; CHANGELOG em 'Não lançado')",
+  "decisions": {
+    "nodes": "conversas, documentos e memórias",
+    "memories": "agrupadas por fonte, numa nota própria ligada ao documento ou à conversa",
+    "location": "data/obsidian/, fora do Git, aberta como cofre separado",
+    "update": "automática, depois de cada resposta e de cada mudança na biblioteca ou na memória",
+    "direction": "mão única, do AL-IAdo para o Obsidian; sem chamadas pagas"
+  },
+  "origin": "nenhum código, nota ou regra do espelho do Obsidian do repositório de origem",
+  "paid_calls": 0,
+  "review": {
+    "rounds": [
+      {
+        "round": 1,
+        "agents": 4,
+        "fronts": [
+          "texto-e-links",
+          "gravacao-e-servidor"
+        ],
+        "findings": 22,
+        "text_and_links": {
+          "confirmed": 11,
+          "refuted": 1
+        },
+        "write_and_server": {
+          "reported": 10,
+          "verified": 0,
+          "note": "o verificador parou no limite de uso; tratados como válidos e corrigidos"
+        }
+      },
+      {
+        "round": 2,
+        "agents": 2,
+        "new_findings": 16,
+        "fixes_confirmed": 24
+      },
+      {
+        "round": 3,
+        "agents": 1,
+        "new_findings": 8,
+        "fixes_confirmed": 17,
+        "fixes_not_holding": 7,
+        "note": "corrigidos e conferidos por testes e por um teste aleatório, sem nova rodada de agentes"
+      }
+    ],
+    "total_findings": 46,
+    "main_change": "a limpeza do texto passou a conferir o próprio resultado com um analisador de Markdown e a refazê-lo sem marcação quando sobra algo vivo",
+    "fuzz": {
+      "texts": 60000,
+      "exceptions": 0,
+      "live_after_cleaning": 0,
+      "strict_form": 159,
+      "fixed_sentence": 0
+    }
+  },
+  "end_to_end_real_data": {
+    "read_only_on_data": true,
+    "conversations": 7,
+    "documents": 26,
+    "memories": 252,
+    "notes": 63,
+    "conversation_notes": 7,
+    "document_notes": 26,
+    "annotation_notes": 29,
+    "omitted_memories_of_deleted_documents": 16,
+    "links": 239,
+    "broken_links": 0,
+    "duplicate_names": 0,
+    "leaked_paths": 0,
+    "messages_in_strict_form": "0 de 90",
+    "first_round_seconds": 0.12,
+    "second_round_files_written": 0,
+    "creation_dates_matching": "62 de 62"
+  },
+  "browser_acceptance": {
+    "test_server": "127.0.0.1:8778, interface, rotas, biblioteca e memória reais; modelo, revisor e fichas simulados",
+    "checked": [
+      "notas ao abrir o servidor",
+      "pergunta com citações",
+      "anotação do revisor",
+      "envio de arquivo",
+      "anotação manual"
+    ],
+    "console_errors": 0
+  },
+  "deviations": [
+    "7 agentes em três rodadas, e não uma rodada de até 5; um verificador parou no limite de uso",
+    "padrões próprios de fórmulas e conferência do resultado, em vez de reaproveitar os padrões da tela",
+    "blocos de código de linguagens que não são só de cores (diagramas, consultas) vão como texto",
+    "um arquivo do pesquisador com o nome de uma nota gerada é preservado"
+  ],
+  "pending": [
+    "aceite do pesquisador no Obsidian: cores, animação do grafo e links",
+    "as correções da terceira rodada não passaram por nova rodada de agentes"
+  ],
+  "validation": {
+    "pytest_passed": 591,
+    "new_test_functions": 30,
+    "new_test_cases": 111,
+    "ruff": "passed",
+    "python_versions": [
+      "3.12.14"
+    ]
+  },
+  "commit_policy": "O commit do lote 28 depende da autorização do pesquisador; a tag v0.3.0 continua em ae24885.",
+  "git_actions_by_assistant": [],
+  "public_files": [
+    {
+      "path": ".gitignore",
+      "sha256": "d67252bc29f24c202f80b34567229385c458a9662d4cd6f22f335f23090e856a",
+      "previous_sha256": "71c30df31a4c41ece1fd520637c3a106cfdb681ee94540b06f8d965462374fd5",
+      "status": "modified"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "fd8eba6eb54e3c0d70acfef88641906227f97e493ad974ac06e0b7c795a30c31",
+      "previous_sha256": "36ab0e09f3db385be84f420e1e07fcd723ed1232e4d9d2c5c9f02c0cd7175fd0",
+      "status": "modified"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "d5f84c7c6bcee47e97937ab879ea49be6fa44bd36378feb912d01e3c621fdd7f",
+      "previous_sha256": "b02fd830fe86b6b25fd535454f3fce8ef5cd7e70feca190eba58cb0dc23c902c",
+      "status": "modified"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ac21861cd755f6bb87ccede4675b141716f8204dfb8a4396fc54e92c91ca39b3",
+      "previous_sha256": "2b6bf643607293c04e24da353f4b92cfb806889092348810a819157ea6cfa5da",
+      "status": "modified"
+    },
+    {
+      "path": "docs/arquitetura/modulos.md",
+      "sha256": "ded308b4a8e3307b531804bedd39762909667149bb230ff199a187eabd879fa6",
+      "previous_sha256": "374b3dab862f387d334cf76d499033505a72f9a9394e6497b58d789e28632c51",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/README.md",
+      "sha256": "c6e5d9615384117615f3c712b6493130acca8d367067a06c6d07547d6207fc50",
+      "previous_sha256": "29617dbff666e526286ee7af8f6ec3bd916fe48c1f2c52c9021f43ffa81a1fb5",
+      "status": "modified"
+    },
+    {
+      "path": "docs/roteiro-v0.md",
+      "sha256": "0db068790d91a8854e58806b984be2cd998be489c6f3be65db21859f05f92618",
+      "previous_sha256": "a632fef2b7a3955f29bb523fb0c94cc03ee6187587629ac4a8c80bad34762c85",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/cli.py",
+      "sha256": "acd4a24534b30ba60aa36919d3248a69d2bffb412f638968f129ea88483b68cc",
+      "previous_sha256": "e98770d092978011bc9b18134e08512ca622d71d84972a93d43c466c90cd1967",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/app.py",
+      "sha256": "2bac3b61091a5ae56bd1122f5da323aaf774c0deedb69e2c52df1fd71dc928f9",
+      "previous_sha256": "be09a6fb7025cb3b4282b1dae511fb363551110319356eba95509d5fec02bbb6",
+      "status": "modified"
+    },
+    {
+      "path": "src/aliado/interfaces/web/conversations.py",
+      "sha256": "12ec046cdb545889fb8336cfac1f2a54ca936a15b69bc16b34305e4eb77f32c2",
+      "previous_sha256": "f1c7644bcce02099e88dabe666f7d01a257d5578364912e7ab3ecd4652c05a85",
+      "status": "modified"
+    },
+    {
+      "path": "docs/migracao/validacao-lote-28.md",
+      "sha256": "9a4d0eba6e27fe4a6f383b2255e187ed21849b5e5c8dcb67ad33e3875b42abe5",
+      "status": "new"
+    },
+    {
+      "path": "docs/specs/0028-grafo-no-obsidian.md",
+      "sha256": "0c70b62c42efe44f6dc342251fae7451c8303a575ec6230309f0c88ce1ae1b1c",
+      "status": "new"
+    },
+    {
+      "path": "src/aliado/interfaces/web/obsidian.py",
+      "sha256": "f01afc36d7a50770052dd8b13a81996f076ff2473598a2ef3bf1ed6dc2a4ce9c",
+      "status": "new"
+    },
+    {
+      "path": "tests/test_obsidian.py",
+      "sha256": "d1760271367ed7ac730df4c31141203237d9d2302b32c2fe94ac0b7832176dca",
+      "status": "new"
+    }
+  ]
+}

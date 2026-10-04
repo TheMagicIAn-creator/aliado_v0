@@ -6,7 +6,7 @@ SDKs, downloads, OCR, modelos ou gravação de estado.
 
 | Módulo | Responsabilidade | Dependência permitida por desenho |
 |---|---|---|
-| `aliado.knowledge` | Catálogo SQLite, extração/OCR, versões e busca híbrida local | Extra `knowledge`, Tesseract e encoder local; sem interface ou regras do mestrado. |
+| `aliado.knowledge` | Catálogo SQLite, extração/OCR, versões, limpeza das páginas, trechos por frase, figuras e busca híbrida local | Extra `knowledge`, Tesseract e encoder local; sem interface ou regras do mestrado. A descrição das figuras monta um pedido neutro (`aliado.llm.contracts`) e recebe de quem chama a função que o envia: o módulo não conhece provedores. |
 | `aliado.memory` | Memórias aprovadas, origem e revisão | Armazenamento explícito por usuário/projeto; sem indexar automaticamente relatórios de triagem. |
 | `aliado.science` | Cálculos RAM explícitos e exportação JSON/CSV/MD/PNG | Biblioteca padrão para cálculo, matplotlib opcional para PNG; sem LLM ou ML. |
 | `aliado.interfaces.web` | Conversa, biblioteca e gestão de conta | Consome o agente e os serviços; não define fórmulas científicas ou fontes bibliográficas. |
@@ -42,6 +42,13 @@ ativa precisará de aprovação, proveniência e isolamento; o marcador `ativo` 
 JSON antigo e a confiança atribuída por outro agente não dispensam essa revisão.
 Sincronização com Obsidian, consolidação por LLM e persistência no GitHub são
 integrações posteriores, não efeitos colaterais da leitura ou importação.
+
+No lote 28, por decisão do pesquisador de 03/10/2026, o espelho para o Obsidian passou
+a existir como saída do servidor local: as notas de `data/obsidian/` são refeitas depois
+de cada resposta e de cada mudança na biblioteca ou na memória. O caminho é de mão única
+(nada do Obsidian volta para o AL-IAdo), não há chamada a modelo, e o espelho continua
+fora da leitura e da importação: `aliado.memory` e `aliado.knowledge` não o conhecem.
+Consolidação por LLM e persistência remota seguem como integrações posteriores.
 
 No lote 03, os princípios gerais aprovados orientam as instruções do núcleo e
 as regras científicas curadas entram somente pela skill de pesquisa. Isso altera

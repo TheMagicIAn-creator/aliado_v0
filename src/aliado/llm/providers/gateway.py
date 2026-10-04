@@ -133,7 +133,7 @@ def build_default_gateway() -> ProviderGateway:
             alias="flash_lite",
             model_id=flash_lite,
             status=ModelStatus.OPERATIONAL if flash_lite else ModelStatus.DISABLED,
-            capabilities=frozenset({"text", "structured_output", "web_search"}),
+            capabilities=frozenset({"text", "structured_output", "web_search", "multimodal"}),
         )
     )
     gateway.register_model(
@@ -142,7 +142,7 @@ def build_default_gateway() -> ProviderGateway:
             alias="flash",
             model_id=flash,
             status=ModelStatus.OPERATIONAL if flash else ModelStatus.DISABLED,
-            capabilities=frozenset({"text", "structured_output", "web_search"}),
+            capabilities=frozenset({"text", "structured_output", "web_search", "multimodal"}),
         )
     )
     return gateway

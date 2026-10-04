@@ -235,11 +235,14 @@ antes de começar. A 0.3.0 sai com o lote 26; a tag `v0.3.0` e o envio ao GitHub
 ## Depois da 0.3.0
 
 A 0.3.0 saiu com o lote 26 (commit `ae24885`). Os lotes seguintes partem do uso real e continuam sendo
-combinados antes de começar.
+combinados antes de começar. A 0.4.0 sai com o lote 29 e reúne os lotes 27 a 29; a tag `v0.4.0` e o envio
+ao GitHub ficam com o pesquisador.
 
 | Lote | Entrega | Situação |
 |---|---|---|
 | 27 | Tela de apresentação ao abrir ou recarregar; aviso de envios em todas as abas, com o documento pronto antes das fichas; respostas com várias fontes: regra reescrita, trechos agrupados por documento, passagem com os trechos vizinhos e a lista do que a busca trouxe e não foi citado | Concluído em 02/10/2026 |
+| 28 | Espelho para o Obsidian em `data/obsidian/`: uma nota por conversa, uma por documento e uma de anotações por fonte, ligadas por links e refeitas depois de cada resposta | Concluído em 03/10/2026 |
+| 29 | Indexação: cabeçalhos, sumário e referências fora dos trechos; trechos por frase; texto reconhecido dentro das figuras; descrição de figuras e tabelas pelo modelo, por pedido; lançamento da 0.4.0 | Concluído em 03/10/2026 |
 
 ### Decisões e resultado do lote 27 (01 e 02/10/2026)
 
@@ -265,6 +268,43 @@ combinados antes de começar.
 - **Total de chamadas pagas:** 132 (129 na bateria e 3 no navegador).
 - **Pendências:** no Flash, as respostas a pedidos de definição continuam com cerca do dobro do tamanho de antes do lote; o Flash-Lite continua citando menos fontes.
 - Veja a [validação do lote 27](migracao/validacao-lote-27.md).
+
+### Decisões e resultado do lote 28 (03/10/2026)
+
+- **Origem:** o pesquisador quis abrir os dados do AL-IAdo no Obsidian para ver o grafo crescer. Conversas em JSON e memória em banco de dados não são lidas pelo Obsidian como notas.
+- **Decisões:**
+  - os nós são as conversas, os documentos e as anotações da memória;
+  - as anotações ficam agrupadas pela fonte, numa nota própria ligada ao documento ou à conversa;
+  - o cofre fica em `data/obsidian/`, fora do Git;
+  - a atualização é automática, depois de cada resposta, sem botão e sem chamada paga.
+- **Resultado nos dados de hoje:** 63 notas (7 conversas, 26 documentos, 29 de anotações e a de apresentação), 239 links, nenhum quebrado, em cerca de um décimo de segundo. Uma segunda rodada sem mudança não grava nada.
+- **Linha do tempo:** cada arquivo leva a data do registro, para a animação do grafo mostrar o crescimento desde 27/09.
+- **Revisão por agentes:** três rodadas, 46 apontamentos, quase todos na limpeza do texto das respostas e na gravação da pasta. O principal foi trocar a proteção por padrões de texto por uma conferência do resultado: o texto pronto é lido por um analisador de Markdown e, se sobrar algo que o Obsidian executaria, buscaria ou ligaria por conta própria, sai sem marcação.
+- **Correção de passagem:** no Windows, ler uma conversa no instante em que ela era regravada podia fazer a gravação falhar; as conversas ganharam uma trava.
+- **Pendências:** o aceite do pesquisador no Obsidian (cores, animação e links), e as correções da terceira rodada, conferidas por testes e não por uma nova rodada de agentes.
+- Veja a [validação do lote 28](migracao/validacao-lote-28.md).
+
+### Decisões e resultado do lote 29 (03/10/2026)
+
+- **Origem:** o pesquisador notou que muitos trechos e todas as imagens dos documentos não eram considerados.
+- **Diagnóstico:** o texto corrido estava todo no índice. Faltava o conteúdo visual de 60% das páginas (figura, desenho, tabela ou legenda), 86% dos trechos eram cortados no meio da frase e 11% levavam um cabeçalho ou rodapé repetido.
+- **Decisões:**
+  - entram a leitura de figuras e tabelas, os trechos por frase e a limpeza do índice; a busca mais rápida ficou de fora;
+  - as figuras são lidas de duas formas: o texto dentro delas, reconhecido no computador, e a descrição pelo modelo;
+  - a descrição envia páginas como imagem e só roda por pedido;
+  - o lote 28 vai no mesmo commit, e a versão passa a 0.4.0.
+- **Piloto pago** com 20 páginas nos dois modelos: os dois acharam as mesmas 32 figuras e tabelas; o Flash copiou as legendas inteiras e transcreveu as tabelas sem lacunas. O pesquisador escolheu o Flash.
+- **Leitura completa** da biblioteca com o Flash: 1.291 das 1.293 páginas, 1.539 figuras e tabelas, 2,0 milhões de tokens de entrada e 1,4 milhão de saída, em 42 minutos.
+- **Resultado na biblioteca real:**
+  - trechos sem pontuação no fim: de 86% para 25%; os que restam são tabelas, fórmulas, legendas e frases que continuam na página seguinte;
+  - das 16 perguntas novas sobre figuras e tabelas, nenhuma trazia o conteúdo da figura; agora 12 trazem com a pergunta direta e 9 com a consulta reescrita;
+  - as 16 perguntas de referência continuam acertando com a consulta reescrita; em 3 delas o documento esperado desceu de posição;
+  - a busca ficou mais lenta, de 2,65 s para 3,9 s, porque o índice foi de 14 mil para 20 mil trechos.
+- **Correções de passagem:** o leitor de PDF não aceita chamadas simultâneas e ganhou uma trava; o cliente do Gemini passou a ser criado uma vez só; a resposta cortada no meio de uma saída estruturada passou a entrar no registro de uso.
+- **Chamadas pagas:** 80 nas medições e no piloto, e cerca de 1.310 na leitura completa.
+- **Limpeza:** a biblioteca real foi reindexada três vezes no lote, para corrigir a divisão das descrições; as duas extrações intermediárias foram apagadas com a autorização do pesquisador, e a pasta ficou com 1,0 GB (era 0,53 GB antes do lote).
+- **Pendências:** a busca mais rápida; a consulta reescrita, que perde a página em perguntas sobre uma figura específica; duas páginas que o modelo não conseguiu descrever.
+- Veja a [validação do lote 29](migracao/validacao-lote-29.md).
 
 ## Fica para a v1
 

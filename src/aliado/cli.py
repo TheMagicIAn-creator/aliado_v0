@@ -47,9 +47,18 @@ def main(argv: list[str] | None = None) -> int:
     library_commands = library.add_subparsers(dest="operation", required=True)
     model = library_commands.add_parser("preparar-modelo", help="Baixa o encoder local de revisão fixa")
     model.add_argument("--diretorio", type=Path)
-    for name in ("adicionar", "listar", "buscar", "verificar", "avaliar"):
+    for name in ("adicionar", "listar", "buscar", "verificar", "avaliar", "reindexar", "figuras"):
         operation = library_commands.add_parser(name)
         operation.add_argument("--biblioteca", type=Path, required=True)
+        if name in ("reindexar", "figuras"):  # lote 29
+            operation.add_argument("--documento", help="Identificador de um documento; sem ele, todos")
+        if name == "figuras":
+            operation.add_argument("--modelo", choices=("flash", "flash_lite"), default="flash")
+            operation.add_argument("--paginas", type=int, help="No máximo este número de páginas por documento")
+            operation.add_argument("--executar", action="store_true",
+                                   help="Envia as páginas ao modelo; sem isto, só mostra quantas são e a estimativa")
+            operation.add_argument("--env-file", type=Path, help="Arquivo .env, necessário com --executar")
+            operation.add_argument("--registro-uso", type=Path, default=DEFAULT_USAGE_LOG)
         if name == "avaliar":  # mede a busca com perguntas de referência (lote 19)
             operation.add_argument("--perguntas", type=Path, default=Path("data/avaliacao-busca/perguntas.json"))
             operation.add_argument("--saida", type=Path, help="Pasta nova para guardar o relatório")
@@ -73,6 +82,8 @@ def main(argv: list[str] | None = None) -> int:
     web.add_argument("--resultados", type=Path, help="Resultados da aba Ciência (padrão: <dados>/resultados)")
     web.add_argument("--gpvs", type=Path, default=Path("data/gpvs"), help="Dados do GPVS para os exploradores")
     web.add_argument("--sem-navegador", action="store_true", help="Não abrir o navegador")
+    web.add_argument("--sem-obsidian", action="store_true",
+                     help="Não gerar as notas do Obsidian em <dados>/obsidian")
     science = commands.add_parser("ciencia", help="Cálculos numéricos com cenário explícito")
     science_commands = science.add_subparsers(dest="operation", required=True)
     calculation = science_commands.add_parser("calcular")
@@ -141,10 +152,17 @@ def main(argv: list[str] | None = None) -> int:
                                               rewrite=_rewriter(args) if args.reescrever else None)
                     if args.saida is not None:
                         payload = export_evaluation(payload, args.saida)
+                elif args.operation == "reindexar":
+                    payload = [{key: result[key] for key in ("id", "title", "version", "status", "chunks", "issues")}
+                               for result in map(library.reindex, _latest(library, args.documento))]
+                elif args.operation == "figuras":
+                    payload = _figures(library, args)
                 else:
                     payload = library.verify()
             print(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False))
             if isinstance(payload, dict) and (payload.get("status") in {"partial", "failed"} or payload.get("ok") is False):
+                return 2
+            if isinstance(payload, list) and any(item.get("status") == "failed" for item in payload):
                 return 2
             return 0
         if args.command == "ciencia" and args.operation == "preparar-gpvs":
@@ -238,6 +256,49 @@ def main(argv: list[str] | None = None) -> int:
         print("Operação local indisponível. Confira arquivos, diretório novo de saída e dependências opcionais.",
               file=sys.stderr)
         return 2
+
+
+def _latest(library, doc_id: str | None) -> list[str]:
+    """Os documentos a tratar: o pedido ou a versão mais recente de cada título."""
+    latest = {document["title"]: document["id"] for document in library.documents()}  # em ordem de versão
+    if doc_id is not None and doc_id not in latest.values():
+        raise ValueError("Documento não encontrado, ou não é a versão mais recente.")
+    return [doc_id] if doc_id is not None else list(latest.values())
+
+
+def _figures(library, args) -> dict:
+    """Descrição das figuras e tabelas pelo modelo (lote 29): uma chamada por página com conteúdo visual.
+
+    Sem `--executar`, nada é enviado: mostra as páginas por ler e a estimativa de tokens."""
+    from aliado.knowledge import figures
+
+    documents = []
+    for doc_id in _latest(library, args.documento):
+        target = library.figure_pages(doc_id, scan=True)  # acha as páginas, sem custo e sem refazer a extração
+        pending = [page for page in target["pages"] if not page["read"]]
+        documents.append({"id": doc_id, "titulo": target["title"], "paginas_com_figura": len(target["pages"]),
+                          "por_ler": len(pending[:args.paginas] if args.paginas else pending)})
+    total = sum(document["por_ler"] for document in documents)
+    estimate = {key: total * value for key, value in figures.TOKENS_PER_PAGE.items()}
+    if not args.executar:
+        return {"enviado": False, "paginas_por_ler": total, "estimativa_de_tokens": estimate, "documentos": documents,
+                "aviso": "Nada foi enviado ao modelo. Use --executar e --env-file para descrever as páginas."}
+    if args.env_file is None or not args.env_file.is_file():
+        raise ValueError("Com --executar, informe o .env com --env-file.")
+    from dotenv import load_dotenv
+
+    load_dotenv(args.env_file, override=False)
+    gateway = build_default_gateway()
+
+    def execute(request):
+        return gateway.execute(request, provider="google", model_alias=args.modelo)
+
+    for document in documents:
+        if document["por_ler"]:
+            document["resultado"] = figures.describe(
+                library, document["id"], execute, limit=args.paginas,
+                record=lambda result: record_usage(result, args.registro_uso))
+    return {"enviado": True, "modelo": args.modelo, "documentos": documents}
 
 
 def _rewriter(args):
@@ -350,7 +411,8 @@ def _serve_web(args) -> int:
     except ImportError as exc:
         raise ImportError("Instale o extra 'web' para usar a interface.") from exc
     settings = default_settings(data_dir=args.dados, library_dir=args.biblioteca, port=args.porta,
-                                results_dir=args.resultados, gpvs_dir=args.gpvs)
+                                results_dir=args.resultados, gpvs_dir=args.gpvs,
+                                obsidian=not args.sem_obsidian)
     url = f"http://127.0.0.1:{args.porta}"
     print(f"AL-IAdo em {url} (Ctrl+C encerra)", file=sys.stderr)
     if not settings.models:

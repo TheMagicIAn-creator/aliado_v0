@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-03",
+  "batch": "29",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0029-indexacao-figuras-e-frases.md",
+  "base_commit": "436582a",
+  "base_note": "sobre o lote 28, ainda sem commit; os dois lotes vão num commit só",
+  "release": {
+    "version": "0.4.0",
+    "lots": "27 a 29",
+    "wheel": "dist/v0.4.0/aliado-0.4.0-py3-none-any.whl"
+  },
+  "decisions": {
+    "scope": "ler figuras e tabelas, trechos por frase e limpar o índice; busca mais rápida ficou de fora",
+    "images": "reconhecimento local do texto dentro das figuras e descrição pelo modelo",
+    "lot_28": "junta-se ao lote 29 num commit só",
+    "version": "0.4.0",
+    "figure_reading": "só por botão ou comando, com a contagem antes; nunca automática",
+    "model": "Flash, escolhido pelo pesquisador com o relatório do piloto (03/10/2026)",
+    "stage_c": "leitura completa das figuras e reindexação da biblioteca real, autorizadas em 03/10/2026"
+  },
+  "origin": "nenhum código de divisão em trechos, de limpeza ou de leitura de figuras do repositório de origem",
+  "paid_calls": {
+    "stages_a_b": {
+      "authorized": 80,
+      "used": 80,
+      "query_rewrites": 32,
+      "pilot_readings": 40,
+      "pilot_cut_attempts": 2,
+      "answers": 6,
+      "usage_log": "tmp/lote-29/uso.jsonl (78 registradas; as 2 tentativas cortadas não ficaram no registro)",
+      "note": "o plano previa 16 consultas reescritas; as 16 perguntas de figura também foram reescritas, e as respostas foram 6 em vez de 12"
+    },
+    "stage_c": {
+      "model": "gemini-3.8-flash",
+      "registered_calls": 1301,
+      "unregistered_attempts": "cerca de 10, sem resposta válida",
+      "input_tokens": 2021391,
+      "output_tokens": 740948,
+      "reasoning_tokens": 666010,
+      "minutes": 42,
+      "usage_log": "data/uso/chamadas.jsonl"
+    }
+  },
+  "figure_reading": {
+    "pages_with_visual_content": 1293,
+    "pages_described": 1291,
+    "items": 1539,
+    "pages_without_figure": 102,
+    "pages_without_valid_answer": ["Artigo_FMEA.pdf p. 4", "nasa-rcmguide.pdf p. 25"],
+    "signals": {"embedded_image": 353, "vector_drawing": 363, "caption": 1084, "scanned": 206, "local_text_found": 221}
+  },
+  "measurements": {
+    "library": {"documents": 26, "pages": 2218},
+    "copy_after_cleaning_and_sentences": {
+      "chunks": {"before": 13953, "after": 14156},
+      "text_without_final_punctuation": {"before": 11938, "after": 3143},
+      "with_edge_line": {"before": 1579, "after": 399, "note": "394 dos 399 são números com hífen no texto, não linhas de borda"},
+      "support_parts": 1187,
+      "figure_text": 257,
+      "under_15_words": {"before": 130, "after": 458},
+      "reindex_seconds": {"first": 877, "second_with_reused_vectors": 116}
+    },
+    "real_library_final": {
+      "chunks": {"total": 20000, "text": 12712, "support_parts": 1187, "descriptions": 6098, "figure_text": 3},
+      "reference_questions": {
+        "direct_hits": {"before": 13, "after": 14, "of": 16},
+        "direct_first_hit_position": {"before": 0.781, "after": 0.802},
+        "rewritten_hits": {"before": 16, "after": 16, "of": 16},
+        "rewritten_first_hit_position": {"before": 0.938, "after": 0.835}
+      },
+      "figure_questions": {
+        "file": "data/avaliacao-busca/perguntas-figuras.json",
+        "of": 16,
+        "direct_page_in_10": {"before": 12, "after": 12},
+        "direct_figure_content_in_10": {"before": 0, "after": 12},
+        "rewritten_page_in_10": {"before": 11, "after": 10},
+        "rewritten_figure_content_in_10": {"before": 0, "after": 9}
+      },
+      "descriptions_in_word_list": {
+        "adopted": false,
+        "with": {"direct_first_hit_position": 0.771, "rewritten_first_hit_position": 0.804, "direct_figure_content": 13, "rewritten_figure_content": 9},
+        "without": {"direct_first_hit_position": 0.802, "rewritten_first_hit_position": 0.835, "direct_figure_content": 12, "rewritten_figure_content": 9}
+      },
+      "seconds_per_search": {"before": 2.65, "after": 3.9},
+      "disk_mb": {"catalog": {"before": 154, "after_three_reindexes": 786, "after_cleanup": 367},
+                  "extractions": {"before": 184, "after_three_reindexes": 991, "after_cleanup": 446},
+                  "note": "três reindexações em 03/10; as 52 extrações intermediárias (546 MB em arquivos) foram apagadas com a autorização do pesquisador, e o catálogo, compactado"},
+      "verify": "só as duas pendências anteriores ao lote (uma página do manual de Lafraia e uma do guia da NASA)"
+    }
+  },
+  "pilot": {
+    "pages": 20,
+    "report": "tmp/lote-29/piloto/relatorio-piloto.html",
+    "flash": {"model": "gemini-3.8-flash", "items": 32, "unconfirmed_labels": 1, "local_check_median": 84,
+              "input_tokens_per_page": 1496, "output_tokens_per_page": 691, "reasoning_tokens_per_page": 551,
+              "seconds_per_page": 5.6},
+    "flash_lite": {"model": "gemini-3.5-flash-lite", "items": 32, "unconfirmed_labels": 1, "local_check_median": 82,
+                   "input_tokens_per_page": 1498, "output_tokens_per_page": 656, "reasoning_tokens_per_page": 0,
+                   "seconds_per_page": 3.4},
+    "first_round_failures": {"connection_closed_by_parallel_client": 2, "answer_cut_twice": 1}
+  },
+  "tests": {"total": 635, "new": 44, "files": ["tests/test_chunking.py", "tests/test_figures.py", "tests/test_providers.py"]},
+  "files": {
+    "new": [
+      "src/aliado/knowledge/chunking.py",
+      "src/aliado/knowledge/figures.py",
+      "tests/test_chunking.py",
+      "tests/test_figures.py",
+      "docs/specs/0029-indexacao-figuras-e-frases.md",
+      "docs/migracao/validacao-lote-29.md",
+      "docs/migracao/lote-29.json"
+    ],
+    "changed": [
+      "src/aliado/knowledge/embeddings.py",
+      "src/aliado/knowledge/extraction.py",
+      "src/aliado/knowledge/library.py",
+      "src/aliado/llm/providers/gemini.py",
+      "src/aliado/llm/providers/gateway.py",
+      "src/aliado/agent.py",
+      "src/aliado/cli.py",
+      "src/aliado/interfaces/web/app.py",
+      "src/aliado/interfaces/web/static/app.js",
+      "src/aliado/interfaces/web/static/app.css",
+      "tests/test_providers.py",
+      "pyproject.toml",
+      "CHANGELOG.md",
+      "README.md",
+      "AGENTS.md",
+      "docs/biblioteca/uso.md",
+      "docs/roteiro-v0.md",
+      "docs/arquitetura/modulos.md",
+      "docs/migracao/README.md",
+      ".claude/launch.json"
+    ],
+    "outside_git": [
+      "data/avaliacao-busca/perguntas-figuras.json",
+      "data/bibliotecas/principal (tabela page_figures, três extrações novas por documento)",
+      "tmp/lote-29/ (cópia da biblioteca, medições, piloto e cópia de segurança do catálogo)",
+      "dist/v0.4.0/"
+    ]
+  },
+  "commit_policy": "Commit dos lotes 28 e 29 feito pelo assistente com a autorização do pesquisador (03/10/2026), no formato dele, sem tag e sem push.",
+  "cleanup": "As 52 extrações intermediárias da etapa C foram apagadas da biblioteca real a pedido do pesquisador (03/10/2026); a extração original e a atual de cada documento ficaram. tmp/lote-29/ continua no lugar.",
+  "not_done_by_assistant": ["push", "tag"]
+}

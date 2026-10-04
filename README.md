@@ -80,6 +80,10 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
     - Tudo certo some em 6 s. Falhas e documentos indexados só em parte ficam até você fechar. Fechar o aviso não cancela o envio.
     - Se você recarregar a página no meio do envio, o aviso volta com os totais.
   - Cada documento ganha uma ficha de leitura na memória e uma **ficha do documento** (título, autores, ano e DOI), conferida no próprio texto e editável na aba **Biblioteca**. **Completar fichas** cria as que faltam.
+  - **Figuras e tabelas:** o texto dentro das figuras é reconhecido no seu computador ao indexar. Na ficha do documento, **Descrever figuras e tabelas** envia ao modelo cada página com figura, desenho, tabela ou legenda, como imagem, numa chamada por página. O aviso diz quantas chamadas são antes de enviar, e dá para parar no meio.
+    - A descrição entra na busca marcada como automática. A resposta a usa para dizer o que a figura mostra, com o aviso de conferir no original, e a janela de fontes leva à página.
+    - O rótulo e a legenda só ficam se estiverem no texto da página.
+  - **Trechos:** os trechos da busca são frases inteiras, sem os cabeçalhos e rodapés repetidos das páginas. O sumário e a lista de referências ficam fora da busca comum e voltam quando a pergunta os pede.
   - **Apagar**, na aba Biblioteca, tira o documento de vez, com todas as versões, a extração e o índice, e revoga as anotações que o agente deduziu dele. As suas anotações ficam. Não tem volta.
   - Com **Usar biblioteca**, o agente recebe a lista dos documentos, com autor e ano, e as respostas citam **[n]** com o trecho e a página. Uma resposta que não cita trechos aparece com um aviso.
   - Antes de buscar, o modelo mais barato reescreve a mensagem com o assunto da conversa, as siglas por extenso e os termos em português e inglês. É uma chamada barata a mais por mensagem, e a janela de fontes mostra o que foi buscado.
@@ -122,6 +126,25 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - As visões e os exploradores precisam de `data/gpvs/` e da avaliação de 27/09 em `data/resultados/`. O erro por variável fica em `data/ciencia/`, e `--resultados` e `--gpvs` mudam essas pastas.
 - **Custo:** cada resposta chama o provedor, e a busca na web pode ter custo à parte no Google. O registro `data/uso/chamadas.jsonl` guarda data, modelo, tokens e número de buscas, sem o texto.
 
+## Ver no Obsidian
+
+O AL-IAdo mantém em `data/obsidian/` um espelho em Markdown das conversas, dos documentos e das anotações da
+memória, para você ver no grafo do Obsidian como eles se ligam e crescem.
+
+- **Como abrir:** no Obsidian, escolha **Abrir pasta como cofre** e aponte para `data/obsidian`. Abra essa pasta, e não a raiz do projeto: na raiz, o grafo também mostraria a documentação e o texto extraído dos PDFs.
+- **O que há no cofre:**
+  - **Conversas:** uma nota por conversa. Cada documento citado numa resposta vira um link para a nota dele.
+  - **Documentos:** uma nota por documento da biblioteca, com a ficha. O nome da nota é a referência curta ("Lafraia, 2001").
+  - **Anotações:** as anotações da memória, agrupadas pela fonte: uma nota por documento e uma por conversa de onde saíram anotações.
+  - **Sobre esta pasta:** o que significa cada propriedade das notas.
+- **Cores do grafo:** conversas em azul, documentos em verde e anotações em laranja. Elas são criadas só na primeira vez; se você mudar as cores, as suas ficam.
+- **Linha do tempo:** o botão de animação do grafo mostra as notas na ordem em que surgiram, porque cada arquivo leva a data do registro (no Windows).
+- **Atualização:** as notas são refeitas sozinhas depois de cada resposta e quando a biblioteca ou a memória mudam. Não há chamada paga nisso.
+- **Caminho de mão única:** o que você escrever numa nota gerada é substituído na próxima atualização, e nada do que fizer no Obsidian muda o AL-IAdo. Notas suas, criadas fora das pastas Conversas, Documentos e Anotações, não são tocadas.
+- **Como as respostas aparecem:** com as fórmulas, as tabelas e o código, como no chat. Imagens, links que não levam a um site e blocos de diagramas ou consultas aparecem como texto. Uma resposta com algo que o Obsidian executaria ou buscaria por conta própria aparece inteira como texto simples.
+- **Privacidade:** `data/` fica fora do Git. As notas não levam caminhos de pasta do seu computador.
+- **Desligar:** `aliado web --sem-obsidian`.
+
 ## Linha de comando
 
 ```powershell
@@ -140,7 +163,13 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 .\.venv\Scripts\python.exe -m aliado biblioteca buscar "tempo médio de reparo" --biblioteca data/bibliotecas/principal
 .\.venv\Scripts\python.exe -m aliado biblioteca verificar --biblioteca data/bibliotecas/principal
 .\.venv\Scripts\python.exe -m aliado biblioteca avaliar --biblioteca data/bibliotecas/principal --saida data/resultados/busca-001
+.\.venv\Scripts\python.exe -m aliado biblioteca reindexar --biblioteca data/bibliotecas/principal
+.\.venv\Scripts\python.exe -m aliado biblioteca figuras --biblioteca data/bibliotecas/principal
 ```
+
+`reindexar` refaz os trechos a partir do texto já guardado, sem ler os arquivos de novo. `figuras` mostra
+as páginas com figura ou tabela ainda não descritas e a estimativa de tokens; só com `--executar` ele
+chama o modelo.
 
 `avaliar` mede a busca com as perguntas de referência de `data/avaliacao-busca/perguntas.json`,
 que ficam fora do Git. Com `--reescrever --env-file .env`, mede com a consulta reescrita, como no chat:
@@ -203,7 +232,7 @@ uma avaliação independente (M14).
 ## Pacote
 
 ```powershell
-.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.3.0
+.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.4.0
 ```
 
 O wheel inclui a interface, com o KaTeX e o D3 v7 (licença ISC, copiada junto), e as skills do AL-IAdo. Documentação, cenários e dados
@@ -219,7 +248,11 @@ desenvolvimento e não entram no pacote.
 
 ## Pendências conhecidas
 
-- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat.
+- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase.
+- A descrição de uma figura é feita por um modelo e pode errar. O que o código confere são o rótulo, a legenda e as palavras que também estão no texto da página; a ligação entre os elementos de um diagrama não tem como ser conferida. Veja a [validação do lote 29](docs/migracao/validacao-lote-29.md).
+- Uma página digitalizada sem legenda não entra na descrição das figuras, e uma tabela com mais de 40 linhas é transcrita até a 40ª.
+- Com a consulta reescrita do chat, algumas perguntas sobre uma figura específica não acham a página dela: a reescrita troca a referência à figura por termos gerais.
+- Cada busca compara a pergunta com todos os trechos, um a um. Com as descrições das figuras, a biblioteca de hoje passou de 14 mil para 20 mil trechos, e a busca de 2,65 s para 3,9 s.
 - No chat, a conferência vale para os números com a marca [Rn]. Um número sem marca não é conferido, e o chat não calcula: ele repete o que está gravado.
 - Em pedidos de definição, o modelo maior cita todos os documentos que tratam do assunto; o menor cita cerca de três quartos. A janela de fontes mostra o que ficou de fora. Veja a [validação do lote 27](docs/migracao/validacao-lote-27.md).
 - Com o modelo maior, as respostas a pedidos de definição ficaram com cerca do dobro do tamanho, pelas citações no original com a tradução. Elas não comentam mais os documentos que não tratam do pedido: a janela de fontes mostra o que a busca trouxe e a resposta não usou.

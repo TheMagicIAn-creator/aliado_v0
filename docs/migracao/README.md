@@ -289,13 +289,21 @@ Não houve migração de código da origem. O resumo dos resultados e a conferê
 
 Não houve migração de código da origem. O aviso de envios, a passagem com os trechos vizinhos e a lista do que a busca trouxe foram escritos aqui, sem dependência nova. A bateria de medição usou a biblioteca do pesquisador só para leitura. Consulte a [spec 0027](../specs/0027-tela-envios-e-fontes.md), o [manifesto](lote-27.json) e a [validação](validacao-lote-27.md).
 
+## Lote 28 — o AL-IAdo no grafo do Obsidian
+
+Não houve migração de código da origem. A origem tinha um espelho da memória para o Obsidian, mas nada dele entrou: nem código, nem notas, nem regras. O espelho daqui foi escrito do zero, só com a biblioteca padrão, e sai dos dados do próprio AL-IAdo (conversas, catálogo da biblioteca e memória), num caminho de mão única. Consulte a [spec 0028](../specs/0028-grafo-no-obsidian.md), o [manifesto](lote-28.json) e a [validação](validacao-lote-28.md).
+
+## Lote 29 — indexação: figuras, tabelas e trechos por frase
+
+Não houve migração de código da origem. A limpeza das páginas, a divisão em frases, o reconhecimento do texto das figuras e a descrição pelo modelo foram escritos do zero. O adapter Gemini, que veio da origem só com texto e JSON, passou a aceitar imagens na mensagem do usuário de um pedido multimodal. Veja a [spec](../specs/0029-indexacao-figuras-e-frases.md), a [validação](validacao-lote-29.md) e o [manifesto](lote-29.json).
+
 ## Implementações posteriores a discutir
 
 | Subsistema encontrado | Direção de reaproveitamento |
 |---|---|
 | Router e observabilidade | Avaliar a política de modelos, retries, fallback e auditoria antes de migrar, preservando controle de custos. |
 | RAG híbrido e evidências | Avaliar qualidade no acervo escolhido e ampliar a recuperação conforme evidências de uso. |
-| Memória e Obsidian | Reaproveitar mecanismos; revisar dados e regras antes de qualquer importação. |
+| Memória e Obsidian | Reaproveitar mecanismos; revisar dados e regras antes de qualquer importação. O espelho para o Obsidian foi feito no lote 28, sem código da origem; a importação das memórias antigas continua em aberto. |
 | Ferramentas científicas e ML | Definir parâmetros físicos por perguntas e respostas; treino/avaliação de detectores será lote separado. |
 | Webapp | Reaproveitar componentes úteis; criar autenticação por convite e isolamento antes de acesso compartilhado. |
 
