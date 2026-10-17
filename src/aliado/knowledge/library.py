@@ -9,6 +9,7 @@ import re
 import shutil
 import sqlite3
 import subprocess
+import threading
 import uuid
 from collections import Counter
 from contextlib import contextmanager
@@ -46,6 +47,8 @@ MIN_OVERLAP = 12
 DESCRIPTION_REACH = 12
 # Quantas páginas por documento a busca informa à leitura integral (lote 30).
 RANKED_PAGES = 20
+# Quantos candidatos a busca entrega à segunda rede, antes do teto por documento (lote 32).
+POOL_SIZE = 60
 # Como as seções de figuras aparecem no Markdown da extração; as de texto seguem como "native" e "ocr".
 METHOD_NAMES = {figures.FIGURE_TEXT: "texto reconhecido na figura", figures.DESCRIPTION: "descrição automática"}
 
@@ -121,10 +124,23 @@ def _vector(values) -> list[float]:
 
 
 class DocumentLibrary:
-    def __init__(self, root: str | Path, *, encoder=None, ocr=None):
+    def __init__(self, root: str | Path, *, encoder=None, ocr=None, reranker=None):
         self.root = Path(root).resolve()
         self.encoder = encoder if encoder is not None else LocalEncoder()
         self.ocr = ocr
+        self.reranker = reranker
+        # Busca em memória (lote 32): os trechos ativos e os vetores, lidos uma vez e refeitos quando o catálogo muda.
+        self._index: dict | None = None
+        self._index_lock = threading.Lock()
+        self._index_db = None
+        self._index_identity = None
+
+    def close(self):
+        """Libera o retrato e a conexão de observação, sem alterar o catálogo."""
+        with self._index_lock:
+            if self._index_db is not None:
+                self._index_db.close()
+            self._index_db = self._index = None
 
     @contextmanager
     def _connect(self, *, create=False):
@@ -677,32 +693,97 @@ class DocumentLibrary:
         return {"title": row["title"], "original": self._path(row["original"]),
                 "markdown": self._path(row["md_path"])}
 
-    def search(self, query: str, *, limit=6, min_similarity=0.30, ranked: dict | None = None) -> list[dict]:
+    def _snapshot(self, *, support: bool = False) -> dict:
+        """Os trechos ativos e os vetores deles, em memória (lote 32).
+
+        PRAGMA data_version é comparado sempre na mesma conexão, protegida por trava. Ele muda a cada
+        commit de outra conexão, inclusive em WAL e em UPDATE sem mudança na contagem de trechos.
+        Cada retrato é lido numa transação curta; a conexão não mantém transação aberta entre buscas.
+        Consultas com e sem sumário/referências têm retratos separados, carregados sob demanda."""
+        import numpy as np
+
+        with self._index_lock:
+            path = self.root / "catalog.sqlite3"
+            stat = path.stat()
+            identity = (stat.st_dev, stat.st_ino)
+            if self._index_db is None or self._index_identity != identity:
+                if self._index_db is not None:
+                    self._index_db.close()
+                self._index_db = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, check_same_thread=False)
+                self._index_db.row_factory = sqlite3.Row
+                self._index_identity, self._index = identity, None
+            db = self._index_db
+            db.execute("BEGIN")
+            try:
+                stamp = db.execute("PRAGMA data_version").fetchone()[0]
+                if self._index is None or self._index["stamp"] != stamp:
+                    self._index = {"stamp": stamp, "views": {}}
+                if support in self._index["views"]:
+                    return self._index["views"][support]
+                raw = db.execute("""SELECT c.*, c.rowid AS position, d.id AS document_id, d.title, d.version, d.sha256,
+                        d.original, r.encoder, r.status FROM chunks c JOIN runs r ON c.run_id=r.id
+                        JOIN documents d ON d.id=r.document_id WHERE d.active_run=r.id
+                        AND d.version=(SELECT MAX(v.version) FROM documents v WHERE v.title=d.title)
+                        ORDER BY c.id""").fetchall()
+            finally:
+                db.rollback()
+            rows, vectors = [], []
+            for row in raw:
+                if not support and chunking.support(row["locator"]):
+                    continue
+                rows.append({key: row[key] for key in row.keys() if key != "vector"})
+                vectors.append(json.loads(row["vector"]))
+            error, matrix = None, np.zeros((0, 0))
+            numbers = all(isinstance(vector, list) and vector and all(
+                isinstance(value, (int, float)) for value in vector) for vector in vectors)
+            if not numbers:
+                error = "Vetor inválido no índice documental."
+            elif len({len(vector) for vector in vectors}) > 1:
+                error = "Dimensões incompatíveis no índice documental."
+            elif vectors:
+                matrix = np.array(vectors, dtype=np.float64)
+                norms = np.linalg.norm(matrix, axis=1)
+                if not np.isfinite(matrix).all():
+                    error = "Vetor inválido no índice documental."
+                elif not np.isfinite(norms).all() or not (norms > 0).all():
+                    error = "Vetor vazio ou fora da faixa numérica."
+                else:
+                    matrix /= norms[:, None]
+            described = {}
+            for row in rows:
+                if row["method"] == figures.DESCRIPTION:
+                    for label in figures.captions(row["locator"].rsplit(" · ", 1)[-1]):
+                        key = (row["run_id"], row["page"], label)
+                        if key not in described or row["position"] < described[key]["position"]:
+                            described[key] = row
+            view = {"rows": rows, "matrix": matrix, "error": error,
+                    "spaces": {_space(row["encoder"]) for row in raw}, "described": described}
+            self._index["views"][support] = view
+            return view
+
+    def search(self, query: str, *, limit=6, min_similarity=0.30, ranked: dict | None = None,
+               pool: list | None = None) -> list[dict]:
         """`ranked`, se for um dicionário, recebe por documento as páginas dos candidatos, da melhor para a
-        pior: a leitura integral (lote 30) parte delas para montar os blocos de um documento grande."""
+        pior: a leitura integral (lote 30) parte delas para montar os blocos de um documento grande.
+        `pool`, se for uma lista, recebe os `POOL_SIZE` melhores candidatos antes do teto por documento, na
+        ordem da busca: é de onde a segunda rede (lote 32) escolhe as páginas."""
         if not query.strip() or not 1 <= limit <= 20:
             raise ValueError("Consulta vazia ou limite fora de 1–20.")
         if ranked is not None:
             ranked.clear()
+        if pool is not None:
+            pool.clear()
         if not (self.root / "catalog.sqlite3").exists():
             return []
         cards = self.cards()
         named = named_documents(query, cards)
         with self._connect() as db:
-            rows = db.execute("""SELECT c.*, c.rowid AS position, d.id AS document_id, d.title, d.version, d.sha256,
-                    d.original, r.encoder, r.status FROM chunks c JOIN runs r ON c.run_id=r.id
-                    JOIN documents d ON d.id=r.document_id WHERE d.active_run=r.id
-                    AND d.version=(SELECT MAX(v.version) FROM documents v WHERE v.title=d.title)
-                    ORDER BY c.id""").fetchall()
-            if not rows:
-                return []
-            if any(_space(row["encoder"]) != _space(self.encoder.fingerprint) for row in rows):
+            index = self._snapshot(support=chunking.asks_support(query))
+            if index["spaces"] and index["spaces"] != {_space(self.encoder.fingerprint)}:
                 raise ValueError("Encoder do índice mudou; reprocesse os documentos antes da busca.")
-            if not chunking.asks_support(query):
-                # Sumário e lista de referências: cheios de palavras-chave e vazios de conteúdo (lote 29).
-                rows = [row for row in rows if not chunking.support(row["locator"])]
-                if not rows:
-                    return []
+            if not index["rows"]:
+                return []
+            rows = index["rows"]
             # Palavras vazias ("de", "the", "segundo") puxariam qualquer texto no mesmo idioma.
             words = [word for word in dict.fromkeys(re.findall(r"[^\W_]+", query, re.UNICODE))
                      if plain(word) not in STOPWORDS][:40]
@@ -713,12 +794,15 @@ class DocumentLibrary:
             return []
         encoded = self.encoder.encode(query_parts)
         q = _vector([sum(values) / len(encoded) for values in zip(*encoded)])
-        semantic = []
-        for row in rows:
-            vector = _vector(json.loads(row["vector"]))
-            if len(q) != len(vector):
-                raise ValueError("Dimensões incompatíveis no índice documental.")
-            semantic.append((row["id"], sum(a * b for a, b in zip(q, vector))))
+        if index["error"]:
+            raise ValueError(index["error"])
+        if len(q) != index["matrix"].shape[1]:
+            raise ValueError("Dimensões incompatíveis no índice documental.")
+        import numpy as np
+
+        # Soma vetorizada sem iniciar um grupo de threads BLAS a cada consulta pequena.
+        similarities = np.einsum("ij,j->i", index["matrix"], q, optimize=False).tolist()
+        semantic = [(row["id"], score) for row, score in zip(rows, similarities, strict=True)]
         semantic.sort(key=lambda pair: (-pair[1], pair[0]))
         scores = dict(semantic)
         titles = {row["id"]: row["title"] for row in rows}
@@ -743,20 +827,19 @@ class DocumentLibrary:
                 score += weights["peso_documento_citado"] / (k + named_ranks[key])
             candidates.append((score, row))
         candidates.sort(key=lambda pair: (-pair[0], pair[1]["id"]))
+        if pool is not None:
+            pool[:] = [{"citation_id": row["id"], "document_id": row["document_id"], "title": row["title"],
+                        "page": row["page"], "locator": row["locator"], "method": row["method"], "text": row["text"],
+                        "score": score} for score, row in _diverse(candidates, POOL_SIZE, named)]
         if ranked is not None:
             for _, row in candidates:
                 places = ranked.setdefault(row["document_id"], [])
                 place = row["page"] if row["page"] is not None else row["locator"]
                 if len(places) < RANKED_PAGES and place not in places:
                     places.append(place)
-        # O começo da descrição de cada figura ou tabela, por extração, página e rótulo (lote 29).
-        described: dict[tuple, sqlite3.Row] = {}
-        for row in rows:
-            if row["method"] == figures.DESCRIPTION:
-                for label in figures.captions(row["locator"].rsplit(" · ", 1)[-1]):
-                    key = (row["run_id"], row["page"], label)
-                    if key not in described or row["position"] < described[key]["position"]:
-                        described[key] = row
+        # O começo da descrição de cada figura ou tabela, por extração, página e rótulo (lote 29). Não depende
+        # da pergunta: fica guardado com os trechos em memória.
+        described = index["described"]
         checked = set()
 
         def hit(row, score: float) -> dict:
@@ -789,6 +872,12 @@ class DocumentLibrary:
                 alone = len(labels) == 1 and figures.squash(row["text"]) in figures.squash(description["text"])
                 hits[-1 if alone else len(hits):] = [hit(description, score)]
         return hits[:limit]
+
+    def rerank_pages(self, query: str, candidates: list[dict]) -> tuple[list[tuple], dict]:
+        """Reordena somente as páginas; trechos e leitura ampla conservam a busca anterior."""
+        from aliado.knowledge.reranking import rank_pages
+
+        return rank_pages(self.reranker, query, candidates)
 
     def mentions(self, terms, *, documents: int = 8, pages: int = 12) -> dict[str, dict]:
         """Contagem exata (lote 31): em quais documentos e páginas cada termo aparece, na biblioteca inteira.

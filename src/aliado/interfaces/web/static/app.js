@@ -446,6 +446,16 @@ function renderMessage(message) {
     node.append(el("div", { class: "note note-uncited",
       text: `Não entraram nesta resposta: ${message.resultados_faltando.join("; ")}.` }));
   }
+  if (message.cobertura?.unidades && !message.cobertura.completa) {
+    const missing = message.cobertura.unidades.filter((u) => !u.citados.length);
+    const none = missing.filter((u) => u.estado === "sem_candidato").map((u) => u.nome);
+    const rest = missing.filter((u) => u.estado !== "sem_candidato").map((u) => u.nome);
+    node.append(el("div", { class: "note note-uncited",
+      text: (rest.length ? `Sem fonte nesta resposta: ${rest.join("; ")}. Isso não significa ausência na biblioteca. ` : "")
+        + (none.length ? `A busca não achou material para: ${none.join("; ")}. ` : "")
+        + (message.cobertura.complemento === "confirmacao_necessaria"
+          ? "Completar passa do limite de leitura sem confirmação; use Completar pesquisa." : "") }));
+  }
   if (message.validation_status === "uncited" && !message.result_sources?.length) {
     node.append(el("div", { class: "note note-uncited", text: "Esta resposta não cita trechos dos seus documentos." }));
   }
@@ -456,23 +466,56 @@ function renderMessage(message) {
     // Lote 31: o que o AL-IAdo escolheu para esta resposta (modelo, skill e leitura), com o motivo na dica.
     const auto = route.automatico || {};
     const who = (flag, what) => `${what}: ${flag ? "escolha do AL-IAdo" : "fixado por você"}`;
-    const earlier = (route.tentativas || []).map((item) =>
-      ` Antes, uma leitura por ${item.leitura} (${formatTokens(item.tokens)} tokens) não achou a resposta.`).join("");
+    const earlier = (route.tentativas || []).map((item) => item.descartada
+      ? ` Depois, uma leitura por ${item.leitura} (${formatTokens(item.tokens)} tokens) não melhorou a resposta e foi descartada.`
+      : ` Antes, uma leitura por ${item.leitura} (${formatTokens(item.tokens)} tokens) não achou a resposta.`).join("");
+    // Lote 33: como a busca foi preparada (sem reescrita, reescrita pela conversa ou uma busca por parte do pedido).
+    const search = { nenhuma: " Busca pela própria pergunta, que já dizia o assunto, sem reescrita.",
+      simples: " Busca por uma consulta reescrita a partir da conversa.",
+      plano: ` Uma busca para cada parte do pedido: ${(route.partes || []).join("; ")}.` }[route.busca] || "";
     meta.append(el("span", { class: "route",
       title: `${who(auto.modelo, "Modelo")}; ${who(auto.skill, "skill")}; ${who(auto.leitura, "leitura")}. `
-        + `Motivo: ${(route.reasons || []).join("; ")}.${earlier} Para fixar uma escolha, use os seletores da tela.`,
+        + `Motivo: ${(route.reasons || []).join("; ")}.${search}${earlier} Para fixar uma escolha, use os seletores da tela.`,
       text: [message.model, SKILL_LABELS[route.skill || "nenhuma"] || route.skill, route.leitura].filter(Boolean).join(" · ") }));
     if (route.trilha) {
+      // Lote 31: o atalho, sem nova busca; lote 33: com mais partes ou depois de uma reclamação, só apoio à busca.
+      const asked = `Pergunta muito parecida com a de ${new Date(route.trilha.data).toLocaleDateString("pt-BR")}: `
+        + `“${route.trilha.pergunta}”. `;
+      meta.append(el("span", route.leitura === "páginas de uma resposta anterior"
+        ? { class: "route", text: "partiu de uma resposta anterior",
+          title: `${asked}O modelo recebeu aquela troca e as páginas que ela citou, sem nova busca, e escreveu uma resposta nova.` }
+        : { class: "route", text: "usou uma lembrança na pesquisa",
+          title: `${asked}As páginas que aquela resposta citou entraram como apoio de uma nova busca na biblioteca.` }));
+    }
+    if (route.aprendido?.length) {
+      // Lote 33: escolhas que você fez numa mensagem muito parecida e que o AL-IAdo repetiu.
       meta.append(el("span", { class: "route",
-        title: `Pergunta muito parecida com a de ${new Date(route.trilha.data).toLocaleDateString("pt-BR")}: `
-          + `“${route.trilha.pergunta}”. O modelo recebeu aquela troca e as páginas que ela citou, sem nova busca, `
-          + "e escreveu uma resposta nova.",
-        text: "partiu de uma resposta anterior" }));
+        title: route.aprendido.map((item) => `${item.campo}: como você escolheu em `
+          + `${new Date(item.data).toLocaleDateString("pt-BR")}, em “${item.pergunta}”`).join("; ")
+          + ". Para mudar, fixe outra escolha nos seletores da tela; a nova vale daqui em diante.",
+        text: "repetiu uma escolha sua" }));
     }
   } else if (message.model && message.provider !== "local") meta.append(el("span", { text: message.model }));
   if (usage.total_tokens) meta.append(el("span", { text: `${formatTokens(usage.total_tokens)} tokens` }));
   if (usage.reasoning_tokens) meta.append(el("span", { text: `${formatTokens(usage.reasoning_tokens)} de raciocínio` }));
   const info = (event) => openInfo(message, event.currentTarget);
+  if (message.cobertura?.unidades) {
+    meta.append(el("button", { class: "link", type: "button", text: "Cobertura da pesquisa", onclick: info,
+      title: "Cada parte do pedido, o material que a busca achou para ela e o que a resposta citou." }));
+    // Lote 33: a complementação é automática dentro do limite; o botão aparece quando ela pediu confirmação.
+    if (message.cobertura.complemento === "confirmacao_necessaria" && message.id) {
+      meta.append(el("button", { class: "link", type: "button", text: "Completar pesquisa",
+        title: `Refaz a pesquisa com páginas inteiras para completar as partes sem fonte (cerca de ${formatTokens(Math.round((message.cobertura.tokens_complemento || 0) / 1000))} mil tokens). A tela pergunta antes de passar do limite.`,
+        onclick: () => {
+          const messages = state.conversation?.messages || [];
+          const question = messages[messages.findIndex((m) => m.id === message.id) - 1];
+          if (question?.role === "user" && !state.busy) {
+            submitQuestion(question.content, { leitura: question.leitura === "auto" ? "paginas" : question.leitura,
+              biblioteca: question.biblioteca, web: question.web });
+          }
+        } }));
+    }
+  }
   if (message.result_sources?.length) {
     meta.append(el("button", { class: "link result-link", type: "button",
       text: `${message.result_sources.length} resultado(s)`, onclick: info }));
@@ -788,6 +831,17 @@ function showSources(message) {
   // Lote 22: a consulta que a biblioteca buscou, reescrita a partir da conversa.
   const query = message?.consulta_biblioteca
     ? [el("p", { class: "muted source-queries", text: `Buscou na biblioteca: ${message.consulta_biblioteca}` })] : [];
+  if (message?.cobertura?.unidades) {
+    const labels ={ citada: "Com citação associada", sem_citacao: "Sem fonte nesta resposta",
+      nao_enviado: "Material encontrado, mas não enviado", sem_candidato: "Nenhum candidato encontrado nesta busca" };
+    query.push(el("h3", { class: "source-group", text: "Cobertura por parte do pedido" }),
+      el("p", { class: "muted", text: "A associação de citações não certifica toda a interpretação científica."
+        + (message.cobertura.decomposicao === "local" ? " A divisão local do pedido pode estar incompleta." : "") }),
+      ...message.cobertura.unidades.map((unit) => el("div", { class: "source-card" },
+        el("b", { text: unit.nome }), el("p", { text: labels[unit.estado] || unit.estado }),
+        el("ul", {}, ...unit.enviados.map((source) => el("li", { text:
+          `${source.title}${source.page ? `, p. ${source.page}` : ""} — ${unit.citados.includes(source.citation_id) ? "citado" : "enviado"}` }))))));
+  }
   const results = message?.result_sources || [];
   const retrieved = message?.recuperados || [];
   const read = message?.leitura?.documentos || [];

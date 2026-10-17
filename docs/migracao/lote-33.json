@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "batch": "33",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0033-reescrita-aprendizado-resultados.md",
+  "validation": "docs/migracao/validacao-lote-33.md",
+  "base_commit": "98be273e43ed13cd05a76031534a0f9bce4f725d",
+  "base_note": "Sobre o lote 32, ainda sem commit; adota e corrige o plano por partes acrescentado em 05/10/2026 sem spec.",
+  "release": {"version_unchanged": "0.5.0", "new_package": false, "commit": false},
+  "decisions": {
+    "date": "2026-10-17",
+    "plan_code": "adotar e corrigir",
+    "complement": "automática dentro de 30 mil tokens e antes do aviso diário de 300 mil",
+    "learning_signals": ["escolhas fixadas na tela", "pergunta refeita ou reclamação"],
+    "review_list": false,
+    "paid_check": {"max_calls": 8, "max_input_tokens": 80000}
+  },
+  "changes": {
+    "rewrite": "Decisão local entre sem reescrita, reescrita simples e plano por partes.",
+    "plan": "Plano só com duas partes ou mais; títulos por parte só então; segunda chamada só com material novo a ler.",
+    "trails": "Atalho do lote 31 de volta para uma parte só e trilha não fraca; com partes, só apoio à busca.",
+    "learning": "Tabela route_lessons e coluna weak em data/memoria; limiar de semelhança 0,85; nunca a leitura ampla.",
+    "router": "Vocabulário tirado do resumo dos resultados; conversa solta e reclamação depois da biblioteca."
+  },
+  "checks": {
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest -q", "passed": 757, "failed": 0, "seconds": 196.8,
+      "warnings": 1, "environment": {"OPENBLAS_NUM_THREADS": "1"}},
+    "ruff": {"command": ".venv/Scripts/python.exe -m ruff check .", "exit_code": 0}
+  },
+  "measurement": {
+    "script": "docs/migracao/medir-lote-33.py",
+    "summary": "docs/migracao/medicao-lote-33.json",
+    "held_out_questions": "docs/migracao/perguntas-lote-33.json",
+    "results_questions": {"before": 7, "after": 9, "of": 10},
+    "literature_as_results": {"before": 1, "after": 1, "of": 5},
+    "small_talk_after_library_kept_out": {"before": 0, "after": 4, "of": 4},
+    "library_follow_ups_kept": {"before": 4, "after": 4, "of": 4},
+    "complaints_read_deeper": {"before": 0, "after": 2, "of": 2},
+    "real_messages": {"total": 59, "routes_changed": 3, "rewrite": {"none": 5, "simple": 17, "plan": 2}},
+    "provider_calls": 0
+  },
+  "paid_check": {
+    "script": "tmp/lote-33/verificar.py",
+    "calls": 5,
+    "input_tokens": 27380,
+    "files_service_uploads": 0,
+    "models": ["gemini-3.8-flash", "gemini-3.5-flash-lite"],
+    "complement_exercised": false
+  }
+}

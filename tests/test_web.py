@@ -170,7 +170,8 @@ def test_answer_streams_text_before_final_message(env):
     cid = new_conversation(env["client"])
     response, events = ask(env["client"], cid)
     assert response.status_code == 200
-    assert [e["tipo"] for e in events] == ["texto", "texto", "fim", "memoria"]
+    assert [e["tipo"] for e in events] == ["texto", "texto", "fim"]
+    assert env["review"]["calls"] == []  # consulta informativa não paga uma segunda chamada
     assert "".join(e["texto"] for e in events[:2]) == "A taxa é 8,9e-6/h [Kabc]."
     assert response.headers["cache-control"] == "no-store"
 
@@ -191,9 +192,9 @@ def test_conversation_keeps_history_citations_and_usage_without_text(env):
     listed = client.get("/api/conversas").json()
     assert listed[0]["title"] == "Qual a taxa?" and listed[0]["messages"] == 4
     log = [json.loads(line) for line in env["settings"].usage_log.read_text(encoding="utf-8").splitlines()]
-    assert [e["task_type"] for e in log] == ["critical_reasoning", "memoria-revisor"] * 2
+    assert [e["task_type"] for e in log] == ["critical_reasoning"] * 2
     assert "taxa" not in json.dumps(log) and log[0]["reasoning_tokens"] == 200
-    assert client.get("/api/estado").json()["uso"]["total"] == 670
+    assert client.get("/api/estado").json()["uso"]["total"] == 640
     stored = client.get(f"/api/conversas/{cid}").json()
     assert stored["messages"][1]["html"] == reply["html"]
 
@@ -384,7 +385,7 @@ def test_web_switch_reaches_agent_and_web_sources_render(env):
     client = env["client"]
     env["reply"].update(pieces=["A taxa é constante.[W1] E o PDF diz 8,9e-6/h [Kabc]."])
     cid = new_conversation(client)
-    reply = fim(ask(client, cid, web=True)[1])["mensagens"][1]
+    reply = fim(ask(client, cid, "Guarde a taxa com a fonte.", web=True)[1])["mensagens"][1]
     assert env["calls"][-1]["web_search"] is True
     assert reply["web_sources"][0]["uri"] == "https://exemplo.org/a" and reply["web_queries"] == ["taxa IGBT"]
     assert 'class="cite cite-web" data-web="1"' in reply["html"] and 'data-cite="1"' in reply["html"]
@@ -503,7 +504,7 @@ def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_hist
     env["reply"].update(pieces=["O Denso detectou 10 de 14 [R1]."], sources=(), status=None,
                         extra={"result_sources": (RESULT_BLOCK,), "results_status": "conferido"})
     cid = new_conversation(client)
-    reply = fim(ask(client, cid, RESULTS_QUESTION)[1])["mensagens"][1]
+    reply = fim(ask(client, cid, RESULTS_QUESTION + " Guarde a decisão de usar estes resultados.")[1])["mensagens"][1]
     assert 'class="cite cite-result" data-result="R1"' in reply["html"] and reply["results_status"] == "conferido"
     assert reply["result_sources"][0]["citation_id"] == "R1" and "<table>" in reply["result_sources"][0]["html"]
     assert reply["resultados_faltando"] == RESULTS_DIGEST["faltando"] and reply["in_context"] is True
@@ -515,7 +516,8 @@ def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_hist
     flagged = fim(ask(client, cid, "E a sensibilidade?")[1])["mensagens"]
     assert [m["in_context"] for m in flagged] == [False, False] and flagged[1]["numeros_nao_conferidos"] == ["0,45"]
     ask(client, cid, "Continue")
-    assert [m["content"] for m in env["calls"][-1]["history"]] == [RESULTS_QUESTION, "O Denso detectou 10 de 14 [R1]."]
+    assert [m["content"] for m in env["calls"][-1]["history"]] == [
+        RESULTS_QUESTION + " Guarde a decisão de usar estes resultados.", "O Denso detectou 10 de 14 [R1]."]
     env["reply"].update(pieces=["Aviso local."], status="invalid_result_refs", extra={"results_status": "invalid_result_refs"})
     assert fim(ask(client, cid, "De novo")[1])["mensagens"][1]["in_context"] is False
 
@@ -987,7 +989,7 @@ def test_an_answer_without_citations_climbs_one_rung_inside_the_ceiling(env):
     env["reply"].update(statuses=["uncited", "citation_ids_verified"])
     _, events = ask(client, cid, LIBRARY_QUESTION, leitura="auto")
     kinds = [event["tipo"] for event in events]
-    assert kinds.count("recomeco") == 1 and kinds.index("recomeco") > kinds.index("texto") and kinds[-2] == "fim"
+    assert kinds.count("recomeco") == 1 and kinds.index("recomeco") > kinds.index("texto") and kinds[-1] == "fim"
     first, second = calls[-2:]
     assert "reading" not in first and second["reading"]["pages"] == 10 and second["ceiling"] == 30_000 - 320
     route = fim(events)["mensagens"][1]["rota"]
@@ -1035,8 +1037,10 @@ def test_an_answered_question_leaves_a_trail_that_a_similar_one_follows(env):
     ask(client, new_conversation(client), "Com base na literatura, qual é o tempo de reparo do transformador?", leitura="auto")
     assert "reading" not in calls[-1] and "trail" not in calls[-1]
     library.documents = lambda: []
-    ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="auto")
-    assert "reading" not in calls[-1] and "trail" not in calls[-1]
+    reply = fim(ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="auto")[1])["mensagens"][1]
+    assert "trail" not in calls[-1]
+    # Lote 33: a pergunta refeita deixou guardada a leitura por páginas para as muito parecidas com ela.
+    assert calls[-1]["reading"]["pages"] == 10 and reply["rota"]["aprendido"][0]["campo"] == "leitura"
 
 
 def test_a_large_named_document_goes_by_its_own_pages_without_asking(env):

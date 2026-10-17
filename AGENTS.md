@@ -16,7 +16,8 @@ o lote 21, `docs/specs/0021-gpvs-interface.md`; o lote 22, `docs/specs/0022-corr
 o lote 23, `docs/specs/0023-aba-ciencia-nova.md`; o lote 24, `docs/specs/0024-inicio-das-falhas.md`; o lote 25, `docs/specs/0025-confiabilidade-por-componente.md`;
 o lote 26, `docs/specs/0026-resultados-no-chat.md`; o lote 27, `docs/specs/0027-tela-envios-e-fontes.md`;
 o lote 28, `docs/specs/0028-grafo-no-obsidian.md`; o lote 29, `docs/specs/0029-indexacao-figuras-e-frases.md`;
-o lote 30, `docs/specs/0030-leitura-integral.md`; e o lote 31, `docs/specs/0031-roteador-e-escada.md`.
+o lote 30, `docs/specs/0030-leitura-integral.md`; o lote 31, `docs/specs/0031-roteador-e-escada.md`;
+o lote 32, `docs/specs/0032-busca-e-memoria.md`; e o lote 33, `docs/specs/0033-reescrita-aprendizado-resultados.md`.
 Os lotes seguintes
 seguem o `docs/roteiro-v0.md`, e cada um é combinado antes de começar.
 O mapa e a proveniência da migração ficam em `docs/migracao/`.
@@ -25,7 +26,7 @@ O mapa e a proveniência da migração ficam em `docs/migracao/`.
   o mestrado é uma especialização, isolada do núcleo geral.
 - Trabalhe em pequenos lotes. Explique propósito e arquivos envolvidos antes
   das alterações e apresente os resultados e testes para revisão do usuário.
-- Foram autorizados os planos dos lotes 01–07 e 09–31 e as correções do lote 08 na conversa com o pesquisador.
+- Foram autorizados os planos dos lotes 01–07 e 09–33 e as correções do lote 08 na conversa com o pesquisador.
   No lote 29, a descrição das figuras pelo modelo envia páginas dos documentos como imagem: só por pedido do
   pesquisador (botão ou comando), nunca sozinha; a leitura completa da biblioteca e a reindexação da
   biblioteca real pedem a autorização dele.
@@ -39,6 +40,11 @@ O mapa e a proveniência da migração ficam em `docs/migracao/`.
   servidor não chama o modelo sem a confirmação dele; depois de 300 mil tokens no dia, toda leitura acima dos
   trechos pede confirmação. Não mude esses dois limites nem volte a leitura ampla ao padrão sem combinar.
   As trilhas (páginas citadas por pergunta já respondida) ficam na memória de conversas, em `data/memoria/`.
+  No lote 33 (17/10/2026), por decisão dele: a reescrita só é chamada quando a mensagem depende da conversa
+  ou traz sigla, e o plano por partes só quando o pedido tem partes; a segunda chamada para as partes sem
+  citação é automática apenas dentro dos 30 mil tokens e antes do aviso diário. O aprendizado com o uso é
+  local, sem tokens, e usa só as escolhas fixadas na tela e as perguntas refeitas ou reclamações; fica em
+  `data/memoria/`, nunca leva sozinho à leitura ampla e deixa de valer quando a conversa é apagada.
   O roteiro da 0.3.0 (lotes 22–26) foi aprovado em 30/09/2026 e concluído em 01/10/2026.
   Nas telas e nas respostas ao pesquisador, apresente dados em linguagem simples, sem códigos internos
   (M09–M14), "semente" ou "canônica" sem explicação, e com uma nota para cada índice ou indicador.

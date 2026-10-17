@@ -942,7 +942,8 @@ def test_vault_follows_answers_renames_and_deletions(web):
 
     cid = client.post("/api/conversas", headers=HEADERS).json()["id"]
     assert web["notes"]() == ["Documentos/Silva, 2020.md", f"{ABOUT}.md"]  # conversa vazia não vira nota
-    events = ask(client, cid)
+    events = ask(client, cid, "O que é MTTF? Prefiro respostas curtas.")
+    client.patch(f"/api/conversas/{cid}", headers=HEADERS, json={"title": "O que é MTTF?"})
     assert [event["tipo"] for event in events][-2:] == ["fim", "memoria"]
     # A data do nome é a da conversa guardada, não a do relógio do teste.
     stored = client.get(f"/api/conversas/{cid}").json()["created_at"]
@@ -1043,7 +1044,7 @@ def test_a_broken_vault_never_breaks_the_chat_and_off_means_no_folder(tmp_path, 
     blocked.write_text("um arquivo no lugar da pasta", encoding="utf-8")
     web["settings"].obsidian_dir = blocked
     cid = web["client"].post("/api/conversas", headers=HEADERS).json()["id"]
-    assert [event["tipo"] for event in ask(web["client"], cid)][-2:] == ["fim", "memoria"]
+    assert [event["tipo"] for event in ask(web["client"], cid)][-1:] == ["fim"]
     assert web["sync"].flush(10) and web["sync"].state["erro"] == FAILURE
     assert str(tmp_path) not in capsys.readouterr().err
 

@@ -1,0 +1,368 @@
+{
+  "medido_em": "2026-10-17",
+  "base": "98be273",
+  "vocabulario": {
+    "modelos": [
+      "ae-lstm",
+      "denso"
+    ],
+    "ensaios": [
+      "f1l",
+      "f1m",
+      "f2l",
+      "f2m",
+      "f3l",
+      "f3m",
+      "f4l",
+      "f4m",
+      "f5l",
+      "f5m",
+      "f6l",
+      "f6m",
+      "f7l",
+      "f7m"
+    ],
+    "metricas": [
+      "acuracia balanceada",
+      "alarme",
+      "alarmes",
+      "alarmes falsos estimados",
+      "atraso",
+      "atraso mediano",
+      "auc-pr",
+      "auc-roc",
+      "base de tempo",
+      "cenarios de reparo",
+      "confiabilidade",
+      "criticidade",
+      "disponibilidade",
+      "ensaios detectados",
+      "especificidade",
+      "f1",
+      "faixa esperada pelo limiar",
+      "horas paradas por ano",
+      "intervalo de 95%",
+      "limiar",
+      "limite superior de 95%",
+      "mcc",
+      "mudanca observada",
+      "npr",
+      "precisao",
+      "recall",
+      "sensibilidade",
+      "taxa de deteccao",
+      "trecho entre o meio e a mudanca"
+    ]
+  },
+  "perguntas_guardadas": {
+    "resultados": {
+      "antes": 7,
+      "depois": 9,
+      "de": 10,
+      "rotas": [
+        {
+          "pergunta": "Qual detector teve o melhor desempenho nos testes?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Em média, quanto tempo o modelo recorrente leva para acusar uma falha?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "A precisão do Denso foi maior que a do LSTM?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Quais falhas passaram sem ser percebidas pelos autoencoders?",
+          "antes": "consulta",
+          "depois": "consulta"
+        },
+        {
+          "pergunta": "Qual grupo do inversor tem a menor disponibilidade?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Quanto deu o NPR mais alto da análise de criticidade?",
+          "antes": "fato",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Como ficaram as métricas por janela do autoencoder denso?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "O limiar escolhido gerou muitos disparos indevidos?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Qual é a taxa de detecção da falha F5?",
+          "antes": "metodo",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Resuma o que já obtive com os experimentos de detecção.",
+          "antes": "resultados",
+          "depois": "resultados"
+        }
+      ]
+    },
+    "nao_resultados": {
+      "tratadas_como_resultados_antes": 1,
+      "tratadas_como_resultados_depois": 1,
+      "de": 5,
+      "rotas": [
+        {
+          "pergunta": "Segundo a literatura, o que é um autoencoder LSTM?",
+          "antes": "resultados",
+          "depois": "resultados"
+        },
+        {
+          "pergunta": "Qual a taxa de falha de capacitores eletrolíticos segundo Baschel?",
+          "antes": "documento",
+          "depois": "documento"
+        },
+        {
+          "pergunta": "O que é FMECA?",
+          "antes": "sintese",
+          "depois": "sintese"
+        },
+        {
+          "pergunta": "Como um autoencoder detecta anomalias, segundo os artigos?",
+          "antes": "sintese",
+          "depois": "sintese"
+        },
+        {
+          "pergunta": "Defina disponibilidade com base em Lafraia.",
+          "antes": "documento",
+          "depois": "documento"
+        }
+      ]
+    },
+    "depois_da_biblioteca_conversa": {
+      "certas_antes": 0,
+      "certas_depois": 4,
+      "de": 4,
+      "rotas": [
+        {
+          "mensagem": "kkkk valeu, ficou ótimo",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "conversa",
+            0
+          ]
+        },
+        {
+          "mensagem": "Nossa, que resposta boa!",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "conversa",
+            0
+          ]
+        },
+        {
+          "mensagem": "Hoje estou cansado, mas vamos lá.",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "conversa",
+            0
+          ]
+        },
+        {
+          "mensagem": "Pode ser mais informal comigo.",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "conversa",
+            0
+          ]
+        }
+      ]
+    },
+    "depois_da_biblioteca_biblioteca": {
+      "certas_antes": 4,
+      "certas_depois": 4,
+      "de": 4,
+      "rotas": [
+        {
+          "mensagem": "Traga outra fonte.",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "continuacao",
+            1
+          ]
+        },
+        {
+          "mensagem": "Mas e a FMECA?",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "continuacao",
+            1
+          ]
+        },
+        {
+          "mensagem": "Explique melhor a segunda.",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "continuacao",
+            1
+          ]
+        },
+        {
+          "mensagem": "Tem alguma tabela sobre isso?",
+          "antes": [
+            "visual",
+            2
+          ],
+          "depois": [
+            "visual",
+            2
+          ]
+        }
+      ]
+    },
+    "depois_da_biblioteca_reclamacao": {
+      "certas_antes": 0,
+      "certas_depois": 2,
+      "de": 2,
+      "rotas": [
+        {
+          "mensagem": "Você não conseguiu me trazer nenhuma definição.",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "aprofundar",
+            2
+          ]
+        },
+        {
+          "mensagem": "Faltou a parte da FMECA.",
+          "antes": [
+            "continuacao",
+            1
+          ],
+          "depois": [
+            "aprofundar",
+            2
+          ]
+        }
+      ]
+    },
+    "partes": [
+      {
+        "pergunta": "Traga da literatura os principais conceitos de confiabilidade, como MCC, FMEA e FMECA",
+        "partes": 4,
+        "minimo": 3
+      },
+      {
+        "pergunta": "Compare FMEA e FMECA.",
+        "partes": 2,
+        "minimo": 2
+      },
+      {
+        "pergunta": "Qual a diferença entre manutenção preventiva e preditiva?",
+        "partes": 2,
+        "minimo": 2
+      },
+      {
+        "pergunta": "O que é MTBF?",
+        "partes": 1,
+        "minimo": 1
+      },
+      {
+        "pergunta": "Como funciona o rastreamento do ponto de máxima potência?",
+        "partes": 1,
+        "minimo": 1
+      }
+    ],
+    "continuacao_partes": {
+      "tem_partes": true
+    },
+    "reescrita": {
+      "dispensa": [
+        "nenhuma",
+        "nenhuma"
+      ],
+      "precisa": [
+        "simples",
+        "simples"
+      ]
+    }
+  },
+  "mensagens_reais": {
+    "total": 59,
+    "rotas_mudadas": 3,
+    "reescrita": {
+      "nenhuma": 5,
+      "simples": 17,
+      "plano": 2
+    },
+    "sem_reescrita_comparadas": 5,
+    "sem_reescrita_com_o_mesmo_primeiro_documento": 2,
+    "mudancas": [
+      {
+        "antes": [
+          "continuacao",
+          "trechos",
+          "flash"
+        ],
+        "depois": [
+          "conversa",
+          "sem a biblioteca",
+          "flash_lite"
+        ]
+      },
+      {
+        "antes": [
+          "continuacao",
+          "trechos",
+          "flash"
+        ],
+        "depois": [
+          "conversa",
+          "sem a biblioteca",
+          "flash_lite"
+        ]
+      },
+      {
+        "antes": [
+          "continuacao",
+          "trechos",
+          "flash"
+        ],
+        "depois": [
+          "aprofundar",
+          "páginas inteiras",
+          "flash"
+        ]
+      }
+    ]
+  }
+}

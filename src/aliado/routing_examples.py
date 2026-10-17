@@ -11,6 +11,9 @@ INTENTS: dict[str, tuple[str, ...]] = {
         "O que você sabe sobre mim?", "Como você funciona?", "Pode repetir de forma mais curta?",
         "Reescreva a resposta anterior em um parágrafo.", "Traduza a sua última resposta para o inglês.",
         "Não entendi, explique de outro jeito.", "Qual é o seu modelo?", "Me ajude a organizar o meu dia.",
+        # Lote 33: conversa solta das mensagens reais.
+        "Fale comigo, meu jovem!", "Cara, como você sabe tanto?", "Haha, você está esperto hoje.",
+        "Muito obrigado pela ajuda de hoje.",
     ),
     "tarefa": (
         "Escreva um código em Python para ler um arquivo.", "Corrija este erro do meu programa.",
@@ -49,6 +52,10 @@ INTENTS: dict[str, tuple[str, ...]] = {
         "Quais falhas do GPVS não foram detectadas?", "Mostre os resultados da avaliação oficial.",
         "Qual é o NPR do capacitor na nossa FMECA?", "Qual a disponibilidade do inversor nos nossos cenários?",
         "Quando cada falha começa a aparecer nos nossos dados?", "Resuma os resultados do meu experimento.",
+        # Lote 33: resultados sem a palavra "resultados".
+        "Qual foi a especificidade do autoencoder denso?", "Quantos ensaios com falha cada modelo detectou?",
+        "Qual o atraso mediano até o alarme?", "Qual componente ficou mais crítico na nossa análise?",
+        "O que eu já consegui na pesquisa até agora?",
     ),
     "metodo": (
         "Resuma o protocolo de partição e calibração dos detectores.", "Quais taxas de falha foram decididas para a FMECA?",

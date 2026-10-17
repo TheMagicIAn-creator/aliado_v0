@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-05",
+  "batch": "32",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0032-busca-e-memoria.md",
+  "validation": "docs/migracao/validacao-lote-32.md",
+  "base_commit": "98be273e43ed13cd05a76031534a0f9bce4f725d",
+  "base_note": "Continuação da alteração parcial em library.py, preservando os registros anteriores.",
+  "release": {"version_unchanged": "0.5.0", "new_package": false, "commit": false},
+  "changes": {
+    "search": "Vetores em memória; normalização reaproveitada; SQLite data_version na mesma conexão e trava; atualização em commits externos; suporte a WAL.",
+    "pages": "Até 60 candidatos, dois trechos avaliados por página, reordenação local no degrau de páginas; prioridades e orçamento preservados; retorno à busca anterior em falhas.",
+    "memory": "Filtro local poupa cumprimentos e consultas; preserva feedback, perfil, preferências, correções, decisões, comandos e declarações ambíguas; memória de conversas e fichas preservadas."
+  },
+  "reranker": {
+    "model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+    "revision": "1427fd652930e4ba29e8149678df786c240d8825",
+    "directory": "data/models/reranker",
+    "tokenizer_sha256": "62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626",
+    "model_file": "onnx/model_quint8_avx2.onnx",
+    "model_sha256": "6c2513767fb63d008a4377bef7a7a3555433d9436342bb53e35a3a72ffc52d4b",
+    "artifact_bytes": 135702676,
+    "max_pair_tokens": 384,
+    "batch_size": 8,
+    "cpu_threads": 1,
+    "implicit_download": false,
+    "new_dependency": false
+  },
+  "checks": {
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest -q", "passed": 739,
+      "failed": 0, "seconds": 141.43, "warnings": 1,
+      "environment": {"OPENBLAS_NUM_THREADS": "1", "pytorch_threads": 10}},
+    "ruff": {"command": ".venv/Scripts/python.exe -m ruff check .", "exit_code": 0},
+    "diff_check": {"command": "git diff --check", "exit_code": 0},
+    "search_default_environment": {
+      "command": ".venv/Scripts/python.exe -m pytest tests/test_search_cache.py tests/test_reranking.py -q",
+      "passed": 18, "failed": 0, "seconds": 4.24, "environment_overrides": false
+    },
+    "earlier_run": "Limitar OMP e MKL a uma thread causou diferença na reprodução bit a bit do modelo recorrente. Voltando às dez threads da referência, a suíte passou; ciência e tolerâncias não foram alteradas."
+  },
+  "measurement": {
+    "script": "docs/migracao/medir-lote-32.py",
+    "results": "docs/migracao/medicao-lote-32.json",
+    "kind": "synthetic_offline",
+    "chunks": 20000,
+    "dimensions": 384,
+    "old_warm_median_seconds": 3.32541,
+    "new_warm_median_seconds": 0.082411,
+    "new_first_search_seconds": 2.815096,
+    "same_20_results": true,
+    "ranking_questions": 12,
+    "ranking_first_before": 5,
+    "ranking_first_after": 12,
+    "ranking_top10_before": 12,
+    "ranking_top10_after": 12,
+    "sixty_candidates_seconds": 1.372768,
+    "memory_messages": 22,
+    "memory_calls_before": 22,
+    "memory_calls_after": 6,
+    "limitation": "Perguntas e documentos sintéticos. Qualidade compara embeddings e segunda rede, sem busca híbrida/reformulação. Não mede qualidade da resposta do Gemini, custo monetário ou tokens reais."
+  },
+  "preserved": {
+    "ceiling": 30000,
+    "daily_warning": 300000,
+    "wide_reading_default": false,
+    "previous_manifests_changed": false,
+    "paid_calls": 0,
+    "real_library_reindexed": false,
+    "real_server_restarted": false
+  },
+  "remaining": [
+    "Reiniciar o servidor para carregar o código novo.",
+    "Avaliação autorizada com perguntas novas sobre o acervo e, se desejado, chamadas pagas com orçamento combinado.",
+    "Reescrita seletiva, roteamento entre APIs e limites conhecidos de trilhas e roteador permanecem fora deste lote."
+  ]
+}

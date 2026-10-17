@@ -7,14 +7,60 @@ aqui antes de qualquer anotação existir; o que não passa é descartado.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 
+from aliado.knowledge.stopwords import plain
 from aliado.llm.contracts import LLMRequest, LLMResult
 from aliado.memory.store import KINDS, MAX_TEXT
 
 MAX_NOTES = 8
 MAX_CARD_FACTS = 8
 MAX_CARD_CHARS = 200_000
+
+# Lote 32: filtro conservador, sem modelo. Na dúvida sobre uma declaração, revisar.
+_DURABLE = re.compile(
+    r"\b(prefiro|preferimos|minha preferencia|nao (?:quero|use|utilize)|"
+    r"(?:meu nome (?:e|eh)|me chamo|me chamar|me chame)|sou|moro|"
+    r"(?:meu|minha|nosso|nossa) (?:orientador|orientadora|prazo|instituicao|universidade|pesquisa|projeto)|"
+    r"eu (?:trabalho|estudo|defendo)|decidi|decidimos|escolhi|escolhemos|"
+    r"vamos (?:usar|adotar|manter|trocar)|ficou decidido|a partir de agora|"
+    r"corrigindo|correcao|voce errou|esta errado|o correto|na verdade|"
+    r"responda (?:curto|sempre|em)|memorize|guarde|registre|anote)\b")
+_LOOKUP = re.compile(
+    r"^(?:(?:por favor|agora|entao|e)\s*[,.:]?\s*)*"
+    r"(?:qual|quais|quem|quando|onde|quanto|quantos|quantas|como|por que|porque|o que|"
+    r"ha (?:algum|alguma)|existe|existem|voce (?:lembra|sabe|pode|consegue)|"
+    r"pode|poderia|consegue|explique|explica|resuma|resumir|compare|comparar|"
+    r"mostre|mostrar|traga|trazer|busque|buscar|procure|pesquise|verifique|verificar|"
+    r"defina|descreva|calcule|analise|cite|liste|continue|prossiga|traduza|"
+    r"me (?:diga|explique|mostre|traga|ajude))\b")
+_SMALL_TALK = re.compile(
+    r"^(?:oi|ola|bom dia|boa tarde|boa noite|obrigado|obrigada|muito obrigado|muito obrigada|"
+    r"valeu|ok|certo|entendi|perfeito|sim|nao|continue|prossiga)[!. ,]*$")
+
+
+def needs_review(question: str, *, explicit: bool = False, history=()) -> bool:
+    """Perguntas comuns ficam na memória de conversas, sem uma segunda chamada paga.
+
+    Sinais do próprio usuário prevalecem sobre o formato de pergunta. Citações na resposta
+    não acionam o revisor sozinhas; fatos documentais continuam sendo anotados nas fichas.
+    """
+    text = plain(" ".join(question.split()))
+    if explicit:
+        return True
+    if text.rstrip(".! ") in {"sim", "nao", "ok", "certo", "pode", "pode ser"}:
+        last = next((plain(item["content"]) for item in reversed(history) if item["role"] == "assistant"), "")
+        if "?" in last and re.search(r"\b(prefere|quer|podemos|vamos|confirm[ao]|adotar|usar)\b", last):
+            return True
+    if not text or _SMALL_TALK.fullmatch(text):
+        return False
+    if _DURABLE.search(text):
+        return True
+    if _LOOKUP.match(text) or text.endswith("?"):
+        return False
+    return True
+
 
 REVIEW_SCHEMA = {
     "type": "object",

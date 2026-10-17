@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1500" viewBox="0 0 1800 1500">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<title>Ciência: cálculo, treino e resultados</title><desc>O núcleo geral de engenharia e a especialização em inversores permanecem separados</desc>
+<text x="55" y="27" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">AL-IAdo  /  MAPA 05</text>
+<text x="55" y="65" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="43" font-weight="700" fill="#172b43">Ciência: cálculo, treino e resultados</text>
+<text x="55" y="128" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#52647b">O núcleo geral de engenharia e a especialização em inversores permanecem separados</text>
+<rect x="55" y="176" width="13" height="13" rx="3" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="78" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Interface</text>
+<rect x="255" y="176" width="13" height="13" rx="3" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="278" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Código local</text>
+<rect x="455" y="176" width="13" height="13" rx="3" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="478" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Modelo local</text>
+<rect x="655" y="176" width="13" height="13" rx="3" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="678" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">API paga</text>
+<rect x="855" y="176" width="13" height="13" rx="3" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="878" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Persistência</text>
+<rect x="1055" y="176" width="13" height="13" rx="3" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="1078" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Ciência</text>
+<text x="55" y="1452" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">Código local em 05/10/2026 · v0.5.0 + lote 32 · setas = fluxo ou dependência; não são serviços separados</text>
+<text x="1580" y="1452" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#52647b">MAPA 05 / 05</text>
+<rect x="55" y="235" width="1690" height="125" rx="15" fill="#eaf2ff" stroke="#2f65c8" stroke-width="1.4"/>
+<rect x="56" y="253" width="5" height="89" rx="2" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="77" y="251" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">1 O pesquisador inicia uma operação</text>
+<text x="77" y="294.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Aba Ciência ou CLI → comandos definidos no projeto. Preparação, treino e avaliação GPVS usam subprocessos; o chat não dispara código livre.</text>
+<text x="77" y="327" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">interfaces/web/gpvs_runs.py · cli.py</text>
+<rect x="40" y="425" width="580" height="615" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="62" y="438" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#527c32">NÚCLEO GERAL · ENGENHARIA</text>
+<rect x="660" y="425" width="1100" height="615" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="682" y="438" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#527c32">ESPECIALIZAÇÃO · PESQUISA DE INVERSORES / GPVS</text>
+<polyline points="335,360 335,485" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="335,485 330.21537912477646,475.0950818741206 339.78462087522354,475.0950818741206" fill="#8b9cb0"/>
+<polyline points="1210,360 1210,468 935,468 935,485" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="935,485 930.2153791247765,475.0950818741206 939.7846208752235,475.0950818741206" fill="#8b9cb0"/>
+<rect x="65" y="485" width="530" height="235" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="66" y="503" width="5" height="199" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="87" y="501" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">2 Modelos de confiabilidade</text>
+<text x="87" y="544.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Confiabilidade, disponibilidade e manutenção:</text>
+<text x="87" y="574.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">exponencial, Weibull e sistemas em série ou</text>
+<text x="87" y="604.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">paralelo.</text>
+<text x="87" y="633.9600000000002" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Cenários e premissas são explícitos.</text>
+<text x="87" y="687" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">science/ram.py</text>
+<rect x="65" y="770" width="530" height="225" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="66" y="788" width="5" height="189" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="87" y="786" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">3 Risco e componentes</text>
+<text x="87" y="829.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">FMECA: modos de falha e prioridade de risco.</text>
+<text x="87" y="859.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Taxas de falha e cenários de reparo têm análise</text>
+<text x="87" y="889.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">separada das notas de risco.</text>
+<text x="87" y="962" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">science/fmeca.py · components.py</text>
+<polyline points="330,720 330,770" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="330,770 325.21537912477646,760.0950818741205 334.78462087522354,760.0950818741205" fill="#8b9cb0"/>
+<rect x="685" y="485" width="500" height="215" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="686" y="503" width="5" height="179" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="707" y="501" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">4 Dados e protocolo</text>
+<text x="707" y="544.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Ensaios GPVS, divisão temporal, normalização e</text>
+<text x="707" y="574.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">construção de sequências. Separação entre</text>
+<text x="707" y="604.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">treino, calibração e teste.</text>
+<text x="707" y="667" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">detection/gpvs.py · protocol.py</text>
+<rect x="1235" y="485" width="500" height="215" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="1236" y="503" width="5" height="179" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="1257" y="501" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">5 Autoencoders</text>
+<text x="1257" y="544.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Denso e AE-LSTM aprendem a reconstruir sinais</text>
+<text x="1257" y="574.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">saudáveis. Erro de reconstrução alimenta a</text>
+<text x="1257" y="604.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">detecção de anomalias.</text>
+<text x="1257" y="667" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">detection/models.py · training.py</text>
+<polyline points="1185,590 1235,590" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1235,590 1225.0950818741205,594.7846208752235 1225.0950818741205,585.2153791247765" fill="#8b9cb0"/>
+<rect x="1235" y="765" width="500" height="230" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="1236" y="783" width="5" height="194" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="1257" y="781" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">6 Limiar e avaliação</text>
+<text x="1257" y="824.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Calibração define o limiar. Testes medem</text>
+<text x="1257" y="854.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">detecção, falsos alarmes e atraso.</text>
+<text x="1257" y="884.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Configurações e consultas ao teste ficam</text>
+<text x="1257" y="913.9600000000002" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">registradas.</text>
+<text x="1257" y="962" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">threshold.py · evaluation.py · registry.py</text>
+<polyline points="1485,700 1485,765" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1485,765 1480.2153791247765,755.0950818741205 1489.7846208752235,755.0950818741205" fill="#8b9cb0"/>
+<rect x="685" y="765" width="500" height="230" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="686" y="783" width="5" height="194" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="707" y="781" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">7 Reanálise do início</text>
+<text x="707" y="824.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Detector de mudança nos sinais localiza o início</text>
+<text x="707" y="854.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">observado da falha. A reanálise é secundária e</text>
+<text x="707" y="884.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">preserva a avaliação oficial.</text>
+<text x="707" y="962" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">detection/onset.py · reanalysis.py</text>
+<polyline points="1235,885 1185,885" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1185,885 1194.9049181258795,880.2153791247765 1194.9049181258795,889.7846208752235" fill="#8b9cb0"/>
+<polyline points="330,995 330,1095" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="330,1095 325.21537912477646,1085.0950818741205 334.78462087522354,1085.0950818741205" fill="#8b9cb0"/>
+<polyline points="1485,995 1485,1060 455,1060 455,1095" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="455,1095 450.21537912477646,1085.0950818741205 459.78462087522354,1085.0950818741205" fill="#8b9cb0"/>
+<polyline points="935,995 935,1060" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="935,1060 930.2153791247765,1050.0950818741205 939.7846208752235,1050.0950818741205" fill="#8b9cb0"/>
+<rect x="55" y="1095" width="800" height="165" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="56" y="1113" width="5" height="129" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="77" y="1111" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">8 Resultados e rastreabilidade</text>
+<text x="77" y="1154.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Arquivos de configuração, modelos treinados, escores, métricas e histórico de</text>
+<text x="77" y="1184.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">execuções. Novas rodadas preservam as anteriores.</text>
+<text x="77" y="1227" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">data/resultados/ · data/gpvs/</text>
+<rect x="925" y="1095" width="820" height="165" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="926" y="1113" width="5" height="129" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="947" y="1111" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">9 Interface e contexto científico do chat</text>
+<text x="947" y="1154.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Aba Ciência exibe gráficos e tabelas. Um resumo estruturado dos resultados</text>
+<text x="947" y="1184.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">fornece números, fontes e notas para as respostas.</text>
+<text x="947" y="1227" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">science/digest.py · interfaces/web/science.py</text>
+<polyline points="855,1175 925,1175" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="925,1175 915.0950818741205,1179.7846208752235 915.0950818741205,1170.2153791247765" fill="#8b9cb0"/>
+<text x="55" y="1310" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">O Gemini explica resultados já calculados pelo serviço científico. As referências numéricas são conferidas na resposta.</text>
+<text x="55" y="1339.82" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Treinar autoencoders com sinais de ensaio é diferente de usar MiniLM na busca e de guardar memórias das conversas.</text>
+<text x="55" y="1369.6399999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Nenhum dos três novos blocos do lote 32 alterou o método de treinamento ou os resultados científicos de referência.</text>
+</svg>

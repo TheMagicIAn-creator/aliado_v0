@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1420" viewBox="0 0 1800 1420">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<title>Arquitetura geral: setores e fronteiras</title><desc>Aplicação Python local e modular · servidor Starlette/Uvicorn · interface no navegador · Gemini na nuvem</desc>
+<text x="55" y="27" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">AL-IAdo  /  MAPA 01</text>
+<text x="55" y="65" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="43" font-weight="700" fill="#172b43">Arquitetura geral: setores e fronteiras</text>
+<text x="55" y="128" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#52647b">Aplicação Python local e modular · servidor Starlette/Uvicorn · interface no navegador · Gemini na nuvem</text>
+<rect x="55" y="176" width="13" height="13" rx="3" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="78" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Interface</text>
+<rect x="255" y="176" width="13" height="13" rx="3" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="278" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Código local</text>
+<rect x="455" y="176" width="13" height="13" rx="3" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="478" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Modelo local</text>
+<rect x="655" y="176" width="13" height="13" rx="3" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="678" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">API paga</text>
+<rect x="855" y="176" width="13" height="13" rx="3" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="878" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Persistência</text>
+<rect x="1055" y="176" width="13" height="13" rx="3" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="1078" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Ciência</text>
+<text x="55" y="1372" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">Código local em 05/10/2026 · v0.5.0 + lote 32 · setas = fluxo ou dependência; não são serviços separados</text>
+<text x="1580" y="1372" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#52647b">MAPA 01 / 05</text>
+<rect x="45" y="225" width="1270" height="1015" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="67" y="238" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">COMPUTADOR DO PESQUISADOR · 127.0.0.1:8765</text>
+<rect x="1360" y="225" width="395" height="1015" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="1382" y="238" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#b76718">SERVIÇOS EXTERNOS</text>
+<rect x="75" y="285" width="785" height="160" rx="15" fill="#eaf2ff" stroke="#2f65c8" stroke-width="1.4"/>
+<rect x="76" y="303" width="5" height="124" rx="2" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="97" y="301" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">1 Interface web</text>
+<text x="97" y="344.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Chat e fontes · envio de documentos · Memória · Ciência</text>
+<text x="97" y="374.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">HTML, CSS e JavaScript; gráficos D3 e fórmulas KaTeX.</text>
+<text x="97" y="412" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">interfaces/web/static/</text>
+<rect x="900" y="285" width="385" height="160" rx="15" fill="#eaf2ff" stroke="#2f65c8" stroke-width="1.4"/>
+<rect x="901" y="303" width="5" height="124" rx="2" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="922" y="301" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">2 Terminal</text>
+<text x="922" y="344.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Comandos para conversar, preparar</text>
+<text x="922" y="374.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">a biblioteca e executar ciência.</text>
+<text x="922" y="412" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">cli.py</text>
+<polyline points="450,445 450,500" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="450,500 445.21537912477646,490.0950818741206 454.78462087522354,490.0950818741206" fill="#8b9cb0"/>
+<polyline points="1092,445 1092,500" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1092,500 1087.2153791247765,490.0950818741206 1096.7846208752235,490.0950818741206" fill="#8b9cb0"/>
+<rect x="75" y="500" width="1210" height="180" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="76" y="518" width="5" height="144" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="97" y="516" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">3 Coordenação e regras da conversa</text>
+<text x="97" y="559.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Servidor web + Agent: roteamento local, contexto, leitura, estimativas, chamada ao modelo e conferência.</text>
+<text x="97" y="589.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Skills do AL-IAdo: engenharia, confiabilidade e pesquisa de inversores; carregadas conforme a tarefa.</text>
+<text x="97" y="647" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">interfaces/web/app.py · agent.py · routing.py · skills/builtin/</text>
+<polyline points="260,680 260,745" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="260,745 255.21537912477646,735.0950818741205 264.78462087522354,735.0950818741205" fill="#8b9cb0"/>
+<polyline points="680,680 680,745" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="680,745 675.2153791247765,735.0950818741205 684.7846208752235,735.0950818741205" fill="#8b9cb0"/>
+<polyline points="1100,680 1100,745" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1100,745 1095.2153791247765,735.0950818741205 1104.7846208752235,735.0950818741205" fill="#8b9cb0"/>
+<rect x="75" y="745" width="370" height="240" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="76" y="763" width="5" height="204" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="97" y="761" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">4 Biblioteca</text>
+<text x="97" y="804.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Originais, extração, busca por</text>
+<text x="97" y="834.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">texto e significado.</text>
+<text x="97" y="864.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Cache + reordenação local das</text>
+<text x="97" y="893.9600000000002" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">páginas (lote 32).</text>
+<text x="97" y="952" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">knowledge/ · veja mapa 03</text>
+<rect x="495" y="745" width="370" height="240" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="496" y="763" width="5" height="204" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="517" y="761" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">5 Memória</text>
+<text x="517" y="804.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Perfil, preferências, correções e</text>
+<text x="517" y="834.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">conversas.</text>
+<text x="517" y="864.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Filtro local da revisão paga (lote</text>
+<text x="517" y="893.9600000000002" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">32).</text>
+<text x="517" y="952" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">memory/ · veja mapa 04</text>
+<rect x="915" y="745" width="370" height="240" rx="15" fill="#eaf4e5" stroke="#527c32" stroke-width="1.4"/>
+<rect x="916" y="763" width="5" height="204" rx="2" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="937" y="761" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">6 Ciência</text>
+<text x="937" y="804.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Cálculos, autoencoders e</text>
+<text x="937" y="834.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">avaliações por comando.</text>
+<text x="937" y="864.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Resultados estruturados</text>
+<text x="937" y="893.9600000000002" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">disponíveis ao chat.</text>
+<text x="937" y="952" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">science/ · veja mapa 05</text>
+<polyline points="260,985 260,1050" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="260,1050 255.21537912477646,1040.0950818741205 264.78462087522354,1040.0950818741205" fill="#8b9cb0"/>
+<polyline points="680,985 680,1050" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="680,1050 675.2153791247765,1040.0950818741205 684.7846208752235,1040.0950818741205" fill="#8b9cb0"/>
+<polyline points="1100,985 1100,1050" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1100,1050 1095.2153791247765,1040.0950818741205 1104.7846208752235,1040.0950818741205" fill="#8b9cb0"/>
+<rect x="75" y="1050" width="1210" height="150" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="76" y="1068" width="5" height="114" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="97" y="1066" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">7 Dados e rastreabilidade no disco</text>
+<text x="97" y="1109.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">SQLite + arquivos: biblioteca, memória, conversas, pesos locais, resultados e registro de uso.</text>
+<text x="97" y="1139.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Espelho de saída para o Obsidian. Os dados de trabalho ficam em data/, fora do Git.</text>
+<polyline points="1285,585 1385,585" fill="none" stroke="#b76718" stroke-width="2"/><polygon points="1385,585 1375.0950818741205,589.7846208752235 1375.0950818741205,580.2153791247765" fill="#b76718"/>
+<text x="1323" y="551" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">API</text>
+<rect x="1385" y="350" width="345" height="485" rx="15" fill="#fff0df" stroke="#b76718" stroke-width="1.4"/>
+<rect x="1386" y="368" width="5" height="449" rx="2" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="1407" y="366" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">8 Google / Gemini</text>
+<text x="1407" y="409.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Gateway de provedores faz a</text>
+<text x="1407" y="437.9" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">ligação.</text>
+<text x="1407" y="466.29999999999995" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43"></text>
+<text x="1407" y="494.69999999999993" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Resposta ao chat e busca web</text>
+<text x="1407" y="523.0999999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">opcional.</text>
+<text x="1407" y="551.4999999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43"></text>
+<text x="1407" y="579.8999999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Auxiliares: reformular busca,</text>
+<text x="1407" y="608.2999999999998" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">fichas, revisão de memória e</text>
+<text x="1407" y="636.6999999999998" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">figuras solicitadas.</text>
+<text x="1407" y="665.0999999999998" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43"></text>
+<text x="1407" y="693.4999999999998" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">PDFs selecionados podem seguir</text>
+<text x="1407" y="721.8999999999997" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">ao serviço de arquivos.</text>
+<text x="1407" y="802" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">llm/providers/gemini.py</text>
+<rect x="1385" y="890" width="345" height="310" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="1386" y="908" width="5" height="274" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="1407" y="906" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">OpenAI (opcional)</text>
+<text x="1407" y="949.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Um adaptador local permite</text>
+<text x="1407" y="977.9" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">integrar esse provedor.</text>
+<text x="1407" y="1006.3" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43"></text>
+<text x="1407" y="1034.7" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">O chat web atual seleciona</text>
+<text x="1407" y="1063.1000000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">modelos Google; não há troca</text>
+<text x="1407" y="1091.5000000000002" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">automática entre provedores.</text>
+<text x="1407" y="1167" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">Integração local disponível</text>
+<text x="65" y="1268" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Leitura do mapa: os setores locais são módulos do mesmo projeto. As tarefas científicas longas usam subprocessos.</text>
+<text x="65" y="1297.82" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">MiniLM e o reordenador executam inferência local; os autoencoders científicos são treinados em um fluxo separado.</text>
+</svg>

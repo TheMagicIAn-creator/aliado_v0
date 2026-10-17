@@ -47,6 +47,31 @@ _VISUAL = re.compile(r"\b(figuras?|fig|tabelas?|quadros?|graficos?|diagramas?|ar
                      r"fault trees?|plots?|curves?)\b")
 _RESULTS = re.compile(r"\b(gpvs|noss[oa]s? (resultados?|dados|avaliac\w+|fmeca|experimentos?|modelos?)|meus? (resultados?|"
                       r"experimentos?|modelos?|dados)|alarmes? falsos?|ensaios?|reanalise|aba ciencia)\b")
+# Resultados da pesquisa sem as palavras acima (lote 33). Os nomes dos modelos, dos ensaios e das métricas vêm do
+# resumo dos resultados que o servidor monta para o chat (`results_vocabulary`); sem ele, valem estes. Um modelo ou
+# um ensaio da pesquisa basta. Uma métrica precisa de um objeto da pesquisa ou de um sinal de valor obtido; um
+# objeto, de um verbo no passado. Pedido de fonte ou de conceito ("o que é", "como funciona") não é resultado.
+RESULT_MODELS = frozenset({"denso", "ae-lstm"})
+RESULT_METRICS = frozenset({"sensibilidade", "especificidade", "precisao", "recall", "atraso", "atraso mediano",
+                            "ensaios detectados", "alarme", "alarmes", "mcc", "f1", "taxa de deteccao", "criticidade",
+                            "npr", "disponibilidade", "confiabilidade", "limiar"})
+_TRIAL = re.compile(r"\bf\d{1,2}[lm]?\b")
+_STUDY = re.compile(r"\b(detector(es)?|modelos?|autoencoders?|lstm|recorrente|componentes?|grupos?|cenarios?|ensaios?)\b")
+_DONE = re.compile(r"\b(detect(ou|aram)|teve|tiveram|deu|deram|ficou|ficaram|obtive|obtivemos|consegui|conseguimos|"
+                   r"errou|erraram|acertou|acertaram|funcionou|funcionaram|gerou|geraram|disparou|dispararam|"
+                   r"alcancou|alcancaram|atingiu|atingiram|perdeu|perderam)\b")
+_RANK = re.compile(r"\b(maior|menor|melhor|pior|mais alt[oa]|mais baix[oa])\b")
+_PROGRESS = re.compile(r"\bo que (eu )?(ja )?(consegui|obtive|alcancei|produzi)\b|\bmeu progresso\b")
+_CONCEPT = re.compile(r"^(o que (e|sao)|defina|como funciona|qual (e )?a definicao)\b")
+# Depois de uma resposta com a biblioteca (lote 33): conversa solta não volta à biblioteca; reclamação lê mais fundo.
+_CHAT = re.compile(r"\b(k{3,}\w*|kak\w*|(ha){2,}|rs+|valeu|obrigad[oa]s?|legal|show|massa|nossa|relaxa|tranquil\w*|"
+                   r"beleza|otim[oa]|excelente|perfeit[oa]|incrivel|sabido|esperto|cansad[oa]|informal|descontraid[oa])\b")
+_LIBRARY_ASK = re.compile(r"\b(traga|traz|trazer|mostre|cite|citacao|fontes?|explique|compare|liste|resuma|detalhe|defina|"
+                          r"tabelas?|figuras?|paginas?|primeir[oa]|segund[oa]|outr[oa]|isso|disso|nisso|mas e)\b|"
+                          r"(?:^|[.,;!?]\s*)e (?:o|a|os|as|sobre)\b")  # "Nossa, que bom. E a FMECA?"
+_COMPLAINT = re.compile(r"\b(voce|vc)\b.{0,30}\b(nao (conseguiu|trouxe|respondeu|achou|encontrou|citou)|esqueceu|errou)\b|"
+                        r"\b(faltou|faltaram|ficou faltando)\b|\bnao (era|e|foi) isso\b|"
+                        r"\b(resposta|isso) (esta |ficou )?(incomplet[oa]|errad[oa])\b")
 _METHOD = re.compile(r"\b(protocolo|particao|calibrac\w+|metodologia|hipoteses?|diretriz(es)?|decis(ao|oes)|criterios?|"
                      r"pipeline|dissertacao)\b")
 _SOURCES = re.compile(r"\b(literatura|fontes?|citac\w+|definic\w+|conceitos?|referencias?|artigos?|documentos?|autor(es)?|"
@@ -79,6 +104,8 @@ class Route:
     deeper: bool = False
     named: tuple[str, ...] = ()
     reasons: tuple[str, ...] = ()
+    # A mensagem reclama da resposta anterior (lote 33): a pergunta anterior volta com uma leitura mais funda.
+    complaint: bool = False
 
     def view(self) -> dict:
         """A rota para guardar com a resposta e mostrar na tela."""
@@ -166,24 +193,92 @@ def _skill(encoder, text: str, intent: str, current: str | None, available: set[
     return chosen, (f"o assunto combina com a skill {chosen}" if chosen and chosen != base else None)
 
 
+def _table_rows(text: str) -> list[list[str]]:
+    """As linhas de uma tabela em Markdown, célula por célula, sem a linha de separação."""
+    rows = []
+    for line in str(text or "").splitlines():
+        if line.strip().startswith("|") and not re.fullmatch(r"[\s|:-]+", line):
+            rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+    return rows
+
+
+def results_vocabulary(digest: dict | None) -> dict[str, frozenset[str]]:
+    """Os modelos, os ensaios e as métricas que aparecem no resumo dos resultados (lote 33), sem acento.
+
+    Modelos: as colunas de uma tabela de indicadores, a primeira coluna de uma tabela de modelos e o prefixo de
+    colunas como "Denso: sensibilidade". Ensaios: a primeira coluna de uma tabela de ensaios. Métricas: os nomes
+    das notas de cada indicador. Somam-se aos de sempre, para valer também sem o resumo."""
+    models, trials, metrics = set(RESULT_MODELS), set(), set(RESULT_METRICS)
+    for block in (digest or {}).get("blocos") or ():
+        for note in block.get("notas") or ():
+            name = plain(note.get("nome") or "").strip()
+            if 2 <= len(name) <= 40:
+                metrics.add(name)
+        for table in re.split(r"\n\s*\n", str(block.get("texto") or "")):
+            rows = _table_rows(table)
+            if not rows:
+                continue
+            header = [plain(cell) for cell in rows[0]]
+            models |= {cell.split(":")[0].strip() for cell in header if ":" in cell}
+            if header[0] == "indicador":
+                models |= {cell for cell in header[1:] if cell and ":" not in cell}
+            first = {plain(row[0]) for row in rows[1:] if row and row[0]}
+            if header[0] == "modelo":
+                models |= first
+            elif header[0] == "ensaio":
+                trials |= first
+    clean = lambda values: frozenset(value for value in values if 2 <= len(value) <= 40)  # noqa: E731
+    # Um nome de modelo é curto e sem números nem vírgulas ("Denso", "AE-LSTM"); o resto é título de coluna.
+    names = {value for value in models if re.fullmatch(r"[a-z][a-z-]*( [a-z-]+)?", value)}
+    return {"modelos": clean(names), "ensaios": clean(trials), "metricas": clean(metrics)}
+
+
+def _has(text: str, phrase: str) -> bool:
+    return bool(re.search(rf"(?<![\w-]){re.escape(phrase)}(?![\w-])", text))
+
+
+def _about_results(text: str, vocabulary: dict | None) -> bool:
+    """A mensagem pergunta pelos resultados da pesquisa, mesmo sem dizer "resultados" (lote 33)."""
+    if _RESULTS.search(text) or _PROGRESS.search(text):
+        return True
+    if _SOURCES.search(text) or _CONCEPT.search(text):
+        return False
+    vocabulary = vocabulary or results_vocabulary(None)
+    if _TRIAL.search(text) or any(_has(text, name) for name in vocabulary["ensaios"]):
+        return True
+    # "Denso" também é adjetivo ("o capítulo é denso"): um modelo só conta junto de uma métrica, de uma palavra da
+    # pesquisa ou de outro modelo.
+    models = sum(_has(text, name) for name in vocabulary["modelos"])
+    metric = any(_has(text, name) for name in vocabulary["metricas"])
+    study = bool(_STUDY.search(text))
+    return bool((models and (metric or study or models > 1))
+                or (metric and (study or _DONE.search(text) or _RANK.search(text))) or (study and _DONE.search(text)))
+
+
 def _intent(text: str, question: str, words: list[str], named: tuple, encoder, cards, after_library: bool,
-            after_results: bool = False) -> tuple[str, str]:
+            after_results: bool = False, vocabulary: dict | None = None) -> tuple[str, str]:
     """O tipo da mensagem e o motivo: regras rápidas primeiro; depois, as frases de exemplo."""
+    if after_library and _COMPLAINT.search(text):
+        return "reclamacao", "a mensagem diz que a resposta anterior não bastou: leitura mais funda"
     if _DEEPER.search(text) and len(words) <= 14:
         return "aprofundar", "a mensagem pede uma leitura mais funda"
     if named:
         names = ", ".join((cards[title].get("referencia") or title) for title in named)
         return "documento", f"a mensagem cita {names}"
-    if _MEMORY.search(text) or (len(words) <= 5 and _GREETING.search(text)):
+    # "Valeu! E a segunda fonte?" agradece e pede: depois de uma resposta com a biblioteca, vale o pedido.
+    if _MEMORY.search(text) or (len(words) <= 5 and _GREETING.search(text)
+                                and not (after_library and _LIBRARY_ASK.search(text))):
         return "conversa", "é conversa ou memória, sem consulta aos documentos"
     if _COLLECTION.search(text):
         return "acervo", "a pergunta é sobre o que há na biblioteca"
     if _VISUAL.search(text):
         return "visual", "a pergunta fala de figura, tabela, gráfico ou fórmula"
-    if _RESULTS.search(text):
+    if _about_results(text, vocabulary):
         return "resultados", "a pergunta é sobre os resultados da pesquisa"
     if _TASK.search(text):
         return "tarefa", "é uma tarefa de código, de escrita ou de busca fora da biblioteca"
+    if after_library and len(words) <= FOLLOW_UP_WORDS and _CHAT.search(text) and not _LIBRARY_ASK.search(text):
+        return "conversa", "conversa solta depois de uma resposta com a biblioteca"
     if after_library and len(words) <= FOLLOW_UP_WORDS:
         return "continuacao", "mensagem curta que continua a pergunta anterior"
     if after_results and len(words) <= FOLLOW_UP_WORDS and not _GREETING.search(text):
@@ -214,10 +309,12 @@ def terms(question: str, *, limit: int = 6) -> list[str]:
 
 
 def route(question: str, *, encoder=None, cards: dict | None = None, skills=(), current_skill: str | None = None,
-          library: bool = True, results: bool = False, previous: dict | None = None) -> Route:
+          library: bool = True, results: bool = False, previous: dict | None = None,
+          vocabulary: dict | None = None) -> Route:
     """A rota de uma mensagem. `library` e `results` dizem o que está ligado na tela; `cards` são as fichas dos
     documentos, para reconhecer um autor citado; `skills` são as disponíveis, e `current_skill`, a da conversa;
-    `previous` é a rota da resposta anterior, para a mensagem curta que continua o assunto."""
+    `previous` é a rota da resposta anterior, para a mensagem curta que continua o assunto; `vocabulary`, os nomes
+    tirados dos resultados (`results_vocabulary`)."""
     text = plain(question)
     words = text.split()
     cards = cards or {}
@@ -226,14 +323,17 @@ def route(question: str, *, encoder=None, cards: dict | None = None, skills=(), 
     named = tuple(sorted(named))
     before = int((previous or {}).get("rung") or 0)
     intent, why = _intent(text, question, words, named, encoder, cards, before >= PASSAGES,
-                          bool((previous or {}).get("results")) and results)
+                          bool((previous or {}).get("results")) and results, vocabulary)
+    complaint = intent == "reclamacao"
+    if complaint:
+        intent = "aprofundar"
     reasons = [why]
     skill, skill_why = _skill(encoder, question, intent, current_skill, set(skills))
     if skill_why:
         reasons.append(skill_why)
     rung = {"conversa": NONE, "tarefa": NONE, "resultados": NONE, "acervo": PASSAGES, "fato": PASSAGES,
             "sintese": PASSAGES, "metodo": PASSAGES, "consulta": PASSAGES, "visual": PAGES, "documento": DOCUMENT,
-            "aprofundar": max(before, PASSAGES), "continuacao": max(before, PASSAGES)}[intent]
+            "aprofundar": max(before, PAGES if complaint else PASSAGES), "continuacao": max(before, PASSAGES)}[intent]
     if intent == "resultados" and _SOURCES.search(text):
         rung = PASSAGES  # "compare os nossos resultados com a literatura" pede os dois
     if not library:
@@ -246,4 +346,4 @@ def route(question: str, *, encoder=None, cards: dict | None = None, skills=(), 
         reasoning="low" if cheap else None, catalog=intent == "acervo" and library,
         references=intent in {"resultados", "metodo", "consulta", "aprofundar", "continuacao"},
         results=results and intent in {"resultados", "metodo"}, deeper=intent == "aprofundar", named=named,
-        reasons=tuple(reasons))
+        reasons=tuple(reasons), complaint=complaint)

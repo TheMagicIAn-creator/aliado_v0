@@ -3,6 +3,55 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.6.0] — 2026-10-17
+
+Lotes 32 e 33, a partir do uso real.
+
+### Lote 33: reescrita seletiva, aprendizado com o uso e resultados
+
+Detalhes na [spec 0033](docs/specs/0033-reescrita-aprendizado-resultados.md) e na
+[validação do lote 33](docs/migracao/validacao-lote-33.md).
+
+- **Reescrita seletiva:** a pergunta que já diz o assunto vai direto à busca, sem a chamada de reescrita; a que
+  depende da conversa ou traz sigla é reescrita como antes; o plano por partes só entra quando o pedido tem
+  partes. A linha da rota diz como a busca foi preparada.
+- **Plano por partes** (acrescentado em 05/10 sem registro, agora com spec e testes): uma busca e uma conferência
+  para cada parte do pedido. Os títulos por parte só aparecem com duas partes ou mais. A segunda chamada, para as
+  partes sem citação, só acontece se houver material novo a ler, dentro de 30 mil tokens e antes do aviso diário;
+  fora disso, a resposta fica e aparece "Completar pesquisa". No pedido real de 05/10 ("uma fonte para cada um"),
+  as três partes saíram com fonte, contra uma antes.
+- **Trilhas:** o atalho do lote 31 volta para perguntas de uma parte só cuja resposta anterior bastou.
+- **Aprendizado com o uso**, local e sem tokens: a escolha fixada na tela vale de novo numa mensagem muito
+  parecida ("repetiu uma escolha sua"); "Ler mais fundo", a pergunta refeita e a reclamação enfraquecem a trilha
+  da resposta anterior e guardam a leitura por páginas. A reclamação lê páginas inteiras da pergunta anterior.
+- **Resultados:** o roteador reconhece os modelos, os ensaios e as métricas do próprio resumo dos resultados.
+  Nas perguntas guardadas antes da mudança, 9 de 10 foram reconhecidas, contra 7.
+- **Conversa solta** depois de uma resposta da biblioteca não volta à biblioteca nem ao modelo maior.
+- **Medição:** 757 testes e Ruff; teste pago com 5 chamadas e 27 mil tokens de entrada, do limite de 8 e 80 mil.
+  A segunda chamada não ocorreu com o modelo real e ficou conferida só nos testes.
+- **Correções da auditoria:** uma leitura aprendida não leva mais uma conversa solta à biblioteca; uma parte do
+  pedido só conta como citada pela própria seção; "E a FMECA?" depois de uma vírgula continua na biblioteca;
+  "denso" como adjetivo não vai para os resultados; "ambos" recupera as partes do pedido anterior.
+
+### Lote 32: busca e memória
+
+Detalhes na [spec 0032](docs/specs/0032-busca-e-memoria.md) e na
+[validação do lote 32](docs/migracao/validacao-lote-32.md).
+
+- **Busca em memória:** os vetores são normalizados uma vez e comparados em conjunto. O cache acompanha
+  os commits no catálogo, inclusive atualizações e exclusões por outra conexão. No catálogo sintético de
+  20 mil trechos, a mediana das buscas seguintes caiu de 3,33 s para 0,082 s, com os mesmos 20 resultados.
+- **Reordenação local das páginas:** uma segunda rede multilíngue avalia até 60 candidatos antes da
+  leitura por páginas. O preparo explícito baixa cerca de 136 MB com revisão e hashes fixos; perguntas
+  não baixam nada. Sem o modelo ou se ele falhar, segue a seleção anterior. A leitura conserva o número
+  de páginas e a prioridade de documentos citados, fixados e trilhas.
+- **Revisor de memória seletivo:** cumprimentos e consultas comuns deixam de gerar uma chamada extra.
+  Pedidos de guardar algo, perfil, preferências, correções, decisões e declarações ambíguas continuam
+  sendo revisados. A memória de conversas e as fichas documentais continuam funcionando.
+- **Limites:** os ensaios são sintéticos e locais; não medem respostas reais do Gemini nem a economia
+  de tokens do acervo. A reordenação acrescentou 1,37 s para 60 candidatos no ensaio. Os limites de
+  30 mil tokens e 300 mil tokens por dia permanecem configurados como no lote 31.
+
 ## [0.5.0] — 2026-10-04
 
 Lotes 30 e 31, a partir do uso real. Detalhes nas specs [0030](docs/specs/0030-leitura-integral.md) e

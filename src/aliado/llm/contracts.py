@@ -110,6 +110,8 @@ class LLMResult:
     unmarked_numbers: int = 0
     # Leitura integral (lote 30): os documentos enviados inteiros ou em blocos, sem o texto das páginas.
     reading: dict[str, Any] | None = None
+    # Cobertura documental por parte do pedido, distinta da validade das citações.
+    coverage: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.content, str):

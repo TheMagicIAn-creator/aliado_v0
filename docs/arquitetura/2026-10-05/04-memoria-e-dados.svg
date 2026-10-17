@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1500" viewBox="0 0 1800 1500">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<title>Memória: o que é guardado e reutilizado</title><desc>Conversas, anotações duráveis, trilhas de leitura e cache têm funções distintas</desc>
+<text x="55" y="27" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">AL-IAdo  /  MAPA 04</text>
+<text x="55" y="65" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="43" font-weight="700" fill="#172b43">Memória: o que é guardado e reutilizado</text>
+<text x="55" y="128" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#52647b">Conversas, anotações duráveis, trilhas de leitura e cache têm funções distintas</text>
+<rect x="55" y="176" width="13" height="13" rx="3" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="78" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Interface</text>
+<rect x="255" y="176" width="13" height="13" rx="3" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="278" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Código local</text>
+<rect x="455" y="176" width="13" height="13" rx="3" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="478" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Modelo local</text>
+<rect x="655" y="176" width="13" height="13" rx="3" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="678" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">API paga</text>
+<rect x="855" y="176" width="13" height="13" rx="3" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="878" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Persistência</text>
+<rect x="1055" y="176" width="13" height="13" rx="3" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="1078" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Ciência</text>
+<text x="55" y="1452" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">Código local em 05/10/2026 · v0.5.0 + lote 32 · setas = fluxo ou dependência; não são serviços separados</text>
+<text x="1580" y="1452" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#52647b">MAPA 04 / 05</text>
+<rect x="55" y="235" width="800" height="170" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="56" y="253" width="5" height="134" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="77" y="251" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">1 Histórico completo da conversa</text>
+<text x="77" y="294.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Pergunta, resposta, fontes, rota e uso são guardados após a resposta. O</text>
+<text x="77" y="324.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">histórico recente volta ao contexto da pergunta seguinte.</text>
+<text x="77" y="372" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">interfaces/web/conversations.py · data/conversas/*.json</text>
+<rect x="925" y="235" width="820" height="170" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="926" y="253" width="5" height="134" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="947" y="251" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">2 Memória de conversas e trilhas</text>
+<text x="947" y="294.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Trocas elegíveis recebem representação para busca. Páginas citadas e verificadas</text>
+<text x="947" y="324.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">podem ser lembradas para orientar outra leitura.</text>
+<text x="947" y="372" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">memory/store.py · data/memoria/memoria.sqlite3</text>
+<polyline points="855,315 925,315" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="925,315 915.0950818741205,319.78462087522354 915.0950818741205,310.21537912477646" fill="#8b9cb0"/>
+<polyline points="455,405 455,470" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="455,470 450.21537912477646,460.0950818741206 459.78462087522354,460.0950818741206" fill="#8b9cb0"/>
+<rect x="55" y="470" width="800" height="200" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="56" y="488" width="5" height="164" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<rect x="719" y="456" width="120" height="29" rx="8" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="732" y="459" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">NOVO · LOTE 32</text>
+<text x="77" y="486" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">3 Filtro local: precisa revisar esta mensagem?</text>
+<text x="77" y="529.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Reconhece preferências, correções, decisões e pedidos para lembrar. Perguntas</text>
+<text x="77" y="559.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">informativas comuns dispensam uma revisão paga adicional.</text>
+<text x="77" y="637" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">memory/reviewer.py · needs_review</text>
+<rect x="925" y="470" width="820" height="200" rx="15" fill="#fff0df" stroke="#b76718" stroke-width="1.4"/>
+<rect x="926" y="488" width="5" height="164" rx="2" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="947" y="486" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">4 Revisor de memória via Gemini</text>
+<text x="947" y="529.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Quando indicado, propõe anotações estruturadas. Verificações locais de origem,</text>
+<text x="947" y="559.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">conflito e validade condicionam a gravação.</text>
+<text x="947" y="637" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">memory/reviewer.py · review_exchange</text>
+<polyline points="855,565 925,565" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="925,565 915.0950818741205,569.7846208752235 915.0950818741205,560.2153791247765" fill="#8b9cb0"/>
+<text x="877" y="530" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">sim</text>
+<polyline points="455,670 455,730" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="455,730 450.21537912477646,720.0950818741205 459.78462087522354,720.0950818741205" fill="#8b9cb0"/>
+<text x="475" y="687" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">não: já salvou o histórico</text>
+<rect x="55" y="730" width="800" height="165" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="56" y="748" width="5" height="129" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="77" y="746" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Histórico continua disponível</text>
+<text x="77" y="789.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Dispensar a revisão não apaga a conversa e não impede o armazenamento de</text>
+<text x="77" y="819.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">trocas e trilhas elegíveis. Não há novo treinamento do modelo.</text>
+<polyline points="1335,670 1335,730" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1335,730 1330.2153791247765,720.0950818741205 1339.7846208752235,720.0950818741205" fill="#8b9cb0"/>
+<rect x="925" y="730" width="820" height="165" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="926" y="748" width="5" height="129" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="947" y="746" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">5 Anotações duráveis</text>
+<text x="947" y="789.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Perfil, preferências, correções, fatos e decisões, com origem e versões. Comandos</text>
+<text x="947" y="819.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">e correções explícitas têm precedência sobre inferências.</text>
+<text x="947" y="862" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">memory/store.py · registros separados das trocas</text>
+<polyline points="1335,895 1335,955" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1335,955 1330.2153791247765,945.0950818741205 1339.7846208752235,945.0950818741205" fill="#8b9cb0"/>
+<rect x="925" y="955" width="820" height="165" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="926" y="973" width="5" height="129" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="947" y="971" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">6 Próxima pergunta: recuperar o que é relevante</text>
+<text x="947" y="1014.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">A busca local seleciona memórias e conversas pertinentes. O Agent inclui esse</text>
+<text x="947" y="1044.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">contexto na nova chamada ao modelo.</text>
+<text x="947" y="1087" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">memory/store.py · agent.py</text>
+<rect x="55" y="955" width="800" height="165" rx="15" fill="#eaf2ff" stroke="#2f65c8" stroke-width="1.4"/>
+<rect x="56" y="973" width="5" height="129" rx="2" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="77" y="971" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Controle pelo pesquisador</text>
+<text x="77" y="1014.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">A interface oferece consulta e edição da memória. Pedidos explícitos para</text>
+<text x="77" y="1044.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">lembrar e fichas de leitura seguem seus próprios caminhos de registro.</text>
+<text x="77" y="1087" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">interfaces/web/app.py</text>
+<polyline points="855,1035 925,1035" fill="none" stroke="#8b9cb0" stroke-width="2" stroke-dasharray="6 5"/><polygon points="925,1035 915.0950818741205,1039.7846208752235 915.0950818741205,1030.2153791247765" fill="#8b9cb0"/>
+<rect x="40" y="1170" width="1720" height="225" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="62" y="1183" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">OUTRAS FORMAS DE PERSISTÊNCIA · FORA DA MEMÓRIA DURÁVEL</text>
+<rect x="65" y="1225" width="515" height="155" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="66" y="1243" width="5" height="119" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="87" y="1241" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Obsidian</text>
+<text x="87" y="1284.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="400" fill="#172b43">Espelho de mão única: notas e ligações. Não volta como</text>
+<text x="87" y="1311.48" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="400" fill="#172b43">fonte de instruções.</text>
+<text x="87" y="1347" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">data/obsidian/</text>
+<rect x="625" y="1225" width="515" height="155" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="626" y="1243" width="5" height="119" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="647" y="1241" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Registros de uso</text>
+<text x="647" y="1284.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="400" fill="#172b43">Modelo e consumo por chamada; controle dos arquivos</text>
+<text x="647" y="1311.48" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="400" fill="#172b43">enviados ao Google.</text>
+<text x="647" y="1347" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">data/uso/</text>
+<rect x="1185" y="1225" width="545" height="155" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="1186" y="1243" width="5" height="119" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="1207" y="1241" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Cache e pesos locais</text>
+<text x="1207" y="1284.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="400" fill="#172b43">Aceleram a busca e a inferência. Não são preferências nem</text>
+<text x="1207" y="1311.48" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="19" font-weight="400" fill="#172b43">fatos do usuário.</text>
+<text x="1207" y="1347" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">RAM + data/models/</text>
+</svg>

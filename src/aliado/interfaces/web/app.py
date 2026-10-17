@@ -15,7 +15,7 @@ import threading
 import uuid
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,10 +35,13 @@ from aliado.interfaces.web.obsidian import ObsidianSync, build_notes, write_vaul
 from aliado.interfaces.web.rendering import render_markdown
 from aliado.interfaces.web.science import science_routes
 from aliado.knowledge import figures, reading
+from aliado.knowledge.coverage import make_plan
 from aliado.knowledge.metadata import reference
+from aliado.knowledge.rewrite import rewrite_kind
 from aliado.knowledge.stopwords import plain
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.usage_log import record_usage
+from aliado.memory.reviewer import needs_review
 from aliado.memory.store import TRAIL_QUESTION, TRAIL_STRONG, trail_pages
 from aliado.skills.library import list_skills, load_skill
 
@@ -309,7 +312,8 @@ def _index_conversations(store: ConversationStore, memory) -> int:
                     answer=answer["content"], skill=question.get("skill"), created_at=answer.get("created_at"),
                     key=answer.get("consulta_biblioteca"),
                     pages=_trail(question["content"], answer.get("sources"), answer.get("validation_status"),
-                                 answer.get("consulta_biblioteca")))
+                                 answer.get("consulta_biblioteca")) if
+                    not answer.get("cobertura") or answer["cobertura"].get("completa") else None)
     memory.fill_missing_vectors()
     return added
 
@@ -395,6 +399,10 @@ def create_app(settings: WebSettings) -> Starlette:
         pinned = await run_in_threadpool(_pinned, data)
         return JSONResponse(data | {"messages": [_view(m) for m in data["messages"]], "fixados": pinned})
 
+    # Lote 33: os nomes dos resultados para o roteador, tirados do último resumo montado; o resumo só é montado
+    # para isso uma vez, e depois é refeito apenas quando uma pergunta precisa dos resultados.
+    known_vocabulary: dict = {}
+
     async def message(request: Request):
         cid = request.path_params["cid"]
         try:
@@ -458,12 +466,29 @@ def create_app(settings: WebSettings) -> Starlette:
             found = routing.route(
                 text, encoder=getattr(source, "encoder", None), cards=cards, skills=list(skills),
                 current_skill=(last_user or {}).get("skill") if skill == "auto" else skill,
-                library=source is not None, results=use_results, previous=previous)
+                library=source is not None, results=use_results, previous=previous, vocabulary=vocabulary())
             reasons = list(found.reasons)
-            chosen = (found.skill or "nenhuma") if skill == "auto" else skill
+            # Escolhas aprendidas (lote 33): numa mensagem muito parecida com outra, vale a escolha que você fez nela.
+            auto_model, auto_skill, auto_rung, learned = found.model, found.skill or "nenhuma", found.rung, []
+            lessons = lessons_for(text)
+            if "model" in lessons and lessons["model"]["value"] in aliases:
+                auto_model = lessons["model"]["value"]
+                learned.append(lessons["model"] | {"campo": "modelo"})
+            if "skill" in lessons and lessons["skill"]["value"] in {"nenhuma", *skills}:
+                auto_skill = lessons["skill"]["value"]
+                learned.append(lessons["skill"] | {"campo": "skill"})
+            # Só quando o roteador já vai à biblioteca: um seletor fixado na tela fica guardado entre as sessões, e um
+            # "Oi" enviado com ele não pode passar a ler páginas no modo automático.
+            if "rung" in lessons and source is not None and found.rung > routing.NONE:
+                # Nunca a leitura ampla; o documento inteiro, só quando a mensagem cita um documento.
+                auto_rung = min(int(lessons["rung"]["value"]), routing.DOCUMENT if found.named else routing.PAGES)
+                learned.append(lessons["rung"] | {"campo": "leitura"})
+            chosen = auto_skill if skill == "auto" else skill
             memory_skill = None if chosen == "nenhuma" else chosen
-            model = alias if alias != "auto" else found.model if found.model in aliases else sorted(aliases)[0]
-            rung = found.rung if mode == "auto" else RUNG_OF[mode] if source is not None else routing.NONE
+            # O modelo que a escolha automática usaria; um alias que não está configurado cai no primeiro que está.
+            auto_model = auto_model if auto_model in aliases else sorted(aliases)[0]
+            model = alias if alias != "auto" else auto_model
+            rung = auto_rung if mode == "auto" else RUNG_OF[mode] if source is not None else routing.NONE
             ids = {document.get("title"): document["id"] for document in documents if document.get("id")}
             known = set(ids.values())
             named = [ids[title] for title in found.named if title in ids]
@@ -486,9 +511,14 @@ def create_app(settings: WebSettings) -> Starlette:
                 # Com a busca na web ligada, o pedido segue por trechos (lote 30).
                 rung = min(rung, routing.PASSAGES)
             searches = rung > routing.NONE and use_library
-            search_query = rewrite() if searches else None
+            # Reescrita seletiva (lote 33): sem chamada quando a mensagem já diz o assunto; o plano, só com partes.
+            preparation = rewrite_kind(text, history, intent=found.intent) if searches else None
+            rewritten, rewrite_tokens = rewrite(plan=preparation == "plano") if preparation in {"simples", "plano"} else (None, 0)
+            search_query = rewritten.get("consulta") if isinstance(rewritten, dict) else rewritten
+            plan = make_plan(text, history, rewritten) if preparation == "plano" else None
+            search_plan = plan if plan and len(plan["unidades"]) > 1 else None
             # Trilhas (lote 31): uma pergunta já respondida leva de volta às páginas que a resposta citou.
-            trail, priority, reserve, strong = None, [], [], False
+            trail, priority, reserve, strong, asked_again = None, [], [], False, False
             follows = mode == "auto" and rung in {routing.PASSAGES, routing.PAGES} and found.intent in LIBRARY_INTENTS \
                 and (search_query or words >= TRAIL_WORDS) and settings.memory is not None
             if follows:
@@ -510,11 +540,16 @@ def create_app(settings: WebSettings) -> Starlette:
                 best = next((match for match in matches if same(match)), None)
                 if last_reply and any(match["message_id"] == last_reply.get("id") and same(match) for match in matches):
                     # A mesma pergunta, feita de novo logo em seguida: a resposta não bastou.
-                    rung, priority = routing.PAGES, located(trail_pages(matches))[:TRAIL_PAGES]
+                    rung, priority, asked_again = routing.PAGES, located(trail_pages(matches))[:TRAIL_PAGES], True
                     reasons.append("a pergunta foi refeita em seguida: leitura mais funda")
-                elif best and located(best["pages"]):
+                elif best and located(best["pages"]) and not search_plan and not best.get("fraca"):
+                    # Lote 31: uma parte só e uma resposta que bastou: parte das páginas dela, sem nova busca.
                     strong, trail, priority = True, best, located(best["pages"])[:TRAIL_PAGES]
                     reasons.append("pergunta muito parecida com uma já respondida: partiu das páginas daquela resposta")
+                elif best and located(best["pages"]):
+                    # Lote 33: com mais partes, ou depois de uma reclamação, as páginas de antes só apoiam a busca.
+                    trail, reserve = best, located(best["pages"])[:RESERVED_PAGES]
+                    reasons.append("páginas de uma resposta anterior apoiam uma nova busca")
                 elif rung == routing.PAGES:
                     reserve = located(trail_pages(matches))[:RESERVED_PAGES]
 
@@ -560,6 +595,7 @@ def create_app(settings: WebSettings) -> Starlette:
                 extra |= {} if found.references else {"references": False}
                 extra |= {"reasoning_level": found.reasoning} if found.reasoning and alias_ == found.model else {}
                 extra |= {"mentions": mentions} if mentions else {}
+                extra |= {"search_plan": search_plan} if search_plan else {}
                 if limit is not None:
                     extra |= {"ceiling": limit, "salt": "dia" if over else ""} | ({"confirmed": confirmed} if confirmed else {})
                 return {"model_alias": alias_, "skill_name": memory_skill, "supporting_skill_name": support,
@@ -589,6 +625,7 @@ def create_app(settings: WebSettings) -> Starlette:
             call = options(rung, first, alias_=model, limit=limit) | ({"trail": trail} if trail and trail[
                 "conversation_id"] != cid else {})
             attempts, result = [], None
+            recorded = False
             try:
                 kind, result = yield from run(call)
                 if kind == "confirmar":
@@ -597,28 +634,72 @@ def create_app(settings: WebSettings) -> Starlette:
                                 "aviso_diario": settings.daily_warning, "lembrar": not over,
                                 "modo": MODE_OF.get(rung, "trechos"), "leitura": result.get("leitura")})
                     return
-                climbs = (result is not None and mode == "auto" and not use_web and not over and not result.truncated
-                          and result.validation_status == "uncited" and found.intent in LIBRARY_INTENTS
-                          and (rung == routing.PASSAGES or strong))
+                # Lote 33: a segunda chamada só vale se houver o que ler de novo: partes sem citação com material
+                # que a busca achou e não enviou, ou, saindo dos trechos, as páginas inteiras do que foi enviado.
+                gaps = [unit for unit in ((result.coverage or {}).get("unidades") or ()) if not unit["citados"]
+                        and (unit["estado"] == "nao_enviado" or (unit["estado"] == "sem_citacao" and rung == routing.PASSAGES))]
+                partial = bool(result is not None and result.coverage and not result.coverage["completa"] and gaps)
+                climbs = (result is not None and mode == "auto" and not use_web and not result.truncated
+                          and result.validation_status not in OUT_OF_CONTEXT and found.intent in LIBRARY_INTENTS
+                          and (partial or (not search_plan and not over and result.validation_status == "uncited"
+                                           and (rung == routing.PASSAGES or strong))))
                 if climbs:
-                    # A resposta não citou nenhum documento: sobe um degrau, se o total couber no teto.
+                    # A resposta não citou nenhum documento, ou deixou partes sem citação: sobe um degrau, se couber.
                     spent = (result.usage.total_tokens if result.usage else 0) or 0
                     stronger = model if alias != "auto" else routing.STRONG if routing.STRONG in aliases else model
+                    daily = _usage_totals(settings.usage_log)["hoje"] + spent >= settings.daily_warning
                     second = options(routing.PAGES, reading_of(routing.PAGES), alias_=stronger,
-                                     limit=max(settings.ceiling - spent, 0)) | {"search_query": search_query}
+                                     limit=0 if daily else max(settings.ceiling - spent - rewrite_tokens, 0))
                     second.pop("confirmed", None)
-                    kind, better = yield from run(second, before=line({
-                        "tipo": "recomeco", "texto": "Os trechos não bastaram: lendo as páginas inteiras…"}))
+                    if partial:
+                        missing_units = [u for u in result.coverage["unidades"] if not u["citados"]]
+                        names = [u["nome"] for u in missing_units]
+                        second["supplement"] = {"sem_citacao": names, "resposta_anterior": result.content}
+                        # As lacunas ganham a primeira vaga, mas as partes atendidas também são recuperadas
+                        # para a resposta consolidada citar apenas fontes enviadas nesta chamada.
+                        second["search_plan"] = search_plan | {"unidades": sorted(search_plan["unidades"],
+                            key=lambda u: u["nome"] not in names)}
+                    notice = ("Completando a pesquisa nas partes sem citação…" if partial
+                              else "Os trechos não bastaram: lendo as páginas inteiras…")
+                    try:
+                        kind, better = yield from run(second, before=line({"tipo": "recomeco", "texto": notice}))
+                    except (ProviderError, ValueError, OSError):
+                        kind, better = "falhou", None
+                        if result.coverage:
+                            result = replace(result, coverage=result.coverage | {"complemento": "falhou"})
+                    if kind == "confirmar" and result.coverage:
+                        result = replace(result, coverage=result.coverage | {
+                            "complemento": "confirmacao_necessaria", "tokens_complemento": better["tokens"]})
                     if kind == "final" and better is not None:
-                        attempts.append({"leitura": "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung],
-                                         "tokens": spent})
+                        first_read = "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung]
                         if result.provider != "local":
                             try:
                                 record_usage(result, settings.usage_log)
+                                recorded = True
                             except OSError:
                                 pass
-                        result, rung, model, strong, trail = better, routing.PAGES, stronger, False, None
-                        reasons.append("a primeira leitura não achou a resposta: subiu um degrau")
+                        old_covered = {u["id"] for u in (result.coverage or {}).get("unidades", []) if u["citados"]}
+                        new_covered = {u["id"] for u in (better.coverage or {}).get("unidades", []) if u["citados"]}
+                        usable = not better.truncated and better.validation_status not in OUT_OF_CONTEXT \
+                            and better.results_status != UNVERIFIED_RESULTS and old_covered <= new_covered
+                        if usable:
+                            attempts.append({"leitura": first_read, "tokens": spent})
+                            result, rung, model, strong, trail = better, routing.PAGES, stronger, False, None
+                            recorded = False
+                            reasons.append("a primeira leitura deixou partes sem citação: completou a pesquisa" if partial
+                                           else "a primeira leitura não achou a resposta: subiu um degrau")
+                        else:
+                            # A primeira já foi contabilizada: a última etapa registra a tentativa rejeitada, e a rota
+                            # mostra quanto ela custou (lote 33).
+                            attempts.append({"leitura": routing.RUNG_NAMES[routing.PAGES], "descartada": True,
+                                             "tokens": (better.usage.total_tokens if better.usage else 0) or 0})
+                            if better.provider != "local":
+                                try:
+                                    record_usage(better, settings.usage_log)
+                                except OSError:
+                                    pass
+                            if result.coverage:
+                                result = replace(result, coverage=result.coverage | {"complemento": "sem_melhora"})
             except ProviderNotConfiguredError:
                 yield line({"tipo": "erro", "erro": "Configure a chave do Gemini no .env e reinicie."})
                 return
@@ -632,7 +713,7 @@ def create_app(settings: WebSettings) -> Starlette:
             if result is None:
                 yield line({"tipo": "erro", "erro": "A resposta não foi concluída."})
                 return
-            if result.provider != "local":
+            if result.provider != "local" and not recorded:
                 try:
                     record_usage(result, settings.usage_log)
                 except OSError:
@@ -649,6 +730,14 @@ def create_app(settings: WebSettings) -> Starlette:
                 "skill": memory_skill, "model": model, "reasons": reasons, "results": bool(digest),
                 "automatico": {"modelo": alias == "auto", "skill": skill == "auto", "leitura": mode == "auto"},
                 "tentativas": attempts,
+                # Lote 33: como a busca foi preparada: sem reescrita, reescrita simples ou uma busca por parte do pedido.
+                "busca": "plano" if search_plan else "simples" if preparation == "plano" else preparation,
+                "partes": [unit["nome"] for unit in search_plan["unidades"]] if search_plan else [],
+                # Lote 33: as escolhas suas que esta resposta repetiu, com a mensagem e a data de cada uma.
+                "aprendido": [{"campo": lesson["campo"], "data": lesson["created_at"],
+                               "pergunta": " ".join(lesson["question"].split())[:200]} for lesson in learned
+                              if (lesson["campo"] == "modelo" and alias == "auto") or (lesson["campo"] == "skill" and skill == "auto")
+                              or (lesson["campo"] == "leitura" and mode == "auto")],
                 "trilha": {"data": trail["created_at"], "pergunta": " ".join(trail["question"].split())[:200],
                            "conversa": trail["conversation_id"]} if trail else None}
             reply = {"role": "assistant", "content": result.content, "in_context": in_context,
@@ -668,6 +757,7 @@ def create_app(settings: WebSettings) -> Starlette:
                      # Lote 30: os documentos lidos inteiros ou em blocos; e se a web fez a leitura cair para trechos.
                      "leitura": getattr(result, "reading", None),
                      "leitura_por_trechos": by_passages,
+                     "cobertura": result.coverage,
                      "rota": route_view,
                      "aprofundar": None if use_web else _deeper(rung, result, source, budget),
                      "resultados_faltando": missing,
@@ -689,14 +779,17 @@ def create_app(settings: WebSettings) -> Starlette:
                         answer=result.content, skill=memory_skill,
                         created_at=stored["messages"][-1].get("created_at"),
                         # A trilha: as páginas citadas, quando a pergunta é das que os documentos respondem.
-                        **({"pages": pages, "key": search_query} if found.intent in LIBRARY_INTENTS and (
+                        **({"pages": pages, "key": search_query} if found.intent in LIBRARY_INTENTS
+                            and (result.coverage is None or result.coverage.get("completa")) and (
                             pages := _trail(text, result.sources, result.validation_status, search_query)) else {}))
                 except (OSError, sqlite3.DatabaseError):
                     pass  # a resposta já foi guardada; a memória de conversas não deve derrubá-la
+            learn(auto_model, auto_skill, auto_rung, asked_again, found.complaint)
             obsidian()  # antes do aviso de fim: vale mesmo se a página for fechada em seguida
             yield line({"tipo": "fim", "conversa": {k: stored[k] for k in ("id", "title", "updated_at")},
                         "mensagens": [_view(m) for m in stored["messages"][-2:]]})
-            if in_context and settings.memory is not None and settings.reviewer is not None:
+            if in_context and settings.memory is not None and settings.reviewer is not None and needs_review(
+                    text, explicit=bool(EXPLICIT_MEMORY.match(text)), history=history):
                 yield line(review(stored, memories, result))
 
         def results_for_request() -> tuple[dict | None, list[str]]:
@@ -704,24 +797,84 @@ def create_app(settings: WebSettings) -> Starlette:
             if not use_results or settings.results_digest is None:
                 return None, []
             try:
-                digest = settings.results_digest()
+                digest = results_digest()
             except Exception:  # o resumo é opcional: qualquer falha dele deixa a conversa seguir
                 return None, ["os resultados da pesquisa (não foi possível montá-los)"]
             return (digest if digest.get("blocos") else None), list(digest.get("faltando") or ())
 
-        def rewrite() -> str | None:
-            """Consulta da busca pelo modelo mais barato; sem ela, a busca segue pela própria pergunta."""
-            if settings.query_rewriter is None:
-                return None
+        built: dict = {}
+
+        def results_digest() -> dict:
+            """O resumo dos resultados, montado no máximo uma vez por mensagem."""
+            if "resumo" not in built:
+                built["resumo"] = settings.results_digest()
+                known_vocabulary["nomes"] = routing.results_vocabulary(built["resumo"])
+            return built["resumo"]
+
+        def vocabulary() -> dict | None:
+            """Os nomes dos resultados para o roteador (lote 33); sem o resumo, o roteador usa os de sempre."""
+            if "nomes" in known_vocabulary or settings.results_digest is None:
+                return known_vocabulary.get("nomes")
             try:
-                query, rewrite_result = settings.query_rewriter(question=text, history=history)
-            except (ProviderError, ValueError, KeyError, TypeError):
+                results_digest()
+            except Exception:  # o resumo é opcional, como em results_for_request
                 return None
+            return known_vocabulary.get("nomes")
+
+        def lessons_for(question: str) -> dict:
+            """As escolhas aprendidas para a mensagem (lote 33); uma falha da memória não derruba a rota."""
+            if settings.memory is None or not hasattr(settings.memory, "route_lessons"):
+                return {}
+            try:
+                return settings.memory.route_lessons(question)
+            except (ValueError, OSError, sqlite3.DatabaseError):
+                return {}
+
+        def learn(auto_model: str, auto_skill: str, auto_rung: int, asked_again: bool, complaint: bool) -> None:
+            """Aprendizado com o uso (lote 33), local e sem tokens. Uma escolha fixada na tela que difere da automática
+            fica guardada para a mensagem; a pergunta refeita, o "Ler mais fundo" e a reclamação enfraquecem a trilha
+            da resposta anterior, e a pergunta dela fica guardada com a leitura mais funda."""
+            memory = settings.memory
+            if memory is None or not hasattr(memory, "learn_route"):
+                return
+            again = bool(last_user and " ".join(last_user["content"].split()) == " ".join(text.split()))
+            # Só o que você escolheu nesta mensagem: um campo ausente do pedido não é escolha.
+            chosen_rung = RUNG_OF.get(mode) if body.get("leitura") else None
+            lessons = []
+            if body.get("modelo") and alias != "auto" and alias != auto_model:
+                lessons.append((text, "model", alias, "escolha"))
+            if body.get("skill") and skill != "auto" and skill != auto_skill:
+                lessons.append((text, "skill", skill, "escolha"))
+            if chosen_rung is not None and chosen_rung != routing.WIDE and chosen_rung != auto_rung:
+                lessons.append((text, "rung", str(chosen_rung), "refeita" if again else "escolha"))
+            if asked_again:
+                lessons.append((text, "rung", str(routing.PAGES), "refeita"))
+            complained = complaint and last_user is not None
+            if complained:
+                lessons.append((last_user["content"], "rung", str(routing.PAGES), "reclamacao"))
+            try:
+                for question, field_, value, origin in lessons:
+                    memory.learn_route(question=question, field=field_, value=value, origin=origin, conversation_id=cid)
+                if last_reply and last_reply.get("id") and (again or asked_again or complained):
+                    memory.weaken_trail(last_reply["id"])
+            except (ValueError, OSError, sqlite3.DatabaseError):
+                pass  # o aprendizado é um extra: a resposta já foi guardada
+
+        def rewrite(*, plan: bool = False) -> tuple[str | dict | None, int]:
+            """Consulta da busca pelo modelo mais barato; sem ela, a busca segue pela própria pergunta. Com `plan`,
+            vem também o plano por partes (lote 33: só quando o pedido tem partes)."""
+            if settings.query_rewriter is None:
+                return None, 0
+            try:
+                query, rewrite_result = settings.query_rewriter(question=text, history=history,
+                                                                **({"plan": True} if plan else {}))
+            except (ProviderError, ValueError, KeyError, TypeError):
+                return None, 0
             try:
                 record_usage(rewrite_result, settings.usage_log)
             except OSError:
                 pass
-            return query
+            return query, (rewrite_result.usage.total_tokens or 0) if rewrite_result.usage else 0
 
         def review(stored: dict, memories: list[dict], result) -> dict:
             """Revisor depois da resposta: a conversa já está salva, e uma falha aqui não a afeta."""
@@ -1249,6 +1402,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     from aliado.knowledge.embeddings import LocalEncoder
     from aliado.knowledge.library import DocumentLibrary
     from aliado.knowledge.metadata import extract_card
+    from aliado.knowledge.reranking import LocalReranker
     from aliado.knowledge.rewrite import rewrite_query
     from aliado.llm.providers.gateway import build_default_gateway
     from aliado.llm.usage_log import FILES_LOG_NAME
@@ -1265,7 +1419,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
               if m["provider"] == "google" and m["configured"]]
     # Um só modelo de busca local, carregado sob demanda, serve à biblioteca e à memória.
     encoder = LocalEncoder()
-    library = DocumentLibrary(library_dir, encoder=encoder)
+    library = DocumentLibrary(library_dir, encoder=encoder, reranker=LocalReranker())
     memory = MemoryStore(Path(data_dir) / "memoria", encoder=encoder)
     aliases = [m["alias"] for m in models]
     # Revisor e ficha usam o modelo mais barato configurado.
@@ -1290,7 +1444,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
                        checker=lambda memory_: check_memory(execute, memory_),
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
-                       query_rewriter=lambda **kwargs: rewrite_query(execute, **kwargs),
+                       query_rewriter=lambda **kwargs: rewrite_query(execute, plan=True, **kwargs),
                        results_dir=results_dir, gpvs_dir=gpvs_dir,
                        results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir),
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,

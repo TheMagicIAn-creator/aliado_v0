@@ -47,6 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     library_commands = library.add_subparsers(dest="operation", required=True)
     model = library_commands.add_parser("preparar-modelo", help="Baixa o encoder local de revisão fixa")
     model.add_argument("--diretorio", type=Path)
+    reranker = library_commands.add_parser("preparar-reordenador", help="Baixa a rede local que ordena páginas")
+    reranker.add_argument("--diretorio", type=Path)
     for name in ("adicionar", "listar", "buscar", "verificar", "avaliar", "reindexar", "figuras"):
         operation = library_commands.add_parser(name)
         operation.add_argument("--biblioteca", type=Path, required=True)
@@ -134,6 +136,10 @@ def main(argv: list[str] | None = None) -> int:
 
             if args.operation == "preparar-modelo":
                 payload = prepare_model(args.diretorio)
+            elif args.operation == "preparar-reordenador":
+                from aliado.knowledge.reranking import prepare_model as prepare_reranker
+
+                payload = prepare_reranker(args.diretorio)
             elif args.operation == "arquivos":
                 payload = _uploads(args)
             else:

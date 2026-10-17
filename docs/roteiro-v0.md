@@ -247,7 +247,7 @@ As tags e o envio ao GitHub ficam com o pesquisador.
 
 | 30 | Leitura integral: a busca escolhe os documentos, e o modelo recebe o PDF das páginas inteiras, dentro de um teto por pergunta; documentos fixados na conversa; a aba Biblioteca dá lugar ao painel de documentos | Concluído em 04/10/2026 |
 | 31 | Roteador local e escada de leitura: o AL-IAdo escolhe a skill, o modelo e a leitura antes de gastar; confirmação acima de 30 mil tokens e aviso diário em 300 mil; parte fixa enxuta; contagem exata de termos; trilhas das perguntas já respondidas; lançamento da 0.5.0 | Concluído em 04/10/2026 |
-| 32 | Busca em memória (hoje leva cerca de 4 s por pergunta); reordenação local das páginas por uma segunda rede; revisor de memória só quando há o que guardar | A combinar |
+| 32 | Busca em memória com atualização pelo catálogo; reordenação local de até 60 candidatos para a leitura por páginas; revisor seletivo, preservando perfil, preferências e decisões | Concluído localmente em 05/10/2026 |
 
 ### Decisões e resultado do lote 27 (01 e 02/10/2026)
 
@@ -353,6 +353,46 @@ As tags e o envio ao GitHub ficam com o pesquisador.
 - **Com o Gemini, depois da primeira entrega** (7 das 30 chamadas): a pergunta já respondida foi reconhecida com a consulta reescrita; a subida de degrau e a confirmação acima do teto funcionaram. A trilha não poupou tokens (5.962 contra 4.086 por trechos), e subir um degrau num assunto ausente custou 20 mil tokens.
 - **Pendências:** a busca leva cerca de 4 segundos; a pergunta já respondida repete o alcance da resposta anterior e não poupa tokens; o roteador foi ajustado nas mesmas mensagens em que foi medido, e deixa sem os resultados da pesquisa 3 de 10 perguntas escritas de outro jeito.
 - Veja a [validação do lote 31](migracao/validacao-lote-31.md).
+
+### Decisões e resultado do lote 32 (04 e 05/10/2026)
+
+- **Origem:** continuação autorizada do trabalho interrompido do Claude, a partir do cache parcial
+  existente em `knowledge/library.py`. Escopo na [spec 0032](specs/0032-busca-e-memoria.md).
+- **Busca em memória:** o retrato acompanha alterações do catálogo feitas por qualquer conexão.
+  No catálogo sintético de 20 mil trechos, a mediana das buscas seguintes caiu de 3,33 s para 0,082 s;
+  os 20 resultados permaneceram iguais. A primeira carga levou 2,82 s.
+- **Segunda rede local:** reordena até 60 candidatos na leitura por páginas, preservando as prioridades
+  de documentos e trilhas. Modelo quantizado de cerca de 136 MB, com preparo explícito e hashes fixos.
+  Em 12 perguntas sintéticas, a passagem esperada passou de primeiro lugar em 5 para primeiro em 12;
+  a presença entre as dez primeiras ficou em 12 nos dois casos. O ensaio isola a reordenação e não
+  mede a resposta final do modelo. Sessenta candidatos levaram 1,37 s.
+- **Revisor seletivo:** consultas e cumprimentos poupam uma chamada. As seis mensagens com informações
+  para guardar foram mantidas no ensaio de 22 mensagens; o revisor seria chamado seis vezes, em vez
+  de 22. A memória de conversas e as fichas continuam funcionando.
+- **Validação:** 739 testes e Ruff passaram. Sem chamadas pagas ou reindexação do acervo real;
+  versão 0.5.0 preservada, sem commit nem pacote novo.
+- **Pendências:** ensaio com perguntas novas sobre o acervo real, dentro de escopo e orçamento
+  combinados; reescrita seletiva; limitações das trilhas e do roteador já registradas no lote 31.
+  Para usar o código novo, reiniciar o processo do AL-IAdo.
+- Veja a [validação do lote 32](migracao/validacao-lote-32.md).
+
+### Decisões e resultado do lote 33 (16 e 17/10/2026)
+
+- **Origem:** o que ficou fora do lote 32 (reescrita seletiva, aprendizado com o uso e vocabulário dos resultados)
+  e um plano por partes acrescentado ao código em 05/10, depois da validação do lote 32, sem spec nem testes.
+  Escopo na [spec 0033](specs/0033-reescrita-aprendizado-resultados.md).
+- **Decisões do pesquisador (17/10):** adotar e corrigir o plano por partes; segunda chamada automática só dentro
+  do teto e antes do aviso diário; aprender só com as escolhas da tela e com perguntas refeitas ou reclamações,
+  sem lista para revisar; teste pago de até 8 chamadas e 80 mil tokens.
+- **Resultado sem tokens:** 9 de 10 perguntas novas sobre os resultados reconhecidas (antes, 7); conversa solta
+  depois da biblioteca fora dela em 4 de 4 (antes, 0); reclamações com leitura mais funda em 2 de 2. Nas mensagens
+  reais, 5 de 24 perguntas à biblioteca dispensam a reescrita.
+- **Resultado pago** (5 chamadas e 27 mil tokens de entrada): o pedido "uma fonte para cada um" de 05/10 saiu com
+  as três partes citadas, contra uma antes; a pergunta sem reescrita saiu com três páginas citadas.
+- **Validação:** 757 testes e Ruff, já com as cinco correções da auditoria. A versão continuava 0.5.0; os lotes 32 e 33 saíram juntos como 0.6.0 em 17/10/2026.
+- **Pendências:** a segunda chamada com o modelo real; trilhas procuradas pela pergunta quando não há reescrita;
+  o roteador continua errando em frases que as regras e os exemplos não cobrem. Reiniciar o AL-IAdo para usar.
+- Veja a [validação do lote 33](migracao/validacao-lote-33.md).
 
 ## Fica para a v1
 

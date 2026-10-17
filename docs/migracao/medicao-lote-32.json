@@ -1,0 +1,223 @@
+{
+  "base": "98be273",
+  "rede": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1@1427fd652930e4ba29e8149678df786c240d8825:onnx-quint8:tokens384",
+  "api_chamadas": 0,
+  "desempenho": {
+    "trechos": 20000,
+    "dimensoes": 384,
+    "tempos": {
+      "antes": {
+        "primeira_s": 3.407398,
+        "seguintes_s": [
+          3.367082,
+          3.32541,
+          3.315531
+        ],
+        "mediana_s": 3.32541
+      },
+      "agora": {
+        "primeira_s": 2.815096,
+        "seguintes_s": [
+          0.078342,
+          0.082411,
+          0.08401
+        ],
+        "mediana_s": 0.082411
+      }
+    },
+    "mesmos_20_resultados": true,
+    "matriz_bytes": 61440000
+  },
+  "qualidade_sintetica": {
+    "perguntas": 12,
+    "paginas": 16,
+    "encoder_carga_s": 1.629577,
+    "primeiro_antes": 5,
+    "primeiro_depois": 12,
+    "entre_10_antes": 12,
+    "entre_10_depois": 12,
+    "detalhe": [
+      {
+        "pergunta": "Como detectar uma falha sem exemplos rotulados de falha?",
+        "esperada": 1,
+        "antes": 3,
+        "depois": 1,
+        "reordenacao_s": 1.191616
+      },
+      {
+        "pergunta": "Qual medida indica quanto dura, em média, o conserto?",
+        "esperada": 3,
+        "antes": 9,
+        "depois": 1,
+        "reordenacao_s": 0.354792
+      },
+      {
+        "pergunta": "Qual indicador mede o tempo até falhar, e não o tempo para consertar?",
+        "esperada": 4,
+        "antes": 1,
+        "depois": 1,
+        "reordenacao_s": 0.404979
+      },
+      {
+        "pergunta": "Por que não devo embaralhar janelas sobrepostas entre treino e teste?",
+        "esperada": 5,
+        "antes": 1,
+        "depois": 1,
+        "reordenacao_s": 0.389294
+      },
+      {
+        "pergunta": "Como preservar a dependência temporal ao estimar a incerteza?",
+        "esperada": 6,
+        "antes": 2,
+        "depois": 1,
+        "reordenacao_s": 0.345593
+      },
+      {
+        "pergunta": "O que representa a fração de falhas detectadas entre todas as falhas reais?",
+        "esperada": 7,
+        "antes": 3,
+        "depois": 1,
+        "reordenacao_s": 0.382204
+      },
+      {
+        "pergunta": "O que representa a fração de alarmes que são falhas de verdade?",
+        "esperada": 8,
+        "antes": 2,
+        "depois": 1,
+        "reordenacao_s": 0.356839
+      },
+      {
+        "pergunta": "Qual métrica conta disparos falsos consecutivos como um único evento?",
+        "esperada": 9,
+        "antes": 5,
+        "depois": 1,
+        "reordenacao_s": 0.355032
+      },
+      {
+        "pergunta": "Como priorizar os modos de falha usando severidade, ocorrência e detecção?",
+        "esperada": 10,
+        "antes": 1,
+        "depois": 1,
+        "reordenacao_s": 0.368161
+      },
+      {
+        "pergunta": "Como reduzir alarmes espúrios exigindo persistência acima do limite?",
+        "esperada": 11,
+        "antes": 1,
+        "depois": 1,
+        "reordenacao_s": 0.3669
+      },
+      {
+        "pergunta": "Como escolher um limite para o erro usando somente registros saudáveis?",
+        "esperada": 12,
+        "antes": 1,
+        "depois": 1,
+        "reordenacao_s": 0.361679
+      },
+      {
+        "pergunta": "Que métrica mostra a fração do tempo em que o equipamento pode operar?",
+        "esperada": 13,
+        "antes": 2,
+        "depois": 1,
+        "reordenacao_s": 0.377994
+      }
+    ],
+    "sessenta_candidatos_s": 1.372768
+  },
+  "revisor": {
+    "mensagens": 22,
+    "chamadas_antes": 22,
+    "chamadas_agora": 6,
+    "decisoes": [
+      {
+        "mensagem": "Como detectar uma falha sem exemplos rotulados de falha?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Qual medida indica quanto dura, em média, o conserto?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Qual indicador mede o tempo até falhar, e não o tempo para consertar?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Por que não devo embaralhar janelas sobrepostas entre treino e teste?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Como preservar a dependência temporal ao estimar a incerteza?",
+        "revisar": false
+      },
+      {
+        "mensagem": "O que representa a fração de falhas detectadas entre todas as falhas reais?",
+        "revisar": false
+      },
+      {
+        "mensagem": "O que representa a fração de alarmes que são falhas de verdade?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Qual métrica conta disparos falsos consecutivos como um único evento?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Como priorizar os modos de falha usando severidade, ocorrência e detecção?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Como reduzir alarmes espúrios exigindo persistência acima do limite?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Como escolher um limite para o erro usando somente registros saudáveis?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Que métrica mostra a fração do tempo em que o equipamento pode operar?",
+        "revisar": false
+      },
+      {
+        "mensagem": "Bom dia",
+        "revisar": false
+      },
+      {
+        "mensagem": "Obrigado!",
+        "revisar": false
+      },
+      {
+        "mensagem": "Traga outra fonte.",
+        "revisar": false
+      },
+      {
+        "mensagem": "Verifique nele.",
+        "revisar": false
+      },
+      {
+        "mensagem": "Meu nome é Rodolfo.",
+        "revisar": true
+      },
+      {
+        "mensagem": "Prefiro respostas curtas.",
+        "revisar": true
+      },
+      {
+        "mensagem": "Vamos usar o modelo menor.",
+        "revisar": true
+      },
+      {
+        "mensagem": "Corrigindo: o prazo é novembro.",
+        "revisar": true
+      },
+      {
+        "mensagem": "Guarde esta definição.",
+        "revisar": true
+      },
+      {
+        "mensagem": "Meu orientador é Carlos.",
+        "revisar": true
+      }
+    ]
+  },
+  "limites": "Catálogo e perguntas sintéticos; não mede o acervo real nem qualidade da resposta do Gemini. A comparação de qualidade isola a segunda rede, partindo de similaridade de embeddings, sem busca híbrida ou reescrita. Não mede economia real de tokens."
+}

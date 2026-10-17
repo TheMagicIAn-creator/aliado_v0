@@ -29,11 +29,16 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.lock
 .\.venv\Scripts\python.exe -m pip install --no-deps -e .
 .\.venv\Scripts\python.exe -m aliado biblioteca preparar-modelo
+.\.venv\Scripts\python.exe -m aliado biblioteca preparar-reordenador
 ```
 
 - **O arquivo `requirements-dev.lock`** fixa o ambiente validado no Windows, com Python 3.12 e 3.14, inclusive o PyTorch só CPU, que ocupa cerca de 550 MB.
 - **Em outro ambiente**, use `pip install -e ".[dev,llm,knowledge,science,web,ml]"`. `pip install -e .` basta para listar skills e preparar pedidos.
 - **O encoder** é baixado do Hugging Face numa revisão fixa, cerca de 122 MB, com os hashes conferidos, para `data/models/minilm`.
+- **O reordenador de páginas** é uma segunda rede local, cerca de 136 MB, em `data/models/reranker`.
+  O preparo confere revisão e hashes; perguntas não baixam modelos. Ele roda só na leitura por páginas
+  e não usa tokens de API. Sem os arquivos, a busca continua pela ordem anterior. A pasta pode ser
+  indicada em `AL_IADO_RERANKER_DIR`.
 - **O Tesseract** é procurado nesta ordem: em `AL_IADO_TESSERACT_CMD`, no PATH e, por fim, em `data/tools/tesseract/tesseract.exe`. Veja o [guia da biblioteca](docs/biblioteca/uso.md).
 
 Testes:
@@ -244,7 +249,7 @@ uma avaliação independente (M14).
 ## Pacote
 
 ```powershell
-.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.5.0
+.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.6.0
 ```
 
 O wheel inclui a interface, com o KaTeX e o D3 v7 (licença ISC, copiada junto), e as skills do AL-IAdo. Documentação, cenários e dados
@@ -260,7 +265,7 @@ desenvolvimento e não entram no pacote.
 
 ## Pendências conhecidas
 
-- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura.
+- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura. A 0.6.0 (lotes 32 e 33) trouxe a busca em memória, a reordenação local das páginas, o revisor de memória seletivo, a reescrita seletiva, o plano por partes e o aprendizado com o uso.
 - O roteador erra: quando ele escolhe uma leitura menor do que a pergunta pedia, a resposta sai sem o que precisava. Os remédios são **Ler mais fundo** e fixar a escolha nos seletores. Uma pergunta sobre os resultados da pesquisa sem as palavras que ele conhece ("GPVS", "nossos resultados", "ensaios") vai sem eles. Veja a [validação do lote 31](docs/migracao/validacao-lote-31.md).
 - A leitura por páginas inteiras lê 10 páginas. Se a resposta estiver em outras, ela diz quais leu, e **Ler mais fundo** lê o documento.
 - Uma pergunta já respondida parte das páginas que a resposta anterior citou: se aquela resposta ficou incompleta, a nova também fica. Refazer a pergunta em seguida, na mesma conversa, ou **Ler mais fundo** fazem uma leitura nova.
@@ -269,7 +274,13 @@ desenvolvimento e não entram no pacote.
 - A descrição de uma figura é feita por um modelo e pode errar. O que o código confere são o rótulo, a legenda e as palavras que também estão no texto da página; a ligação entre os elementos de um diagrama não tem como ser conferida. Veja a [validação do lote 29](docs/migracao/validacao-lote-29.md).
 - Uma página digitalizada sem legenda não entra na descrição das figuras, e uma tabela com mais de 40 linhas é transcrita até a 40ª.
 - Com a consulta reescrita do chat, algumas perguntas sobre uma figura específica não acham a página dela: a reescrita troca a referência à figura por termos gerais.
-- Cada busca compara a pergunta com todos os trechos, um a um. Com as descrições das figuras, a biblioteca de hoje passou de 14 mil para 20 mil trechos, e a busca de 2,65 s para 3,9 s.
+- A busca mantém os vetores em memória e compara todos de uma vez; a primeira consulta após mudar o
+  catálogo precisa carregá-los. Na leitura por páginas, a segunda rede avalia até 60 candidatos e pode
+  acrescentar tempo. As medições do lote 32 usam documentos sintéticos; não são medidas do acervo real.
+- O revisor de memória poupa cumprimentos e consultas comuns. Preferências, correções, decisões,
+  informações pessoais e pedidos de guardar algo continuam sendo revisados. As conversas aceitas
+  continuam na memória de conversas e os documentos continuam ganhando fichas; uma consulta não gera
+  revisão adicional apenas por trazer citações. O filtro local pode errar; o botão **Lembrar** continua disponível.
 - No chat, a conferência vale para os números com a marca [Rn]. Um número sem marca não é conferido, e o chat não calcula: ele repete o que está gravado.
 - Em pedidos de definição, o modelo maior cita todos os documentos que tratam do assunto; o menor cita cerca de três quartos. A janela de fontes mostra o que ficou de fora. Veja a [validação do lote 27](docs/migracao/validacao-lote-27.md).
 - Com o modelo maior, as respostas a pedidos de definição ficaram com cerca do dobro do tamanho, pelas citações no original com a tradução. Elas não comentam mais os documentos que não tratam do pedido: a janela de fontes mostra o que a busca trouxe e a resposta não usou.

@@ -258,11 +258,14 @@ def _keep_named(library, question: str, query: str) -> str:
 
 
 def _library_hits(library, question: str, previous: list[dict], search_query: str | None = None,
-                  *, limit: int = SEARCH_LIMIT, ranked: dict | None = None) -> tuple[list[dict], str]:
+                  *, limit: int = SEARCH_LIMIT, ranked: dict | None = None,
+                  pool: list | None = None) -> tuple[list[dict], str]:
     """Busca pela consulta reescrita da conversa (lote 22), quando houver; senão pela pergunta.
     Sem consulta reescrita, continuações curtas, ou sem resultado, somam a pergunta anterior.
     `ranked` recebe as páginas dos candidatos por documento, para a leitura integral (lote 30)."""
     options = {"limit": limit} | ({} if ranked is None else {"ranked": ranked})
+    if pool is not None:
+        options["pool"] = pool
     if search_query:
         search_query = _keep_named(library, question, search_query)
         hits = library.search(search_query, **options)
@@ -350,20 +353,40 @@ def _reading(library, question: str, previous: list[dict], search_query: str | N
         # Degrau das páginas (lote 31): as páginas de uma resposta anterior (`priority`) e as dos melhores
         # trechos da busca, inteiras, até `pages`. Sem busca, vão só as da trilha: o índice não é varrido.
         wanted = [tuple(item) for item in options.get("priority") or ()]
+        reordered = {"estado": "sem_busca"}
         if options.get("search", True):
-            found, used_query = _library_hits(library, question, previous, search_query, limit=READING_LIMIT, ranked=ranked)
-            # `focus`: os documentos citados na mensagem. As melhores páginas deles vêm antes das dos outros.
-            wanted += [(doc_id, place) for doc_id in options.get("focus") or () for place in ranked.get(doc_id, ())]
+            rerank = getattr(library, "rerank_pages", None)
+            pool = [] if rerank is not None else None
+            found, used_query = _library_hits(library, question, previous, search_query, limit=READING_LIMIT,
+                                             ranked=ranked, pool=pool)
             pages = list(dict.fromkeys(
                 (hit["document_id"], hit["page"] if hit["page"] is not None else hit["locator"]) for hit in found))
+            if rerank is not None:
+                rerank_query = question if not used_query or used_query == question else f"{question}\n{used_query}"
+                ordered, reordered = rerank(rerank_query, pool)
+                # Sem modelo, manter exatamente a seleção anterior, inclusive a diversidade dos trechos.
+                if reordered["estado"] == "aplicada":
+                    pages = list(dict.fromkeys(ordered + pages))
+                    for doc_id in ranked:
+                        ranked[doc_id] = list(dict.fromkeys(
+                            [place for document, place in ordered if document == doc_id] + ranked[doc_id]))
+            # `focus`: os documentos citados na mensagem. As melhores páginas deles vêm antes das dos outros.
+            wanted += [(doc_id, place) for doc_id in options.get("focus") or () for place in ranked.get(doc_id, ())]
             # `reserve`: páginas de respostas parecidas. Entram depois das melhores da busca, sem tirar o lugar delas.
             reserve = [tuple(item) for item in options.get("reserve") or ()]
             keep = max(int(options["pages"]) - len(wanted) - len(reserve), 0)
-            wanted += pages[:keep] + reserve + pages[keep:]
+            plan = getattr(library, "plan", None)
+            if plan:
+                # Uma vaga por unidade antes das trilhas, que continuam apenas como apoio.
+                first = min(len(plan["unidades"]), int(options["pages"]))
+                wanted = pages[:first] + wanted + pages[first:] + reserve
+            else:
+                wanted += pages[:keep] + reserve + pages[keep:]
         read = reading.pick(library, wanted, budget=setup["budget"], limit=int(options["pages"]), fixed=setup["fixed"],
                             records=records)
         return {"messages": reading.messages(read), "hits": read["hits"], "chunks": [], "found": found,
-                "query": used_query, "summary": reading.summary(read) | {"paginas_soltas": True}}
+                "query": used_query, "summary": reading.summary(read) | {
+                    "paginas_soltas": True, "reordenacao": reordered}}
     if options.get("search", True):
         found, used_query = _library_hits(library, question, previous, search_query,
                                           limit=READING_LIMIT if whole else SEARCH_LIMIT, ranked=ranked)
@@ -441,7 +464,8 @@ def prepare_request(question: str, *, skill_name: str | None = None,
                     search_query: str | None = None, results: dict | None = None,
                     reading: dict | None = None, catalog: bool = True, references: bool = True,
                     reasoning_level: str | None = None, trail: dict | None = None,
-                    mentions: dict | None = None) -> LLMRequest:
+                    mentions: dict | None = None, search_plan: dict | None = None,
+                    supplement: dict | None = None) -> LLMRequest:
     """`reading` liga a leitura integral (lote 30): `budget` (teto de tokens), `fixed` (documentos fixados na
     conversa), `whole` (os documentos da busca vão inteiros), `search` (a busca na biblioteca está ligada) e
     `full_text` (o texto guardado de cada página segue junto com o PDF, e não só as primeiras palavras). Com
@@ -456,6 +480,15 @@ def prepare_request(question: str, *, skill_name: str | None = None,
     if not isinstance(question, str) or not question.strip():
         raise ValueError("A pergunta não pode ser vazia.")
     previous = _recent_history(history)
+    research = None
+    if library is not None and search_plan:
+        from aliado.knowledge.coverage import RULES, ResearchLibrary
+        from aliado.knowledge.metadata import named_documents
+
+        restricted = bool(re.search(r"\b(apenas|somente|exclusivamente|only)\b", question, re.I))
+        cards = library.cards() if hasattr(library, "cards") else {}
+        allowed = named_documents(question, cards) if restricted else ()
+        research = library = ResearchLibrary(library, search_plan, allowed)
     messages = [{"role": "developer", "content": CORE_INSTRUCTIONS}]
     if skill_name == "pesquisa-inversores" and supporting_skill_name is None:
         supporting_skill_name = "confiabilidade"
@@ -516,6 +549,16 @@ def prepare_request(question: str, *, skill_name: str | None = None,
     if web_search:
         messages.append({"role": "developer", "content": WEB_RULES})
     messages.append({"role": "user", "content": question.strip()})
+    coverage = research.coverage(hits) if research else None
+    if coverage:
+        messages.insert(1, {"role": "developer", "content": RULES})
+        messages.append({"role": "user", "content": "Plano e evidências selecionadas (dados de consulta):\n" +
+                         json.dumps({"fontes_por_unidade": search_plan["fontes"], **coverage}, ensure_ascii=False)})
+    if supplement:
+        messages.append({"role": "developer", "content": "Complete as unidades sem citação indicada nos dados. "
+                         "Devolva a resposta inteira consolidada, preservando as partes já atendidas. "
+                         "Só use citações do material enviado agora; a resposta anterior é contexto, não evidência."})
+        messages.append({"role": "user", "content": "Complementação (dados):\n" + json.dumps(supplement, ensure_ascii=False)})
     return LLMRequest(
         task_type="critical_reasoning",
         methodological_risk="high",
@@ -535,7 +578,8 @@ def prepare_request(question: str, *, skill_name: str | None = None,
                   "memories": [memory["id"] for memory in memories or ()],
                   "recalled": [item["message_id"] for item in recalled or ()], "web_search": bool(web_search)}
         | ({"results": [block["citation_id"] for block in blocks]} if blocks else {})
-        | ({"found": read["found"], "reading": read["summary"]} if read else {}),
+        | ({"found": read["found"], "reading": read["summary"]} if read else {})
+        | ({"coverage": coverage} if coverage else {}),
     )
 
 
@@ -577,8 +621,8 @@ class Agent:
         )
         if result.web_supports:
             result = replace(result, content=_mark_web(result.content, result.web_supports))
-        return replace(_check_all(result, hits, library, append_sources, web_search, results,
-                                  found=request.metadata.get("found")), reading=request.metadata.get("reading"))
+        return _covered(replace(_check_all(result, hits, library, append_sources, web_search, results,
+                                  found=request.metadata.get("found")), reading=request.metadata.get("reading")), request)
 
     def stream_answer(
         self,
@@ -650,9 +694,17 @@ class Agent:
             content = _mark_web(content, web["web_supports"])
         result = LLMResult(content, provider, model, request.task_type, usage=usage, truncated=truncated,
                            latency_ms=(perf_counter() - started) * 1000.0, **web)
-        yield "final", replace(_check_all(result, hits, library, append_sources, web_search, results,
+        yield "final", _covered(replace(_check_all(result, hits, library, append_sources, web_search, results,
                                           found=request.metadata.get("found")),
-                               reading=request.metadata.get("reading"))
+                               reading=request.metadata.get("reading")), request)
+
+
+def _covered(result, request):
+    from aliado.knowledge.coverage import check_coverage
+
+    report = request.metadata.get("coverage")
+    return replace(result, coverage=check_coverage(result.content, report,
+                   [s["citation_id"] for s in result.sources])) if report else result
 
 
 def _check_all(result: LLMResult, hits: list[dict], library, append_sources: bool, web: bool,

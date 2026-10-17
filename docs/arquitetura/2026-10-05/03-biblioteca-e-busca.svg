@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1480" viewBox="0 0 1800 1480">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<title>Biblioteca: entrada, busca e leitura</title><desc>A biblioteca preserva os documentos; a busca local escolhe o material que pode chegar ao modelo</desc>
+<text x="55" y="27" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">AL-IAdo  /  MAPA 03</text>
+<text x="55" y="65" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="43" font-weight="700" fill="#172b43">Biblioteca: entrada, busca e leitura</text>
+<text x="55" y="128" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#52647b">A biblioteca preserva os documentos; a busca local escolhe o material que pode chegar ao modelo</text>
+<rect x="55" y="176" width="13" height="13" rx="3" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="78" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Interface</text>
+<rect x="255" y="176" width="13" height="13" rx="3" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="278" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Código local</text>
+<rect x="455" y="176" width="13" height="13" rx="3" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="478" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Modelo local</text>
+<rect x="655" y="176" width="13" height="13" rx="3" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="678" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">API paga</text>
+<rect x="855" y="176" width="13" height="13" rx="3" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="878" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Persistência</text>
+<rect x="1055" y="176" width="13" height="13" rx="3" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="1078" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Ciência</text>
+<text x="55" y="1432" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">Código local em 05/10/2026 · v0.5.0 + lote 32 · setas = fluxo ou dependência; não são serviços separados</text>
+<text x="1580" y="1432" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#52647b">MAPA 03 / 05</text>
+<rect x="40" y="225" width="1720" height="385" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="62" y="238" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">A · ENTRADA E INDEXAÇÃO DOS DOCUMENTOS</text>
+<rect x="65" y="285" width="390" height="210" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="66" y="303" width="5" height="174" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="87" y="301" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">1 Receber</text>
+<text x="87" y="344.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">PDF, Markdown ou JSON.</text>
+<text x="87" y="374.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Preserva original e hash do</text>
+<text x="87" y="404.14" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">conteúdo.</text>
+<text x="87" y="462" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">library.py</text>
+<rect x="490" y="285" width="390" height="210" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="491" y="303" width="5" height="174" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="512" y="301" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">2 Extrair</text>
+<text x="512" y="344.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Texto nativo do PDF; OCR quando</text>
+<text x="512" y="374.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">necessário. Figuras e tabelas</text>
+<text x="512" y="404.14" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">localizadas.</text>
+<text x="512" y="462" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">extraction.py · figures.py</text>
+<rect x="915" y="285" width="390" height="210" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="916" y="303" width="5" height="174" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="937" y="301" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">3 Preparar</text>
+<text x="937" y="344.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Divide texto em trechos. MiniLM</text>
+<text x="937" y="374.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">gera vetores locais; catálogo reúne</text>
+<text x="937" y="404.14" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">metadados.</text>
+<text x="937" y="462" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">chunking.py · embeddings.py</text>
+<rect x="1340" y="285" width="390" height="210" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="1341" y="303" width="5" height="174" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="1362" y="301" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">4 Armazenar</text>
+<text x="1362" y="344.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">SQLite: documentos, trechos, busca</text>
+<text x="1362" y="374.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">textual, fichas e figuras. Extrações</text>
+<text x="1362" y="404.14" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">em arquivos.</text>
+<text x="1362" y="462" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">catalog.sqlite3</text>
+<polyline points="455,380 490,380" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="490,380 480.0950818741206,384.78462087522354 480.0950818741206,375.21537912477646" fill="#8b9cb0"/>
+<polyline points="880,380 915,380" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="915,380 905.0950818741205,384.78462087522354 905.0950818741205,375.21537912477646" fill="#8b9cb0"/>
+<polyline points="1305,380 1340,380" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1340,380 1330.0950818741205,384.78462087522354 1330.0950818741205,375.21537912477646" fill="#8b9cb0"/>
+<text x="65" y="530" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Auxiliares via Gemini: fichas bibliográficas e de leitura. Descrições de figuras enviam páginas como imagem somente por pedido explícito.</text>
+<text x="65" y="558.4" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Os arquivos originais e as extrações continuam locais; enviar um documento à biblioteca não equivale a enviar todo o acervo ao modelo.</text>
+<rect x="40" y="640" width="1720" height="555" rx="19" fill="#ffffff" stroke="#cad5e2" stroke-width="1"/>
+<text x="62" y="653" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">B · CONSULTA QUANDO A BIBLIOTECA É USADA</text>
+<rect x="65" y="705" width="390" height="210" rx="15" fill="#fff0df" stroke="#b76718" stroke-width="1.4"/>
+<rect x="66" y="723" width="5" height="174" rx="2" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="87" y="721" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">5 Reformular consulta</text>
+<text x="87" y="764.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Gemini auxiliar usa pergunta e</text>
+<text x="87" y="794.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">histórico. Se falhar, a busca segue</text>
+<text x="87" y="824.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">com a própria pergunta.</text>
+<text x="87" y="882" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">rewrite.py</text>
+<rect x="490" y="705" width="390" height="210" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="491" y="723" width="5" height="174" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="512" y="721" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">6 Buscar candidatos</text>
+<text x="512" y="764.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Busca textual (FTS) + vetores</text>
+<text x="512" y="794.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">MiniLM + documento nomeado.</text>
+<text x="512" y="824.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Diversidade entre documentos.</text>
+<text x="512" y="882" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">library.py</text>
+<rect x="915" y="705" width="390" height="210" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="916" y="723" width="5" height="174" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<rect x="1169" y="691" width="120" height="29" rx="8" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="1182" y="694" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">NOVO · LOTE 32</text>
+<text x="937" y="721" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">7 Reordenar páginas</text>
+<text x="937" y="764.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Cross-encoder local compara</text>
+<text x="937" y="794.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">pergunta e trechos; até 60</text>
+<text x="937" y="824.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">candidatos. Só no modo de páginas.</text>
+<text x="937" y="882" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">reranking.py</text>
+<rect x="1340" y="705" width="390" height="210" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="1341" y="723" width="5" height="174" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="1362" y="721" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">8 Montar leitura</text>
+<text x="1362" y="764.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Trechos, páginas ou documento,</text>
+<text x="1362" y="794.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">conforme a rota. Confere</text>
+<text x="1362" y="824.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">integridade e prepara citações.</text>
+<text x="1362" y="882" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">reading.py · agent.py</text>
+<polyline points="455,800 490,800" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="490,800 480.0950818741206,804.7846208752235 480.0950818741206,795.2153791247765" fill="#8b9cb0"/>
+<polyline points="880,800 915,800" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="915,800 905.0950818741205,804.7846208752235 905.0950818741205,795.2153791247765" fill="#8b9cb0"/>
+<polyline points="1305,800 1340,800" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="1340,800 1330.0950818741205,804.7846208752235 1330.0950818741205,795.2153791247765" fill="#8b9cb0"/>
+<polyline points="810,915 810,955 1535,955 1535,915" fill="none" stroke="#8b9cb0" stroke-width="2" stroke-dasharray="6 5"/><polygon points="1535,915 1539.7846208752235,924.9049181258795 1530.2153791247765,924.9049181258795" fill="#8b9cb0"/>
+<text x="885" y="929" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">trechos / documento: sem reordenar</text>
+<rect x="490" y="990" width="815" height="165" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="491" y="1008" width="5" height="129" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<rect x="1169" y="976" width="120" height="29" rx="8" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="1182" y="979" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff">NOVO · LOTE 32</text>
+<text x="512" y="1006" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Cache da busca na memória RAM</text>
+<text x="512" y="1049.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Reutiliza textos e matriz de vetores. Mudanças no SQLite invalidam o cache; o</text>
+<text x="512" y="1079.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">catálogo persistido continua sendo a referência.</text>
+<text x="512" y="1122" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">library.py · PRAGMA data_version</text>
+<polyline points="685,990 685,915" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="685,915 689.7846208752235,924.9049181258795 680.2153791247765,924.9049181258795" fill="#8b9cb0"/>
+<rect x="65" y="990" width="390" height="165" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="66" y="1008" width="5" height="129" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="87" y="1006" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Pesquisa literal</text>
+<text x="87" y="1049.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Contagem de palavras e menções</text>
+<text x="87" y="1079.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">também usa consulta local exata.</text>
+<rect x="1340" y="990" width="390" height="165" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="1341" y="1008" width="5" height="129" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="1362" y="1006" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Se faltar reordenador</text>
+<text x="1362" y="1049.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">Mantém a seleção anterior e informa o</text>
+<text x="1362" y="1077.9" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">estado. Sem download automático.</text>
+<polyline points="1305,855 1325,855 1325,1070 1340,1070" fill="none" stroke="#8b9cb0" stroke-width="2" stroke-dasharray="6 5"/><polygon points="1340,1070 1330.0950818741205,1074.7846208752235 1330.0950818741205,1065.2153791247765" fill="#8b9cb0"/>
+<rect x="55" y="1240" width="805" height="150" rx="15" fill="#fff0df" stroke="#b76718" stroke-width="1.4"/>
+<rect x="56" y="1258" width="5" height="114" rx="2" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="77" y="1256" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Entrega à resposta</text>
+<text x="77" y="1299.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Apenas o contexto selecionado segue ao Gemini. PDFs enviados pelo modo de</text>
+<text x="77" y="1329.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">leitura podem ficar no serviço de arquivos por até 48 horas.</text>
+<rect x="900" y="1240" width="845" height="150" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="901" y="1258" width="5" height="114" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="922" y="1256" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Modelos locais com funções diferentes</text>
+<text x="922" y="1299.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">MiniLM cria vetores para encontrar textos parecidos. O cross-encoder dá uma nova</text>
+<text x="922" y="1329.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">ordem aos candidatos; seu escore não é uma probabilidade.</text>
+</svg>

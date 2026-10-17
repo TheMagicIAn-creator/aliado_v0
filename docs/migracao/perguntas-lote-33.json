@@ -1,0 +1,62 @@
+{
+  "descricao": "Perguntas da medição do lote 33, escritas em 17/10/2026, antes de qualquer mudança no código. Não servem para ajustar as regras: as que serviram de ajuste são as da linha de base de 16/10 e as mensagens reais.",
+  "resultados": [
+    "Qual detector teve o melhor desempenho nos testes?",
+    "Em média, quanto tempo o modelo recorrente leva para acusar uma falha?",
+    "A precisão do Denso foi maior que a do LSTM?",
+    "Quais falhas passaram sem ser percebidas pelos autoencoders?",
+    "Qual grupo do inversor tem a menor disponibilidade?",
+    "Quanto deu o NPR mais alto da análise de criticidade?",
+    "Como ficaram as métricas por janela do autoencoder denso?",
+    "O limiar escolhido gerou muitos disparos indevidos?",
+    "Qual é a taxa de detecção da falha F5?",
+    "Resuma o que já obtive com os experimentos de detecção."
+  ],
+  "nao_resultados": [
+    "Segundo a literatura, o que é um autoencoder LSTM?",
+    "Qual a taxa de falha de capacitores eletrolíticos segundo Baschel?",
+    "O que é FMECA?",
+    "Como um autoencoder detecta anomalias, segundo os artigos?",
+    "Defina disponibilidade com base em Lafraia."
+  ],
+  "depois_da_biblioteca": {
+    "conversa": [
+      "kkkk valeu, ficou ótimo",
+      "Nossa, que resposta boa!",
+      "Hoje estou cansado, mas vamos lá.",
+      "Pode ser mais informal comigo."
+    ],
+    "biblioteca": [
+      "Traga outra fonte.",
+      "Mas e a FMECA?",
+      "Explique melhor a segunda.",
+      "Tem alguma tabela sobre isso?"
+    ],
+    "reclamacao": [
+      "Você não conseguiu me trazer nenhuma definição.",
+      "Faltou a parte da FMECA."
+    ]
+  },
+  "partes": [
+    {"pergunta": "Traga da literatura os principais conceitos de confiabilidade, como MCC, FMEA e FMECA", "minimo": 3},
+    {"pergunta": "Compare FMEA e FMECA.", "minimo": 2},
+    {"pergunta": "Qual a diferença entre manutenção preventiva e preditiva?", "minimo": 2},
+    {"pergunta": "O que é MTBF?", "minimo": 1, "maximo": 1},
+    {"pergunta": "Como funciona o rastreamento do ponto de máxima potência?", "minimo": 1, "maximo": 1}
+  ],
+  "continuacao_partes": {
+    "antes": "Traga da literatura os principais conceitos de confiabilidade, como manutenção centrada em confiabilidade, FMEA e FMECA",
+    "depois": "Traga com base na literatura uma fonte para cada um. No caso, é a MCC, não somente a confiabilidade.",
+    "minimo": 3
+  },
+  "reescrita": {
+    "dispensa": [
+      "O que é manutenção centrada na confiabilidade segundo a literatura?",
+      "Como se calcula a disponibilidade de um sistema reparável?"
+    ],
+    "precisa": [
+      {"antes": "O que é manutenção centrada na confiabilidade?", "pergunta": "Traga a definição com base na literatura. Uma citação direta."},
+      {"antes": "O que é manutenção centrada na confiabilidade?", "pergunta": "Traga outra fonte."}
+    ]
+  }
+}

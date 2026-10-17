@@ -42,6 +42,11 @@ TRAIL_WEAK = 0.62
 # têm consultas quase iguais (0,94). A frase da pergunta também tem de ser parecida com a da troca anterior.
 TRAIL_QUESTION = 0.75
 MAX_TRAIL_PAGES = 12
+# Escolhas aprendidas (lote 33): uma mensagem nova recebe a escolha feita numa mensagem muito parecida. O limite é
+# mais alto que o da frase das trilhas: a escolha muda o custo da resposta, e só vale para o mesmo pedido.
+LESSON_FIELDS = ("model", "skill", "rung")
+LESSON_ORIGINS = ("escolha", "refeita", "reclamacao")
+LESSON_SIMILAR = 0.85
 
 
 def _now() -> str:
@@ -106,10 +111,15 @@ class MemoryStore:
                     message_id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL,
                     question TEXT NOT NULL, answer TEXT NOT NULL, skill TEXT,
                     created_at TEXT NOT NULL, vector TEXT, forgotten INTEGER NOT NULL DEFAULT 0);
+                CREATE TABLE IF NOT EXISTS route_lessons (
+                    id TEXT PRIMARY KEY, question TEXT NOT NULL, field TEXT NOT NULL, value TEXT NOT NULL,
+                    origin TEXT NOT NULL, conversation_id TEXT, qvector TEXT, created_at TEXT NOT NULL,
+                    forgotten INTEGER NOT NULL DEFAULT 0);
             """)
-            # Trilhas (lote 31): as páginas citadas e o vetor só da pergunta, em bancos criados antes.
+            # Trilhas (lote 31): as páginas citadas e o vetor só da pergunta, em bancos criados antes. Lote 33: a data
+            # em que a trilha ficou fraca (pergunta refeita ou reclamação), em bancos criados antes.
             columns = {row[1] for row in connection.execute("PRAGMA table_info(exchanges)")}
-            for name in ("pages", "qvector"):
+            for name in ("pages", "qvector", "weak"):
                 if name not in columns:
                     connection.execute(f"ALTER TABLE exchanges ADD COLUMN {name} TEXT")
             # Uma transação por operação: tudo ou nada (ex.: nova versão + antiga superada).
@@ -366,8 +376,52 @@ class MemoryStore:
 
         return [{"message_id": row["message_id"], "conversation_id": row["conversation_id"], "question": row["question"],
                  "answer": row["answer"], "created_at": row["created_at"], "similaridade": round(similarity, 3),
-                 "pages": json.loads(row["pages"])} | ({"pergunta_parecida": alike(row["question"])} if asked else {})
+                 "pages": json.loads(row["pages"]), "fraca": bool(row["weak"])}
+                | ({"pergunta_parecida": alike(row["question"])} if asked else {})
                 for similarity, row in scored[:limit]]
+
+    def weaken_trail(self, message_id: str) -> bool:
+        """A resposta não bastou (lote 33): a trilha dela continua apoiando a busca, mas deixa de servir de atalho."""
+        with self._db() as db:
+            cursor = db.execute("UPDATE exchanges SET weak=? WHERE message_id=? AND weak IS NULL", (_now(), message_id))
+        return cursor.rowcount > 0
+
+    # Escolhas aprendidas com o uso (lote 33)
+
+    def learn_route(self, *, question: str, field: str, value: str, origin: str = "escolha",
+                    conversation_id: str | None = None) -> bool:
+        """Guarda uma escolha do pesquisador para a mensagem: o modelo, a skill ou o degrau de leitura."""
+        question = str(question or "").strip()[:MAX_QUESTION]
+        if field not in LESSON_FIELDS or origin not in LESSON_ORIGINS or not question or not str(value or "").strip():
+            raise ValueError("Escolha inválida.")
+        vector = self._vector(question)
+        if vector is None:
+            return False  # sem o modelo local, não há como achar a mensagem parecida depois
+        with self._db() as db:
+            db.execute("""INSERT INTO route_lessons (id, question, field, value, origin, conversation_id, qvector,
+                created_at) VALUES (?,?,?,?,?,?,?,?)""", (uuid.uuid4().hex, question, field, str(value), origin,
+                                                          conversation_id, vector, _now()))
+        return True
+
+    def route_lessons(self, question: str, *, min_similarity: float = LESSON_SIMILAR) -> dict[str, dict]:
+        """A escolha de cada campo para a mensagem mais parecida; no empate, vale a mais recente."""
+        query = json.loads(self._vector(question) or "[]")
+        if not query:
+            return {}
+        with self._db() as db:
+            rows = db.execute("SELECT * FROM route_lessons WHERE forgotten=0 AND qvector IS NOT NULL").fetchall()
+        best: dict[str, tuple] = {}
+        for row in rows:
+            vector = json.loads(row["qvector"])
+            if len(vector) != len(query):
+                continue
+            similarity = round(sum(a * b for a, b in zip(query, vector)), 3)
+            current = best.get(row["field"])
+            if similarity >= min_similarity and (current is None or (similarity, row["created_at"]) > current[:2]):
+                best[row["field"]] = (similarity, row["created_at"], row)
+        return {field: {"value": row["value"], "origin": row["origin"], "question": row["question"],
+                        "created_at": row["created_at"], "similaridade": similarity}
+                for field, (similarity, _, row) in best.items()}
 
     def recall(self, question: str, *, exclude_conversation: str | None = None, limit: int = 3,
                min_similarity: float = 0.40) -> list[dict]:
@@ -394,6 +448,8 @@ class MemoryStore:
         with self._db() as db:
             cursor = db.execute("UPDATE exchanges SET forgotten=1 WHERE conversation_id=? AND forgotten=0",
                                 (conversation_id,))
+            # As escolhas aprendidas nela também deixam de valer (lote 33).
+            db.execute("UPDATE route_lessons SET forgotten=1 WHERE conversation_id=?", (conversation_id,))
         return cursor.rowcount
 
     def exchange_count(self) -> int:

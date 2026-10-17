@@ -124,6 +124,56 @@ def test_route_view_is_plain_data_and_terms_keep_only_the_subject():
     assert routing.terms("E o Pertile? E o PERTILE?") == ["Pertile"] and routing.terms("O que é?") == []
 
 
+DIGEST = {"blocos": [
+    {"texto": "| Indicador | Denso | Recorrente X |\n|---|---|---|\n| Ensaios detectados, de 14 | 10 | 8 |",
+     "notas": [{"nome": "Sensibilidade", "texto": "..."}, {"nome": "Atraso mediano", "texto": "..."}]},
+    {"texto": "| Ensaio | Falha |\n|---|---|\n| F1L | IGBT |\n| G9 | Sensor |"},
+    {"texto": "| Tipo de falha | Denso: detectou | Novo-AE: MCC |\n|---|---|---|\n| IGBT | 1 de 2 | 0,8 |"}]}
+
+
+def test_results_vocabulary_comes_from_the_results_digest():
+    names = routing.results_vocabulary(DIGEST)
+    assert {"denso", "recorrente x", "novo-ae", "ae-lstm"} <= names["modelos"]
+    assert names["ensaios"] == {"f1l", "g9"} and {"sensibilidade", "atraso mediano"} <= names["metricas"]
+    assert "ensaios detectados, de 14" not in names["modelos"]  # título de linha não é modelo
+    # O ensaio "G9" e o modelo "Novo-AE" só são reconhecidos com os nomes do resumo.
+    assert go("E o G9?").intent != "resultados" and go("Como foi no G9?", vocabulary=names).intent == "resultados"
+    assert go("Qual o MCC do Novo-AE?", vocabulary=names).intent == "resultados"
+
+
+def test_results_questions_without_the_word_results_go_to_the_results():
+    for text in ("Quantas falhas o LSTM detectou?", "Qual a sensibilidade do autoencoder denso?",
+                 "O que eu consegui até agora no mestrado?", "Em quanto tempo o Denso percebe a falha F3?",
+                 "Qual componente tem a maior criticidade?", "Qual modelo errou menos?", "Os autoencoders funcionaram?"):
+        found = go(text)
+        assert (found.intent, found.results, found.rung) == ("resultados", True, routing.NONE), text
+    # Conceito e literatura continuam na biblioteca, mesmo com o nome de uma métrica ou de um modelo.
+    for text in ("Segundo a literatura, o que é um autoencoder LSTM?", "O que é a sensibilidade de um detector?",
+                 "Como funciona uma rede LSTM?", "Qual a confiabilidade estimada do regulador?",
+                 "Qual é o limite usado para o NPR?", "Como um autoencoder detecta anomalias?",
+                 # "denso" como adjetivo, sem métrica nem palavra da pesquisa
+                 "Esse capítulo é denso, explique de forma simples.", "O texto ficou denso demais, resuma."):
+        assert go(text).intent != "resultados", text
+    assert go("Qual foi melhor, o Denso ou o AE-LSTM?").intent == "resultados"  # dois modelos da pesquisa
+
+
+def test_after_a_library_answer_small_talk_stays_out_and_a_complaint_reads_deeper():
+    after = {"rung": routing.PASSAGES}
+    for text in ("Cara, como você tá tão sabido assim? kkkkk", "relaxa, pode adotar uma conversa mais descontraída agora.",
+                 "Valeu, ficou claro!"):
+        found = go(text, previous=after)
+        assert (found.intent, found.rung) == ("conversa", routing.NONE), text
+    for text in ("Traga outra fonte.", "Valeu! E a segunda fonte?", "Mas e a FMECA?",
+                 "Nossa, que interessante. E a FMECA?"):
+        assert go(text, previous=after).intent == "continuacao", text
+    assert go("Show. E sobre a NASA?", previous=after).rung >= routing.PASSAGES  # cita o documento da NASA
+    complaint = go("Você não conseguiu me trazer nenhuma definição.", previous=after)
+    assert (complaint.intent, complaint.rung, complaint.complaint) == ("aprofundar", routing.PAGES, True)
+    assert go("Faltou a parte da FMECA.", previous={"rung": routing.PAGES}).rung == routing.PAGES
+    # Sem resposta da biblioteca antes, não há do que reclamar: a mensagem segue as outras regras.
+    assert not go("Você não conseguiu me trazer nenhuma definição.").complaint
+
+
 # --- biblioteca: contagem exata de termos e páginas soltas ---
 
 pytest.importorskip("pypdf")

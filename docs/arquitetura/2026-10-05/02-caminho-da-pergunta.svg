@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1550" viewBox="0 0 1800 1550">
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<title>O caminho de uma pergunta</title><desc>A rota automática escolhe o contexto e a profundidade; o pesquisador pode ajustar as opções</desc>
+<text x="55" y="27" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="700" fill="#17786e">AL-IAdo  /  MAPA 02</text>
+<text x="55" y="65" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="43" font-weight="700" fill="#172b43">O caminho de uma pergunta</text>
+<text x="55" y="128" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#52647b">A rota automática escolhe o contexto e a profundidade; o pesquisador pode ajustar as opções</text>
+<rect x="55" y="176" width="13" height="13" rx="3" fill="#2f65c8" stroke="#2f65c8" stroke-width="1"/>
+<text x="78" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Interface</text>
+<rect x="255" y="176" width="13" height="13" rx="3" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="278" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Código local</text>
+<rect x="455" y="176" width="13" height="13" rx="3" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="478" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Modelo local</text>
+<rect x="655" y="176" width="13" height="13" rx="3" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="678" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">API paga</text>
+<rect x="855" y="176" width="13" height="13" rx="3" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="878" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Persistência</text>
+<rect x="1055" y="176" width="13" height="13" rx="3" fill="#527c32" stroke="#527c32" stroke-width="1"/>
+<text x="1078" y="169" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="17" font-weight="400" fill="#52647b">Ciência</text>
+<text x="55" y="1502" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="400" fill="#52647b">Código local em 05/10/2026 · v0.5.0 + lote 32 · setas = fluxo ou dependência; não são serviços separados</text>
+<text x="1580" y="1502" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#52647b">MAPA 02 / 05</text>
+<rect x="55" y="235" width="625" height="155" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="56" y="253" width="5" height="119" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="77" y="251" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">1 Entrada e roteamento local</text>
+<text x="77" y="294.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Pergunta + histórico recente + opções.</text>
+<text x="77" y="324.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Regras e similaridade escolhem skill, modelo e leitura.</text>
+<polyline points="365,390 365,450" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="365,450 360.21537912477646,440.0950818741206 369.78462087522354,440.0950818741206" fill="#8b9cb0"/>
+<rect x="55" y="450" width="625" height="170" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="56" y="468" width="5" height="134" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="77" y="466" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">2 Montagem do contexto</text>
+<text x="77" y="509.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Documentos e memória relevantes, referências da skill e</text>
+<text x="77" y="539.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">resultados científicos, quando cabem na tarefa.</text>
+<polyline points="365,620 365,680" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="365,680 360.21537912477646,670.0950818741205 369.78462087522354,670.0950818741205" fill="#8b9cb0"/>
+<rect x="55" y="680" width="625" height="190" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="56" y="698" width="5" height="154" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="77" y="696" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">3 Estimativa e confirmação</text>
+<text x="77" y="739.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Estima o custo da leitura escolhida.</text>
+<text x="77" y="769.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Nas leituras acima de trechos, verifica os limites e a</text>
+<text x="77" y="799.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">confirmação necessária.</text>
+<polyline points="365,870 365,930" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="365,930 360.21537912477646,920.0950818741205 369.78462087522354,920.0950818741205" fill="#8b9cb0"/>
+<rect x="55" y="930" width="625" height="180" rx="15" fill="#fff0df" stroke="#b76718" stroke-width="1.4"/>
+<rect x="56" y="948" width="5" height="144" rx="2" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="77" y="946" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">4 Gateway → Gemini → resposta</text>
+<text x="77" y="989.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Envia regras e contexto ao modelo escolhido. A resposta</text>
+<text x="77" y="1019.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">chega aos poucos à interface; uso é registrado.</text>
+<polyline points="365,1110 365,1170" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="365,1170 360.21537912477646,1160.0950818741205 369.78462087522354,1160.0950818741205" fill="#8b9cb0"/>
+<rect x="55" y="1170" width="625" height="200" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="56" y="1188" width="5" height="164" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="77" y="1186" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">5 Conferência e persistência</text>
+<text x="77" y="1229.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Confere referências, trechos citados e números de</text>
+<text x="77" y="1259.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">resultados. Guarda a conversa; quando elegível, memória e</text>
+<text x="77" y="1289.1399999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">trilhas de páginas.</text>
+<rect x="790" y="235" width="955" height="155" rx="15" fill="#f0eafd" stroke="#7552b3" stroke-width="1.4"/>
+<rect x="791" y="253" width="5" height="119" rx="2" fill="#7552b3" stroke="#7552b3" stroke-width="1"/>
+<text x="812" y="251" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">A escolha de modelo também é local</text>
+<text x="812" y="294.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Roteador: regras + exemplos comparados com MiniLM, sem chamada paga.</text>
+<text x="812" y="324.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Define intenção, skill, alias de modelo e profundidade. Histórico ajuda em continuações.</text>
+<text x="812" y="357" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">routing.py · routing_examples.py</text>
+<polyline points="680,310 790,310" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="790,310 780.0950818741205,314.78462087522354 780.0950818741205,305.21537912477646" fill="#8b9cb0"/>
+<rect x="790" y="450" width="955" height="235" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="791" y="468" width="5" height="199" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="812" y="466" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Escada de leitura</text>
+<text x="812" y="509.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">0 Sem biblioteca: conversa, tarefas e resultados.</text>
+<text x="812" y="537.9" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">1 Trechos: consulta textual comum.</text>
+<text x="812" y="566.3" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">2 Páginas completas: seleção local, geralmente até 10 páginas.</text>
+<text x="812" y="594.6999999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">3 Documento citado ou fixado; documentos grandes podem cair para páginas.</text>
+<text x="812" y="623.0999999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="400" fill="#172b43">4 Leitura ampla: somente por escolha explícita na interface.</text>
+<polyline points="680,535 790,535" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="790,535 780.0950818741205,539.7846208752235 780.0950818741205,530.2153791247765" fill="#8b9cb0"/>
+<rect x="790" y="740" width="955" height="200" rx="15" fill="#fff0df" stroke="#b76718" stroke-width="1.4"/>
+<rect x="791" y="758" width="5" height="164" rx="2" fill="#b76718" stroke="#b76718" stroke-width="1"/>
+<text x="812" y="756" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Como os limites estão aplicados no código</text>
+<text x="812" y="799.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Acima de 30 mil tokens estimados: confirmação para leitura ampliada.</text>
+<text x="812" y="829.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Após 300 mil tokens no dia: toda leitura acima dos trechos pede confirmação.</text>
+<text x="812" y="859.1400000000001" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">A reformulação paga da busca acontece antes dessa verificação.</text>
+<text x="812" y="907" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">interfaces/web/app.py · limites preservados</text>
+<polyline points="680,780 790,780" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="790,780 780.0950818741205,784.7846208752235 780.0950818741205,775.2153791247765" fill="#8b9cb0"/>
+<rect x="790" y="995" width="955" height="190" rx="15" fill="#e7f5f3" stroke="#17786e" stroke-width="1.4"/>
+<rect x="791" y="1013" width="5" height="154" rx="2" fill="#17786e" stroke="#17786e" stroke-width="1"/>
+<text x="812" y="1011" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Duas condições que mudam o percurso</text>
+<text x="812" y="1054.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Busca web habilitada mantém a biblioteca em trechos.</text>
+<text x="812" y="1084.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Uma resposta automática sem citações pode provocar uma nova tentativa com páginas, dentro</text>
+<text x="812" y="1114.1399999999999" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">do orçamento restante e do limite diário.</text>
+<text x="812" y="1152" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="400" fill="#52647b">agent.py · interfaces/web/app.py</text>
+<polyline points="680,1020 735,1020 735,1065 790,1065" fill="none" stroke="#8b9cb0" stroke-width="2" stroke-dasharray="6 5"/><polygon points="790,1065 780.0950818741205,1069.7846208752235 780.0950818741205,1060.2153791247765" fill="#8b9cb0"/>
+<rect x="790" y="1225" width="955" height="145" rx="15" fill="#eef1f6" stroke="#596b85" stroke-width="1.4"/>
+<rect x="791" y="1243" width="5" height="109" rx="2" fill="#596b85" stroke="#596b85" stroke-width="1"/>
+<text x="812" y="1241" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="25" font-weight="700" fill="#172b43">Saídas e limites da conferência</text>
+<text x="812" y="1284.5" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">Fontes, avisos, uso e memória ficam disponíveis na interface. A conferência verifica vínculos e</text>
+<text x="812" y="1314.32" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">valores; não certifica a verdade científica da resposta.</text>
+<polyline points="680,1280 790,1280" fill="none" stroke="#8b9cb0" stroke-width="2"/><polygon points="790,1280 780.0950818741205,1284.7846208752235 780.0950818741205,1275.2153791247765" fill="#8b9cb0"/>
+<text x="55" y="1410" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">A trilha de uma conversa pode reaproveitar páginas já citadas. Ela orienta a leitura, mas a resposta é gerada novamente.</text>
+<text x="55" y="1439.82" dominant-baseline="text-before-edge" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="400" fill="#172b43">O filtro do lote 32 só decide se haverá uma revisão adicional de memória; ele não impede salvar a conversa.</text>
+</svg>
