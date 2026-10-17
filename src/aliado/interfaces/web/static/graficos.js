@@ -51,7 +51,7 @@ const GLOSSARIO = {
   escore: "Erro de reconstrução do autoencoder na janela: quanto o sinal se afasta do que o modelo aprendeu como saudável.",
   razao: "Escore dividido pelo limiar do modelo, em escala logarítmica. Acima de 1, a janela é anormal. Assim os dois modelos ficam na mesma escala.",
   fases: "Comissionamento: começo do registro, fora da avaliação. Antes da falha: janelas saudáveis, usadas como negativas. Transição: a janela do início. Depois: janelas com falha.",
-  inicio: "Início nominal: o meio do registro. Os arquivos do GPVS não marcam o disparo, e o conjunto diz só que a falha foi introduzida manualmente, na metade do experimento. É o início da avaliação de 27/09.",
+  inicio: "Início nominal: o meio do registro. Os arquivos da base não marcam o disparo, e o conjunto diz só que a falha foi introduzida manualmente, na metade do experimento. É o início que a avaliação usa.",
   mudanca: "Mudança observada: o primeiro instante, depois do comissionamento, em que a média das 24 variáveis do ensaio muda de patamar. Vem de um detector de mudança sobre os sinais, sem os autoencoders.",
   detector_mudanca: "PELT (Killick, Fearnhead e Eckley, 2012): divide o registro nos trechos de média constante que melhor o explicam, pagando uma penalidade por trecho novo. A penalidade usada é a menor que não acha mudança nenhuma nos dois ensaios saudáveis.",
   classe_mudanca: "Clara: a mesma mudança aparece mesmo com penalidades até 7,5 vezes maiores, e o ensaio passa a usá-la. Fraca: some quando a penalidade cresce, pode ser variação do ambiente, e o ensaio fica no meio do registro. Nenhuma: as variáveis não mudam.",

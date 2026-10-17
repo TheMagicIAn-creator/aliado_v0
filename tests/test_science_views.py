@@ -121,7 +121,7 @@ def client(tmp_path):
     settings = WebSettings(data_dir=tmp_path / "dados", library_dir=tmp_path / "biblioteca", port=8765,
                            stream=lambda *a, **k: iter(()), models=[{"alias": "flash", "model_id": "x"}],
                            library_factory=lambda: None, results_dir=synthetic(tmp_path / "resultados"),
-                           gpvs_dir=tmp_path / "gpvs")
+                           dataset_dir=tmp_path / "gpvs")
     return TestClient(create_app(settings), base_url="http://127.0.0.1:8765")
 
 

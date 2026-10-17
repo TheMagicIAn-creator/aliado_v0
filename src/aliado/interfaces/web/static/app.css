@@ -378,6 +378,8 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .primary { height: 38px; padding: 0 16px; border-radius: var(--radius); border: 0; background: var(--accent); color: #fff; font-weight: 500; }
 :root[data-theme="dark"] .primary { color: #0b2a22; }
 .primary:hover { background: var(--accent-hover); }
+.primary:disabled, .secondary:disabled { opacity: .45; cursor: not-allowed; }
+.primary:disabled:hover { background: var(--accent); }
 .doc-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: grid; gap: 8px; align-content: start; }
 .doc-item { width: 100%; text-align: left; border: 1px solid var(--border); background: var(--surface);
             border-radius: var(--radius); padding: 10px 12px; display: grid; gap: 4px; }
@@ -606,13 +608,13 @@ details.historico > summary { cursor: pointer; font: 400 18px/1.3 var(--serif); 
                                               background: var(--surface); width: 100%; }
 .science-list { margin: 0; padding-left: 20px; font-size: 13.5px; color: var(--text-soft); }
 .mono, .science-pre { font-family: var(--mono); font-size: 12.5px; }
-/* Rodar GPVS (lote 21) */
-.run-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; }
+/* Rodar um experimento (lotes 21 e 34) */
 .run-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 8px;
             align-content: start; }
 .run-card .control input { grid-column: 1 / -1; border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 8px;
                            background: var(--surface); min-width: 0; }
-.run-card .badge { justify-self: start; }
+.run-actions { justify-content: flex-start; flex-wrap: wrap; }
+.run-actions a.secondary { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
 .run-status { font-weight: 500; }
 .run-log { font: 12px/1.45 var(--mono); background: var(--surface-muted); border-radius: 8px; padding: 8px 10px; margin: 0;
            max-height: 220px; overflow: auto; white-space: pre-wrap; }

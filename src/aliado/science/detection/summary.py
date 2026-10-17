@@ -1,8 +1,10 @@
-"""Resultados oficiais do GPVS para a aba Ciência (lote 23): só leitura e só numpy.
+"""Resultados do GPVS para a aba Ciência (lotes 23 e 34): só leitura e só numpy.
 
-Lê a avaliação de 27/09/2026 (relatório, métricas por ensaio e escores) e o treino dela, sem
-carregar modelos. Os números são os do treino de referência do relatório; a faixa dos 5
-treinamentos repetidos vem do próprio relatório e do CSV. Nada é gravado.
+Lê a rodada atual do experimento AE Denso × AE-LSTM (relatório, métricas por ensaio e escores da
+avaliação, o treino dela e o início das falhas), sem carregar modelos. A rodada atual é a completa
+mais nova; sem nenhuma, a avaliação oficial de 27/09/2026 e a reanálise dela. Os números são os do
+treino de referência do relatório; a faixa dos treinamentos repetidos vem do próprio relatório e do
+CSV. Nada é gravado.
 
 As métricas por tipo de falha somam as contagens de janelas dos modos L e M e recalculam
 sensibilidade, especificidade, precisão, F1, acurácia balanceada e MCC com as fórmulas de
@@ -15,15 +17,18 @@ import csv
 import json
 import math
 import threading
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
+from aliado import experiments
 from aliado.science.detection import gpvs
 from aliado.science.detection.metrics import alarm_starts, first_alarm
 from aliado.science.detection.threshold import false_alarm_interval
+from aliado.specializations.mestrado import autoencoders
 
-EVALUATION = "gpvs-avaliacao-001"
+EVALUATION = autoencoders.LEGACY_EVALUATION
 REANALYSIS_PREFIX = "gpvs-reanalise-"
 SECONDARY = ("precisao", "f1", "acuracia_balanceada", "mcc", "auc_roc", "auc_pr")
 MODELS = {"denso": "Denso", "lstm": "AE-LSTM"}
@@ -40,12 +45,60 @@ _cache: dict = {}
 _lock = threading.Lock()
 
 
-def _evaluation(results_dir: str | Path) -> Path:
-    folder = Path(results_dir) / EVALUATION
+@dataclass(frozen=True)
+class Run:
+    """Uma rodada: a pasta da avaliação, a do início observado das falhas e como ela é chamada."""
+
+    evaluation: Path
+    reanalysis: Path | None
+    official: bool
+    id: str
+    consultation: int | None = None
+
+
+def _legacy_reanalysis(results_dir: Path) -> Path | None:
+    """A reanálise mais recente dos escores da avaliação de 27/09, com o início observado (lote 24)."""
+    for folder in sorted(results_dir.glob(f"{REANALYSIS_PREFIX}*"), reverse=True):
+        try:
+            if _json(folder / "relatorio.json").get("origem", {}).get("avaliacao") == EVALUATION:
+                return folder
+        except (OSError, ValueError, AttributeError):
+            continue  # reanálise ilegível: é secundária e não pode derrubar as visões da avaliação oficial
+    return None
+
+
+def current(results_dir: str | Path) -> Run:
+    """A rodada que a aba mostra: a completa mais nova; sem nenhuma, a avaliação oficial de 27/09."""
+    results_dir = Path(results_dir)
+    found = experiments.latest(results_dir, autoencoders.KEY)
+    if found:
+        folder, result = found
+        return Run(folder / autoencoders.STAGES["avaliacao"], folder / autoencoders.STAGES["inicio"], False,
+                   folder.name, result.get("consulta"))
+    return Run(results_dir / EVALUATION, _legacy_reanalysis(results_dir), True, autoencoders.LEGACY_ID, 1)
+
+
+def _run(source) -> Run:
+    return source if isinstance(source, Run) else current(source)
+
+
+def _evaluation(source) -> Path:
+    run = _run(source)
+    folder = run.evaluation
     for name in ("configuracao.json", "relatorio.json", "metricas_por_ensaio.csv"):
         if not (folder / name).is_file():
-            raise FileNotFoundError(f"Falta a avaliação oficial de 27/09 ({name}) na pasta de resultados.")
+            missing = "a avaliação oficial de 27/09" if run.official else f"a avaliação da {run.id}"
+            raise FileNotFoundError(f"Falta {missing} ({name}) na pasta de resultados.")
     return folder
+
+
+def label(run: Run, day: str | None) -> dict:
+    """Como a rodada aparece nas telas, no chat e no PDF: "oficial" só para a avaliação de 27/09."""
+    when = "/".join(reversed(str(day)[:10].split("-"))) if day else ""
+    text = (f"Avaliação oficial de {when}" if run.official else
+            f"Rodada de {when}" + (f" · {run.consultation}ª vez que os dados de teste foram usados"
+                                   if run.consultation else ""))
+    return {"id": run.id, "oficial": run.official, "data": day, "consulta": run.consultation, "rotulo": text}
 
 
 def _json(path: Path) -> dict:
@@ -94,15 +147,17 @@ def trials() -> list[dict]:
     return items
 
 
-def overview(results_dir: str | Path) -> dict:
+def overview(results_dir) -> dict:
     """Cartões por modelo, matrizes de confusão (total, por falha e por ensaio) e a comparação."""
-    folder = _evaluation(results_dir)
+    run = _run(results_dir)
+    folder = _evaluation(run)
     report, config = _json(folder / "relatorio.json"), _json(folder / "configuracao.json")
     reference = report["semente_referencia"]
-    rows = [row for row in _rows(folder) if row["semente"] == reference]
+    every = _rows(folder)
+    rows = [row for row in every if row["semente"] == reference]
     training = folder.parent / Path(config["treino"]["pasta"]).name / "relatorio.json"
     limits = _json(training)["modelos"] if training.is_file() else None
-    later = reanalysis(results_dir)
+    later = reanalysis(run)
     models = {}
     for kind, name in MODELS.items():
         model = report["modelos"][kind]
@@ -142,12 +197,13 @@ def overview(results_dir: str | Path) -> dict:
                 "por_ensaio": {row["ensaio"]: _counts([row]) for row in own},
             },
         }
-    return {"data": config.get("executado_em"), "confirmacoes": report["confirmacao"], "k": report["top_k"],
-            "modelos": models, "comparacao": _comparison(report["comparacao"]), "ensaios": trials()}
+    return {"data": config.get("executado_em"), "rodada": label(run, config.get("executado_em")),
+            "treinamentos": len({row["semente"] for row in every}), "confirmacoes": report["confirmacao"],
+            "k": report["top_k"], "modelos": models, "comparacao": _comparison(report["comparacao"]), "ensaios": trials()}
 
 
-def per_fault(results_dir: str | Path) -> dict:
-    """Métricas por ensaio e por tipo de falha (L + M), com a faixa dos 5 treinamentos repetidos."""
+def per_fault(results_dir) -> dict:
+    """Métricas por ensaio e por tipo de falha (L + M), com a faixa dos treinamentos repetidos."""
     folder = _evaluation(results_dir)
     report = _json(folder / "relatorio.json")
     reference = report["semente_referencia"]
@@ -180,7 +236,7 @@ def per_fault(results_dir: str | Path) -> dict:
         result[kind] = {"nome": MODELS[kind], "por_ensaio": by_trial, "por_falha": by_fault,
                         "gerais": {key: {"valor": overall[f"{key}_media"],
                                          "faixa": model["faixa_sementes"][f"{key}_media"]} for key in METRICS}}
-    return {"modelos": result, "ensaios": trials(),
+    return {"modelos": result, "ensaios": trials(), "treinamentos": len({row["semente"] for row in rows}),
             "falhas": [{"id": f"F{f}", "nome": SHORT_FAULTS[f], "descricao": gpvs.FAULTS[f][0],
                         "fisica": gpvs.FAULTS[f][1]} for f in range(1, 8)]}
 
@@ -198,12 +254,13 @@ def _ratio(values, threshold: float) -> list[float]:
     return [float(f"{value:.5g}") for value in np.asarray(values, dtype=float) / threshold]
 
 
-def score_panels(results_dir: str | Path, gpvs_dir: str | Path) -> dict:
+def score_panels(results_dir, gpvs_dir: str | Path) -> dict:
     """Escore ÷ limiar de cada janela, as fases, o início nominal e os alarmes, para os dois modelos.
 
-    Os escores são os de `escores.npz` do treino de referência com o k oficial; as fases vêm da
+    Os escores são os de `escores.npz` do treino de referência com o k da rodada; as fases vêm da
     mesma preparação dos dados do treino. Fica em memória depois da primeira vez."""
-    folder = _evaluation(results_dir)
+    run = _run(results_dir)
+    folder = _evaluation(run)
     gpvs_dir = Path(gpvs_dir)
     if not (gpvs_dir / "proveniencia.json").is_file():
         raise FileNotFoundError("Faltam os dados do GPVS para as fases de cada ensaio.")
@@ -213,7 +270,7 @@ def score_panels(results_dir: str | Path, gpvs_dir: str | Path) -> dict:
             _cache.clear()
             _cache[key] = _panels(folder, gpvs_dir)
         panels = _cache[key]
-    return _with_onsets(panels, reanalysis(results_dir))
+    return _with_onsets(panels, reanalysis(run))
 
 
 def _with_onsets(panels: dict, report: dict | None) -> dict:
@@ -231,17 +288,15 @@ def _with_onsets(panels: dict, report: dict | None) -> dict:
     return panels | {"ensaios": trials_, "reanalise": True}
 
 
-def reanalysis(results_dir: str | Path) -> dict | None:
-    """A reanálise mais recente dos escores da avaliação oficial, com o início observado (lote 24)."""
-    for folder in sorted(Path(results_dir).glob(f"{REANALYSIS_PREFIX}*"), reverse=True):
-        if (folder / "relatorio.json").is_file() and (folder / "configuracao.json").is_file():
-            try:
-                report = _json(folder / "relatorio.json")
-                if report.get("origem", {}).get("avaliacao") == EVALUATION:
-                    return report | {"executado_em": _json(folder / "configuracao.json").get("executado_em")}
-            except (OSError, ValueError, AttributeError):
-                continue  # reanálise ilegível: é secundária e não pode derrubar as visões da avaliação oficial
-    return None
+def reanalysis(results_dir) -> dict | None:
+    """O início observado das falhas da rodada (lote 24): na de 27/09, a reanálise mais recente dela."""
+    folder = _run(results_dir).reanalysis
+    if folder is None or not (folder / "relatorio.json").is_file() or not (folder / "configuracao.json").is_file():
+        return None
+    try:
+        return _json(folder / "relatorio.json") | {"executado_em": _json(folder / "configuracao.json").get("executado_em")}
+    except (OSError, ValueError, TypeError):
+        return None  # ilegível: é secundária e não pode derrubar as visões da avaliação
 
 
 def _indicators(summary: dict, trials_count: int) -> dict:
@@ -255,13 +310,16 @@ def _comparison(rows: list[dict]) -> list[dict]:
              "leitura": row["leitura"]} for row in rows]
 
 
-def onsets(results_dir: str | Path) -> dict:
+def onsets(results_dir) -> dict:
     """Início nominal e observado de cada ensaio e os indicadores com cada um (seção Início das falhas)."""
-    official = _json(_evaluation(results_dir) / "relatorio.json")
-    report = reanalysis(results_dir)
+    run = _run(results_dir)
+    evaluation = _evaluation(run)
+    official = _json(evaluation / "relatorio.json")
+    report = reanalysis(run)
     if report is None:
         raise FileNotFoundError("Ainda não há a reanálise com o início observado das falhas. Ela é feita pelo "
-                                "terminal: aliado ciencia reanalisar-gpvs --saida data/resultados/gpvs-reanalise-001")
+                                "terminal: aliado ciencia reanalisar-gpvs --saida data/resultados/gpvs-reanalise-001"
+                                if run.official else f"Falta o início das falhas da {run.id}.")
     start = report["inicio"]
     clear = report["so_mudanca_clara"]
     items = []
@@ -285,7 +343,8 @@ def onsets(results_dir: str | Path) -> dict:
                                    "especificidade_meio": before["ensaios"][name_]["especificidade"],
                                    "especificidade_mudanca": result["especificidade"]}
                            for name_, result in after["ensaios"].items()}
-    return {"data": report["executado_em"], "data_oficial": _json(_evaluation(results_dir) / "configuracao.json").get("executado_em"),
+    evaluated = _json(evaluation / "configuracao.json").get("executado_em")
+    return {"data": report["executado_em"], "data_oficial": evaluated, "rodada": label(run, evaluated),
             "penalidade_c": start["penalidade_c"], "controle_saudavel": {
                 name: counts[f"{float(start['penalidade_c'])}"] for name, counts in start["controle_saudavel"].items()},
             "ensaios": items, "clara": clear["ensaios"], "modelos": models, "por_ensaio": per_trial,

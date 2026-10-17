@@ -87,10 +87,25 @@ def main(argv: list[str] | None = None) -> int:
     web.add_argument("--biblioteca", type=Path, default=Path("data/bibliotecas/principal"))
     web.add_argument("--dados", type=Path, default=Path("data"), help="Conversas e registro de uso")
     web.add_argument("--resultados", type=Path, help="Resultados da aba Ciência (padrão: <dados>/resultados)")
-    web.add_argument("--gpvs", type=Path, default=Path("data/gpvs"), help="Dados do GPVS para os exploradores")
+    web.add_argument("--base", type=Path, help="Base de dados dos experimentos (padrão: a do experimento)")
     web.add_argument("--sem-navegador", action="store_true", help="Não abrir o navegador")
     web.add_argument("--sem-obsidian", action="store_true",
                      help="Não gerar as notas do Obsidian em <dados>/obsidian")
+    experiment = commands.add_parser("experimento", help="Experimentos das especializações: rodar do zero e exportar o PDF")
+    experiment_commands = experiment.add_subparsers(dest="operation", required=True)
+    experiment_commands.add_parser("listar", help="Os experimentos instalados")
+    for name in ("rodar", "pdf"):
+        operation = experiment_commands.add_parser(name)
+        operation.add_argument("chave", help="Identificador do experimento (veja 'aliado experimento listar')")
+        operation.add_argument("--resultados", type=Path, default=Path("data/resultados"))
+        if name == "rodar":
+            operation.add_argument("--base", type=Path, help="Pasta da base de dados (padrão: a do experimento)")
+            operation.add_argument("--parametro", action="append", default=[], metavar="NOME=VALOR",
+                                   help="Um parâmetro diferente do padrão; repita para mais de um")
+            operation.add_argument("--frase", help="Frase de confirmação, quando a rodada usa os dados de teste")
+            operation.add_argument("--saida", type=Path, help="Pasta nova da rodada (padrão: a próxima rodada-NNN)")
+        else:
+            operation.add_argument("--saida", type=Path, required=True, help="Arquivo PDF novo")
     science = commands.add_parser("ciencia", help="Cálculos numéricos com cenário explícito")
     science_commands = science.add_subparsers(dest="operation", required=True)
     calculation = science_commands.add_parser("calcular")
@@ -209,6 +224,8 @@ def main(argv: list[str] | None = None) -> int:
             paths = export_result(result, args.saida, plot=args.grafico)
             print(json.dumps(paths, ensure_ascii=False, indent=2))
             return 0
+        if args.command == "experimento":
+            return _experiment(args)
         if args.command == "web":
             return _serve_web(args)
         if args.command == "perguntar" and args.env_file is not None:
@@ -259,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 2
     except ValueError as exc:
-        if args.command in {"biblioteca", "ciencia", "web"}:
+        if args.command in {"biblioteca", "ciencia", "experimento", "web"}:
             print(f"Pedido inválido: {exc}", file=sys.stderr)
             return 2
         print("Pedido inválido. Verifique a pergunta, a skill e a configuração selecionada.",
@@ -364,6 +381,55 @@ def _rewriter(args):
     return rewrite
 
 
+def _experiment(args) -> int:
+    """Rodada do zero, numa pasta nova, ou o PDF da rodada atual (spec 0034)."""
+    from aliado import experiments
+
+    if args.operation == "listar":
+        print(json.dumps([{"chave": item.KEY, "titulo": item.TITLE, "base": item.DATASET}
+                          for item in experiments.available()], ensure_ascii=False, indent=2))
+        return 0
+    experiment = experiments.find(args.chave)
+    if args.operation == "pdf":
+        from aliado.experiments.pdf import render
+
+        result = experiments.current(args.resultados, experiment)
+        if result is None:
+            raise ValueError("Ainda não há resultado deste experimento.")
+        if args.saida.exists():
+            raise ValueError("O arquivo de saída já existe; escolha outro nome.")
+        args.saida.write_bytes(render(result, experiment.report(result)))
+        print(json.dumps({"pdf": str(args.saida), "rodada": result["rodada"]}, ensure_ascii=False, indent=2))
+        return 0
+    values = {}
+    for item in args.parametro:
+        name, sep, value = item.partition("=")
+        if not sep:
+            raise ValueError("Use --parametro nome=valor.")
+        values[name.strip()] = value.strip()
+    params = experiments.normalize(experiment, values)
+    dataset = args.base or experiment.DATASET_DIR
+    absent = experiment.missing(dataset)
+    if absent:
+        raise ValueError("Faltam " + "; ".join(absent) + ".")
+    phrase = getattr(experiment, "CONFIRMATION", None)
+    if phrase and str(args.frase or "").strip().lower() != phrase:
+        raise ValueError(f'A rodada usa os dados de teste: confirme com --frase "{phrase}".')
+    folder = args.saida or experiments.next_folder(args.resultados, experiment.KEY)
+    if folder.resolve().parent != experiments.runs_dir(args.resultados, experiment.KEY).resolve() \
+            or not folder.name.startswith("rodada-"):
+        raise ValueError(f"A rodada fica em {experiments.runs_dir(args.resultados, experiment.KEY)}/rodada-NNN.")
+    if folder.exists():
+        raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
+    folder.mkdir(parents=True)
+    result = experiment.run(params, folder, results_dir=args.resultados, dataset_dir=dataset, phrase=args.frase or "",
+                            progress=lambda line: print(line, file=sys.stderr, flush=True))
+    experiments.write_result(folder, result)
+    print(json.dumps({"pasta": str(folder), "rodada": result["rodada"], "rotulo": result["rotulo"]},
+                     ensure_ascii=False, indent=2))
+    return 0
+
+
 def _purge(args) -> dict:
     return {} if args.separacao is None else {"purge": args.separacao}
 
@@ -416,7 +482,7 @@ def _evaluate_gpvs(args) -> int:
 
 def _reanalyze_gpvs(args) -> int:
     from aliado.science.detection import registry
-    from aliado.science.detection.reanalysis import run
+    from aliado.science.detection.reanalysis import EVALUATION, run
 
     if args.saida.exists():
         raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
@@ -425,7 +491,7 @@ def _reanalyze_gpvs(args) -> int:
     number = registry.record_reanalysis(args.saida.parent, source=args.avaliacao.name, output=args.saida.name,
                                         training=args.modelos.name,
                                         training_sha=frozen["origem"]["treino_configuracao_sha256"],
-                                        config_sha=frozen["sha256"])
+                                        config_sha=frozen["sha256"], canonical=EVALUATION)
     print(json.dumps(paths | {"consulta": number}, ensure_ascii=False, indent=2))
     return 0
 
@@ -446,7 +512,7 @@ def _serve_web(args) -> int:
     except ImportError as exc:
         raise ImportError("Instale o extra 'web' para usar a interface.") from exc
     settings = default_settings(data_dir=args.dados, library_dir=args.biblioteca, port=args.porta,
-                                results_dir=args.resultados, gpvs_dir=args.gpvs,
+                                results_dir=args.resultados, dataset_dir=args.base,
                                 obsidian=not args.sem_obsidian)
     url = f"http://127.0.0.1:{args.porta}"
     print(f"AL-IAdo em {url} (Ctrl+C encerra)", file=sys.stderr)

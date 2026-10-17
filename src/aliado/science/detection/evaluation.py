@@ -347,7 +347,7 @@ def _markdown(summary: dict, trained: TrainedDetectors, config: EvaluationConfig
         lines.append(f"| {item['nome']} | Os dois juntos | {combined['duracao_s']:.1f} | — | {combined['alarmes']} | "
                      f"{combined['alarmes'] / combined['duracao_s'] * SECONDS_PER_HOUR:.0f} | "
                      f"{combined['limite_superior_por_hora']:.0f} |")
-    lines += ["", "Alarmes nas 5 sementes (teste saudável; pré-falha): " + "; ".join(
+    lines += ["", f"Alarmes nas {len(trained.config.seeds)} sementes (teste saudável; pré-falha): " + "; ".join(
         f"{item['nome']} {item['faixa_sementes']['alarmes_teste_saudavel'][0]}–{item['faixa_sementes']['alarmes_teste_saudavel'][1]} e "
         f"{item['faixa_sementes']['alarmes_pre_falha'][0]}–{item['faixa_sementes']['alarmes_pre_falha'][1]}"
         for item in summary["modelos"].values()) + "."]
@@ -362,7 +362,8 @@ def _markdown(summary: dict, trained: TrainedDetectors, config: EvaluationConfig
                 f"| {name} | {description} | {'sim' if physical else 'não'} | {'sim' if result['detectado'] else '**não**'} | "
                 f"{_number(result['atraso_ms'])} | {result['sensibilidade']:.3f} {_interval(result['sensibilidade_ic95'], 3)} | "
                 f"{result['especificidade']:.3f} {_interval(result['especificidade_ic95'], 3)} | {result['alarmes_pre_falha']} |")
-    lines += ["", f"## Resumo por modelo (semente {reference}; entre parênteses, a faixa nas 5 sementes)", "",
+    lines += ["", f"## Resumo por modelo (semente {reference}; entre parênteses, a faixa nas "
+                  f"{len(trained.config.seeds)} sementes)", "",
               "| Modelo | Ensaios detectados | Atraso mediano (ms) | Sensibilidade média [IC 95%] | "
               "Especificidade média [IC 95%] |", "|---|---|---|---|---|"]
     for item in summary["modelos"].values():

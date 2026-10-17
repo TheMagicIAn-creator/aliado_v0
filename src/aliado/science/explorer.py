@@ -23,7 +23,6 @@ from aliado.science.detection import gpvs
 from aliado.science.detection.threshold import calibrate_threshold
 
 CACHE_VERSION = 1
-EVALUATION = "gpvs-avaliacao-001"
 # Em palavras, sem códigos internos (lote 23): o controle por trás continua sendo o M14.
 POST_TEST_NOTICE = ("Estes controles reusam os ensaios de teste. Servem para explorar; os números oficiais "
                     "continuam os da avaliação de 27/09/2026.")
@@ -55,10 +54,13 @@ class Explorer:
     """Estado carregado sob demanda: modelos, dados preparados e erros por variável."""
 
     def __init__(self, results_dir: str | Path, gpvs_dir: str | Path, cache_dir: str | Path):
+        from aliado.science.detection.summary import current
+
         self.results_dir = Path(results_dir)
         self.gpvs_dir = Path(gpvs_dir)
         self.cache_dir = Path(cache_dir)
-        self.evaluation_dir = self.results_dir / EVALUATION
+        self.run = current(self.results_dir)  # a rodada que a aba mostra; outra rodada pede outro explorador
+        self.evaluation_dir = self.run.evaluation
         self._state = None
         self._lock = threading.Lock()
 
@@ -66,13 +68,13 @@ class Explorer:
 
     def training_dir(self) -> Path:
         config = json.loads((self.evaluation_dir / "configuracao.json").read_text(encoding="utf-8"))
-        return self.results_dir / Path(config["treino"]["pasta"]).name
+        return self.evaluation_dir.parent / Path(config["treino"]["pasta"]).name
 
     def status(self) -> dict:
         """O que falta para os exploradores do GPVS, sem carregar modelos nem dados."""
         missing = []
         if not (self.evaluation_dir / "configuracao.json").is_file():
-            missing.append(f"a avaliação canônica ({EVALUATION}) em {self.results_dir}")
+            missing.append(f"a avaliação da rodada ({self.evaluation_dir.name}) em {self.results_dir}")
         elif not (self.training_dir() / "configuracao.json").is_file():
             missing.append(f"a rodada de treino {self.training_dir().name}")
         if not (self.gpvs_dir / "proveniencia.json").is_file():
@@ -99,7 +101,7 @@ class Explorer:
             progress("modelos", 0, 3)
         trained = load_training(self.training_dir())
         if evaluation["treino"]["configuracao_sha256"] != trained.frozen["sha256"]:
-            raise ValueError("A avaliação canônica não é da rodada de treino encontrada.")
+            raise ValueError("A avaliação não é da rodada de treino encontrada.")
         if progress:
             progress("dados", 1, 3)
         prepared = gpvs.prepare(self.gpvs_dir, cache=self.gpvs_dir / "processado" / "variaveis.npz",

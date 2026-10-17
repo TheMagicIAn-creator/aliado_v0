@@ -1,15 +1,14 @@
-"""Aba Ciência da interface (lotes 20, 23 e 24): resultados oficiais, início das falhas, exploradores,
-confiabilidade e FMECA.
+"""Aba Ciência da interface (lotes 20, 23, 24 e 34): a rodada atual do experimento, início das falhas,
+exploradores, confiabilidade e FMECA.
 
 Os cálculos são do serviço científico; o navegador só desenha. Salvar um cenário ou rodar a
-FMECA grava sempre numa pasta nova de `data/resultados`, sem sobrescrever outra. As visões dos
-resultados oficiais (resumo, métricas e escores) só leem arquivos. O GPVS pela interface
-(preparar, treinar e avaliar) fica em `gpvs_runs.py`.
+FMECA grava sempre numa pasta nova de `data/resultados`, sem sobrescrever outra. As visões da
+rodada atual (resumo, métricas e escores) só leem arquivos. Rodar o experimento de novo fica em
+`experiments.py`; a aba não lista as pastas de resultados, só mostra a rodada atual.
 """
 
 from __future__ import annotations
 
-import csv
 import json
 import re
 import unicodedata
@@ -22,123 +21,9 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from aliado.interfaces.web.rendering import render_markdown
-
-# Arquivo que identifica o tipo de cada pasta de resultado.
-RESULT_KINDS = (
-    ("resultado.json", "cenario", "Cenário de confiabilidade"),
-    ("fmeca.json", "fmeca", "FMECA"),
-    ("escores.npz", "gpvs-avaliacao", "GPVS: avaliação"),
-    ("escores_calibracao.npz", "gpvs-modelos", "GPVS: modelos e limiar"),
-    ("avaliacao-busca.json", "busca", "Medição da busca"),
-    ("normalizacao.npz", "gpvs-preparo", "GPVS: preparo"),  # modelos também têm; vêm antes na ordem
-    ("inicio.json", "gpvs-reanalise", "GPVS: reanálise com o início observado"),
-    ("relatorio.json", "relatorio", "Relatório"),
-)
-REPORTS = ("relatorio.md", "fmeca.md")
-
 
 def _error(message: str, status: int = 400) -> JSONResponse:
     return JSONResponse({"erro": message}, status)
-
-
-def _kind(folder: Path) -> tuple[str, str] | None:
-    for name, kind, label in RESULT_KINDS:
-        if (folder / name).is_file():
-            return kind, label
-    return None
-
-
-def _title(folder: Path, kind: str) -> str:
-    try:
-        if kind == "cenario":
-            return json.loads((folder / "resultado.json").read_text(encoding="utf-8"))["name"]
-        if kind == "fmeca":
-            return json.loads((folder / "fmeca.json").read_text(encoding="utf-8"))["nome"]
-    except (OSError, ValueError, KeyError):
-        pass
-    return folder.name
-
-
-def list_results(root: Path) -> list[dict]:
-    """Pastas de resultado, com um nível de agrupamento (ex.: lote-07/igbt-operacao)."""
-    if not root.is_dir():
-        return []
-    items = []
-    for folder in sorted(root.iterdir()):
-        if not folder.is_dir():
-            continue
-        found = _kind(folder)
-        candidates = [(folder, found)] if found else [
-            (sub, _kind(sub)) for sub in sorted(folder.iterdir()) if sub.is_dir() and _kind(sub)]
-        for path, (kind, label) in candidates:
-            items.append({"id": path.relative_to(root).as_posix(), "tipo": kind, "rotulo": label,
-                          "titulo": _title(path, kind),
-                          "modificado": datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="minutes")})
-    return items
-
-
-def result_detail(root: Path, result_id: str) -> dict:
-    listed = {item["id"]: item for item in list_results(root)}
-    if result_id not in listed:
-        raise ValueError("Resultado não encontrado.")
-    folder = (root / result_id).resolve()
-    if not folder.is_relative_to(root.resolve()):
-        raise ValueError("Resultado não encontrado.")
-    item = listed[result_id]
-    report = next((folder / name for name in REPORTS if (folder / name).is_file()), None)
-    detail = item | {"caminho": _shown(folder),
-                     "html": render_markdown(report.read_text(encoding="utf-8")) if report else None}
-    kind = item["tipo"]
-    if (folder / "execucao.json").is_file():  # rodada feita pela interface (lote 21)
-        detail["execucao"] = json.loads((folder / "execucao.json").read_text(encoding="utf-8"))
-    if kind == "gpvs-avaliacao":
-        from aliado.science.detection import registry
-
-        consultation = folder / "consulta.json"
-        detail["consulta"] = (json.loads(consultation.read_text(encoding="utf-8")) if consultation.is_file()
-                              else {"numero": 1, "canonica": True} if folder.name == registry.CANONICAL else None)
-    if kind == "gpvs-modelos":
-        from aliado.interfaces.web.gpvs_runs import canonical
-
-        frozen = json.loads((folder / "configuracao.json").read_text(encoding="utf-8"))
-        detail["configuracao_canonica"] = frozen["sha256"] == canonical(root)["sha256"]
-    if kind == "cenario":
-        data = json.loads((folder / "resultado.json").read_text(encoding="utf-8"))
-        detail["curvas"] = {"unidade": data.get("time_unit"), "linhas": [
-            {key: row.get(key) for key in ("time", "reliability", "failure_probability")} for row in data["rows"]
-            if "reliability" in row]}
-    elif kind == "fmeca":
-        detail["fmeca"] = json.loads((folder / "fmeca.json").read_text(encoding="utf-8"))
-    elif kind == "gpvs-modelos":
-        detail["calibracao"] = _calibration(folder)
-    elif kind == "gpvs-avaliacao":
-        with (folder / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
-            rows = list(csv.DictReader(handle))
-        reference = json.loads((folder / "relatorio.json").read_text(encoding="utf-8"))["semente_referencia"]
-        detail["ensaios"] = {"semente": reference, "linhas": [
-            {key: row[key] for key in ("modelo", "ensaio", "detectado", "atraso_ms", "alarmes_pre_falha")}
-            for row in rows if int(row["semente"]) == int(reference)]}
-    elif kind == "busca":
-        data = json.loads((folder / "avaliacao-busca.json").read_text(encoding="utf-8"))
-        detail["busca"] = {key: data.get(key) for key in ("data", "busca", "resumo", "por_grupo")}
-    return detail
-
-
-def _calibration(folder: Path) -> dict:
-    import numpy as np
-
-    config = json.loads((folder / "configuracao.json").read_text(encoding="utf-8"))["configuracao"]
-    report = json.loads((folder / "relatorio.json").read_text(encoding="utf-8"))
-    seed, k = report["semente_referencia"], config["top_k"]
-    curves = {}
-    with np.load(folder / "escores_calibracao.npz") as scores:
-        for kind, model in report["modelos"].items():
-            key = f"{kind}_s{seed}_k{k}"
-            if key in scores:
-                curves[kind] = {"escores_ordenados": sorted(float(v) for v in scores[key]),
-                                "limiar": float(model["sementes"][str(seed)]["sensibilidade_k"][str(k)])}
-    return {"semente": seed, "k": k, "percentil": config["percentile"], "modelos": curves}
 
 
 def _slug(text: str) -> str:
@@ -168,17 +53,19 @@ def _new_folder(root: Path, prefix: str) -> Path:
 
 
 def science_routes(settings, worker, lock) -> list[Route]:
-    """Rotas da aba Ciência; `settings` traz results_dir, gpvs_dir, reference_dir e data_dir."""
+    """Rotas da aba Ciência; `settings` traz results_dir, dataset_dir, reference_dir e data_dir."""
     fmeca_table = settings.reference_dir / "fmeca.json"
     scenarios_dir = settings.reference_dir / "cenarios"
     created = {}
 
     def explorer():
-        """Criado no primeiro uso da aba: numpy e PyTorch não pesam na abertura do servidor."""
-        if "explorer" not in created:
-            from aliado.science.explorer import Explorer
+        """Criado no primeiro uso da aba (numpy e PyTorch não pesam na abertura do servidor) e de novo
+        quando a rodada atual muda: os modelos e os erros são os da rodada que a aba mostra."""
+        from aliado.science.detection.summary import current
+        from aliado.science.explorer import Explorer
 
-            created["explorer"] = Explorer(settings.results_dir, settings.gpvs_dir, settings.data_dir / "ciencia")
+        if created.get("explorer") is None or created["explorer"].run != current(settings.results_dir):
+            created["explorer"] = Explorer(settings.results_dir, settings.dataset_dir, settings.data_dir / "ciencia")
         return created["explorer"]
 
     async def body(request: Request) -> dict:
@@ -188,12 +75,15 @@ def science_routes(settings, worker, lock) -> list[Route]:
         return data
 
     async def state(request: Request):
+        def build():
+            found = explorer()
+            return found.status() | {"opcoes": found.choices()}, found.run.id
         try:
-            status = await run_in_threadpool(lambda: explorer().status() | {"opcoes": explorer().choices()})
+            status, run = await run_in_threadpool(build)
         except ImportError:
-            status = {"disponivel": False, "pronto": False, "faltando": ["o extra 'ml' (numpy e PyTorch)"]}
-        return JSONResponse({"gpvs": status, "fmeca": fmeca_table.is_file(), "cenarios": scenarios_dir.is_dir(),
-                             "resultados": settings.results_dir.is_dir()})
+            status, run = {"disponivel": False, "pronto": False, "faltando": ["o extra 'ml' (numpy e PyTorch)"]}, None
+        return JSONResponse({"exploradores": status, "rodada": run, "fmeca": fmeca_table.is_file(),
+                             "cenarios": scenarios_dir.is_dir(), "resultados": settings.results_dir.is_dir()})
 
     async def prepare(request: Request):
         job = uuid.uuid4().hex
@@ -310,23 +200,13 @@ def science_routes(settings, worker, lock) -> list[Route]:
         except (ValueError, KeyError, OSError) as exc:
             return _error(str(exc))
 
-    async def results(request: Request):
-        return JSONResponse(await run_in_threadpool(list_results, settings.results_dir))
-
-    async def result(request: Request):
-        try:
-            detail = await run_in_threadpool(result_detail, settings.results_dir, request.path_params["rid"])
-        except ValueError as exc:
-            return _error(str(exc), 404)
-        return JSONResponse(detail)
-
     async def job_status(request: Request):
         with lock:
             job = settings.jobs.get(request.path_params["job"])
         return JSONResponse(job) if job else _error("Tarefa não encontrada.", 404)
 
-    async def official(function: str, *arguments):
-        """Resultados oficiais (lote 23): só leitura, sem carregar os modelos."""
+    async def view(function: str, *arguments):
+        """A rodada atual (lotes 23 e 34): só leitura, sem carregar os modelos."""
         try:
             from aliado.science.detection import summary
 
@@ -336,19 +216,19 @@ def science_routes(settings, worker, lock) -> list[Route]:
         except ImportError:
             return _error("Falta o extra 'ml' (numpy) para ver os resultados.", 404)
         except (KeyError, ValueError, StopIteration):
-            return _error("Os resultados oficiais estão incompletos.", 404)
+            return _error("Os resultados da rodada estão incompletos.", 404)
 
     async def overview(request: Request):
-        return await official("overview", settings.results_dir)
+        return await view("overview", settings.results_dir)
 
     async def per_fault(request: Request):
-        return await official("per_fault", settings.results_dir)
+        return await view("per_fault", settings.results_dir)
 
     async def score_panels(request: Request):
-        return await official("score_panels", settings.results_dir, settings.gpvs_dir)
+        return await view("score_panels", settings.results_dir, settings.dataset_dir)
 
     async def onsets(request: Request):
-        return await official("onsets", settings.results_dir)
+        return await view("onsets", settings.results_dir)
 
     return [
         Route("/api/ciencia", state),
@@ -366,6 +246,4 @@ def science_routes(settings, worker, lock) -> list[Route]:
         Route("/api/ciencia/cenarios/rodar", run_scenario, methods=["POST"]),
         Route("/api/ciencia/cenarios/salvar", save_scenario, methods=["POST"]),
         Route("/api/ciencia/fmeca", fmeca, methods=["GET", "POST"]),
-        Route("/api/ciencia/resultados", results),
-        Route("/api/ciencia/resultados/{rid:path}", result),
     ]

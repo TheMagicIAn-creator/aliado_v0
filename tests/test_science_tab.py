@@ -118,7 +118,7 @@ def client(tmp_path):
 
     settings = WebSettings(data_dir=tmp_path / "dados", library_dir=tmp_path / "biblioteca", port=8765, stream=stream,
                            models=[], library_factory=lambda: None, results_dir=_results(tmp_path),
-                           gpvs_dir=tmp_path / "gpvs", reference_dir=REFERENCE)
+                           dataset_dir=tmp_path / "gpvs", reference_dir=REFERENCE)
     with TestClient(create_app(settings), base_url="http://127.0.0.1:8765") as test_client:
         yield test_client, settings
 
@@ -126,17 +126,15 @@ def client(tmp_path):
 HEADERS = {"x-aliado": "1"}
 
 
-def test_science_state_and_results(client):
+def test_science_state_and_no_results_listing(client):
+    """EXP-04: a aba mostra só a rodada atual; as pastas de resultados não são listadas."""
     client, settings = client
     state = client.get("/api/ciencia").json()
-    assert state["fmeca"] and state["cenarios"] and not state["gpvs"]["disponivel"]
-    items = {item["id"]: item for item in client.get("/api/ciencia/resultados").json()}
-    assert set(items) == {"fmeca-001", "lote-07/igbt-operacao"}
-    detail = client.get("/api/ciencia/resultados/lote-07/igbt-operacao").json()
-    assert detail["tipo"] == "cenario" and detail["curvas"]["linhas"][0]["reliability"] == 1.0 and "<" in detail["html"]
-    assert client.get("/api/ciencia/resultados/fmeca-001").json()["fmeca"]["itens"]
-    assert client.get("/api/ciencia/resultados/../dados").status_code == 404
-    assert client.get("/api/ciencia/resultados/nada").status_code == 404
+    assert state["fmeca"] and state["cenarios"] and not state["exploradores"]["disponivel"]
+    assert state["rodada"] == "avaliacao-oficial"
+    assert client.get("/api/ciencia/resultados").status_code == 404
+    assert client.get("/api/ciencia/resultados/fmeca-001").status_code == 404
+    assert (settings.results_dir / "fmeca-001" / "fmeca.json").is_file()  # as pastas continuam no disco
     assert client.post("/api/ciencia/limiar", headers=HEADERS,
                        json={"modelo": "denso", "semente": 42, "k": 5, "percentil": 99}).status_code == 400
 

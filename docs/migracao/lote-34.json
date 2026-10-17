@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-17",
+  "batch": "34",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0034-experimentos.md",
+  "living_specs": ["docs/specs/capacidades/experimentos.md", "docs/specs/capacidades/nucleo.md"],
+  "validation": "docs/migracao/validacao-lote-34.md",
+  "review": "docs/revisao/2026-10-modularizacao-e-specs.md",
+  "base_commit": "30f1681",
+  "release": {"planned_version": "0.7.0", "with_batches": ["34", "35", "36"], "commit_by": "pesquisador"},
+  "decisions": {
+    "date": "2026-10-17",
+    "experiment": "AE Denso × AE-LSTM; GPVS é a base de dados",
+    "runner": "o experimento inteiro, de ponta a ponta, num processo só; desativado com os parâmetros da rodada mostrada",
+    "tab": "só a rodada atual; pastas antigas no disco, sem listagem",
+    "results": "resultado.json e resultado.md; PDF formal só por clique, com o JSON anexo; comparação com resultado salvo",
+    "confirmation": "frase \"consultar o teste\", com a contagem de consultas na janela",
+    "labels": "\"oficial\" só para a avaliação de 27/09/2026; rodada nova com data e número da consulta",
+    "names": "experiments e specializations, em inglês; pacote do mestrado dentro do AL-IAdo",
+    "specs": "specs vivas por capacidade; teste que liga cada requisito a um teste; AGENTS.md enxuto"
+  },
+  "changes": {
+    "core": ["src/aliado/experiments/__init__.py", "src/aliado/experiments/pdf.py",
+             "src/aliado/specializations/__init__.py", "src/aliado/interfaces/web/experiments.py"],
+    "specialization": ["src/aliado/specializations/mestrado/__init__.py",
+                       "src/aliado/specializations/mestrado/autoencoders.py"],
+    "removed": ["src/aliado/interfaces/web/gpvs_runs.py", "tests/test_gpvs_runs.py",
+                "/api/ciencia/gpvs/*", "/api/ciencia/resultados"],
+    "renamed": {"WebSettings.gpvs_dir": "dataset_dir", "WebSettings.gpvs_command": "experiment_command",
+                "aliado web --gpvs": "--base"}
+  },
+  "checks": {
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest -q", "passed": 764, "failed": 0, "seconds": 176.5},
+    "ruff": {"command": ".venv/Scripts/python.exe -m ruff check .", "exit_code": 0},
+    "real_run_27_09_parameters": {"results_copy": "tmp/lote-34/resultados", "seconds": 136.4,
+                                  "identical": ["configuração do treino", "pesos", "relatório do treino",
+                                                "relatório e métricas da avaliação", "escores", "início das falhas"]},
+    "interface_run": {"separacao": 2, "teto_epocas": 150, "seconds": 107, "pdf_pages": 6,
+                      "comparison_equal": "28 de 28"}
+  },
+  "paid_calls": 0
+}

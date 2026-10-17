@@ -43,6 +43,18 @@ NOTICE = ("Reanálise dos mesmos escores da avaliação de 27/09, sem rodar os m
           "27/09 continua sendo a oficial.")
 
 
+def _notice(evaluation_dir: Path, executed: str | None) -> str:
+    """Na avaliação oficial, o aviso de 30/09; numa rodada nova, que os escores são os dela."""
+    if evaluation_dir.name == EVALUATION:
+        return NOTICE
+    day = "/".join(reversed(str(executed)[:10].split("-"))) if executed else "desta rodada"
+    return f"Início observado das falhas sobre os escores da avaliação de {day}, sem rodar os modelos de novo."
+
+
+def _day_month(iso: str | None) -> str:
+    return "/".join(reversed(str(iso)[:10].split("-")[1:])) if iso else "—"
+
+
 def evaluation_config(folder: str | Path) -> tuple[EvaluationConfig, dict]:
     """A configuração congelada da avaliação de origem, conferida pelo hash."""
     frozen = json.loads((Path(folder) / "configuracao.json").read_text(encoding="utf-8"))
@@ -147,7 +159,7 @@ def _analysis(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: st
                                  "ic95": alarms[part]["fracao_janelas_acima_ic95"]}
                           for part in ("teste_saudavel", "pre_falha")}}
     summary["sensibilidade"]["percentil"] = _percentile_grid(training_dir, scores, trained, relabeled, config)
-    summary["aviso"] = NOTICE
+    summary["aviso"] = _notice(evaluation_dir, frozen.get("executado_em"))
     runs = {(kind, seed): run_metrics(scores[(kind, seed, k)], trained.thresholds[(kind, seed, k)], relabeled,
                                       config.confirmations)
             for kind in MODELS for seed in trained.config.seeds}
@@ -206,9 +218,10 @@ def _number(value, digits: int = 1) -> str:
 
 def _markdown(report: dict, official: dict) -> str:
     trials = report["inicio"]["ensaios"]
+    clear, evaluated = len(report["so_mudanca_clara"]["ensaios"]), _day_month(report["origem"]["avaliacao_executada_em"])
     lines = [
         "# Reanálise do GPVS com o início observado das falhas", "",
-        f"{NOTICE} Origem: `{report['origem']['avaliacao']}` (avaliação de {report['origem']['avaliacao_executada_em']}) "
+        f"{report['aviso']} Origem: `{report['origem']['avaliacao']}` (avaliação de {report['origem']['avaliacao_executada_em']}) "
         f"e o treino `{report['origem']['treino']}`.", "",
         "## Quando cada falha aparece nos sinais", "",
         "O início nominal é o meio do registro, porque os arquivos não marcam o disparo. A mudança observada é a "
@@ -226,8 +239,8 @@ def _markdown(report: dict, official: dict) -> str:
     lines += ["", "Nos ensaios de mudança clara, o trecho entre os dois inícios fica fora das métricas por janela; "
               "a detecção começa no início nominal, e o atraso é medido da mudança. Os demais ficam no meio.", "",
               "## Indicadores com cada início (treino de referência)", "",
-              "| Modelo | Indicador | 14 ensaios, meio (27/09) | 14 ensaios, mudança | 8 de mudança clara, meio | "
-              "8 de mudança clara, mudança |", "|---|---|---:|---:|---:|---:|"]
+              f"| Modelo | Indicador | 14 ensaios, meio ({evaluated}) | 14 ensaios, mudança | {clear} de mudança clara, meio | "
+              f"{clear} de mudança clara, mudança |", "|---|---|---:|---:|---:|---:|"]
     names = {"detectados": ("Ensaios detectados", 0), "atraso_mediano_ms": ("Atraso mediano (ms)", 1),
              "sensibilidade_media": ("Sensibilidade", 3), "especificidade_media": ("Especificidade", 3),
              **{f"{metric}_media": (label, 3) for metric, label in (
@@ -251,7 +264,7 @@ def _markdown(report: dict, official: dict) -> str:
                          f"{_number(result['atraso_desde_o_meio_ms'])} | {_number(result['atraso_ms'])} | "
                          f"{_number(before['sensibilidade'], 3)} | {_number(result['sensibilidade'], 3)} |")
     lines += ["", "## Comparação por objetivo (Denso − AE-LSTM, com a mudança observada)", "",
-              "| Objetivo | Métrica | 14 ensaios: diferença [IC 95%] | Leitura | 8 de mudança clara: diferença [IC 95%] | Leitura |",
+              f"| Objetivo | Métrica | 14 ensaios: diferença [IC 95%] | Leitura | {clear} de mudança clara: diferença [IC 95%] | Leitura |",
               "|---|---|---|---|---|---|"]
     for row, clear in zip(report["comparacao"], report["so_mudanca_clara"]["comparacao"]):
         def cell(item):

@@ -208,11 +208,24 @@ são 16 chamadas ao modelo mais barato. Veja o [guia da biblioteca](docs/bibliot
 - Modelos e hipóteses estão em [docs/ciencia/confiabilidade.md](docs/ciencia/confiabilidade.md).
 - Cada saída vai para uma pasta nova e nunca sobrescreve outra.
 
-## Experimento de detecção (GPVS)
+## Experimento AE Denso × AE-LSTM (base GPVS)
 
 Os 16 CSVs do GPVS-Faults (Bakdi et al., 2020, DOI 10.17632/n76t439f65.1) ficam em
 `data/gpvs/`, fora do Git. Junto deles fica `proveniencia.json`, com o SHA-256 de cada
 arquivo, conferido a cada preparo.
+
+**Rodar de novo, do zero:** na aba Ciência, seção **Experimento**, ou pelo terminal. A rodada inteira (preparo,
+treino, limiar, avaliação, início das falhas e resumo) vai para uma pasta nova
+`data/resultados/ae-denso-lstm/rodada-NNN/`, com `resultado.json` e `resultado.md`, e a aba passa a mostrá-la.
+A rodada usa os dados de teste: pede a frase de confirmação e entra no registro de consultas. O PDF da rodada
+atual sai pelo botão **Baixar PDF** ou pelo comando `pdf`.
+
+```powershell
+.\.venv\Scripts\python.exe -m aliado experimento rodar ae-denso-lstm --parametro separacao=2 --frase "consultar o teste"
+.\.venv\Scripts\python.exe -m aliado experimento pdf ae-denso-lstm --saida rodada-atual.pdf
+```
+
+**Etapa por etapa,** como na pesquisa de origem:
 
 ```powershell
 .\.venv\Scripts\python.exe -m aliado ciencia preparar-gpvs --saida data/resultados/gpvs-preparo-001

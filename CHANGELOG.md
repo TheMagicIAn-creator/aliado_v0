@@ -3,6 +3,42 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado] — lote 34
+
+Detalhes na [spec 0034](docs/specs/0034-experimentos.md) e na [validação do lote 34](docs/migracao/validacao-lote-34.md).
+
+### Adicionado
+
+- **Rodar experimento.** Na aba Ciência, a seção **Experimento** roda de novo, do zero e de ponta a ponta, o
+  experimento **AE Denso × AE-LSTM** na base de dados GPVS:
+  - preparo da base, treino dos dois modelos em cada repetição, limiar, avaliação nos ensaios de teste, início
+    observado das falhas e resumo, num processo só, com o andamento na tela e o botão de cancelar;
+  - os parâmetros (separação entre blocos, repetições do treino e teto de épocas) ficam na tela, cada um com a
+    sua nota; com os mesmos da rodada mostrada, o botão fica desativado e diz por quê;
+  - antes de rodar, a janela diz quantas vezes os dados de teste já foram usados e pede a frase "consultar o
+    teste"; cada rodada entra no registro de consultas;
+  - com os parâmetros de 27/09, a rodada repete a avaliação de 27/09 bit a bit.
+- **A rodada atual em toda a aba.** Resumo, escores, métricas, início das falhas, exploradores e os resultados no
+  chat passam a ser os da rodada completa mais nova; sem nenhuma, os da avaliação oficial de 27/09. "Oficial" fica
+  só para ela; uma rodada nova aparece com a data e o número da consulta ao teste.
+- **Resultados em JSON e Markdown** (`resultado.json` e `resultado.md`) em cada rodada, numa pasta nova
+  `data/resultados/ae-denso-lstm/rodada-NNN/`.
+- **Baixar PDF:** um relatório técnico e formal da rodada atual (capa, sumário, seções numeradas, tabelas com
+  legenda e notas, página n de N), montado só no clique e com o `resultado.json` anexado.
+- **Comparar com resultado salvo:** o PDF baixado antes, ou o `resultado.json`, ao lado da rodada atual, indicador
+  por indicador, com o botão para reaplicar os parâmetros guardados.
+- **Terminal:** `aliado experimento listar`, `aliado experimento rodar` e `aliado experimento pdf`.
+- **Specs vivas** por capacidade em `docs/specs/capacidades/`, com requisitos numerados, e o teste que confere que
+  cada requisito tem teste; o teste que impede menções novas ao domínio no núcleo.
+
+### Alterado
+
+- A seção "Rodar e arquivos" deu lugar à seção "Experimento": saem os botões de preparar, treinar e avaliar por
+  etapa e a lista das pastas de resultados. Os comandos por etapa do terminal continuam.
+- `aliado web --gpvs` passou a `--base`; as pastas antigas de resultados ficam no disco, sem mudança.
+- `AGENTS.md` ficou só com as regras; a lista dos lotes e das specs foi para o roteiro.
+- Botões desativados ficam esmaecidos em todo o app.
+
 ## [0.6.0] — 2026-10-17
 
 Lotes 32 e 33, a partir do uso real.

@@ -30,7 +30,7 @@ from starlette.staticfiles import StaticFiles
 
 from aliado import routing
 from aliado.interfaces.web.conversations import ConversationStore
-from aliado.interfaces.web.gpvs_runs import gpvs_routes
+from aliado.interfaces.web.experiments import experiment_routes
 from aliado.interfaces.web.obsidian import ObsidianSync, build_notes, write_vault
 from aliado.interfaces.web.rendering import render_markdown
 from aliado.interfaces.web.science import science_routes
@@ -117,12 +117,13 @@ class WebSettings:
     card_extractor: Callable[..., tuple[dict, object]] | None = None
     # Consulta da busca (lote 22): (question=, history=) -> (consulta reescrita, resultado).
     query_rewriter: Callable[..., tuple[str, object]] | None = None
-    # Aba Ciência (lote 20): resultados, dados do GPVS e referências da pesquisa (FMECA e cenários).
+    # Aba Ciência (lote 20): resultados, a base de dados dos experimentos e as referências da pesquisa
+    # (FMECA e cenários). Sem `dataset_dir`, vale a base do experimento instalado.
     results_dir: Path | None = None
-    gpvs_dir: Path = Path("data/gpvs")
+    dataset_dir: Path | None = None
     reference_dir: Path = Path("docs/pesquisa-inversores")
-    # GPVS pela interface (lote 21): (args, on_line, on_process) -> (código, stdout); padrão, subprocesso.
-    gpvs_command: Callable[..., tuple[int, str]] | None = None
+    # Rodar um experimento (lote 34): (args, on_line, on_process) -> (código, stdout); padrão, subprocesso.
+    experiment_command: Callable[..., tuple[int, str]] | None = None
     # Resultados no chat (lote 26): () -> resumo com os blocos [R1]…; montado sob demanda, em cache.
     results_digest: Callable[[], dict] | None = None
     # Espelho para o Obsidian (lote 28): pasta das notas, refeitas a cada mudança; None desliga.
@@ -147,16 +148,22 @@ class WebSettings:
         self.library_dir = Path(self.library_dir).resolve()
         self.usage_log = Path(self.usage_log or self.data_dir / "uso" / "chamadas.jsonl")
         self.results_dir = Path(self.results_dir or self.data_dir / "resultados").resolve()
-        self.gpvs_dir = Path(self.gpvs_dir).resolve()
+        if self.dataset_dir is None:
+            from aliado import experiments
+
+            # shortcut: uma base por instalação; com experimentos de bases diferentes, uma pasta por experimento.
+            bases = [item.DATASET_DIR for item in experiments.available()]
+            self.dataset_dir = bases[0] if bases else self.data_dir / "base"
+        self.dataset_dir = Path(self.dataset_dir).resolve()
         self.reference_dir = Path(self.reference_dir).resolve()
         if self.obsidian_dir is not None:
             self.obsidian_dir = Path(self.obsidian_dir).resolve()
             # No Windows, "Conversas" e "conversas" são a mesma pasta: o espelho não pode cair sobre os dados,
             # nem dentro nem em volta de uma pasta que o AL-IAdo usa.
             owned = [self.data_dir / name for name in (
-                "conversas", "memoria", "uploads-temporarios", "uso", "resultados", "ciencia", "bibliotecas", "gpvs",
+                "conversas", "memoria", "uploads-temporarios", "uso", "resultados", "ciencia", "bibliotecas",
                 "models", "tools", "memory-review", "avaliacao-busca")] + [
-                self.usage_log.parent, self.library_dir, self.results_dir, self.gpvs_dir, self.reference_dir]
+                self.usage_log.parent, self.library_dir, self.results_dir, self.dataset_dir, self.reference_dir]
             if self.obsidian_dir == self.data_dir or self.obsidian_dir in self.data_dir.parents or any(
                     self.obsidian_dir == folder or folder in self.obsidian_dir.parents
                     or self.obsidian_dir in folder.parents for folder in owned):
@@ -1385,7 +1392,7 @@ def create_app(settings: WebSettings) -> Starlette:
         Route("/api/memoria", memory_list, methods=["GET", "POST"]),
         Route("/api/memoria/{mid}/{acao}", memory_action, methods=["GET", "POST"]),
         *science_routes(settings, worker, lock),
-        *gpvs_routes(settings, lock),
+        *experiment_routes(settings, lock),
         Mount("/static", StaticFiles(directory=STATIC), name="static"),
     ]
     app = Starlette(routes=routes, middleware=[Middleware(LocalOnly, port=settings.port)])
@@ -1396,7 +1403,7 @@ def create_app(settings: WebSettings) -> Starlette:
 
 
 def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_dir: Path | None = None,
-                     gpvs_dir: Path = Path("data/gpvs"), obsidian: bool = True) -> WebSettings:
+                     dataset_dir: Path | None = None, obsidian: bool = True) -> WebSettings:
     """Gateway e biblioteca reais; o .env já deve ter sido carregado explicitamente."""
     from aliado.agent import Agent
     from aliado.knowledge.embeddings import LocalEncoder
@@ -1445,7 +1452,7 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        checker=lambda memory_: check_memory(execute, memory_),
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
                        query_rewriter=lambda **kwargs: rewrite_query(execute, plan=True, **kwargs),
-                       results_dir=results_dir, gpvs_dir=gpvs_dir,
+                       results_dir=results_dir, dataset_dir=dataset_dir,
                        results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir),
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
                        figure_reader=read_figures if figure_alias else None,

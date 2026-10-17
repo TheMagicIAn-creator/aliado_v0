@@ -139,10 +139,7 @@ def test_reanalysis_exports_registers_and_never_overwrites(evaluated, capsys):
     denso = summary.overview(results)["modelos"]["denso"]
     assert denso["alarmes_estimados"]["alarmes_por_hora"] == report["alarmes_estimados"]["denso"]["alarmes_por_hora"]
     assert denso["limiar_faixa"]["ic95"] == report["limiar_incerteza"]["denso"]["ic95"]
-    pytest.importorskip("starlette")
-    from aliado.interfaces.web.science import list_results
-
-    assert {item["id"]: item["tipo"] for item in list_results(results)}[output.name] == "gpvs-reanalise"
+    assert summary.current(results).reanalysis == output and view["rodada"]["oficial"]
 
 
 @pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")

@@ -247,7 +247,8 @@ As tags e o envio ao GitHub ficam com o pesquisador.
 
 | 30 | Leitura integral: a busca escolhe os documentos, e o modelo recebe o PDF das páginas inteiras, dentro de um teto por pergunta; documentos fixados na conversa; a aba Biblioteca dá lugar ao painel de documentos | Concluído em 04/10/2026 |
 | 31 | Roteador local e escada de leitura: o AL-IAdo escolhe a skill, o modelo e a leitura antes de gastar; confirmação acima de 30 mil tokens e aviso diário em 300 mil; parte fixa enxuta; contagem exata de termos; trilhas das perguntas já respondidas; lançamento da 0.5.0 | Concluído em 04/10/2026 |
-| 32 | Busca em memória com atualização pelo catálogo; reordenação local de até 60 candidatos para a leitura por páginas; revisor seletivo, preservando perfil, preferências e decisões | Concluído localmente em 05/10/2026 |
+| 32 | Busca em memória com atualização pelo catálogo; reordenação local de até 60 candidatos para a leitura por páginas; revisor seletivo, preservando perfil, preferências e decisões | Concluído em 05/10/2026; lançado na 0.6.0 |
+| 33 | Reescrita seletiva, plano por partes, aprendizado com o uso e vocabulário dos resultados; lançamento da 0.6.0 com o lote 32 | Concluído em 17/10/2026 (commit `30f1681`, tag `v0.6.0`) |
 
 ### Decisões e resultado do lote 27 (01 e 02/10/2026)
 
@@ -393,6 +394,48 @@ As tags e o envio ao GitHub ficam com o pesquisador.
 - **Pendências:** a segunda chamada com o modelo real; trilhas procuradas pela pergunta quando não há reescrita;
   o roteador continua errando em frases que as regras e os exemplos não cobrem. Reiniciar o AL-IAdo para usar.
 - Veja a [validação do lote 33](migracao/validacao-lote-33.md).
+
+## Depois da 0.6.0: a fundação revista
+
+Em 17/10/2026 o pesquisador pediu uma recapitulação das versões (a 0.4.0, a 0.5.0 e a 0.6.0 foram lançadas em
+ordem no mesmo dia; ver a [recapitulação](recapitulacao-0.4-0.6.md)) e uma
+[revisão da modularização e das specs](revisao/2026-10-modularizacao-e-specs.md), que ordena os três lotes
+seguintes. Eles saem juntos como 0.7.0, com um commit por lote, feito pelo pesquisador.
+
+| Lote | Entrega | Situação |
+|---|---|---|
+| 34 | Experimento AE Denso × AE-LSTM rodado do zero pela aba Ciência, que mostra só a rodada atual; resultados em JSON e Markdown; PDF formal por pedido, com o resultado anexo; comparação com um resultado salvo; specs vivas e o teste que liga cada requisito a um teste | Concluído localmente em 17/10/2026 |
+| 35 | Chat com tela mínima: o roteador local decide o que eram seletores e chaves; o pedido escrito vale como escolha; a leitura ampla só por pedido escrito, sempre confirmada | Combinado em 17/10/2026 |
+| 36 | O código do mestrado na especialização `src/aliado/specializations/mestrado/`, com zero menções ao domínio no núcleo; lançamento da 0.7.0 | Combinado em 17/10/2026 |
+
+### Decisões e resultado do lote 34 (17/10/2026)
+
+- **Decisões do pesquisador:** o experimento é a comparação AE Denso × AE-LSTM, e o GPVS é a base de dados;
+  "Rodar experimento" roda tudo de ponta a ponta e fica desativado sem parâmetro novo; a aba mostra só a rodada
+  atual; os resultados ficam em JSON e Markdown, e o PDF formal só sai por clique; a frase "consultar o teste"
+  continua; "oficial" só para a avaliação de 27/09. Escopo na [spec 0034](specs/0034-experimentos.md).
+- **Resultado:** com os parâmetros de 27/09, uma rodada do zero numa cópia dos resultados repetiu a avaliação de
+  27/09 bit a bit (pesos, escores, relatórios e início das falhas), em 2 min 16 s. Pela tela, uma rodada com
+  separação de 2 janelas e teto de 150 épocas.
+- Veja a [validação do lote 34](migracao/validacao-lote-34.md).
+
+## Specs de cada lote
+
+As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
+[specs/capacidades](specs/capacidades/).
+
+| Lotes | Spec |
+|---|---|
+| 01 | [0001](specs/0001-fundacao.md) |
+| 02 | [0002](specs/0002-preparacao-triagem.md) |
+| 03 | [0003](specs/0003-diretrizes-aprovadas.md) |
+| 04–06 | [0004](specs/0004-biblioteca-documental.md), [0005](specs/0005-aprendizados.md), [0006](specs/0006-ciencia-geral.md) |
+| 07 | [0007](specs/0007-decisoes-cenarios-skills.md) |
+| 08 (correções) | [0008](specs/0008-correcoes-revisao.md) |
+| 09–17 | [0009](specs/0009-gemini-uso-real.md), [0010](specs/0010-interface-local.md), [0011](specs/0011-memoria-persistente.md), [0012](specs/0012-busca-web.md), [0013](specs/0013-gpvs-protocolo-m14.md), [0014](specs/0014-autoencoders-limiar.md), [0015](specs/0015-avaliacao-m13.md), [0016](specs/0016-fmeca.md), [0017](specs/0017-lancamento.md) |
+| 18–26 | [0018](specs/0018-biblioteca-memoria-anexos.md), [0019](specs/0019-qualidade-da-busca.md), [0020](specs/0020-aba-ciencia.md), [0021](specs/0021-gpvs-interface.md), [0022](specs/0022-correcoes-confianca.md), [0023](specs/0023-aba-ciencia-nova.md), [0024](specs/0024-inicio-das-falhas.md), [0025](specs/0025-confiabilidade-por-componente.md), [0026](specs/0026-resultados-no-chat.md) |
+| 27–33 | [0027](specs/0027-tela-envios-e-fontes.md), [0028](specs/0028-grafo-no-obsidian.md), [0029](specs/0029-indexacao-figuras-e-frases.md), [0030](specs/0030-leitura-integral.md), [0031](specs/0031-roteador-e-escada.md), [0032](specs/0032-busca-e-memoria.md), [0033](specs/0033-reescrita-aprendizado-resultados.md) |
+| 34 | [0034](specs/0034-experimentos.md) |
 
 ## Fica para a v1
 

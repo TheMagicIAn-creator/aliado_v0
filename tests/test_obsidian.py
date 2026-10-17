@@ -1055,9 +1055,9 @@ def test_a_broken_vault_never_breaks_the_chat_and_off_means_no_folder(tmp_path, 
                     data / "ciencia", data / "memory-review", data / "models" / "minilm", data / "bibliotecas"):
         with pytest.raises(ValueError, match="pasta própria"):
             WebSettings(data_dir=data, library_dir=tmp_path / "b", port=8765, stream=None, models=[],
-                        library_factory=lambda: None, gpvs_dir=tmp_path / "g", obsidian_dir=refused)
+                        library_factory=lambda: None, dataset_dir=tmp_path / "g", obsidian_dir=refused)
     accepted = WebSettings(data_dir=data, library_dir=tmp_path / "b", port=8765, stream=None, models=[],
-                           library_factory=lambda: None, gpvs_dir=tmp_path / "g", obsidian_dir=data / "obsidian")
+                           library_factory=lambda: None, dataset_dir=tmp_path / "g", obsidian_dir=data / "obsidian")
     assert accepted.obsidian_dir == (data / "obsidian").resolve()
     off = WebSettings(data_dir=tmp_path / "sem", library_dir=tmp_path / "b", port=8765, stream=None, models=[],
                       library_factory=lambda: None)

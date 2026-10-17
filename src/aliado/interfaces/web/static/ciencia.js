@@ -1,13 +1,14 @@
 "use strict";
 
-/* Aba Ciência (lotes 20, 23 e 24), organizada pelas perguntas: o resultado primeiro e as ferramentas
+/* Aba Ciência (lotes 20, 23, 24 e 34), organizada pelas perguntas: o resultado primeiro e as ferramentas
    no fim. Todo número vem do servidor; aqui só se desenha, com os gráficos de graficos.js. As telas
-   mostram dados em palavras: a avaliação oficial é a de 27/09/2026, e os números são os do treino de
-   referência dela. Os controles internos do protocolo ficam no servidor e nos arquivos. */
+   mostram dados em palavras e só a rodada atual do experimento: a completa mais nova ou, sem nenhuma,
+   a avaliação oficial. Os controles internos do protocolo ficam no servidor e nos arquivos. */
 
-const science = { tab: "resumo", status: null, options: null, timer: null, result: null, cache: {} };
+const science = { tab: "resumo", status: null, options: null, timer: null, cache: {}, rodada: undefined, treinamentos: 5,
+  experimentos: {} };
 const SCIENCE_TABS = [["resumo", "Resumo"], ["escores", "Escores por ensaio"], ["metricas", "Métricas por falha"],
-  ["inicio", "Início das falhas"], ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["explorar", "Explorar"], ["rodar", "Rodar e arquivos"]];
+  ["inicio", "Início das falhas"], ["confiabilidade", "Confiabilidade"], ["fmeca", "FMECA"], ["explorar", "Explorar"], ["experimento", "Experimento"]];
 const MODELOS = [["denso", "Denso"], ["lstm", "AE-LSTM"]];
 const NOME_MODELO = Object.fromEntries(MODELOS);
 const METRICAS = { sensibilidade: "Sensibilidade", especificidade: "Especificidade", precisao: "Precisão", f1: "F1",
@@ -59,7 +60,7 @@ function tabelaComCSV(titulo, chave, headers, rows, arquivo, csvRows) {
 }
 
 function faixaTexto(faixa, formato = num) {
-  return faixa ? `Nos 5 treinamentos repetidos, variou de ${formato(faixa[0])} a ${formato(faixa[1])}.` : "";
+  return faixa ? `Nos ${science.treinamentos} treinamentos repetidos, variou de ${formato(faixa[0])} a ${formato(faixa[1])}.` : "";
 }
 
 function aviso(body, message) { body.replaceChildren(el("div", { class: "note note-warn", text: message })); }
@@ -80,6 +81,10 @@ async function openScience(tab) {
   if (tab) science.tab = tab;
   try {
     science.status = await api("/api/ciencia");
+    if (science.status.rodada !== science.rodada) {
+      // Outra rodada (feita aqui ou no terminal): nada do que estava em memória vale mais.
+      Object.assign(science, { rodada: science.status.rodada, cache: {}, options: null, threshold: null, alarms: null });
+    }
   } catch (error) {
     toast(error.message);
   }
@@ -90,7 +95,7 @@ async function openScience(tab) {
   body.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
   const render = { resumo: renderSummary, escores: renderScores, metricas: renderMetrics, inicio: renderOnsets,
     confiabilidade: renderReliability,
-    fmeca: renderFmeca, explorar: renderExplore, rodar: renderRunsAndFiles }[science.tab];
+    fmeca: renderFmeca, explorar: renderExplore, experimento: renderExperiment }[science.tab];
   await render(body);
 }
 
@@ -98,6 +103,7 @@ async function openScience(tab) {
 async function renderSummary(body) {
   let d;
   try { d = await carregar("resumo", "/api/ciencia/resumo"); } catch (error) { aviso(body, error.message); return; }
+  science.treinamentos = d.treinamentos;
   const favor = (row) => (row.maior_e_melhor ? "Positivo favorece o Denso." : "Negativo favorece o Denso.");
   const comparison = tabelaComCSV("Comparação por objetivo", "diferenca",
     ["Objetivo", "Métrica", comNota("Diferença (Denso − AE-LSTM)", "diferenca"), comNota("Intervalo de 95%", "ic95"), "Leitura"],
@@ -113,7 +119,7 @@ async function renderSummary(body) {
     ...d.ensaios.map((t) => [t.id, `${t.id} · ${t.nome} · ${t.modo_nome}`])];
   const columns = el("div", { class: "par-modelos" }, ...MODELOS.map(([kind]) => modelColumn(d, kind, filtro)));
   body.replaceChildren(
-    el("p", { class: "muted" }, `Avaliação oficial de ${day(d.data)}: os 14 ensaios com falha e o teste saudável, `,
+    el("p", { class: "muted" }, `${d.rodada.rotulo}: os 14 ensaios com falha e o teste saudável, `,
       "em janelas de 20 ms. Os números são os do treino de referência ", nota("treinos"), "."),
     comparison,
     el("div", { class: "controls" }, select("Matriz de confusão de", filterOptions, filtro, (value) => {
@@ -299,6 +305,7 @@ const METRIC_CHOICES = [["sensibilidade", "Sensibilidade"], ["especificidade", "
 async function renderMetrics(body) {
   let d;
   try { d = await carregar("metricas", "/api/ciencia/metricas"); } catch (error) { aviso(body, error.message); return; }
+  science.treinamentos = d.treinamentos;
   const metric = science.metrica ||= "sensibilidade";
   const isDelay = metric === "atraso_ms";
   const value = (item) => (item?.[metric] === null || item?.[metric] === undefined ? null : isDelay ? item[metric] / 1000 : item[metric]);
@@ -336,7 +343,7 @@ async function renderMetrics(body) {
         const t = d.modelos[kind].por_ensaio[`${l.id}${c.id}`];
         const spread = t.faixa?.[metric];
         return [`${l.id}${c.id} · ${l.rotulo.split(" · ")[1]} · ${c.rotulo}`, `${name}: ${format(v)}`,
-          ...(spread ? [`Nos 5 treinamentos: de ${format(isDelay ? spread[0] / 1000 : spread[0])} a ${format(isDelay ? spread[1] / 1000 : spread[1])}`] : []),
+          ...(spread ? [`Nos ${d.treinamentos} treinamentos: de ${format(isDelay ? spread[0] / 1000 : spread[0])} a ${format(isDelay ? spread[1] / 1000 : spread[1])}`] : []),
           `detectou em ${t.detectado_em} de ${t.treinamentos} treinamentos`];
       },
     }),
@@ -345,7 +352,7 @@ async function renderMetrics(body) {
   })));
   const general = [["sensibilidade", "Sensibilidade"], ["f1", "F1"], ["precisao", "Precisão"], ["auc_roc", "AUC-ROC"],
     ["auc_pr", "AUC-PR"], ["fpr", "Taxa de falso positivo"]];
-  const summary = quadro({ titulo: "Métricas gerais: média dos 14 ensaios, com a faixa dos 5 treinamentos", chave: "treinos",
+  const summary = quadro({ titulo: `Métricas gerais: média dos 14 ensaios, com a faixa dos ${d.treinamentos} treinamentos`, chave: "treinos",
     arquivo: "metricas-gerais",
     desenhar: (area, largura, cores) => pontoComFaixa(area, largura, cores, {
       titulo: "Métricas gerais dos dois modelos", xRotulo: "média por ensaio", margemEsquerda: 170,
@@ -373,8 +380,8 @@ const CLASSES_MUDANCA = { clara: "clara", fraca: "fraca (não usada)", nenhuma: 
 const INDICADORES_INICIO = [["detectados", "Ensaios detectados"], ["atraso_mediano_ms", "Atraso mediano"],
   ["sensibilidade", "Sensibilidade"], ["especificidade", "Especificidade"], ["precisao", "Precisão"], ["f1", "F1"],
   ["mcc", "MCC"], ["auc_roc", "AUC-ROC"], ["auc_pr", "AUC-PR"]];
-const COLUNAS_INICIO = [["meio", "14 ensaios · meio", "inicio"], ["mudanca", "14 ensaios · mudança", "mudanca"],
-  ["clara_meio", "8 de mudança clara · meio", "clara_oito"], ["clara_mudanca", "8 de mudança clara · mudança", "clara_oito"]];
+const COLUNAS_INICIO = (claros) => [["meio", "14 ensaios · meio", "inicio"], ["mudanca", "14 ensaios · mudança", "mudanca"],
+  ["clara_meio", `${claros} de mudança clara · meio`, "clara_oito"], ["clara_mudanca", `${claros} de mudança clara · mudança`, "clara_oito"]];
 
 function sinal(value) { return `${value > 0 ? "+" : ""}${dec(value)}`; }
 /* Em tela estreita, só o ensaio (F1L); o nome da falha fica na dica. */
@@ -408,14 +415,14 @@ async function renderOnsets(body) {
   const indicators = MODELOS.map(([kind]) => {
     const m = d.modelos[kind];
     return tabelaComCSV(`Indicadores com cada início · ${m.nome}`, "trecho_incerto",
-      ["Indicador", ...COLUNAS_INICIO.map(([, label, chave]) => comNota(label, chave))],
+      ["Indicador", ...COLUNAS_INICIO(d.clara.length).map(([, label, chave]) => comNota(label, chave))],
       INDICADORES_INICIO.map(([key, label]) => [
         comNota(label, key === "atraso_mediano_ms" ? "atraso_mudanca" : key === "detectados" ? "detectados" : key,
           key === "atraso_mediano_ms" ? "Nas colunas do meio, contado do meio do registro." : ""),
-        ...COLUNAS_INICIO.map(([column]) => format(key, m[column][key], m[column].ensaios))]),
+        ...COLUNAS_INICIO(d.clara.length).map(([column]) => format(key, m[column][key], m[column].ensaios))]),
       `indicadores-inicio-${kind}`,
-      [["indicador", ...COLUNAS_INICIO.map(([, label]) => label)],
-        ...INDICADORES_INICIO.map(([key, label]) => [label, ...COLUNAS_INICIO.map(([column]) => m[column][key])])]);
+      [["indicador", ...COLUNAS_INICIO(d.clara.length).map(([, label]) => label)],
+        ...INDICADORES_INICIO.map(([key, label]) => [label, ...COLUNAS_INICIO(d.clara.length).map(([column]) => m[column][key])])]);
   });
   const sensitivity = el("div", { class: "par-modelos" }, ...MODELOS.map(([kind, name]) => quadro({
     titulo: `Sensibilidade por ensaio · ${name}`, chave: "sensibilidade", extra: GLOSSARIO.trecho_incerto,
@@ -456,7 +463,7 @@ async function renderOnsets(body) {
   const pair = (row) => (row.diferenca === null ? "—" : `${num(row.diferenca)} (${num(row.ic95[0])} a ${num(row.ic95[1])})`);
   const comparison = tabelaComCSV("Comparação por objetivo com a mudança observada", "diferenca",
     ["Objetivo", "Métrica", comNota("14 ensaios: diferença (intervalo de 95%)", "ic95"), "Leitura",
-      comNota("8 de mudança clara: diferença (intervalo de 95%)", "clara_oito"), "Leitura"],
+      comNota(`${d.clara.length} de mudança clara: diferença (intervalo de 95%)`, "clara_oito"), "Leitura"],
     d.comparacao.mudanca.map((row, i) => [row.objetivo, row.metrica, pair(row), row.leitura, pair(d.comparacao.clara[i]),
       d.comparacao.clara[i].leitura]),
     "comparacao-inicio-observado",
@@ -468,18 +475,19 @@ async function renderOnsets(body) {
           clear.ic95?.[1], clear.leitura];
       })]);
   body.replaceChildren(
-    el("p", { class: "muted" }, "Os arquivos do GPVS não marcam quando cada falha foi disparada; o conjunto diz só que ela foi ",
-      "introduzida manualmente, na metade do experimento. A avaliação oficial usou o meio do registro ", nota("inicio"),
+    el("p", { class: "muted" }, "Os arquivos da base não marcam quando cada falha foi disparada; o conjunto diz só que ela foi ",
+      "introduzida manualmente, na metade do experimento. A avaliação usa o meio do registro ", nota("inicio"),
       ". Aqui, um detector de mudança sobre as 24 variáveis, sem os autoencoders, mostra quando a falha aparece de fato nos sinais ",
       nota("detector_mudanca"), `. Nos dois ensaios saudáveis, ele não acha mudança nenhuma. Os números reaproveitam os escores `,
-      `da avaliação de ${day(d.data_oficial)}, sem rodar os modelos de novo, e ela continua sendo a oficial.`),
+      `da avaliação de ${day(d.data_oficial)}, sem rodar os modelos de novo` +
+      (d.rodada.oficial ? ", e ela continua sendo a oficial." : `: ${d.rodada.rotulo}.`)),
     timeline,
     el("div", { class: "tabela-inicios" }, ...indicators),
     sensitivity, delays, comparison,
     el("div", { class: "note" }, "O que isto não resolve: F4 (sombreamento parcial) não muda as 24 variáveis, e F6 e F7 (ajustes do ",
       "controlador PI) mudam pouco. Para eles não há início confiável, e a falta de detecção é, em boa parte, das variáveis, não só ",
-      "dos modelos. Como a mudança e os modelos olham as mesmas variáveis, a sensibilidade de 1 nos 8 ensaios de mudança clara ",
-      "mostra que os modelos veem logo o que aparece nelas; ela não mede falhas que não aparecem."));
+      `dos modelos. Como a mudança e os modelos olham as mesmas variáveis, uma sensibilidade alta nos ${d.clara.length} ensaios de `,
+      "mudança clara mostra que os modelos veem logo o que aparece nelas; ela não mede falhas que não aparecem."));
 }
 
 /* 5. Explorar: e se o limiar fosse outro? Usa o treino de referência. */
@@ -491,13 +499,13 @@ async function renderExplore(body) {
       el("button", { class: `filter${id === sub ? " is-active" : ""}`, type: "button", text,
         onclick: () => { science.explorar = id; openScience("explorar"); } }))),
     inner);
-  try { if (!(await ensureGpvs(inner))) return; } catch (error) { aviso(inner, error.message); return; }
+  try { if (!(await ensureExplorers(inner))) return; } catch (error) { aviso(inner, error.message); return; }
   if (sub === "limiar") await renderThreshold(inner); else await renderAlarms(inner);
 }
 
 /* Os exploradores precisam dos modelos, da avaliação e dos dados no computador. */
-async function ensureGpvs(body) {
-  const status = science.status?.gpvs;
+async function ensureExplorers(body) {
+  const status = science.status?.exploradores;
   if (!status?.disponivel) {
     aviso(body, `Os exploradores não estão disponíveis: falta ${(status?.faltando || ["o serviço"]).join("; ")}.`);
     return false;
@@ -508,13 +516,13 @@ async function ensureGpvs(body) {
   for (;;) {
     const state = await api(`/api/ciencia/tarefas/${job.tarefa}`);
     if (state.estado === "falhou") throw new Error(state.erro);
-    if (state.estado === "concluido") { science.options = state.resultado; science.status.gpvs.pronto = true; return true; }
+    if (state.estado === "concluido") { science.options = state.resultado; science.status.exploradores.pronto = true; return true; }
     body.firstElementChild.textContent = `Carregando: ${state.etapa} (${state.atual} de ${state.total})…`;
     await new Promise((resolve) => setTimeout(resolve, 600));
   }
 }
 
-function gpvsControls(params, rerun, { withConfirmations = false, withTrial = false } = {}) {
+function explorerControls(params, rerun, { withConfirmations = false, withTrial = false } = {}) {
   const o = science.options;
   const controls = el("div", { class: "controls" },
     select("Modelo", o.modelos.map((m) => [m.id, NOME_MODELO[m.id] || m.nome]), params.modelo, (v) => { params.modelo = v; rerun(); }),
@@ -543,7 +551,7 @@ async function renderThreshold(body) {
     catch (error) { toast(error.message); }
   };
   body.replaceChildren(el("p", { class: "muted", text: "Usa só os escores de calibração do treino, sem os ensaios de teste. " +
-    `Os valores oficiais são k = ${o.k_canonico} e percentil ${num(o.percentil_canonico)}.` }), gpvsControls(params, rerun), output);
+    `Os valores da rodada são k = ${o.k_canonico} e percentil ${num(o.percentil_canonico)}.` }), explorerControls(params, rerun), output);
   await rerun();
 }
 
@@ -551,7 +559,7 @@ function drawThreshold(output, data, params, rerun) {
   const t = data.limiar;
   const sorted = data.escores_ordenados;
   const cards = el("div", { class: "metrics" },
-    card("Limiar", num(t.limiar, 5), `oficial: ${num(data.canonico.limiar, 5)} (k = ${data.canonico.k}, p${num(data.canonico.percentil)})`, "limiar"),
+    card("Limiar", num(t.limiar, 5), `da rodada: ${num(data.canonico.limiar, 5)} (k = ${data.canonico.k}, p${num(data.canonico.percentil)})`, "limiar"),
     card("Posição do limiar", `${t.posicao}ª de ${t.n_calibracao}`, `percentil efetivo ${num(t.percentil_efetivo, 4)}%`, "percentil"),
     card("Janelas de calibração acima", String(t.n_calibracao - t.posicao), null, "fpr"),
     card("Falso alarme esperado por janela", pct(t.falso_alarme_esperado_por_janela, 3), null, "fpr"));
@@ -597,9 +605,9 @@ async function renderAlarms(body) {
   };
   body.replaceChildren(el("div", { class: "note note-warn science-notice", text: "Estes controles reusam os ensaios de teste. " +
       "Servem para explorar; os números oficiais continuam os da avaliação de 27/09/2026." }),
-    gpvsControls(params, rerun, { withConfirmations: true, withTrial: true }),
+    explorerControls(params, rerun, { withConfirmations: true, withTrial: true }),
     el("button", { class: "secondary", type: "button",
-      text: `Voltar aos valores oficiais (k = ${o.k_canonico}, p${num(o.percentil_canonico)}, ${o.confirmacoes_canonicas} janelas)`,
+      text: `Voltar aos valores da rodada (k = ${o.k_canonico}, p${num(o.percentil_canonico)}, ${o.confirmacoes_canonicas} janelas)`,
       onclick: () => { science.alarms = official(); openScience("explorar"); } }), output);
   await rerun();
 }
@@ -607,14 +615,14 @@ async function renderAlarms(body) {
 function drawAlarms(output, data) {
   const fa = data.falsos_alarmes, c = data.canonico, s = data.resumo;
   const cards = el("div", { class: "metrics" },
-    card("Ensaios detectados", `${s.detectados} de ${data.ensaios.length}`, `oficial: ${c.detectados}`, "detectados"),
-    card("Atraso mediano", seconds(s.atraso_mediano_ms), `oficial: ${seconds(c.atraso_mediano_ms)}`, "atraso"),
+    card("Ensaios detectados", `${s.detectados} de ${data.ensaios.length}`, `da rodada: ${c.detectados}`, "detectados"),
+    card("Atraso mediano", seconds(s.atraso_mediano_ms), `da rodada: ${seconds(c.atraso_mediano_ms)}`, "atraso"),
     card("Alarmes falsos no teste saudável", String(fa.teste_saudavel.alarmes),
-      `limite superior: ${num(fa.teste_saudavel.limite_superior_por_hora, 4)} por hora · oficial: ${c.alarmes_teste_saudavel}`, "limite_superior"),
-    card("Alarmes antes da falha", String(fa.pre_falha.alarmes), `oficial: ${c.alarmes_pre_falha}`, "alarmes_antes"),
-    card("Limiar", num(data.limiar.limiar, 5), `oficial: ${num(c.limiar, 5)}`, "limiar"),
+      `limite superior: ${num(fa.teste_saudavel.limite_superior_por_hora, 4)} por hora · da rodada: ${c.alarmes_teste_saudavel}`, "limite_superior"),
+    card("Alarmes antes da falha", String(fa.pre_falha.alarmes), `da rodada: ${c.alarmes_pre_falha}`, "alarmes_antes"),
+    card("Limiar", num(data.limiar.limiar, 5), `da rodada: ${num(c.limiar, 5)}`, "limiar"),
     ...["sensibilidade", "especificidade", "f1", "mcc"].map((key) => card(METRICAS[key], dec(s[`${key}_media`]), null, key, "Média dos 14 ensaios.")));
-  const same = data.parametros_canonicos ? el("div", { class: "note note-ok", text: "Com estes valores, os números são os oficiais de 27/09/2026." }) : null;
+  const same = data.parametros_canonicos ? el("div", { class: "note note-ok", text: "Com estes valores, os números são os da rodada." }) : null;
   const counts = ["vp", "fn", "fp", "vn"].reduce((acc, key) => ({ ...acc, [key]: data.ensaios.reduce((sum, t) => sum + (t[key] || 0), 0) }), {});
   const matrix = quadro({ titulo: `Matriz de confusão · ${NOME_MODELO[data.modelo]} · valores escolhidos`, chave: "matriz",
     arquivo: `matriz-exploracao-${data.modelo}`,
@@ -924,121 +932,119 @@ function fmecaView(data) {
     el("ul", { class: "science-list" }, ...[...(data.ressalvas || []), ...(data.limites || [])].map((text) => el("li", { text }))));
 }
 
-/* 6. Rodar e arquivos: preparar, treinar e avaliar pelos próprios comandos, e os resultados gravados. */
-const STEP_NAMES = { preparar: "Preparo", treinar: "Treino", avaliar: "Avaliação" };
-const JOB_STATES = { processando: "em andamento", concluido: "concluído", falhou: "falhou", cancelado: "cancelado" };
-const CONSULTATION_STATES = { iniciada: "iniciada", concluida: "concluída", falhou: "falhou", cancelada: "cancelada" };
+/* 8. Experimento: rodar do zero, acompanhar, baixar o PDF e comparar com um resultado salvo (lote 34). */
+const JOB_STATES = { processando: "em andamento", concluido: "concluída", falhou: "falhou", cancelado: "cancelada" };
+const NOTA_RODADA = "A aba, o chat e o PDF usam só esta rodada. \"Oficial\" é só a avaliação de 27/09/2026; uma rodada " +
+  "feita depois aparece com a data e com quantas vezes os dados de teste já tinham sido usados.";
 
-async function renderRunsAndFiles(body) {
-  const runs = el("div", { class: "science-output" });
-  const files = el("div", { class: "science-output" });
-  body.replaceChildren(el("h3", { class: "science-h", text: "Rodar" }), runs,
-    el("h3", { class: "science-h", text: "Arquivos de resultados" }), files);
-  await Promise.all([renderRuns(runs), renderResults(files)]);
-}
-
-async function renderRuns(body) {
+async function renderExperiment(body) {
   let info;
-  try { info = await api("/api/ciencia/gpvs"); } catch (error) { aviso(body, error.message); return; }
-  if (!info.disponivel) { aviso(body, `Não dá para rodar agora: falta ${info.faltando.join("; ")}.`); return; }
-  const c = info.canonica;
+  try { info = await api("/api/experimentos"); } catch (error) { aviso(body, error.message); return; }
+  if (!info.experimentos.length) { aviso(body, "Nenhum experimento instalado."); return; }
   const progress = el("div", { class: "science-output" });
-  const prep = { separacao: c.separacao };
-  const train = science.train ||= { separacao: c.separacao, sementes: c.sementes.join(","), teto_epocas: c.teto_epocas };
-  const badge = el("span", { class: "badge" });
-  const updateBadge = () => {
-    const seeds = String(train.sementes).split(",").map((s) => Number(s.trim())).join(",");
-    const same = Number(train.separacao) === c.separacao && seeds === c.sementes.join(",") && Number(train.teto_epocas) === c.teto_epocas;
-    badge.className = `badge ${same ? "badge-ok" : "badge-warn"}`;
-    badge.textContent = same ? "ajustes originais" : "ajustes diferentes (exploração)";
-  };
-  const field = (label, key, target, attrs = {}, chave) => {
-    const input = el("input", { value: target[key], ...attrs });
-    input.addEventListener("input", () => { target[key] = input.value; updateBadge(); });
-    return el("label", { class: "control" }, el("span", {}, label, ...(chave ? [nota(chave)] : [])), input);
-  };
-  const trainingSelect = el("select", {}, ...info.treinos.map((item) => {
-    const option = el("option", { value: item.pasta, text: `${item.pasta} (${item.canonica ? "ajustes originais" : "exploração"})` });
-    if (item.pasta === c.treino) option.selected = true;
-    return option;
-  }));
-  const cards = el("div", { class: "run-grid" },
-    el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "1. Preparar" }),
-      el("p", { class: "muted", text: "Divide os dados (50/15/15/20), normaliza só com o treino e confere a autocorrelação. Não usa modelos nem os ensaios de teste." }),
-      field("Separação entre blocos (janelas)", "separacao", prep, { type: "number", min: 0, max: 200 }),
-      el("button", { class: "primary", type: "button", text: "Preparar", onclick: () => launch("/api/ciencia/gpvs/preparar", prep, progress) })),
-    el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "2. Treinar" }),
-      el("p", { class: "muted", text: "Treina o Denso e o AE-LSTM em cada repetição, para pela validação e põe o limiar no percentil 99 da calibração." }),
-      field("Separação entre blocos (janelas)", "separacao", train, { type: "number", min: 0, max: 200 }),
-      field("Repetições do treino (um número por repetição, separados por vírgula)", "sementes", train, {}, "treinos"),
-      field("Teto de épocas (só de segurança)", "teto_epocas", train, { type: "number", min: 1 }),
-      badge,
-      el("button", { class: "primary", type: "button", text: "Treinar (cerca de 2 min)", onclick: () => launch("/api/ciencia/gpvs/treinar", train, progress) })),
-    el("section", { class: "run-card" }, el("h3", { class: "science-h", text: "3. Avaliar" }),
-      el("p", { class: "muted", text: "Pontua de novo o teste saudável e os 14 ensaios com falha. Fica registrada como exploração; a avaliação oficial continua a de 27/09." }),
-      el("label", { class: "control" }, el("span", { text: "Rodada de treino (pasta)" }), trainingSelect),
-      el("button", { class: "primary", type: "button", text: "Avaliar…", disabled: info.treinos.length ? null : true,
-        onclick: () => confirmEvaluation(trainingSelect.value, info.frase, progress) })));
-  updateBadge();
-  const history = el("details", { class: "historico" }, el("summary", { text: "Histórico de avaliações" }),
-    table(["Nº", "Data", "Treino (pasta)", "Resultado (pasta)", "Estado", "Tipo"], info.consultas.map((item) => [
-      item.numero, day(item.data), item.treino?.pasta, item.saida, CONSULTATION_STATES[item.estado] || item.estado,
-      item.tipo === "reanalise" ? "reanálise com o início observado (mesmos escores)" : item.canonica ? "oficial" : "exploração"])));
-  body.replaceChildren(el("p", { class: "muted", text: "Cada etapa roda o mesmo comando do terminal e grava numa pasta nova de resultados, uma por vez." }),
-    progress, cards, history);
-  if (info.tarefa) watch(info.tarefa.id, progress);
+  const running = info.tarefa?.estado === "processando";
+  body.replaceChildren(el("p", { class: "muted", text: "A aba mostra só a rodada atual de cada experimento. Rodar de novo " +
+    "cria uma rodada nova, do zero; as anteriores ficam guardadas no computador, fora da aba. Para guardar uma rodada, baixe o PDF." }),
+    progress, ...info.experimentos.map((item) => experimentCard(item, running, progress)));
+  if (info.tarefa) watchRun(info.tarefa.id, progress);
 }
 
-function confirmEvaluation(training, phrase, progress) {
-  const input = el("input", { autocomplete: "off", placeholder: phrase });
-  const go = el("button", { class: "primary", type: "button", text: "Avaliar", disabled: true });
-  input.addEventListener("input", () => { go.disabled = input.value.trim().toLowerCase() !== phrase; });
-  const dialog = el("dialog", { class: "dialog", "aria-labelledby": "consulta-titulo" },
-    el("h2", { id: "consulta-titulo", text: "Avaliar de novo" }),
-    el("p", { class: "muted", text: `Avaliar ${training} pontua de novo o teste saudável e os 14 ensaios com falha, os mesmos da ` +
-      "avaliação oficial de 27/09. O resultado fica registrado como exploração e não substitui o oficial. " +
-      "Não use esse resultado para escolher ajustes: os ensaios de teste deixariam de ser um teste independente." }),
-    el("label", { class: "field" }, `Digite "${phrase}" para confirmar`, input),
+function valueText(value) { return Array.isArray(value) ? value.join(", ") : String(value ?? ""); }
+
+/* O mesmo valor escrito de outro jeito ("13,42" e "42, 13") conta como igual, como no servidor. */
+function normalized(parameter, value) {
+  if (parameter.tipo === "inteiros") {
+    const items = (Array.isArray(value) ? value : String(value ?? "").split(",")).map((v) => String(v).trim()).filter(Boolean).map(Number);
+    return (parameter.ordenar ? items.sort((a, b) => a - b) : items).join(",");
+  }
+  return String(Number(String(value ?? "").trim()));
+}
+
+function experimentCard(item, running, progress) {
+  const atual = item.atual;
+  const form = science.experimentos[item.chave] ||= Object.fromEntries(item.parametros.map((p) =>
+    [p.nome, valueText(atual?.parametros?.[p.nome] ?? p.padrao)]));
+  const run = el("button", { class: "primary", type: "button", text: "Rodar experimento" });
+  const why = el("p", { class: "muted" });
+  const same = () => Boolean(atual) && item.parametros.every((p) => normalized(p, form[p.nome]) === normalized(p, atual.parametros?.[p.nome]));
+  const update = () => {
+    const reason = item.faltando.length ? `Não dá para rodar agora: falta ${item.faltando.join("; ")}.`
+      : running ? "Há uma rodada em andamento."
+      : same() ? "Os parâmetros são os da rodada mostrada: o resultado seria o mesmo. Mude um parâmetro para rodar de novo." : "";
+    run.disabled = Boolean(reason);
+    why.textContent = reason || `Roda o experimento inteiro, do zero${item.duracao ? ` (${item.duracao})` : ""}, numa rodada nova.`;
+  };
+  const fields = item.parametros.map((p) => {
+    const input = el("input", { value: form[p.nome], inputmode: p.tipo === "inteiro" ? "numeric" : "text", "aria-label": p.rotulo });
+    input.addEventListener("input", () => { form[p.nome] = input.value; update(); });
+    return el("label", { class: "control" }, el("span", {}, p.rotulo + (p.unidade ? ` (${p.unidade})` : ""), nota(p.nota)), input);
+  });
+  run.addEventListener("click", () => confirmRun(item, form, progress));
+  update();
+  const compared = el("div", { class: "science-output" });
+  const file = el("input", { type: "file", accept: ".pdf,.json,application/pdf,application/json", hidden: true });
+  file.addEventListener("change", () => compareSaved(item, file, compared));
+  const tools = atual ? [
+    el("a", { class: "secondary", href: `/api/experimentos/${encodeURIComponent(item.chave)}/pdf`, download: "", text: "Baixar PDF" }),
+    el("button", { class: "secondary", type: "button", text: "Comparar com resultado salvo", onclick: () => file.click() })] : [];
+  return el("section", { class: "run-card" },
+    el("h3", { class: "science-h", text: item.titulo }),
+    el("p", { class: "muted", text: `Base de dados: ${item.base}. ${item.descricao}` }),
+    el("div", { class: `note${atual?.oficial ? " note-ok" : ""}` },
+      atual ? `Rodada mostrada na aba: ${atual.rotulo}.` : "Ainda não há rodada deste experimento.", nota(NOTA_RODADA)),
+    el("div", { class: "controls" }, ...fields), why, el("div", { class: "dialog-actions run-actions" }, run, ...tools), file, compared);
+}
+
+function confirmRun(item, form, progress) {
+  const phrase = item.frase;
+  const input = phrase ? el("input", { autocomplete: "off", placeholder: phrase }) : null;
+  const go = el("button", { class: "primary", type: "button", text: "Rodar experimento", disabled: Boolean(phrase) });
+  input?.addEventListener("input", () => { go.disabled = input.value.trim().toLowerCase() !== phrase; });
+  const uses = item.consultas === null || item.consultas === undefined ? "" :
+    `Os dados de teste já foram usados ${item.consultas} ${item.consultas === 1 ? "vez" : "vezes"}; esta será a ${item.consultas + 1}ª. `;
+  const dialog = el("dialog", { class: "dialog", "aria-labelledby": "rodada-titulo" },
+    el("h2", { id: "rodada-titulo", text: `Rodar ${item.titulo}` }),
+    el("p", { class: "muted", text: "Roda o experimento inteiro, do zero: preparo da base, treino dos dois modelos em cada repetição, " +
+      `limiar, avaliação nos ensaios de teste e início das falhas${item.duracao ? `, em ${item.duracao}` : ""}. A aba passa a mostrar ` +
+      "a rodada nova; a de hoje fica guardada no computador." }),
+    el("p", { class: "muted", text: `${uses}Não use o resultado para escolher ajustes: os ensaios de teste deixariam de ser um ` +
+      "teste independente." }),
+    ...(phrase ? [el("label", { class: "field" }, `Digite "${phrase}" para confirmar`, input)] : []),
     el("div", { class: "dialog-actions" }, el("button", { class: "secondary", type: "button", text: "Cancelar", onclick: () => dialog.close() }), go));
-  go.addEventListener("click", () => { dialog.close(); launch("/api/ciencia/gpvs/avaliar", { treino: training, frase: input.value }, progress); });
+  go.addEventListener("click", async () => {
+    dialog.close();
+    try {
+      await api(`/api/experimentos/${encodeURIComponent(item.chave)}/rodar`, { method: "POST",
+        json: { parametros: form, frase: input?.value || "" } });
+      openScience("experimento");  // a seção acompanha a rodada e deixa os botões desativados enquanto ela anda
+    } catch (error) { toast(error.message); }
+  });
   dialog.addEventListener("close", () => dialog.remove());
   document.body.append(dialog);
   dialog.showModal();
-  input.focus();
+  (input || go).focus();
 }
 
-async function launch(path, payload, progress) {
-  try {
-    const job = await api(path, { method: "POST", json: payload });
-    watch(job.tarefa, progress);
-  } catch (error) { toast(error.message); }
-}
-
-async function watch(id, box) {
+async function watchRun(id, box) {
   for (;;) {
     let job;
     try { job = await api(`/api/ciencia/tarefas/${id}`); } catch (error) { box.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
-    if (!box.isConnected) return;  // a seção foi trocada; a etapa continua no servidor
+    if (!box.isConnected) return;  // a seção foi trocada; a rodada continua no servidor
     const running = job.estado === "processando";
     const elapsed = running ? (Date.now() - Date.parse(job.iniciado_em)) / 1000 : job.decorrido_s;
-    const title = `${STEP_NAMES[job.etapa] || job.etapa} → ${job.pasta}: ${JOB_STATES[job.estado] || job.estado}, ${num(elapsed, 3)} s`;
-    const actions = el("div", { class: "dialog-actions" });
-    if (running) {
-      actions.append(el("button", { class: "secondary", type: "button", text: "Cancelar etapa", onclick: async () => {
-        try { await api("/api/ciencia/gpvs/cancelar", { method: "POST" }); } catch (error) { toast(error.message); }
-      } }));
-    } else if (job.resultado?.pasta) {
-      actions.append(el("button", { class: "primary", type: "button", text: "Abrir o resultado",
-        onclick: () => { science.result = job.resultado.pasta; openScience("rodar"); } }));
-    }
+    const title = `${job.etapa} · ${job.pasta}: ${JOB_STATES[job.estado] || job.estado}, ${num(elapsed, 3)} s`;
+    const actions = running ? [el("div", { class: "dialog-actions" }, el("button", { class: "secondary", type: "button",
+      text: "Cancelar a rodada", onclick: async () => {
+        try { await api("/api/experimentos/cancelar", { method: "POST" }); } catch (error) { toast(error.message); }
+      } }))] : [];
     const tone = job.estado === "falhou" ? "note-warn" : job.estado === "concluido" ? "note-ok" : "";
     box.replaceChildren(el("div", { class: `note ${tone} run-status`, text: title }),
       ...(job.erro ? [el("p", { class: "muted", text: job.erro })] : []),
-      ...(job.linhas?.length ? [el("pre", { class: "run-log", text: job.linhas.slice(-12).join("\n") })] : []), actions);
+      ...(job.linhas?.length ? [el("pre", { class: "run-log", text: job.linhas.slice(-12).join("\n") })] : []), ...actions);
     if (!running) {
-      if (job.estado === "concluido" && !science.refreshed?.has(id)) {
-        (science.refreshed ||= new Set()).add(id);
-        if (science.tab === "rodar") openScience("rodar");  // atualiza as rodadas e o histórico
+      if (!science.vistas?.has(id)) {
+        (science.vistas ||= new Set()).add(id);
+        if (science.tab === "experimento") openScience("experimento");  // a rodada nova aparece em toda a aba
       }
       return;
     }
@@ -1046,74 +1052,27 @@ async function watch(id, box) {
   }
 }
 
-/* Resultados gravados: pelo nome e pela data; a pasta aparece como detalhe. */
-async function renderResults(body) {
-  let items = [];
-  try { items = await api("/api/ciencia/resultados"); } catch (error) { toast(error.message); }
-  if (!items.length) { body.replaceChildren(el("p", { class: "muted", text: "Nenhum resultado gravado ainda." })); return; }
-  const viewer = el("article", { class: "doc-viewer" }, el("p", { class: "muted", text: "Escolha um resultado." }));
-  const list = el("ul", { class: "doc-list" }, ...items.map((item) => el("li", {}, el("button", { class: "doc-item", type: "button",
-    "data-result": item.id, onclick: () => showResult(item, viewer) },
-    el("span", { class: "doc-title", text: item.titulo }), el("span", { class: "doc-ref", text: item.rotulo }),
-    el("span", { class: "doc-meta" }, el("span", { text: item.modificado ? new Date(item.modificado).toLocaleString("pt-BR") : "" }))))));
-  body.replaceChildren(el("div", { class: "library-body" }, list, viewer));
-  const chosen = items.find((item) => item.id === science.result) || null;
-  if (chosen) showResult(chosen, viewer);
-}
-
-async function showResult(item, viewer) {
-  science.result = item.id;
-  document.querySelectorAll("[data-result]").forEach((b) => b.classList.toggle("is-current", b.dataset.result === item.id));
-  viewer.replaceChildren(el("p", { class: "muted", text: "Carregando…" }));
-  let data;
-  try { data = await api(`/api/ciencia/resultados/${item.id.split("/").map(encodeURIComponent).join("/")}`); }
-  catch (error) { viewer.replaceChildren(el("p", { class: "muted", text: error.message })); return; }
-  const parts = [el("div", { class: "doc-viewer-head" }, el("span", { class: "muted", text: `${data.rotulo} · pasta: ${data.caminho}` }))];
-  if (data.consulta) {
-    parts.push(el("div", { class: `note ${data.consulta.canonica ? "note-ok" : "note-warn"}`, text: data.consulta.canonica
-      ? "Avaliação oficial, de 27/09/2026."
-      : `Avaliação feita depois da oficial, em ${day(data.consulta.data)}: é exploração. Os números oficiais continuam os de 27/09.` }));
-  }
-  if (data.tipo === "gpvs-reanalise") {
-    parts.push(el("div", { class: "note note-ok", text: "Reanálise dos mesmos escores da avaliação oficial de 27/09, com o início " +
-      "observado das falhas. Não pontua o teste de novo, e a avaliação oficial continua a de 27/09." }));
-  }
-  if (data.configuracao_canonica !== undefined) {
-    parts.push(el("div", { class: `note ${data.configuracao_canonica ? "note-ok" : "note-warn"}`, text: data.configuracao_canonica
-      ? "Treino com os ajustes originais." : "Treino com ajustes diferentes dos originais (exploração)." }));
-  }
-  if (data.execucao) {
-    parts.push(el("p", { class: "muted", text: `Feita pela interface (${JOB_STATES[data.execucao.estado] || data.execucao.estado}): ` +
-      `${new Date(data.execucao.iniciado_em).toLocaleString("pt-BR")} a ${new Date(data.execucao.terminado_em).toLocaleString("pt-BR")}.` }));
-  }
-  if (data.curvas?.linhas?.length) parts.push(reliabilityChart(data.curvas.linhas, data.curvas.unidade === "year" ? "anos" : data.curvas.unidade));
-  if (data.fmeca) parts.push(fmecaView(data.fmeca));
-  if (data.calibracao) {
-    for (const [kind, curve] of Object.entries(data.calibracao.modelos)) {
-      parts.push(quadro({ titulo: `${NOME_MODELO[kind] || kind}: escores de calibração do treino de referência ` +
-        `(k = ${data.calibracao.k}, percentil ${num(data.calibracao.percentil)})`, chave: "limiar", arquivo: `calibracao-${kind}`,
-      desenhar: (area, largura, cores) => graficoLinhas(area, largura, cores, { titulo: "Escores de calibração", proporcao: 0.36,
-        xRotulo: "janelas, do menor ao maior escore", yRotulo: "escore",
-        series: [{ nome: "escore", cor: MODELO_COR(cores, kind), pontos: curve.escores_ordenados.map((v, i) => [i + 1, v]) }],
-        linhasH: [{ y: curve.limiar, cor: cores.limiar, rotulo: `limiar ${num(curve.limiar, 5)}` }] }) }));
-    }
-  }
-  if (data.ensaios) {
-    parts.push(el("h3", { class: "science-h", text: "Ensaios (treino de referência)" }),
-      table(["Modelo", "Ensaio", comNota("Detectou", "detectados"), comNota("Atraso", "atraso"), comNota("Alarmes antes da falha", "alarmes_antes")],
-        data.ensaios.linhas.map((r) => [NOME_MODELO[r.modelo] || r.modelo, r.ensaio, r.detectado === "True" ? "sim" : "não",
-          r.atraso_ms ? seconds(Number(r.atraso_ms)) : "—", r.alarmes_pre_falha])));
-  }
-  if (data.busca?.resumo) {
-    const r = data.busca.resumo;
-    parts.push(el("div", { class: "metrics" }, card("Acertos", `${r.acertos} de ${r.perguntas}`), card("MRR", num(r.mrr, 3)),
-      card("Documentos distintos", num(r.documentos_distintos_medio, 3))));
-  }
-  if (data.html) {
-    const report = el("div", { class: "answer" });
-    report.innerHTML = data.html; // Markdown do relatório renderizado no servidor, sem HTML bruto
-    renderMath(report);
-    parts.push(report);
-  }
-  viewer.replaceChildren(...parts);
+async function compareSaved(item, file, box) {
+  const chosen = file.files?.[0];
+  file.value = "";
+  if (!chosen) return;
+  const data = new FormData();
+  data.append("arquivo", chosen);
+  box.replaceChildren(el("p", { class: "muted", text: "Lendo o resultado salvo…" }));
+  let c;
+  try { c = await api(`/api/experimentos/${encodeURIComponent(item.chave)}/comparar`, { method: "POST", body: data }); }
+  catch (error) { box.replaceChildren(el("div", { class: "note note-warn", text: error.message })); return; }
+  const rows = c.linhas.map((row) => [el("span", { class: "com-nota" }, row.rotulo, ...(row.nota ? [nota(row.nota)] : [])),
+    row.guardado, row.atual, row.diferenca === null ? "—" : num(row.diferenca), row.igual ? "igual" : "diferente"]);
+  const reuse = c.guardado.parametros ? [el("button", { class: "secondary", type: "button", text: "Usar os parâmetros guardados",
+    onclick: () => {
+      science.experimentos[item.chave] = Object.fromEntries(Object.entries(c.guardado.parametros).map(([key, value]) => [key, valueText(value)]));
+      openScience("experimento");
+    } })] : [];
+  box.replaceChildren(
+    el("h3", { class: "science-h subtitulo-secao" }, "Resultado salvo × rodada atual", nota("A diferença é o valor atual menos o guardado. " +
+      "Para repetir a rodada guardada, use os parâmetros dela: com os mesmos parâmetros, o experimento dá os mesmos números.")),
+    el("p", { class: "muted", text: `Guardado: ${c.guardado.rotulo || c.guardado.rodada || "sem identificação"}. ` +
+      `Atual: ${c.atual.rotulo}. ${c.iguais} de ${c.total} indicadores iguais.` }),
+    table(["Indicador", "Guardado", "Atual", "Diferença", "Situação"], rows), ...reuse);
 }

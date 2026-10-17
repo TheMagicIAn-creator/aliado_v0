@@ -1,10 +1,11 @@
-"""Resumo dos resultados da pesquisa para o chat (lote 26): blocos [R1]…[R8] gerados por código.
+"""Resumo dos resultados da pesquisa para o chat (lotes 26 e 34): blocos [R1]…[R8] gerados por código.
 
 Os números saem das mesmas funções da aba Ciência (`summary`, `fmeca` e `components`), nunca dos
-relatórios em markdown, e vão no formato da tela. Cada bloco diz a fonte, a data e o estatuto:
-a avaliação de 27/09/2026 é a oficial, e a reanálise com o início observado é secundária. O que
-não puder ser montado (sem numpy, sem a avaliação ou sem a reanálise) fica de fora, com o motivo
-em palavras. O módulo abre sem numpy: `summary` só é importado dentro da função que o usa.
+relatórios em markdown, e vão no formato da tela. São os da rodada que a aba mostra. Cada bloco diz
+a fonte, a data e o estatuto: a avaliação de 27/09/2026 é a oficial, uma rodada feita depois é
+exploração, e o início observado das falhas é secundário. O que não puder ser montado (sem numpy,
+sem a avaliação ou sem o início das falhas) fica de fora, com o motivo em palavras. O módulo abre
+sem numpy: `summary` só é importado dentro da função que o usa.
 """
 
 from __future__ import annotations
@@ -14,10 +15,12 @@ import threading
 from decimal import Decimal
 from pathlib import Path
 
+from aliado.specializations.mestrado import autoencoders
+
 MAX_CHARS = 16_000
 HEADER = ("A avaliação oficial é a de 27/09/2026 (treino de referência). A reanálise de 30/09/2026, com o "
           "início observado das falhas, é secundária: complementa, não substitui.")
-OFFICIAL, SECONDARY = "oficial", "secundaria"
+OFFICIAL, SECONDARY, EXPLORATION = "oficial", "secundaria", "exploracao"
 MODELS = (("denso", "Denso"), ("lstm", "AE-LSTM"))
 METRICS = (("sensibilidade", "Sensibilidade"), ("especificidade", "Especificidade"), ("precisao", "Precisão"),
            ("f1", "F1"), ("acuracia_balanceada", "Acurácia balanceada"), ("mcc", "MCC"), ("auc_roc", "AUC-ROC"),
@@ -63,10 +66,19 @@ NOTE_NAMES = {
 SECTIONS = {"resumo": "Resumo", "metricas": "Métricas por falha", "inicio": "Início das falhas", "fmeca": "FMECA",
             "confiabilidade": "Confiabilidade"}
 # O treino repetido, em palavras, sem o termo interno da nota da tela.
-TRAININGS = ("O treino foi repetido 5 vezes, cada uma partindo de um ponto aleatório diferente. Os números são os do "
-             "treino de referência, e a faixa entre parênteses vai do menor ao maior valor das 5 repetições.")
+TRAININGS = ("O treino foi repetido {n} vezes, cada uma partindo de um ponto aleatório diferente. Os números são os do "
+             "treino de referência, e a faixa entre parênteses vai do menor ao maior valor das {n} repetições.")
 _cache: dict = {}
 _lock = threading.Lock()
+
+
+def _header(run: dict | None) -> str:
+    """O cabeçalho dos blocos: o da avaliação oficial ou o de uma rodada feita depois dela."""
+    if not run or run.get("oficial"):
+        return HEADER
+    return (f"Os números vêm da rodada que a aba Ciência mostra: {run['rotulo']}, com o treino de referência. Ela foi "
+            "feita depois da avaliação oficial de 27/09/2026, que continua sendo a oficial. O início observado das "
+            "falhas é da mesma rodada e é secundário: complementa, não substitui.")
 
 
 # Formatação igual à da tela (num, pct, seconds e dec de graficos.js e ciencia.js).
@@ -129,15 +141,18 @@ def _spread(values, formatter) -> str:
     return f"{formatter(values[0])} a {formatter(values[1])}" if values else "—"
 
 
-def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str]]:
-    """R1 a R6, das funções da aba; a reanálise (R5 e R6) só entra se existir."""
+def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str], dict]:
+    """R1 a R6, das funções da aba; o início observado (R5 e R6) só entra se existir."""
     from aliado.science.detection import summary  # numpy só aqui
 
     overview = summary.overview(results_dir)
     faults = summary.per_fault(results_dir)
-    day = overview["data"]
-    source = (f"Avaliação oficial de {_day(day)}: os 14 ensaios com falha e o teste saudável do GPVS, em janelas de "
-              "20 ms, com o treino de referência")
+    day, run = overview["data"], overview["rodada"]
+    status = OFFICIAL if run["oficial"] else EXPLORATION
+    title = "Avaliação oficial" if run["oficial"] else "Rodada atual"
+    source = (f"{run['rotulo']}: os 14 ensaios com falha e o teste saudável do GPVS, em janelas de 20 ms, com o "
+              "treino de referência")
+    trainings = TRAININGS.format(n=overview["treinamentos"])
     models = overview["modelos"]
     rows = [["Ensaios detectados, de 14",
              *[f"{models[k]['detectados']} (faixa: {_spread(models[k]['faixa'].get('detectados'), str)})"
@@ -147,9 +162,9 @@ def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str]]:
                f"{_spread(models[k]['faixa'].get('atraso_mediano_ms'), seconds)})" for k, _ in MODELS]]]
     rows += [[label, *[f"{dec(models[k]['metricas'][key])} (faixa: "
                        f"{_spread(models[k]['faixa'].get(key), dec)})" for k, _ in MODELS]] for key, label in METRICS]
-    blocks = [_block("R1", "Avaliação oficial: detecção, atraso e métricas por janela", source, day, OFFICIAL, "resumo",
+    blocks = [_block("R1", f"{title}: detecção, atraso e métricas por janela", source, day, status, "resumo",
                      _table(["Indicador", *[name for _, name in MODELS]], rows) + "\n\nAs métricas são a média dos 14 ensaios. "
-                     + TRAININGS, ("detectados", "atraso", *[key for key, _ in METRICS]))]
+                     + trainings, ("detectados", "atraso", *[key for key, _ in METRICS]))]
 
     rows = []
     for key, name in MODELS:
@@ -161,7 +176,7 @@ def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str]]:
                      f"{pct(test['fracao'])} (IC 95%: {_spread(test['ic95'], pct)})",
                      f"{pct(pre['fracao'])} (IC 95%: {_spread(pre['ic95'], pct)})"])
     blocks.append(_block(
-        "R2", "Avaliação oficial: alarmes falsos na operação saudável", source, day, OFFICIAL, "resumo",
+        "R2", f"{title}: alarmes falsos na operação saudável", source, day, status, "resumo",
         _table(["Modelo", "Alarmes falsos", "Tempo saudável", "Alarmes por hora", "Limite superior de 95% por hora",
                 "Janelas acima do limiar", "No teste saudável", "Antes da falha"], rows)
         + "\n\nO tempo saudável soma o teste saudável e o trecho antes da falha dos 14 ensaios.",
@@ -170,7 +185,7 @@ def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str]]:
     rows = [[row["objetivo"], row["metrica"], num(row["diferenca"]), _spread(row["ic95"], num), row["leitura"]]
             for row in overview["comparacao"]]
     blocks.append(_block(
-        "R3", "Avaliação oficial: comparação Denso − AE-LSTM por objetivo", source, day, OFFICIAL, "resumo",
+        "R3", f"{title}: comparação Denso − AE-LSTM por objetivo", source, day, status, "resumo",
         _table(["Objetivo", "Métrica", "Diferença (Denso − AE-LSTM)", "Intervalo de 95%", "Leitura"], rows)
         + "\n\nA diferença é pareada por ensaio. Não há vencedor geral.", ("ic95",)))
 
@@ -187,28 +202,33 @@ def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str]]:
     headers = ["Tipo de falha"] + [f"{name}: {column}" for _, name in MODELS
                                    for column in ("detectou", "sensibilidade", "especificidade", "MCC", "atraso")]
     blocks.append(_block(
-        "R4", "Avaliação oficial: resultados por tipo de falha", source, day, OFFICIAL, "metricas",
+        "R4", f"{title}: resultados por tipo de falha", source, day, status, "metricas",
         _table(headers, rows) + "\n\nCada falha tem dois ensaios: L, com potência limitada, e M, com potência máxima. "
         "Sensibilidade, especificidade e MCC somam as janelas dos dois; o atraso é a média dos ensaios detectados.",
         ("detectados", "sensibilidade", "especificidade", "mcc", "atraso")))
 
     try:
-        blocks += _reanalysis_blocks(summary.onsets(results_dir), models, day)
-    except Exception:  # a reanálise é secundária: ausente ou incompleta, os blocos oficiais ficam
-        return blocks, ["a reanálise com o início observado das falhas"]
-    return blocks, []
+        blocks += _reanalysis_blocks(summary.onsets(results_dir), models, day, run)
+    except Exception:  # o início observado é secundário: ausente ou incompleto, os blocos da avaliação ficam
+        return blocks, ["a reanálise com o início observado das falhas"], run
+    return blocks, [], run
 
 
-def _reanalysis_blocks(onsets: dict, models: dict, day: str) -> list[dict]:
-    """R5 e R6, da reanálise com o início observado; o R6 mostra a faixa do limiar só se houver o treino."""
+def _reanalysis_blocks(onsets: dict, models: dict, day: str, run: dict) -> list[dict]:
+    """R5 e R6, do início observado; o R6 mostra a faixa do limiar só se houver o treino."""
     later = onsets["data"]
     source = (f"Reanálise de {_day(later)} dos mesmos escores da avaliação de {_day(day)}, com o início observado "
-              "das falhas. Secundária: a avaliação oficial continua sendo a de " + _day(day))
+              "das falhas. Secundária: a avaliação oficial continua sendo a de " + _day(day) if run["oficial"] else
+              f"Início observado das falhas da mesma rodada ({run['rotulo']}), sobre os escores da avaliação dela. "
+              "Secundário: complementa a avaliação da rodada, sem substituí-la")
+    prefix = "Reanálise" if run["oficial"] else "Início das falhas"
+    clear = len(onsets["clara"])
     trial_rows = [[item["id"], item["nome"], f"{dec(item['nominal_s'], 2)} s",
                    "—" if item["observado_s"] is None else f"{dec(item['observado_s'], 2)} s", CLASSES[item["classe"]]]
                   for item in onsets["ensaios"]]
     columns = (("meio", "14 ensaios, início no meio"), ("mudanca", "14 ensaios, mudança observada"),
-               ("clara_meio", "8 de mudança clara, início no meio"), ("clara_mudanca", "8 de mudança clara, mudança observada"))
+               ("clara_meio", f"{clear} de mudança clara, início no meio"),
+               ("clara_mudanca", f"{clear} de mudança clara, mudança observada"))
     indicator_rows = []
     for key, name in MODELS:
         data = onsets["modelos"][key]
@@ -219,7 +239,7 @@ def _reanalysis_blocks(onsets: dict, models: dict, day: str) -> list[dict]:
                            for metric, label in (("sensibilidade", "sensibilidade"), ("especificidade", "especificidade"),
                                                  ("f1", "F1"), ("auc_roc", "AUC-ROC"))]
     blocks = [_block(
-        "R5", "Reanálise: quando cada falha aparece nos sinais e os indicadores com esse início", source, later,
+        "R5", f"{prefix}: quando cada falha aparece nos sinais e os indicadores com esse início", source, later,
         SECONDARY, "inicio",
         _table(["Ensaio", "Falha", "Meio do registro", "Mudança observada", "Classe da mudança"], trial_rows)
         + "\n\n" + _table(["Indicador", *[label for _, label in columns]], indicator_rows)
@@ -241,7 +261,7 @@ def _reanalysis_blocks(onsets: dict, models: dict, day: str) -> list[dict]:
     if not rows:
         raise KeyError("alarmes_estimados")
     blocks.append(_block(
-        "R6", "Reanálise: alarmes falsos estimados por hora e faixa esperada pelo limiar", source, later, SECONDARY,
+        "R6", f"{prefix}: alarmes falsos estimados por hora e faixa esperada pelo limiar", source, later, SECONDARY,
         "resumo",
         _table(["Modelo", "Alarmes falsos estimados por hora", "Intervalo de 95%", "Sequências de 2 janelas",
                 "Alarmes", "Posição do limiar na calibração", "Faixa esperada de janelas acima do limiar"], rows),
@@ -312,9 +332,9 @@ def _components_block(reference_dir: Path) -> dict:
 def build_digest(results_dir: str | Path, reference_dir: str | Path) -> dict:
     """Cabeçalho, blocos na ordem R1…R8 e o que ficou de fora, em palavras."""
     results_dir, reference_dir = Path(results_dir), Path(reference_dir)
-    blocks, missing = [], []
+    blocks, missing, run = [], [], None
     try:
-        gpvs, partial = _gpvs_blocks(results_dir)
+        gpvs, partial, run = _gpvs_blocks(results_dir)
         blocks += gpvs
         missing += partial
     except ImportError:
@@ -328,7 +348,7 @@ def build_digest(results_dir: str | Path, reference_dir: str | Path) -> dict:
             blocks.append(maker(reference_dir))
         except Exception:
             missing.append(label)
-    header = HEADER + (" Não entraram neste pedido: " + "; ".join(missing) + "." if missing else "")
+    header = _header(run) + (" Não entraram neste pedido: " + "; ".join(missing) + "." if missing else "")
     return {"cabecalho": header, "blocos": blocks, "faltando": missing}
 
 
@@ -337,6 +357,7 @@ def _signature(results_dir: Path, reference_dir: Path) -> tuple:
     files = [reference_dir / "fmeca.json", reference_dir / "reparos.json", *sorted((reference_dir / "cenarios").glob("*.json"))]
     for folder in sorted(results_dir.glob("gpvs-*")) if results_dir.is_dir() else []:
         files += [folder / name for name in ("relatorio.json", "configuracao.json", "metricas_por_ensaio.csv")]
+    files += sorted((results_dir / autoencoders.KEY).glob("rodada-*/resultado.json"))  # uma rodada nova muda tudo
     marks = []
     for path in files:
         try:
