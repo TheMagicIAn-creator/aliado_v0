@@ -1,5 +1,6 @@
-"""Experimento de detecção (lotes 13–15): protocolo temporal M14 e contrato do GPVS.
+"""Detecção de falhas por reconstrução (lotes 13–15): o que vale para qualquer base de dados.
 
-`protocol`, `threshold` e `metrics` são gerais e só dependem do numpy; `gpvs` aplica o
-protocolo ao GPVS-Faults. `models`, `training` (lote 14) e `evaluation` (lote 15) exigem o extra `ml`.
+`protocol` (partição temporal), `threshold` e `metrics` só dependem do numpy; `models` (os autoencoders) exige o
+extra `ml`; `registry` guarda as consultas aos dados de teste. O que aplica isto a uma base de dados fica na
+especialização da pesquisa (lote 36).
 """

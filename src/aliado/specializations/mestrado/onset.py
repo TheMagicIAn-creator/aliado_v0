@@ -17,8 +17,8 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
-from aliado.science.detection import gpvs
 from aliado.science.detection.protocol import robust_center_scale
+from aliado.specializations.mestrado import gpvs
 
 GRID = (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0)
 CLASSES = ("clara", "fraca", "nenhuma")

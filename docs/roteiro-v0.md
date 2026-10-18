@@ -405,8 +405,8 @@ seguintes. Eles saem juntos como 0.7.0, com um commit por lote, feito pelo pesqu
 | Lote | Entrega | Situação |
 |---|---|---|
 | 34 | Experimento AE Denso × AE-LSTM rodado do zero pela aba Ciência, que mostra só a rodada atual; resultados em JSON e Markdown; PDF formal por pedido, com o resultado anexo; comparação com um resultado salvo; specs vivas e o teste que liga cada requisito a um teste | Concluído localmente em 17/10/2026 |
-| 35 | Chat com tela mínima: o roteador local decide o que eram seletores e chaves; o pedido escrito vale como escolha; a leitura ampla só por pedido escrito, sempre confirmada | Combinado em 17/10/2026 |
-| 36 | O código do mestrado na especialização `src/aliado/specializations/mestrado/`, com zero menções ao domínio no núcleo; lançamento da 0.7.0 | Combinado em 17/10/2026 |
+| 35 | Chat com tela mínima: o roteador local decide o que eram seletores e chaves; o pedido escrito vale como escolha; a leitura ampla só por pedido escrito, sempre confirmada | Concluído localmente em 18/10/2026 |
+| 36 | O código do mestrado na especialização `src/aliado/specializations/mestrado/`, com zero menções ao domínio no núcleo; lançamento da 0.7.0 | Concluído localmente em 18/10/2026 |
 
 ### Decisões e resultado do lote 34 (17/10/2026)
 
@@ -418,6 +418,27 @@ seguintes. Eles saem juntos como 0.7.0, com um commit por lote, feito pelo pesqu
   27/09 bit a bit (pesos, escores, relatórios e início das falhas), em 2 min 16 s. Pela tela, uma rodada com
   separação de 2 janelas e teto de 150 épocas.
 - Veja a [validação do lote 34](migracao/validacao-lote-34.md).
+
+### Decisões e resultado do lote 35 (18/10/2026)
+
+- **Decisões do pesquisador:** tela mínima, sem os seletores e as chaves do chat; o pedido escrito vale como
+  escolha dele; a leitura ampla só por pedido escrito, sempre com confirmação; uma mensagem que é só um pedido
+  refaz a pergunta anterior; os limites de 30 mil e 300 mil tokens não mudam. Escopo na
+  [spec 0035](specs/0035-chat-tela-minima.md); requisitos vivos em [capacidades/roteador.md](specs/capacidades/roteador.md).
+- **Resultado:** num servidor de teste, sem custo, "Use o modelo maior. ..." respondeu com o modelo maior, e
+  "Faça a leitura ampla." sozinha refez a pergunta anterior, perguntou antes de ler e leu os 3 documentos inteiros.
+- Veja a [validação do lote 35](migracao/validacao-lote-35.md).
+
+### Decisões e resultado do lote 36 (18/10/2026)
+
+- **Decisões do pesquisador:** o código do mestrado na especialização, dentro do AL-IAdo; zero menções ao domínio
+  em qualquer arquivo do núcleo; sem descoberta por YAML; lançamento da 0.7.0 com os lotes 34 a 36. Escopo na
+  [spec 0036](specs/0036-mestrado-fora-do-nucleo.md); requisitos vivos em [capacidades/nucleo.md](specs/capacidades/nucleo.md).
+- **Resultado:** as menções no núcleo caíram de 294 linhas em 27 arquivos, na 0.6.0, para 227 em 22 no lote 34 e
+  para zero. A especialização
+  entrega ao núcleo a skill padrão, as pastas, as frases do roteador, o glossário, os comandos, as rotas da aba
+  Ciência e os resultados do chat; o núcleo os lê só quando precisa. Para quem usa, nada muda.
+- Veja a [validação do lote 36](migracao/validacao-lote-36.md).
 
 ## Specs de cada lote
 
@@ -436,6 +457,8 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 18–26 | [0018](specs/0018-biblioteca-memoria-anexos.md), [0019](specs/0019-qualidade-da-busca.md), [0020](specs/0020-aba-ciencia.md), [0021](specs/0021-gpvs-interface.md), [0022](specs/0022-correcoes-confianca.md), [0023](specs/0023-aba-ciencia-nova.md), [0024](specs/0024-inicio-das-falhas.md), [0025](specs/0025-confiabilidade-por-componente.md), [0026](specs/0026-resultados-no-chat.md) |
 | 27–33 | [0027](specs/0027-tela-envios-e-fontes.md), [0028](specs/0028-grafo-no-obsidian.md), [0029](specs/0029-indexacao-figuras-e-frases.md), [0030](specs/0030-leitura-integral.md), [0031](specs/0031-roteador-e-escada.md), [0032](specs/0032-busca-e-memoria.md), [0033](specs/0033-reescrita-aprendizado-resultados.md) |
 | 34 | [0034](specs/0034-experimentos.md) |
+| 35 | [0035](specs/0035-chat-tela-minima.md) |
+| 36 | [0036](specs/0036-mestrado-fora-do-nucleo.md) |
 
 ## Fica para a v1
 

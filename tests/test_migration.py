@@ -88,12 +88,19 @@ def test_import_does_not_initialize_sdk_ml_or_persistent_state(tmp_path):
     assert not tuple(tmp_path.iterdir())
 
 
+# Lote 36: a skill da pesquisa mudou de pasta. O manifesto do lote 1 fica como foi entregue, e o teste segue o arquivo.
+MOVED = {"src/aliado/skills/builtin/pesquisa-inversores/": "src/aliado/specializations/mestrado/skills/pesquisa-inversores/"}
+
+
 def test_user_decision_record_was_preserved_without_changes():
     root = Path(__file__).resolve().parents[1]
     manifest = json.loads((root / "docs/migracao/lote-01.json").read_text(encoding="utf-8"))
     assert len(manifest["source_commit"]) == 40
     for record in manifest["user_documents"]:
-        assert hashlib.sha256((root / record["destination"]).read_bytes()).hexdigest() == record["sha256"]
+        destination = record["destination"]
+        for old, new in MOVED.items():
+            destination = destination.replace(old, new)
+        assert hashlib.sha256((root / destination).read_bytes()).hexdigest() == record["sha256"]
 
 
 def test_cli_prepares_unicode_context_in_windows_pipe(tmp_path):

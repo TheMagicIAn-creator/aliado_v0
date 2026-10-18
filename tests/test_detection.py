@@ -9,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from aliado.science.detection import gpvs
 from aliado.science.detection.protocol import (
     RobustScaler,
     autocorrelation,
@@ -19,6 +18,7 @@ from aliado.science.detection.protocol import (
     sequences_from_flow,
     temporal_split,
 )
+from aliado.specializations.mestrado import gpvs
 
 ROOT = Path(__file__).resolve().parents[1]
 REAL_DATA = ROOT / "data" / "gpvs"

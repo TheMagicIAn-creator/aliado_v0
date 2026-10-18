@@ -1,4 +1,7 @@
-"""Descoberta e carregamento de skills locais empacotadas, sem executar scripts."""
+"""Descoberta e carregamento de skills locais empacotadas, sem executar scripts.
+
+As skills ficam em `skills/builtin/` e, as de uma especialização, em `specializations/<nome>/skills/` (lote 36):
+a pasta é percorrida sem citar a especialização pelo nome. Com o mesmo nome nas duas, vale a do núcleo."""
 
 from __future__ import annotations
 
@@ -23,19 +26,25 @@ class Skill:
     summary: SkillSummary
     instructions: str
     references: tuple[tuple[str, str], ...]
+    # A skill geral que a acompanha, quando ninguém escolheu outra (metadata.apoio, lote 36).
+    support: str | None = None
 
 
-def _root():
-    return files("aliado.skills").joinpath("builtin")
+def _roots() -> list:
+    roots = [files("aliado.skills").joinpath("builtin")]
+    for folder in sorted(files("aliado.specializations").iterdir(), key=lambda item: item.name):
+        if folder.joinpath("skills").is_dir():
+            roots.append(folder.joinpath("skills"))
+    return roots
 
 
 def _read_entry(name: str):
     if not _NAME.fullmatch(name) or len(name) > 64:
         raise ValueError("Nome de skill inválido.")
-    folder = _root().joinpath(name)
-    entry = folder.joinpath("SKILL.md")
-    if not entry.is_file():
+    folder = next((root.joinpath(name) for root in _roots() if root.joinpath(name, "SKILL.md").is_file()), None)
+    if folder is None:
         raise ValueError(f"Skill não encontrada: {name}")
+    entry = folder.joinpath("SKILL.md")
     text = entry.read_text(encoding="utf-8")
     parts = text.split("---", 2)
     if len(parts) != 3 or parts[0].strip():
@@ -50,11 +59,12 @@ def _read_entry(name: str):
 
 
 def list_skills() -> tuple[SkillSummary, ...]:
+    names = {folder.name for root in _roots() for folder in root.iterdir()
+             if folder.is_dir() and folder.joinpath("SKILL.md").is_file()}
     summaries = []
-    for folder in sorted(_root().iterdir(), key=lambda item: item.name):
-        if folder.is_dir() and folder.joinpath("SKILL.md").is_file():
-            _, header, _ = _read_entry(folder.name)
-            summaries.append(SkillSummary(header["name"], header["description"]))
+    for name in sorted(names):
+        _, header, _ = _read_entry(name)
+        summaries.append(SkillSummary(header["name"], header["description"]))
     return tuple(summaries)
 
 
@@ -76,4 +86,7 @@ def load_skill(name: str) -> Skill:
         if not resource.is_file():
             raise ValueError(f"Referência não encontrada: {reference}")
         references.append((reference, resource.read_text(encoding="utf-8")))
-    return Skill(SkillSummary(header["name"], header["description"]), body, tuple(references))
+    support = metadata.get("apoio")
+    if support is not None and (not isinstance(support, str) or not _NAME.fullmatch(support)):
+        raise ValueError("metadata.apoio deve ser o nome de uma skill.")
+    return Skill(SkillSummary(header["name"], header["description"]), body, tuple(references), support)

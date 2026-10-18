@@ -13,6 +13,7 @@ import pytest
 pytest.importorskip("starlette")
 from starlette.testclient import TestClient  # noqa: E402
 
+from aliado import routing  # noqa: E402
 from aliado.interfaces.web.app import WebSettings, create_app  # noqa: E402
 from aliado.interfaces.web.conversations import ConversationStore  # noqa: E402
 from aliado.interfaces.web.rendering import render_markdown  # noqa: E402
@@ -133,6 +134,12 @@ def ask(client, cid, text="Qual a taxa?", **extra):
     if response.headers.get("content-type", "").startswith("application/x-ndjson"):
         events = [json.loads(line) for line in response.text.splitlines() if line.strip()]
     return response, events
+
+
+def say(client, cid, text, **extra):
+    """Lote 35: o que a tela mínima envia, só o texto e o que um botão acrescenta."""
+    response = client.post(f"/api/conversas/{cid}/mensagens", json={"texto": text} | extra, headers=HEADERS)
+    return response, [json.loads(line) for line in response.text.splitlines() if line.strip() and response.is_success]
 
 
 def fim(events):
@@ -481,21 +488,21 @@ def test_results_switch_reaches_the_agent_and_defaults_to_the_research_skill(env
     client, built = env["client"], []
     env["settings"].results_digest = lambda: built.append(1) or RESULTS_DIGEST
     state = client.get("/api/estado").json()["resultados"]
-    assert state == {"disponivel": True, "skill": "pesquisa-inversores"} and not built  # o estado não monta o resumo
+    assert state == {"disponivel": True} and not built  # o estado não monta o resumo
     cid = new_conversation(client)
     ask(client, cid, RESULTS_QUESTION, resultados=True)
     assert env["calls"][-1]["results"] is RESULTS_DIGEST and len(built) == 1
-    ask(client, cid, RESULTS_QUESTION)  # sem o campo, vale ligado na skill do mestrado
+    ask(client, cid, RESULTS_QUESTION)  # sem o campo, os resultados ficam disponíveis (lote 35)
     assert env["calls"][-1]["results"] is RESULTS_DIGEST
-    ask(client, cid, RESULTS_QUESTION, skill="engenharia")
-    assert "results" not in env["calls"][-1]
+    ask(client, cid, RESULTS_QUESTION, skill="engenharia")  # quem decide é a pergunta, não a skill
+    assert env["calls"][-1]["results"] is RESULTS_DIGEST
     ask(client, cid, RESULTS_QUESTION, resultados=False)
     assert "results" not in env["calls"][-1]
     # Lote 31: ligado, o resumo só segue quando a pergunta é sobre os resultados.
     ask(client, cid, "Obrigado, ficou claro.", resultados=True)
-    assert "results" not in env["calls"][-1] and len(built) == 2
+    assert "results" not in env["calls"][-1] and len(built) == 3  # um resumo por pergunta sobre os resultados
     stored = client.get(f"/api/conversas/{cid}").json()["messages"]
-    assert [m["resultados"] for m in stored if m["role"] == "user"] == [True, True, False, False, True]
+    assert [m["resultados"] for m in stored if m["role"] == "user"] == [True, True, True, False, True]
 
 
 def test_cited_results_are_stored_rendered_and_unverified_numbers_leave_the_history(env):
@@ -864,14 +871,12 @@ def test_library_tab_gave_place_to_the_documents_panel(env):
     client = env["client"]
     page, script = client.get("/").text, client.get("/static/app.js").text.replace("\r\n", "\n")
     assert 'id="nav-library"' not in page and 'id="library-view"' not in page and "Biblioteca</span></button>" not in page
-    for wanted in ('id="docs-panel"', 'id="docs-open"', 'id="docs-files"', 'id="pinned"', 'id="reading-mode"',
-                   'id="reading-budget"', '<option value="auto">Leitura automática</option>', '<option value="integral">Leitura ampla</option>',
-                   '<option value="trechos">Só trechos</option>', 'id="library-add"', 'id="library-cards"'):
+    for wanted in ('id="docs-panel"', 'id="docs-open"', 'id="docs-files"', 'id="pinned"', 'id="library-add"',
+                   'id="library-cards"'):
         assert wanted in page, wanted
     assert "openLibrary" not in script and "nav-library" not in script and "/markdown" not in script
     # Uma trava por comportamento da tela (a suíte não roda o JavaScript).
     for pinned in (
-        'leitura: $("reading-mode").value, teto: Number($("reading-budget").value),',
         "if (waiting.length) await setPins(waiting);",
         'json: { fixados: list.map((doc) => doc.id) }',
         "pinDocument({ id: sent.id, title: sent.title, referencia: sent.referencia });",
@@ -883,7 +888,6 @@ def test_library_tab_gave_place_to_the_documents_panel(env):
         'api("/api/biblioteca/arquivos", { method: "DELETE" })',
         "por até 48 horas",
         "com a busca na web, a leitura foi por trechos",
-        '$("budget-box").hidden = !(whole || (!state.router && pins().length)) || !state.readingAvailable;',
         "‹ Todos os documentos",
     ):
         assert pinned in script, pinned
@@ -907,8 +911,6 @@ def test_page_asks_for_a_restart_when_the_server_is_older(env):
         'fetch("/static/app.js", { method: "HEAD", cache: "no-store" })',
         "changed > Date.parse(data.iniciado) + 2000",
         '$("restart-note").hidden = !stale;',
-        "state.readingAvailable = Boolean(data.leitura);",
-        '$("reading-box").hidden = !library || !state.readingAvailable;',
     ):
         assert pinned in script, pinned
 
@@ -958,6 +960,7 @@ def test_router_chooses_model_skill_and_reading_and_the_reply_keeps_the_route(en
 
 
 def test_a_reading_above_the_ceiling_asks_first_and_the_daily_warning_asks_every_time(env):
+    """ROT-07: acima de 30 mil tokens, a confirmação; depois de 300 mil no dia, toda leitura acima dos trechos."""
     client, calls = env["client"], env["calls"]
     cid = new_conversation(client)
     env["reply"]["confirm"] = 46_000
@@ -1069,28 +1072,88 @@ def test_reply_offers_the_next_rung_with_its_cost(env):
     assert reply["aprofundar"] == {"leitura": "paginas", "tokens": 100 - len("IGBT...") // 3 + 10 * (560 + 55)}
     reply = fim(ask(client, cid, LIBRARY_QUESTION, leitura="documento", documentos=["d1", "x"])[1])["mensagens"][1]
     assert env["calls"][-1]["reading"]["fixed"] == ["d1"]  # o documento pedido pelo botão, se está na biblioteca
-    assert reply["aprofundar"]["leitura"] == "integral" and reply["aprofundar"]["ate"] is True
+    assert reply["aprofundar"] is None  # lote 35: "Ler mais fundo" para no documento; a leitura ampla, só por escrito
     assert fim(ask(client, cid, LIBRARY_QUESTION, leitura="integral")[1])["mensagens"][1]["aprofundar"] is None
     assert fim(ask(client, cid, LIBRARY_QUESTION, leitura="trechos", web=True)[1])["mensagens"][1]["aprofundar"] is None
 
 
-def test_page_has_the_automatic_choices_the_route_line_and_the_confirmation(env):
+def test_without_fields_the_router_decides_and_a_written_request_wins_over_it(env):
+    """ROT-02 e ROT-03: sem os campos da tela, o roteador escolhe, com a biblioteca e sem a web; o pedido escrito
+    vale como escolha sua e sai do texto que vai ao modelo; o campo de um botão vale sobre ele."""
+    client, calls = two_models(env), env["calls"]
+    cid = new_conversation(client)
+    reply = fim(say(client, cid, "Obrigado, era isso.")[1])["mensagens"][1]
+    assert calls[-1]["model_alias"] == "flash_lite" and calls[-1]["web_search"] is False
+    assert reply["rota"]["automatico"] == {"modelo": True, "skill": True, "leitura": True} and reply["rota"]["pedidos"] == []
+    say(client, cid, LIBRARY_QUESTION)
+    assert calls[-1]["library"] is env["library"]  # a biblioteca fica à mão do roteador
+    user, reply = fim(say(client, cid, "Use o modelo maior. Obrigado, era isso.")[1])["mensagens"]
+    assert calls[-1]["model_alias"] == "flash" and calls[-1]["question"] == "Obrigado, era isso."
+    assert user["content"] == "Use o modelo maior. Obrigado, era isso."  # na conversa, fica o que foi escrito
+    assert reply["rota"]["automatico"]["modelo"] is False and reply["rota"]["pedidos"] == ["o modelo maior"]
+    say(client, cid, "Use o modelo maior. Obrigado, era isso.", modelo="flash_lite")
+    assert calls[-1]["model_alias"] == "flash_lite"
+    say(client, cid, "Sem biblioteca e busque na web: qual a taxa de falha de um IGBT?")
+    assert calls[-1]["library"] is None and calls[-1]["web_search"] is True
+    assert calls[-1]["question"] == "Qual a taxa de falha de um IGBT?"
+
+
+def test_wide_reading_comes_only_by_written_request_and_always_asks_first(env):
+    """ROT-04: a leitura ampla só vem por pedido escrito e pede confirmação mesmo abaixo do teto de 30 mil tokens;
+    a confirmação não fica valendo para a mensagem seguinte."""
+    client, calls = env["client"], env["calls"]
+    cid = new_conversation(client)
+    env["reply"]["confirm"] = 9_000
+    _, events = say(client, cid, f"Faça a leitura ampla. {LIBRARY_QUESTION}")
+    assert [event["tipo"] for event in events] == ["confirmar"]
+    assert (events[0]["motivo"], events[0]["lembrar"], events[0]["modo"]) == ("ampla", False, "integral")
+    assert (calls[-1]["ceiling"], calls[-1]["salt"]) == (0, "ampla") and calls[-1]["question"] == LIBRARY_QUESTION
+    _, events = say(client, cid, f"Faça a leitura ampla. {LIBRARY_QUESTION}", confirmado="chave1")
+    assert fim(events)["mensagens"][1]["rota"]["rung"] == routing.WIDE
+    assert [event["tipo"] for event in say(client, cid, f"Leia todos os documentos inteiros. {LIBRARY_QUESTION}")[1]] \
+        == ["confirmar"]
+    # Sem o pedido, o roteador não chega à leitura ampla, nem com a pergunta refeita.
+    for _ in range(2):
+        assert fim(say(client, cid, LIBRARY_QUESTION)[1])["mensagens"][1]["rota"]["rung"] < routing.WIDE
+
+
+def test_a_message_with_only_a_request_redoes_the_previous_question(env):
+    """ROT-05: "busque na web" sozinho refaz a pergunta anterior com o pedido; sem pergunta anterior, a tela pede."""
+    client, calls = env["client"], env["calls"]
+    response, _ = say(client, new_conversation(client), "Busque na web.")
+    assert response.status_code == 400 and response.json()["erro"] == "Escreva a pergunta junto do pedido."
+    cid = new_conversation(client)
+    say(client, cid, f"Use o modelo maior. {LIBRARY_QUESTION}")
+    user, reply = fim(say(client, cid, "Busque na web, por favor")[1])["mensagens"]
+    assert calls[-1]["question"] == LIBRARY_QUESTION and calls[-1]["web_search"] is True
+    assert reply["rota"]["refeita"] is True and reply["rota"]["reasons"][0].startswith("a mensagem só tinha um pedido")
+    assert reply["rota"]["pedidos"] == ["o modelo maior", "com busca na web"]  # os pedidos de antes continuam
+    assert user["content"] == "Busque na web, por favor"
+
+
+def test_page_has_no_choice_controls_only_the_route_line_and_the_confirmation(env):
+    """Lote 35: saem os seletores e as chaves; o pedido escrito na mensagem é a escolha dele."""
     client = env["client"]
     page, script = client.get("/").text, client.get("/static/app.js").text.replace("\r\n", "\n")
-    for wanted in ('<option value="auto">Leitura automática</option>', '<option value="paginas">Páginas inteiras</option>',
-                   '<option value="documento">Documento inteiro</option>'):
-        assert wanted in page, wanted
+    for gone in ('id="skill"', 'id="support"', 'id="model"', 'id="use-library"', 'id="reading-mode"',
+                 'id="reading-budget"', 'id="use-web"', 'id="use-results"', "Leitura automática"):
+        assert gone not in page, gone
+    assert 'id="write-hint"' in page and 'id="font"' in page and 'id="docs-open"' in page
+    assert "SKILL_LABELS" not in script and "aliado.rota." not in script
     for pinned in (
-        'state.router = Boolean(data.leitura?.modos);',
-        'el("option", { value: "auto", text: "Modelo automático" })',
-        '"auto": "Skill automática",',
-        'store.get("aliado.rota.skill", "auto")',
+        'texto: text, ...(remembered ? { confirmado: remembered } : {}), ...extra,',  # só o texto e os botões
+        '$("write-hint").textContent = WRITE_HINT;',
+        'text: "seguiu o seu pedido"',
+        'skill: conversationSkill(),',
+        'if (skill) form.append("skill", skill);',
+        'submitQuestion(question.content, { leitura: "paginas" })',
+        'event.motivo === "ampla" ? "Envia como está. A leitura ampla pergunta todas as vezes."',
+        'if (!state.models.length) return toast(',
         'else if (event.tipo === "confirmar") { final = event; handlers.onConfirm?.(event); }',
         'else if (event.tipo === "recomeco") handlers.onRestart?.(event);',
         'submitQuestion(text, { ...extra, confirmado: event.chave });',
         'submitQuestion(text, { leitura: "trechos" })',
         'submitQuestion(question.content, { leitura: deeper.leitura, documentos: deeper.documentos });',
-        '...(remembered ? { confirmado: remembered } : {}), ...extra,',
         'text: "partiu de uma resposta anterior"',
         "Ler mais fundo (",
     ):

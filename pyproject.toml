@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aliado"
-version = "0.6.0"
+version = "0.7.0"
 description = "AL-IAdo: agente modular para pesquisa e engenharia"
 requires-python = ">=3.12"
 dependencies = ["PyYAML>=6,<7", "python-dotenv>=1,<2"]
@@ -30,6 +30,8 @@ namespaces = false
 
 [tool.setuptools.package-data]
 "aliado.skills" = ["builtin/*/SKILL.md", "builtin/*/references/*.md"]
+# Lote 36: as skills de uma especialização ficam na pasta dela.
+"aliado.specializations.mestrado" = ["skills/*/SKILL.md", "skills/*/references/*.md"]
 "aliado.interfaces.web" = ["static/*.html", "static/*.css", "static/*.js",
                            "static/vendor/katex/*.js", "static/vendor/katex/*.css",
                            "static/vendor/katex/LICENSE", "static/vendor/katex/fonts/*.woff2",

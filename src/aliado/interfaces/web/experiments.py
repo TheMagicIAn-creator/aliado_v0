@@ -25,7 +25,7 @@ from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from aliado import experiments
-from aliado.interfaces.web.science import _error, _shown
+from aliado.interfaces.web.science import _shown, error
 
 MAX_LINES = 40
 MAX_SAVED_BYTES = 5 * 1024 * 1024
@@ -182,16 +182,16 @@ def experiment_routes(settings, lock) -> list[Route]:
                     *(["--frase", phrase] if phrase else [])]
             job = runner.submit(experiment, args, folder)
         except ValueError as exc:
-            return _error(str(exc))
+            return error(str(exc))
         except RuntimeError as exc:
-            return _error(str(exc), 409)
+            return error(str(exc), 409)
         return JSONResponse({"tarefa": job, "pasta": folder.name}, 202)
 
     async def cancel(request: Request):
         try:
             runner.cancel()
         except RuntimeError as exc:
-            return _error(str(exc), 409)
+            return error(str(exc), 409)
         return JSONResponse({"cancelando": True})
 
     async def report(request: Request):
@@ -207,9 +207,9 @@ def experiment_routes(settings, lock) -> list[Route]:
                 return result, render(result, experiment.report(result))
             result, data = await run_in_threadpool(build)
         except ValueError as exc:
-            return _error(str(exc), 404)
+            return error(str(exc), 404)
         except ImportError:
-            return _error("Faltam o matplotlib e o pypdf (extra 'science') para montar o PDF.", 404)
+            return error("Faltam o matplotlib e o pypdf (extra 'science') para montar o PDF.", 404)
         name = f"AL-IAdo_{_slug(experiment.TITLE)}_{result.get('rodada') or 'rodada'}.pdf"
         return Response(data, media_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="{name}"'})
@@ -223,7 +223,7 @@ def experiment_routes(settings, lock) -> list[Route]:
                 raise ValueError("Envie o PDF exportado pela aba Ciência ou o resultado.json.")
             data = await upload.read(MAX_SAVED_BYTES + 1)
             if len(data) > MAX_SAVED_BYTES:
-                return _error("Arquivo acima de 5 MB.", 413)
+                return error("Arquivo acima de 5 MB.", 413)
 
             def build():
                 now = experiments.current(settings.results_dir, experiment)
@@ -238,7 +238,7 @@ def experiment_routes(settings, lock) -> list[Route]:
                 return comparison
             return JSONResponse(await run_in_threadpool(build))
         except ValueError as exc:
-            return _error(str(exc))
+            return error(str(exc))
 
     return [
         Route("/api/experimentos", listing),

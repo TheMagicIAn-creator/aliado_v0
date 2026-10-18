@@ -14,8 +14,9 @@ torch = pytest.importorskip("torch")
 
 from test_detection import ROOT, SHORT_PURGE, write_synthetic  # noqa: E402
 
-from aliado.science.detection import gpvs  # noqa: E402
-from aliado.science.detection.evaluation import (  # noqa: E402
+from aliado.science.detection.models import Hyperparameters  # noqa: E402
+from aliado.specializations.mestrado import gpvs  # noqa: E402
+from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     EvaluationConfig,
     TrainedDetectors,
     export_evaluation,
@@ -23,8 +24,7 @@ from aliado.science.detection.evaluation import (  # noqa: E402
     run_metrics,
     score_all,
 )
-from aliado.science.detection.models import Hyperparameters  # noqa: E402
-from aliado.science.detection.training import (  # noqa: E402
+from aliado.specializations.mestrado.training import (  # noqa: E402
     ExperimentConfig,
     export_training,
     train_detectors,

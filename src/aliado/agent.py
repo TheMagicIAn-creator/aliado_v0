@@ -490,8 +490,8 @@ def prepare_request(question: str, *, skill_name: str | None = None,
         allowed = named_documents(question, cards) if restricted else ()
         research = library = ResearchLibrary(library, search_plan, allowed)
     messages = [{"role": "developer", "content": CORE_INSTRUCTIONS}]
-    if skill_name == "pesquisa-inversores" and supporting_skill_name is None:
-        supporting_skill_name = "confiabilidade"
+    if skill_name and supporting_skill_name is None:
+        supporting_skill_name = load_skill(skill_name).support  # o apoio que a própria skill declara (lote 36)
     for name in dict.fromkeys(name for name in (supporting_skill_name, skill_name) if name):
         skill = load_skill(name)
         messages.append({"role": "developer", "content": skill.instructions})

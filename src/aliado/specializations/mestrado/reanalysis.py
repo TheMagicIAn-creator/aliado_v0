@@ -20,8 +20,11 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.science.detection import gpvs, onset
-from aliado.science.detection.evaluation import (
+from aliado.science.detection.metrics import markov_alarm_rate
+from aliado.science.detection.models import MODEL_NAMES, MODELS
+from aliado.science.detection.threshold import calibrate_threshold, false_alarm_interval
+from aliado.specializations.mestrado import gpvs, onset
+from aliado.specializations.mestrado.evaluation import (
     PAIRED_NAMES,
     EvaluationConfig,
     TrainedDetectors,
@@ -32,10 +35,7 @@ from aliado.science.detection.evaluation import (
     run_metrics,
     summarize,
 )
-from aliado.science.detection.metrics import markov_alarm_rate
-from aliado.science.detection.models import MODEL_NAMES, MODELS
-from aliado.science.detection.threshold import calibrate_threshold, false_alarm_interval
-from aliado.science.detection.training import environment
+from aliado.specializations.mestrado.training import environment
 
 EVALUATION = "gpvs-avaliacao-001"
 PERCENTILES = (95.0, 97.5, 99.0)

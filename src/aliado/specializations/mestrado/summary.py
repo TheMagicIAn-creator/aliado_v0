@@ -23,10 +23,9 @@ from pathlib import Path
 import numpy as np
 
 from aliado import experiments
-from aliado.science.detection import gpvs
 from aliado.science.detection.metrics import alarm_starts, first_alarm
 from aliado.science.detection.threshold import false_alarm_interval
-from aliado.specializations.mestrado import autoencoders
+from aliado.specializations.mestrado import autoencoders, gpvs
 
 EVALUATION = autoencoders.LEGACY_EVALUATION
 REANALYSIS_PREFIX = "gpvs-reanalise-"

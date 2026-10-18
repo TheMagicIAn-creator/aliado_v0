@@ -129,7 +129,7 @@ def component_view(table: dict, scenarios: dict[str, dict], repairs: dict, *, po
         "ressalvas": list(repairs["ressalvas"]),
         "limites": [
             "Taxa de falha constante (vida exponencial), sem mortalidade infantil nem desgaste.",
-            "Cada grupo é analisado isoladamente, sem topologia do inversor.",
+            "Cada grupo é analisado isoladamente, sem a topologia do equipamento.",
             "Disponibilidade estacionária: MTBF / (MTBF + parada por falha), com o MTBF em horas de calendário.",
             "Horas paradas por ano = falhas por ano × parada por falha.",
         ],

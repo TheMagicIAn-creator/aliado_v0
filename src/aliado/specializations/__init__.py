@@ -21,3 +21,8 @@ def installed() -> tuple:
 def gather(attribute: str) -> list:
     """O atributo de cada especialização que o tem, na mesma ordem."""
     return [getattr(package, attribute) for package in installed() if hasattr(package, attribute)]
+
+
+def first(attribute: str, default=None):
+    """O atributo da primeira especialização que o tem (a skill padrão, as pastas da pesquisa); sem nenhuma, `default`."""
+    return next(iter(gather(attribute)), default)

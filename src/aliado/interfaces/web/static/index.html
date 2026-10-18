@@ -21,18 +21,8 @@
       <span class="brand-mark" aria-hidden="true">AL</span>
       <span class="brand-name">AL-IAdo</span>
     </button>
-    <label class="chip chip-skill" title="Especialização usada nas respostas. Em Skill automática, o AL-IAdo escolhe pela mensagem e mostra a escolha sob a resposta.">
-      <span class="chip-dot" aria-hidden="true"></span>
-      <select id="skill" aria-label="Skill"></select>
-    </label>
-    <button class="chip chip-toggle" id="support" type="button" aria-pressed="false"
-            title="Apoio da skill geral de confiabilidade">+ confiabilidade</button>
     <div class="topbar-spacer"></div>
     <span class="usage" id="usage" title="Tokens usados hoje e no total"></span>
-    <label class="model" title="Modelo do Gemini. Em Modelo automático, o AL-IAdo usa o modelo menor para conversa e consultas simples, e o maior para síntese, figuras, tabelas e resultados.">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
-      <select id="model" aria-label="Modelo"></select>
-    </label>
     <label class="model font-choice" title="Fonte do texto">
       <span class="font-mark" aria-hidden="true">Aa</span>
       <select id="font" aria-label="Fonte do texto"></select>
@@ -85,14 +75,15 @@
         <p class="welcome-kicker">Pesquisa e engenharia</p>
         <h1 class="welcome-title">Em que vamos trabalhar hoje?</h1>
         <p class="welcome-text">Pergunte, peça uma revisão ou solte um PDF aqui: ele entra na biblioteca e fica fixado
-          na conversa, lido inteiro a cada pergunta. Com a biblioteca ligada, as respostas citam as páginas dos
-          seus documentos.</p>
+          na conversa, lido inteiro a cada pergunta. O AL-IAdo escolhe sozinho a skill, o modelo e quanto ler, e as
+          respostas citam as páginas dos seus documentos.</p>
+        <p class="welcome-hint" id="write-hint"></p>
         <div class="welcome-suggestions" id="suggestions"></div>
       </section>
     </div>
     <p class="note note-warn restart-note" id="restart-note" role="status" hidden>O AL-IAdo em execução é anterior a
       esta tela. Pare-o no terminal (Ctrl+C) e inicie de novo para as mudanças valerem. Até lá, as respostas seguem
-      as regras antigas, e as escolhas novas da tela não têm efeito.</p>
+      as regras antigas, e os pedidos escritos na mensagem não têm efeito.</p>
     <form class="composer" id="composer">
       <div class="pinned" id="pinned" aria-label="Documentos fixados nesta conversa" hidden></div>
       <textarea id="question" rows="1" placeholder="Pergunte ou solte um PDF para ler na conversa"
@@ -103,38 +94,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m20 11-8.2 8.2a5 5 0 0 1-7-7L13 4a3.4 3.4 0 0 1 4.9 4.9l-8.2 8.2a1.7 1.7 0 0 1-2.4-2.4L15 7"/></svg>
         </button>
         <input type="file" id="file" accept=".pdf,.md,.json" hidden multiple>
-        <label class="switch" title="Permite consultar a biblioteca. Na leitura automática, o AL-IAdo só a consulta quando a pergunta pede; a resposta cita as páginas dos documentos.">
-          <input type="checkbox" id="use-library">
-          <span class="switch-track" aria-hidden="true"></span>
-          <span id="library-label">Usar biblioteca</span>
-        </label>
-        <label class="reading" id="reading-box" hidden
-               title="Como os documentos vão ao modelo. Leitura automática: o AL-IAdo começa pelo mais barato que responde à pergunta e só lê mais quando preciso; acima de 30 mil tokens, pergunta antes. Só trechos: os trechos que a busca achou. Páginas inteiras: as 10 páginas mais próximas da pergunta, com figuras e tabelas. Documento inteiro: o documento citado na pergunta, o fixado na conversa ou o mais bem colocado na busca. Leitura ampla: os documentos que a busca escolher, inteiros, de 150 a 400 mil tokens por pergunta.">
-          <select id="reading-mode" aria-label="Como ler os documentos da biblioteca">
-            <option value="auto">Leitura automática</option>
-            <option value="trechos">Só trechos</option>
-            <option value="paginas">Páginas inteiras</option>
-            <option value="documento">Documento inteiro</option>
-            <option value="integral">Leitura ampla</option>
-          </select>
-        </label>
-        <label class="reading" id="budget-box" hidden
-               title="Teto de leitura por pergunta: quantos tokens de documentos podem ir ao modelo. Uma página de PDF custa cerca de 600 tokens.">
-          <select id="reading-budget" aria-label="Teto de leitura por pergunta"></select>
-        </label>
         <button class="chip chip-docs" id="docs-open" type="button" aria-haspopup="dialog" aria-expanded="false"
                 title="Documentos da biblioteca: fixar na conversa, ficha, figuras e apagar">Documentos</button>
-        <label class="switch" title="Permite ao Gemini pesquisar na web; a busca pode ter custo à parte">
-          <input type="checkbox" id="use-web">
-          <span class="switch-track" aria-hidden="true"></span>
-          <span>Buscar na web</span>
-        </label>
-        <label class="switch" id="results-switch" hidden
-               title="Permite enviar ao modelo os resultados da pesquisa (GPVS, FMECA e confiabilidade), em blocos conferidos. Eles só seguem quando a pergunta é sobre os resultados ou sobre o método.">
-          <input type="checkbox" id="use-results">
-          <span class="switch-track" aria-hidden="true"></span>
-          <span>Usar resultados</span>
-        </label>
         <span class="composer-hint">Enter envia · Shift+Enter quebra linha</span>
         <button class="send" id="send" type="submit" aria-label="Enviar">
           <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>

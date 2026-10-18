@@ -20,6 +20,7 @@ def test_skills_are_discoverable_without_loading_references(monkeypatch):
 
 
 def test_domain_context_only_enters_selected_requests():
+    """NUC-03: a skill da pesquisa vem da pasta da especialização e declara no SKILL.md o apoio que leva junto."""
     generic = prepare_request("Organize esta tarefa")
     engineering = prepare_request("Revise esta interface", skill_name="engenharia")
     research = prepare_request("O que falta decidir?", skill_name="pesquisa-inversores")
@@ -37,6 +38,9 @@ def test_domain_context_only_enters_selected_requests():
         assert not any(term in context for term in ("GPVS", "FMECA", "p99", "20 anos"))
     assert research.messages[-1] == {"role": "user", "content": "O que falta decidir?"}
     assert research.tools is None
+    assert "specializations" in str(library._roots()[-1]) and skill.support == "confiabilidade"
+    assert research.messages[1]["content"] == library.load_skill("confiabilidade").instructions  # o apoio vai antes
+    assert library.load_skill("engenharia").support is None and len(engineering.messages) == 3
 
 
 def test_decided_physical_rates_enter_only_the_research_context():
@@ -72,11 +76,11 @@ def test_preparation_reads_only_packaged_skills(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     original_open = Path.open
     reads = []
-    package_root = Path(library.__file__).resolve().parent / "builtin"
+    package_roots = [Path(str(root)).resolve() for root in library._roots()]  # as do núcleo e as das especializações
 
     def guarded_open(path, *args, **kwargs):
         resolved = path.resolve()
-        assert resolved.is_relative_to(package_root), f"Leitura externa: {resolved}"
+        assert any(resolved.is_relative_to(root) for root in package_roots), f"Leitura externa: {resolved}"
         reads.append(resolved)
         return original_open(path, *args, **kwargs)
 
@@ -100,7 +104,7 @@ def test_reference_cannot_escape_its_folder(tmp_path, monkeypatch):
         "---\nname: test-skill\ndescription: teste\nmetadata:\n"
         "  references: '../../secret.md'\n---\nTexto", encoding="utf-8",
     )
-    monkeypatch.setattr(library, "_root", lambda: tmp_path)
+    monkeypatch.setattr(library, "_roots", lambda: [tmp_path])
     with pytest.raises(ValueError, match="referência inválido"):
         library.load_skill("test-skill")
 
@@ -112,7 +116,7 @@ def test_missing_declared_reference_fails_visibly(tmp_path, monkeypatch):
         "---\nname: test-skill\ndescription: teste\nmetadata:\n"
         "  references: 'missing.md'\n---\nTexto", encoding="utf-8",
     )
-    monkeypatch.setattr(library, "_root", lambda: tmp_path)
+    monkeypatch.setattr(library, "_roots", lambda: [tmp_path])
     with pytest.raises(ValueError, match="Referência não encontrada"):
         library.load_skill("test-skill")
 

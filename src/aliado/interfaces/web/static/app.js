@@ -4,15 +4,15 @@ const $ = (id) => document.getElementById(id);
 // A tela inicial sai do DOM quando há mensagens; a referência permite recolocá-la.
 const WELCOME = $("welcome");
 // pendingPins: documentos fixados antes de a conversa existir (tela de apresentação); seguem na primeira pergunta.
-const state ={ conversation: null, models: [], skills: [], documents: 0, busy: false, sourcesOf: null,
-  infoAnchor: null, reading: null, readingAvailable: true, pendingPins: [], router: true, confirmed: {} };
-const SKILL_LABELS = {
-  "auto": "Skill automática",
-  "pesquisa-inversores": "Pesquisa · inversores",
-  "engenharia": "Engenharia",
-  "confiabilidade": "Confiabilidade",
-  "nenhuma": "Sem especialização",
-};
+const state = { conversation: null, models: [], busy: false, sourcesOf: null, infoAnchor: null, reading: null,
+  pendingPins: [], confirmed: {} };
+// O rótulo sai do nome da skill: "engenharia" → "Engenharia"; sem skill, "Sem especialização".
+const skillLabel = (name) => name && name !== "nenhuma"
+  ? name[0].toUpperCase() + name.slice(1).replace(/-/g, " · ") : "Sem especialização";
+// Lote 35: a tela não tem seletores; quem quer escolher escreve o pedido na própria mensagem.
+const WRITE_HINT = "Para escolher, escreva na mensagem: “use o modelo maior”, “só trechos”, “leia o documento inteiro”, "
+  + "“leitura ampla”, “busque na web” ou “sem biblioteca”. Uma mensagem só com o pedido refaz a pergunta anterior.";
+$("write-hint").textContent = WRITE_HINT;
 const SUGGESTIONS = [
   "Quais taxas de falha foram decididas para a FMECA?",
   "Resuma o protocolo de partição e calibração dos detectores",
@@ -148,59 +148,12 @@ applyFont(store.get("aliado.font", "padrao"));
 /* Estado geral */
 async function loadState() {
   const data = await api("/api/estado");
-  state.skills = data.skills;
+  // Lote 35: sem seletores na tela, o roteador escolhe a skill, o modelo e a leitura de cada mensagem.
   state.models = data.modelos;
-  state.documents = data.biblioteca.documentos;
-  // Roteador (lote 31): com ele, "automático" é o padrão da skill, do modelo e da leitura; um programa anterior
-  // não o conhece, e a tela fica com as escolhas manuais.
-  state.router = Boolean(data.leitura?.modos);
-  const skill = $("skill");
-  skill.replaceChildren(...[...(state.router ? ["auto"] : []),
-    ...data.skills.map((s) => s.name).filter((n) => n !== "confiabilidade"),
-    "confiabilidade", "nenhuma"].map((name) => el("option", { value: name, text: SKILL_LABELS[name] || name })));
-  skill.value = state.router ? store.get("aliado.rota.skill", "auto") : store.get("aliado.skill", "pesquisa-inversores");
-  if (!skill.value) skill.value = state.router ? "auto" : "pesquisa-inversores";
-  const model = $("model");
-  model.replaceChildren(...(state.router && data.modelos.length ? [el("option", { value: "auto", text: "Modelo automático" })] : []),
-    ...data.modelos.map((m) => el("option", { value: m.alias, text: m.model_id })));
-  if (!data.modelos.length) {
-    model.replaceChildren(el("option", { value: "", text: "nenhum modelo" }));
-    toast("Nenhum modelo Gemini configurado. Confira o .env e reinicie.");
-  }
-  const savedModel = state.router ? store.get("aliado.rota.model", "auto") : store.get("aliado.model", "flash");
-  if (savedModel === "auto" ? state.router : data.modelos.some((m) => m.alias === savedModel)) model.value = savedModel;
-  $("support").setAttribute("aria-pressed", store.get("aliado.support", "false"));
-  // Com o roteador, a biblioteca começa ligada: ele só a consulta quando a pergunta pede.
-  $("use-library").checked = store.get("aliado.library", state.router ? "true" : "false") === "true";
-  $("use-web").checked = store.get("aliado.web", "false") === "true";
-  state.results = data.resultados || { disponivel: false };
-  // Leitura dos documentos (lote 30): o modo e o teto ficam neste navegador; sem escolha, valem os do servidor.
-  state.reading = data.leitura || { modo: "integral", teto: 400000, tetos: [400000] };
-  state.readingAvailable = Boolean(data.leitura);
+  if (!data.modelos.length) toast("Nenhum modelo Gemini configurado. Confira o .env e reinicie.");
+  state.reading = data.leitura || {};
   checkServerAge(data);
-  const budgets = state.reading.tetos;
-  $("reading-budget").replaceChildren(...budgets.map((value, index) => el("option", { value: String(value),
-    text: budgets.length > 1 && index === budgets.length - 1 ? "até o limite do modelo" : `até ${formatTokens(value / 1000)} mil tokens` })));
-  const modes = state.reading.modos || ["integral", "trechos"];
-  for (const option of [...$("reading-mode").options]) if (!modes.includes(option.value)) option.remove();
-  $("reading-mode").value = store.get(state.router ? "aliado.rota.reading" : "aliado.reading", state.reading.modo);
-  if (!$("reading-mode").value) $("reading-mode").value = state.reading.modo;
-  $("reading-budget").value = store.get("aliado.budget", String(state.reading.teto));
-  if (!$("reading-budget").value) $("reading-budget").value = String(state.reading.teto);
-  updateResultsSwitch();
-  updateSupportVisibility();
-  updateLibraryLabel();
-  updateReadingControls();
   showUsage(data.uso);
-}
-
-// O modo aparece com a biblioteca ligada; o teto, só na leitura ampla (antes do lote 31, também com um fixado).
-function updateReadingControls() {
-  const library = $("use-library").checked;
-  const whole = library && $("reading-mode").value === "integral";
-  // Um programa anterior ao lote 30 ignora o modo e o teto: os controles somem, em vez de prometer o que não vem.
-  $("reading-box").hidden = !library || !state.readingAvailable;
-  $("budget-box").hidden = !(whole || (!state.router && pins().length)) || !state.readingAvailable;
 }
 
 // A página é lida do disco a cada carga; o programa em execução só muda quando é reiniciado. Se a página é mais
@@ -221,48 +174,11 @@ function showUsage(uso) {
   $("usage").textContent = `Hoje ${formatTokens(uso.hoje)} tokens · total ${formatTokens(uso.total)}`;
 }
 
-function updateSupportVisibility() {
-  const skill = $("skill").value;
-  // A pesquisa já carrega confiabilidade; o apoio só faz sentido para as demais.
-  $("support").hidden = skill === "pesquisa-inversores" || skill === "confiabilidade" || skill === "auto";
+// A skill da conversa (lote 35): a da última resposta; as anotações e as fichas dos envios ficam com ela.
+function conversationSkill() {
+  const name = (state.conversation?.messages || []).filter((m) => m.rota?.skill).at(-1)?.rota.skill;
+  return name && name !== "nenhuma" ? name : null;
 }
-
-/* Resultados da pesquisa no chat (lote 26): ligado por padrão só na skill do mestrado; a escolha fica por skill. */
-function updateResultsSwitch() {
-  const skill = $("skill").value;
-  $("results-switch").hidden = !state.results?.disponivel;
-  $("use-results").checked = store.get(`aliado.results.${skill}`,
-    String(skill === state.results?.skill || skill === "auto")) === "true";
-}
-
-function updateLibraryLabel() {
-  const count = state.documents;
-  $("library-label").textContent = count ? `Usar biblioteca (${count})` : "Usar biblioteca";
-}
-
-$("skill").addEventListener("change", () => {
-  store.set(state.router ? "aliado.rota.skill" : "aliado.skill", $("skill").value);
-  updateSupportVisibility();
-  updateResultsSwitch();
-});
-$("use-results").addEventListener("change", () =>
-  store.set(`aliado.results.${$("skill").value}`, String($("use-results").checked)));
-$("model").addEventListener("change", () => store.set(state.router ? "aliado.rota.model" : "aliado.model", $("model").value));
-$("support").addEventListener("click", () => {
-  const next = $("support").getAttribute("aria-pressed") !== "true";
-  $("support").setAttribute("aria-pressed", String(next));
-  store.set("aliado.support", String(next));
-});
-$("use-library").addEventListener("change", () => {
-  store.set("aliado.library", String($("use-library").checked));
-  updateReadingControls();
-});
-$("use-web").addEventListener("change", () => store.set("aliado.web", String($("use-web").checked)));
-$("reading-mode").addEventListener("change", () => {
-  store.set(state.router ? "aliado.rota.reading" : "aliado.reading", $("reading-mode").value);
-  updateReadingControls();
-});
-$("reading-budget").addEventListener("change", () => store.set("aliado.budget", $("reading-budget").value));
 
 /* Documentos fixados na conversa (lote 30): vão inteiros ao modelo nas perguntas dela que consultam os documentos. */
 function pins() { return state.conversation ? (state.conversation.fixados || []) : state.pendingPins; }
@@ -306,7 +222,6 @@ function renderPins() {
       el("button", { class: "pin-remove", type: "button", "aria-label": `Soltar ${name} desta conversa`,
         title: "Soltar desta conversa", text: "×", onclick: () => unpinDocument(doc.id) }));
   }));
-  updateReadingControls();
   if (!$("docs-panel").hidden) markPinnedDocuments();
   placeUploads();
 }
@@ -465,7 +380,7 @@ function renderMessage(message) {
   if (route) {
     // Lote 31: o que o AL-IAdo escolheu para esta resposta (modelo, skill e leitura), com o motivo na dica.
     const auto = route.automatico || {};
-    const who = (flag, what) => `${what}: ${flag ? "escolha do AL-IAdo" : "fixado por você"}`;
+    const who = (flag, what) => `${what}: ${flag ? "escolha do AL-IAdo" : "pedido por você"}`;
     const earlier = (route.tentativas || []).map((item) => item.descartada
       ? ` Depois, uma leitura por ${item.leitura} (${formatTokens(item.tokens)} tokens) não melhorou a resposta e foi descartada.`
       : ` Antes, uma leitura por ${item.leitura} (${formatTokens(item.tokens)} tokens) não achou a resposta.`).join("");
@@ -475,8 +390,14 @@ function renderMessage(message) {
       plano: ` Uma busca para cada parte do pedido: ${(route.partes || []).join("; ")}.` }[route.busca] || "";
     meta.append(el("span", { class: "route",
       title: `${who(auto.modelo, "Modelo")}; ${who(auto.skill, "skill")}; ${who(auto.leitura, "leitura")}. `
-        + `Motivo: ${(route.reasons || []).join("; ")}.${search}${earlier} Para fixar uma escolha, use os seletores da tela.`,
-      text: [message.model, SKILL_LABELS[route.skill || "nenhuma"] || route.skill, route.leitura].filter(Boolean).join(" · ") }));
+        + `Motivo: ${(route.reasons || []).join("; ")}.${search}${earlier} ${WRITE_HINT}`,
+      text: [message.model, skillLabel(route.skill), route.leitura].filter(Boolean).join(" · ") }));
+    if (route.pedidos?.length) {
+      // Lote 35: o que você escreveu como pedido saiu do texto e valeu como escolha sua.
+      meta.append(el("span", { class: "route", text: "seguiu o seu pedido",
+        title: `Você pediu por escrito: ${route.pedidos.join("; ")}.`
+          + (route.refeita ? " A mensagem só tinha o pedido: a pergunta anterior foi refeita com ele." : "") }));
+    }
     if (route.trilha) {
       // Lote 31: o atalho, sem nova busca; lote 33: com mais partes ou depois de uma reclamação, só apoio à busca.
       const asked = `Pergunta muito parecida com a de ${new Date(route.trilha.data).toLocaleDateString("pt-BR")}: `
@@ -492,7 +413,7 @@ function renderMessage(message) {
       meta.append(el("span", { class: "route",
         title: route.aprendido.map((item) => `${item.campo}: como você escolheu em `
           + `${new Date(item.data).toLocaleDateString("pt-BR")}, em “${item.pergunta}”`).join("; ")
-          + ". Para mudar, fixe outra escolha nos seletores da tela; a nova vale daqui em diante.",
+          + ". Para mudar, peça outra por escrito; a nova vale daqui em diante.",
         text: "repetiu uma escolha sua" }));
     }
   } else if (message.model && message.provider !== "local") meta.append(el("span", { text: message.model }));
@@ -509,10 +430,8 @@ function renderMessage(message) {
         onclick: () => {
           const messages = state.conversation?.messages || [];
           const question = messages[messages.findIndex((m) => m.id === message.id) - 1];
-          if (question?.role === "user" && !state.busy) {
-            submitQuestion(question.content, { leitura: question.leitura === "auto" ? "paginas" : question.leitura,
-              biblioteca: question.biblioteca, web: question.web });
-          }
+          // O texto guardado traz os pedidos escritos, que valem de novo; a leitura sobe para as páginas inteiras.
+          if (question?.role === "user" && !state.busy) submitQuestion(question.content, { leitura: "paginas" });
         } }));
     }
   }
@@ -670,9 +589,8 @@ $("remember-form").addEventListener("submit", async (event) => {
       await api(`/api/memoria/${state.editing.id}/editar`, { method: "POST", json: { texto: text } });
       toast("Anotação editada. A versão anterior ficou no histórico.");
     } else {
-      const skill = $("skill").value;
       await api("/api/memoria", { method: "POST", json: {
-        texto: text, tipo: $("remember-kind").value, skill: skill === "nenhuma" ? null : skill,
+        texto: text, tipo: $("remember-kind").value, skill: conversationSkill(),
         conversa: state.conversation?.id || null } });
       toast("Anotação guardada na memória.");
     }
@@ -717,7 +635,7 @@ function renderMemoryCard(memory) {
       text: STATUS_LABELS[memory.status] }) : null,
     memory.diverges_skill ? el("span", { class: "badge badge-fail", title: "Vale sobre a skill até ser incorporada a ela",
       text: "diverge da skill" }) : null,
-    memory.skill ? el("span", { class: "badge", text: SKILL_LABELS[memory.skill] || memory.skill }) : null);
+    memory.skill ? el("span", { class: "badge", text: skillLabel(memory.skill) }) : null);
   const source = memory.source || {};
   const origin = el("div", { class: "memory-origin" }, el("span", { text: memorySource(memory) }));
   if (source.document_id) {
@@ -1077,7 +995,7 @@ function confirmReading(event, text, extra, bubble) {
     + `${read.length > 4 ? `; e mais ${read.length - 4}` : ""})` : "";
   const why = event.motivo === "dia"
     ? `Hoje já foram usados ${thousand(event.hoje)} tokens (o aviso é em ${thousand(event.aviso_diario)}). `
-    : "";
+    : event.motivo === "ampla" ? "Leitura ampla, como você pediu. " : "";
   const box = el("div", { class: "note note-ask" });
   const close = () => { box.remove(); bubble.remove(); };
   box.append(
@@ -1085,6 +1003,7 @@ function confirmReading(event, text, extra, bubble) {
     el("span", { class: "ask-actions" },
       el("button", { class: "secondary", type: "button", text: "Ler assim",
         title: event.lembrar ? "Envia como está. Nesta conversa, a mesma leitura não pergunta de novo."
+          : event.motivo === "ampla" ? "Envia como está. A leitura ampla pergunta todas as vezes."
           : "Envia como está. Depois do aviso diário, cada leitura pergunta de novo.",
         onclick: () => {
           close();
@@ -1102,7 +1021,7 @@ function confirmReading(event, text, extra, bubble) {
 
 async function submitQuestion(text, extra = {}) {
   if (state.busy) return;
-  if (!$("model").value) return toast("Nenhum modelo configurado. Confira o .env e reinicie.");
+  if (!state.models.length) return toast("Nenhum modelo configurado. Confira o .env e reinicie.");
   setBusy(true);
   state.controller = new AbortController();
   const token = Symbol("pedido");
@@ -1120,16 +1039,14 @@ async function submitQuestion(text, extra = {}) {
     const messages = $("messages");
     if (WELCOME.isConnected) WELCOME.remove();
     messages.append(renderMessage({ role: "user", content: text }));
-    // Com documentos inteiros, a resposta demora mais: o aviso diz o que está acontecendo.
-    const mode = extra.leitura || $("reading-mode").value;
-    const whole = !$("use-web").checked && $("use-library").checked && (mode === "integral" || mode === "documento");
+    // Com documentos inteiros, a resposta demora mais: o aviso diz o que está acontecendo. Sem o pedido na tela, só
+    // se sabe antes quando a leitura vem de um botão ou de uma confirmação; senão, o servidor avisa ao subir a leitura.
+    const whole = ["integral", "documento"].includes(extra.leitura) || Boolean(extra.confirmado);
     const thinkingText = el("span", { text: whole ? "AL-IAdo está lendo os documentos: pode levar alguns minutos…" : "AL-IAdo está pensando…" });
     const thinking = el("div", { class: "thinking" }, el("span", { class: "dots" }, el("i"), el("i"), el("i")), thinkingText);
     messages.append(thinking);
     messages.scrollTop = messages.scrollHeight;
     if ($("question").value.trim() === text) { $("question").value = ""; autosize(); }
-    const skill = $("skill").value;
-    const supportOn = !$("support").hidden && $("support").getAttribute("aria-pressed") === "true";
     const userBubble = messages.lastElementChild.previousElementSibling;
     const live = el("div", { class: "answer is-live" });
     const liveNode = el("article", { class: "msg-assistant" }, live);
@@ -1138,11 +1055,7 @@ async function submitQuestion(text, extra = {}) {
     try {
       const remembered = state.confirmed[state.conversation.id];
       await streamMessage(state.conversation.id, {
-        texto: text, skill, apoio: supportOn ? "confiabilidade" : null, modelo: $("model").value,
-        biblioteca: $("use-library").checked, web: $("use-web").checked,
-        resultados: !$("results-switch").hidden && $("use-results").checked,
-        leitura: $("reading-mode").value, teto: Number($("reading-budget").value),
-        ...(remembered ? { confirmado: remembered } : {}), ...extra,
+        texto: text, ...(remembered ? { confirmado: remembered } : {}), ...extra,
       }, {
         onRestart(event) {
           // A primeira leitura não achou a resposta: o texto parcial sai, e o aviso diz que a leitura subiu.
@@ -1415,13 +1328,8 @@ function placeUploads() {
 
 function announceUploads(text) { $("upload-status").textContent = text; }
 
-async function refreshDocuments() {
-  try {
-    const status = await api("/api/estado");
-    state.documents = status.biblioteca.documentos;
-    updateLibraryLabel();
-    if (!$("docs-panel").hidden && $("doc-viewer").hidden) loadLibrary();
-  } catch { /* o rótulo se atualiza no próximo envio */ }
+function refreshDocuments() {
+  if (!$("docs-panel").hidden && $("doc-viewer").hidden) loadLibrary();
 }
 
 // A tarefa de um lote que deixou de ser o mais recente (um envio feito em outra aba) é consultada pelo id.
@@ -1529,8 +1437,8 @@ async function uploadFiles(files, pin = true) {
   clearTimeout(uploads.timer);
   uploads.lote = uploads.lote || newBatch();
   uploads.hidden = false;
-  // A ficha de leitura herda a skill ativa, para a memória separar pesquisa de engenharia.
-  const skill = $("skill").value;
+  // A ficha de leitura herda a skill da conversa, para a memória separar pesquisa de engenharia.
+  const skill = conversationSkill();
   const conversation = state.conversation?.id || null;
   const added = accepted.map((file) => ({ name: file.name, file, id: null, job: null, error: null, sending: false,
     dismissed: false, pin, pinned: false, conversation }));
@@ -1544,7 +1452,7 @@ async function uploadFiles(files, pin = true) {
       const form = new FormData();
       form.append("arquivo", item.file);
       form.append("lote", uploads.lote);
-      if (skill !== "nenhuma") form.append("skill", skill);
+      if (skill) form.append("skill", skill);
       const job = await api("/api/biblioteca", { method: "POST", body: form });
       item.id = job.tarefa;
       item.job = { estado: "na fila" };

@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import asdict, dataclass
+from functools import cache
 
 from aliado.knowledge.metadata import named_documents
 from aliado.knowledge.stopwords import STOPWORDS, plain
@@ -19,7 +20,6 @@ NONE, PASSAGES, PAGES, DOCUMENT, WIDE = 0, 1, 2, 3, 4
 RUNG_NAMES = {NONE: "sem a biblioteca", PASSAGES: "trechos", PAGES: "páginas inteiras", DOCUMENT: "documento inteiro",
               WIDE: "leitura ampla"}
 CHEAP, STRONG = "flash_lite", "flash"
-DEFAULT_SKILL = "pesquisa-inversores"
 # Semelhança mínima com uma frase de exemplo, e a folga sobre o segundo tipo, para o classificador valer.
 MIN_SIMILARITY, MIN_MARGIN = 0.45, 0.02
 # A skill da conversa só troca quando outra ganha com esta folga.
@@ -45,7 +45,7 @@ _COLLECTION = re.compile(r"\b(quais|quantos|que|liste|listar) (sao )?(os |as )?(
 _VISUAL = re.compile(r"\b(figuras?|fig|tabelas?|quadros?|graficos?|diagramas?|arvores? de falhas?|equac(ao|oes)|formulas?|"
                      r"curvas?|esquemas?|fluxogramas?|matriz(es)?|formularios?|figures?|tables?|charts?|diagrams?|"
                      r"fault trees?|plots?|curves?)\b")
-_RESULTS = re.compile(r"\b(gpvs|noss[oa]s? (resultados?|dados|avaliac\w+|fmeca|experimentos?|modelos?)|meus? (resultados?|"
+_RESULTS = re.compile(r"\b(noss[oa]s? (resultados?|dados|avaliac\w+|fmeca|experimentos?|modelos?)|meus? (resultados?|"
                       r"experimentos?|modelos?|dados)|alarmes? falsos?|ensaios?|reanalise|aba ciencia)\b")
 # Resultados da pesquisa sem as palavras acima (lote 33). Os nomes dos modelos, dos ensaios e das métricas vêm do
 # resumo dos resultados que o servidor monta para o chat (`results_vocabulary`); sem ele, valem estes. Um modelo ou
@@ -80,6 +80,35 @@ _TASK = re.compile(r"\b(traceback|python|codigo|script|planilha|e-?mail|https?|n
 _CODE = re.compile(r"\b(traceback|python|codigo|script|programa\w*)\b")
 _SYNTHESIS = re.compile(r"\b(compare|comparar|explique|discuta|resuma|o que (e|sao)|como funciona|por que)\b")
 _INSTITUTION_NOISE = {"inc", "ltd", "and", "of", "for", "the"}
+# Pedidos escritos (lote 35): o que antes era um seletor ou uma chave da tela. Valem só no começo ou no fim de uma
+# oração ("Use o modelo maior. O que é MCC?", "Explique MCC usando o modelo maior"), para uma pergunta comum
+# ("o modelo maior detectou mais?") não virar pedido. O texto é comparado sem acento e em minúsculas.
+_USE = r"(?:use|usa|usar|usando|utilize|utilizando|responda com|responda usando|pelo|via)"
+_DIRECTIVES = (
+    ("modelo", STRONG, rf"{_USE} (?:o )?modelo (?:maior|mais forte|mais potente|mais capaz|completo|grande)"),
+    ("modelo", CHEAP, rf"{_USE} (?:o )?modelo (?:menor|mais barato|mais rapido|mais leve|pequeno)"),
+    ("biblioteca", False, r"sem (?:usar |consultar )?(?:a )?biblioteca|sem (?:usar |consultar )?(?:os )?(?:meus )?documentos|"
+                          r"nao (?:use|consulte|abra) (?:a biblioteca|os documentos)"),
+    ("leitura", WIDE, r"(?:faca |use |usando |com )?(?:a )?leitura ampla|(?:leia|ler|lendo) (?:todos )?os documentos inteiros"),
+    ("leitura", DOCUMENT, r"(?:leia|ler|lendo) (?:o|este|esse) (?:documento|artigo|livro|pdf|arquivo) (?:inteiro|todo|completo)"),
+    ("leitura", PAGES, r"(?:leia|ler|lendo|use|usando|com) (?:as )?paginas inteiras"),
+    ("leitura", PASSAGES, r"(?:responda |use |usando |leia |com )?(?:so|somente|apenas) (?:com )?(?:os )?trechos"),
+    ("web", True, r"(?:busque|buscar|pesquise|pesquisar|procure|procurar|consulte|consultar)(?: isso| isto)? "
+                  r"(?:na web|na internet|online|no google)"),
+    ("web", False, r"sem (?:buscar |busca |pesquisar |pesquisa |consultar )?(?:na |a )?(?:web|internet)"),
+    ("resultados", True, r"(?:use|usa|usando|considere|inclua|incluindo) (?:os )?(?:nossos |meus )?resultados(?: da pesquisa)?"),
+    ("resultados", False, r"sem (?:os )?(?:nossos |meus )?resultados(?: da pesquisa)?"),
+    ("skill", "nenhuma", r"sem (?:skill|especializacao)"),
+    ("skill", None, r"(?:use|usa|usando|com) a skill (?:de |da )?(?P<name>[a-z0-9-]+)"),
+    ("apoio", None, r"com (?:o )?apoio (?:da |de )?(?:skill )?(?:de |da )?(?P<name>[a-z0-9-]+)"),
+)
+_PLEASE = r"(?:(?:por favor|pf),?\s*)?"
+# Uma oração termina num ponto, ponto e vírgula, dois-pontos, exclamação, interrogação, quebra de linha ou numa
+# vírgula seguida de espaço (a de "0,5" não separa).
+_CLAUSE = re.compile(r"[.;:!?\n]+|,(?=\s)")
+CHOICE_NAMES = {"modelo": {STRONG: "o modelo maior", CHEAP: "o modelo menor"}, "biblioteca": {False: "sem a biblioteca"},
+                "web": {True: "com busca na web", False: "sem a web"},
+                "resultados": {True: "com os resultados da pesquisa", False: "sem os resultados da pesquisa"}}
 # Palavras que falam do acervo ou do pedido, e não do assunto: ficam fora da contagem exata de termos.
 _GENERIC = set("""literatura literaturas fonte fontes artigo artigos documento documentos livro livros referencia
     referencias autor autores norma normas biblioteca acervo arquivo arquivos algum alguma alguns algumas explica
@@ -171,18 +200,37 @@ def _topic(encoder, cards: dict | None, text: str) -> float:
     return max(_scores(encoder, f"titulos:{hash(titles)}", {"titulos": titles}, text).values(), default=0.0)
 
 
+@cache
+def _specialized() -> dict:
+    """O que as especializações acrescentam ao roteador (lote 36): frases de exemplo, termos que levam aos
+    resultados e a skill padrão. Lido na primeira mensagem, nunca ao importar este módulo."""
+    from aliado import specializations
+
+    intents = {name: list(examples) for name, examples in INTENTS.items()}
+    skills, terms = {}, []
+    for extra in specializations.gather("ROUTING"):
+        for name, examples in extra.get("intents", {}).items():
+            intents.setdefault(name, []).extend(examples)
+        skills |= extra.get("skills", {})
+        terms += extra.get("results_terms", ())
+    return {"intents": {name: tuple(examples) for name, examples in intents.items()}, "skills": skills | SKILLS,
+            "results": re.compile(r"\b(" + "|".join(map(re.escape, terms)) + r")\b") if terms else None,
+            "default": specializations.first("DEFAULT_SKILL")}
+
+
 def _skill(encoder, text: str, intent: str, current: str | None, available: set[str]) -> tuple[str | None, str | None]:
     """A skill da mensagem e o motivo; a da conversa só troca quando outra ganha com folga."""
-    if intent in {"resultados", "metodo"} and DEFAULT_SKILL in available:
-        return DEFAULT_SKILL, None
+    default = _specialized()["default"]
+    if intent in {"resultados", "metodo"} and default in available:
+        return default, None
     if intent == "conversa":
         return None, None
-    base = current if current in available else (DEFAULT_SKILL if DEFAULT_SKILL in available else None)
+    base = current if current in available else (default if default in available else None)
     if intent == "tarefa":
         base = None  # fora da biblioteca, a skill só entra se o assunto pedir
     elif len(text.split()) < SKILL_WORDS:
         return base, None  # "E o pertile?" não diz de que assunto se trata: vale a skill da conversa
-    scores = {name: value for name, value in _scores(encoder, "skills", SKILLS, text).items()
+    scores = {name: value for name, value in _scores(encoder, "skills", _specialized()["skills"], text).items()
               if name == "nenhuma" or name in available}
     best, value, _ = _best(scores)
     if best is None or value < MIN_SIMILARITY:
@@ -239,7 +287,8 @@ def _has(text: str, phrase: str) -> bool:
 
 def _about_results(text: str, vocabulary: dict | None) -> bool:
     """A mensagem pergunta pelos resultados da pesquisa, mesmo sem dizer "resultados" (lote 33)."""
-    if _RESULTS.search(text) or _PROGRESS.search(text):
+    terms = _specialized()["results"]
+    if _RESULTS.search(text) or _PROGRESS.search(text) or (terms is not None and terms.search(text)):
         return True
     if _SOURCES.search(text) or _CONCEPT.search(text):
         return False
@@ -283,7 +332,7 @@ def _intent(text: str, question: str, words: list[str], named: tuple, encoder, c
         return "continuacao", "mensagem curta que continua a pergunta anterior"
     if after_results and len(words) <= FOLLOW_UP_WORDS and not _GREETING.search(text):
         return "resultados", "mensagem curta que continua a pergunta sobre os resultados"
-    label, value, margin = _best(_scores(encoder, "intents", INTENTS, question))
+    label, value, margin = _best(_scores(encoder, "intents", _specialized()["intents"], question))
     sources = bool(_SOURCES.search(text))
     if (label is not None and value >= MIN_SIMILARITY and margin >= MIN_MARGIN
             and not (label in {"conversa", "tarefa"} and sources)):
@@ -295,6 +344,114 @@ def _intent(text: str, question: str, words: list[str], named: tuple, encoder, c
     if encoder is None or _topic(encoder, cards, question) >= MIN_TOPIC:
         return ("sintese" if _SYNTHESIS.search(text) else "consulta"), "o assunto parece com o de um documento da biblioteca"
     return "conversa", "não parece com nenhum documento da biblioteca"
+
+
+@dataclass(frozen=True)
+class Written:
+    """A mensagem sem os pedidos escritos e o que eles pedem, campo por campo."""
+
+    text: str
+    choices: dict
+
+
+def _folded(text: str) -> tuple[str, list[int]]:
+    """O texto sem acento e em minúsculas, com a posição de cada letra dele no original."""
+    letters, where = [], []
+    for index, char in enumerate(text):
+        for letter in plain(char):
+            letters.append(letter)
+            where.append(index)
+    return "".join(letters), where
+
+
+def _value(field: str, value, match, skills: set[str]):
+    if value is not None:
+        return value
+    name = match.group("name")
+    return name if name in skills else None
+
+
+def _clause(clause: str, skills: set[str], choices: dict) -> list[tuple[int, int]]:
+    """Os trechos de uma oração que são pedidos, no começo ou no fim dela; registra o que cada um pede.
+
+    O pedido do documento inteiro fica no texto: "Leia o artigo inteiro do Pertile" diz qual é o documento. Seguido
+    de "de/do/da", não é pedido: "Sem a biblioteca de componentes, ..." fala de outra biblioteca."""
+    spans, start, end = [], 0, len(clause)
+    while True:
+        segment = clause[start:end]
+        for field, value, pattern in _DIRECTIVES:
+            keep = field == "leitura" and value == DOCUMENT
+            other = "" if keep else r"(?!\s+d[aeo]s?\b)"
+            head = re.match(rf"\s*{_PLEASE}(?:{pattern})(?![\w-]){other}(?:\s*,?\s+e(?=\s))?", segment)
+            if head and (got := _value(field, value, head, skills)) is not None:
+                choices[field] = got
+                spans += [] if keep else [(start, start + head.end())]
+                start += head.end()
+                break
+            tail = re.search(rf"(?:^|\s)(?:e\s+)?(?:{pattern}),?\s*(?:por favor)?\s*$", segment)
+            if tail and (got := _value(field, value, tail, skills)) is not None:
+                choices[field] = got
+                spans += [] if keep else [(start + tail.start(), end)]
+                end = start + tail.start()
+                break
+        else:
+            return spans
+
+
+def directives(question: str, skills=()) -> Written:
+    """Os pedidos escritos da mensagem (lote 35) e a mensagem sem eles, para o roteador, a busca e o modelo.
+
+    Valem só no começo ou no fim de uma oração; um pedido que ocupa a oração inteira some com a pontuação dela.
+    `skills` são os nomes das skills que existem: "use a skill X" só vale para uma delas."""
+    folded, where = _folded(question)
+    names = set(skills)
+    choices: dict = {}
+    removed: list[tuple[int, int]] = []
+    position, before = 0, None
+    for separator in [*_CLAUSE.finditer(folded), None]:
+        start, end = position, separator.start() if separator else len(folded)
+        position = separator.end() if separator else len(folded)
+        spans = _clause(folded[start:end], names, choices)
+        comma = before is not None and folded[before.start():before.end()].strip() == ","
+        previous, before = before, separator
+        if not spans:
+            continue
+        rest = folded[start:end]
+        for a, b in sorted(spans, reverse=True):
+            rest = rest[:a] + rest[b:]
+        if not re.fullmatch(r"\s*(?:e|por favor|pf)?\s*", rest):
+            removed += [(start + a, start + b) for a, b in spans]
+        elif comma:
+            removed.append((previous.start(), end))  # ", só com trechos?": sai com a vírgula, e o "?" fica
+        else:
+            removed.append((start, position))  # a oração era só o pedido: sai com a pontuação dela
+    if not removed:
+        return Written(question.strip(), choices)
+    drop = set()
+    for a, b in removed:
+        if b > a:
+            drop.update(range(where[a], where[b - 1] + 1))
+    text = "".join(char for index, char in enumerate(question) if index not in drop)
+    text = re.sub(r"\s+([.,;:!?])", r"\1", re.sub(r"\s+", " ", text)).strip()
+    # Sem o pedido, um "por favor" solto não é pergunta.
+    text = re.sub(r"^(?:[.,;:!?]+\s*|e\s+|(?:por favor|pf)\s*[.,;:!]?\s*)+", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"[,;]\s*(?:por favor|pf)\s*([.!?]?)$", r"\1", text, flags=re.IGNORECASE)
+    return Written(text[:1].upper() + text[1:] if text else "", choices)
+
+
+def describe(choices: dict) -> list[str]:
+    """Os pedidos escritos em palavras, para a linha da rota sob a resposta."""
+    said = []
+    for field, value in choices.items():
+        if field == "leitura":
+            said.append(RUNG_NAMES[value] if value == WIDE else f"leitura: {RUNG_NAMES[value]}")
+        elif field == "skill":
+            said.append("sem skill" if value == "nenhuma" else f"skill {value}")
+        elif field == "apoio":
+            said.append(f"apoio da skill {value}")
+        else:
+            said.append(CHOICE_NAMES[field][value])
+    return said
 
 
 def terms(question: str, *, limit: int = 6) -> list[str]:

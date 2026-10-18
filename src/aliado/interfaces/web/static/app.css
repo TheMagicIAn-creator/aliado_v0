@@ -140,8 +140,8 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .topbar { grid-area: top; display: flex; align-items: center; gap: 10px; padding: 0 16px; min-width: 0;
           overflow: hidden; border-bottom: 1px solid var(--border); background: var(--surface); }
 .topbar > * { flex-shrink: 0; }
-.topbar .chip-skill, .topbar .model { flex-shrink: 1; min-width: 0; }
-.chip-skill select, .model select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.topbar .model { flex-shrink: 1; min-width: 0; }
+.model select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
 .brand { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 4px; }
 .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: var(--accent-soft);
               display: grid; place-items: center; font: 500 14px/1 var(--serif); letter-spacing: .5px; }
@@ -149,11 +149,6 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .brand-name { font: 500 17px/1 var(--serif); letter-spacing: .2px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
         border-radius: 999px; font-size: 13px; border: 1px solid var(--border-strong); background: none; }
-.chip-skill { background: var(--accent-soft); color: var(--accent-text); border-color: transparent; }
-.chip-skill select { border: 0; background: transparent; color: inherit; font-weight: 500; padding: 0; cursor: pointer; }
-.chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
-.chip-toggle { color: var(--text-soft); }
-.chip-toggle[aria-pressed="true"] { color: var(--accent-text); border-color: var(--accent); background: var(--accent-soft); }
 .topbar-spacer { flex: 1; }
 .usage { font-size: 12px; color: var(--text-faint); }
 .model { display: inline-flex; align-items: center; gap: 6px; color: var(--text-soft); font-size: 13px; }
@@ -207,6 +202,7 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .welcome-kicker { color: var(--accent); font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; margin: 0; }
 .welcome-title { font: 400 34px/1.2 var(--serif); margin: 8px 0 10px; }
 .welcome-text { color: var(--text-soft); max-width: 560px; margin: 0; }
+.welcome-hint { color: var(--text-faint); font-size: 13px; max-width: 560px; margin: 10px 0 0; }
 .welcome-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
 .suggestion { border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
               padding: 7px 14px; font-size: 13px; color: var(--text-soft); }
@@ -315,15 +311,6 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .send.is-stop { background: var(--text); color: var(--bg); }
 .send.is-stop .icon-send { display: none; }
 .send.is-stop .icon-stop { display: block; }
-.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-soft); cursor: pointer;
-          white-space: nowrap; }
-.switch input { position: absolute; opacity: 0; pointer-events: none; }
-.switch-track { width: 32px; height: 18px; border-radius: 999px; background: var(--surface-strong); position: relative; transition: background .15s; }
-.switch-track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
-                       background: var(--surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s; }
-.switch input:checked + .switch-track { background: var(--accent); }
-.switch input:checked + .switch-track::after { transform: translateX(14px); }
-.switch input:focus-visible + .switch-track { box-shadow: var(--focus); }
 .dropzone { position: fixed; inset: 68px 12px 12px calc(var(--rail) + 12px); border: 2px dashed var(--accent);
             border-radius: 18px; background: color-mix(in srgb, var(--accent-soft) 88%, transparent); display: grid;
             place-items: center; font: 20px var(--serif); color: var(--accent-text); z-index: 30; pointer-events: none; }
@@ -424,18 +411,15 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 /* Aviso de que o programa em execução é anterior à página (lote 30) */
 .restart-note { margin: 0 auto 8px; width: calc(100% - 2 * clamp(16px, 5vw, 56px)); max-width: 760px; }
 
-/* Documentos fixados na conversa e modo de leitura (lote 30) */
+/* Documentos fixados na conversa (lote 30) */
 .pinned { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 2px 8px; }
-.pinned[hidden], .reading[hidden] { display: none; }
+.pinned[hidden] { display: none; }
 .pin { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; height: 26px; padding: 0 4px 0 10px;
        border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px; cursor: help; }
 .pin-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .pin-remove { flex: none; width: 20px; height: 20px; border: 0; border-radius: 50%; background: none; color: inherit;
               font-size: 15px; line-height: 1; display: grid; place-items: center; cursor: pointer; }
 .pin-remove:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
-.reading { cursor: help; }
-.reading select { height: 28px; max-width: 100%; border: 1px solid var(--border-strong); border-radius: 8px;
-                  background: var(--surface); color: var(--text-soft); font-size: 12.5px; padding: 0 6px; cursor: pointer; }
 .chip-docs { height: 28px; font-size: 12.5px; color: var(--text-soft); background: var(--surface); }
 .chip-docs:hover, .chip-docs[aria-expanded="true"] { color: var(--accent-text); border-color: var(--accent); background: var(--accent-soft); }
 .reading-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
@@ -637,8 +621,7 @@ details.historico > summary { cursor: pointer; font: 400 18px/1.3 var(--serif); 
   :root { --rail: 52px; }
   .topbar { gap: 6px; padding: 0 8px; }
   .chip { padding: 0 8px; }
-  .model > svg, .rail-label, .brand-name, .chip-toggle, .font-mark { display: none; }
-  .model select { max-width: 132px; }
+  .rail-label, .brand-name, .font-mark { display: none; }
   .font-choice select { max-width: 92px; }
   .composer-bar { gap: 6px; }
   .rail-item { width: 42px; }

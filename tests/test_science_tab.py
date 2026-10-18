@@ -9,8 +9,9 @@ from pathlib import Path
 import pytest
 
 from aliado.science import evaluate_scenario, export_result
-from aliado.science.explorer import EXPLORATION_SOURCE, Explorer, plain, reliability
 from aliado.science.fmeca import evaluate_fmeca, export_fmeca, load_table
+from aliado.science.ram import EXPLORATION_SOURCE, reliability
+from aliado.specializations.mestrado.explorer import Explorer, plain
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / "docs" / "pesquisa-inversores"
@@ -132,6 +133,9 @@ def test_science_state_and_no_results_listing(client):
     state = client.get("/api/ciencia").json()
     assert state["fmeca"] and state["cenarios"] and not state["exploradores"]["disponivel"]
     assert state["rodada"] == "avaliacao-oficial"
+    from aliado.specializations.mestrado.notes import NOTES
+
+    assert state["notas"] == NOTES  # NUC-02: o glossário da aba vem da especialização
     assert client.get("/api/ciencia/resultados").status_code == 404
     assert client.get("/api/ciencia/resultados/fmeca-001").status_code == 404
     assert (settings.results_dir / "fmeca-001" / "fmeca.json").is_file()  # as pastas continuam no disco

@@ -36,8 +36,9 @@ Comece pela [spec 0001](docs/specs/0001-fundacao.md) e pela
 ## Custo e autorizações
 
 - O chat escolhe sozinho, com um roteador local e sem tokens, a skill, o modelo e a leitura (sem biblioteca,
-  trechos, páginas inteiras ou o documento citado). A leitura ampla (documentos inteiros, de 150 a 400 mil
-  tokens por pergunta) fica só por escolha dele na tela.
+  trechos, páginas inteiras ou o documento citado). A tela não tem seletores: o pedido escrito dele na mensagem
+  vale como escolha. A leitura ampla (documentos inteiros, de 150 a 400 mil tokens por pergunta) fica só por
+  pedido escrito dele, sempre com confirmação.
 - Acima de 30 mil tokens estimados, o servidor não chama o modelo sem a confirmação dele; depois de 300 mil
   tokens no dia, toda leitura acima dos trechos pede confirmação. Não mude esses dois limites nem volte a
   leitura ampla ao padrão sem combinar.
@@ -57,8 +58,8 @@ Comece pela [spec 0001](docs/specs/0001-fundacao.md) e pela
 
 - A memória do AL-IAdo fica em `data/memoria/`, com as regras de origem e conflito da spec 0011 e o perfil e a
   memória de conversas da spec 0018. Lá ficam também as trilhas das perguntas já respondidas e o aprendizado com
-  o uso: local, sem tokens, só com as escolhas fixadas na tela e as perguntas refeitas ou reclamações; ele nunca
-  leva sozinho à leitura ampla e deixa de valer quando a conversa é apagada.
+  o uso: local, sem tokens, só com as escolhas dele (pedido escrito ou botão) e as perguntas refeitas ou
+  reclamações; ele nunca leva sozinho à leitura ampla nem à web e deixa de valer quando a conversa é apagada.
 - A triagem das memórias antigas fica em `data/memory-review/`, fora do Git e do contexto ativo; candidatos não
   equivalem a memórias aprovadas pelo pesquisador.
 - O espelho para o Obsidian fica em `data/obsidian/`, fora do Git. É uma saída de mão única, refeita pelo

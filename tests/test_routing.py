@@ -174,6 +174,40 @@ def test_after_a_library_answer_small_talk_stays_out_and_a_complaint_reads_deepe
     assert not go("Você não conseguiu me trazer nenhuma definição.").complaint
 
 
+@pytest.mark.parametrize("typed, text, choices", [
+    ("Use o modelo maior. O que é MCC?", "O que é MCC?", {"modelo": routing.STRONG}),
+    ("Oi, tudo bem? Use o modelo menor.", "Oi, tudo bem?", {"modelo": routing.CHEAP}),
+    ("O que é MCC, só com trechos?", "O que é MCC?", {"leitura": routing.PASSAGES}),
+    ("Explique o MCC usando as páginas inteiras", "Explique o MCC", {"leitura": routing.PAGES}),
+    # O documento inteiro fica no texto: ele diz qual é o documento.
+    ("Leia o artigo inteiro do Pertile.", "Leia o artigo inteiro do Pertile.", {"leitura": routing.DOCUMENT}),
+    ("Faça a leitura ampla. Quais métodos detectam falhas?", "Quais métodos detectam falhas?", {"leitura": routing.WIDE}),
+    ("Sem biblioteca e busque na web: qual a taxa de falha de um IGBT?", "Qual a taxa de falha de um IGBT?",
+     {"biblioteca": False, "web": True}),
+    ("Sem os resultados, o que diz a literatura sobre limiar?", "O que diz a literatura sobre limiar?",
+     {"resultados": False}),
+    ("Use a skill engenharia. Como dimensionar o cabo?", "Como dimensionar o cabo?", {"skill": "engenharia"}),
+    ("Busque na web, por favor", "", {"web": True}),  # só o pedido: a tela refaz a pergunta anterior
+    # Não são pedidos: no meio da frase, uma skill que não existe, ou seguido de "de/do/da".
+    ("O modelo maior detectou mais falhas?", "O modelo maior detectou mais falhas?", {}),
+    ("Por que buscar na web custa mais?", "Por que buscar na web custa mais?", {}),
+    ("Quais trechos do artigo falam de MCC?", "Quais trechos do artigo falam de MCC?", {}),
+    ("Use a skill inventada. Como dimensionar o cabo?", "Use a skill inventada. Como dimensionar o cabo?", {}),
+    ("Sem a biblioteca de componentes, como fica a FMECA?", "Sem a biblioteca de componentes, como fica a FMECA?", {}),
+    ("Use o modelo maior do artigo para comparar.", "Use o modelo maior do artigo para comparar.", {}),
+])
+def test_written_requests_leave_the_text_and_become_choices(typed, text, choices):
+    """ROT-01: o pedido escrito vale no começo ou no fim de uma oração; sai do texto e vira escolha."""
+    written = routing.directives(typed, ("engenharia", "confiabilidade"))
+    assert (written.text, written.choices) == (text, choices)
+
+
+def test_written_choices_are_described_in_words_for_the_route_line():
+    said = routing.describe({"modelo": routing.STRONG, "leitura": routing.WIDE, "web": True, "skill": "nenhuma"})
+    assert said == ["o modelo maior", "leitura ampla", "com busca na web", "sem skill"]
+    assert routing.describe({"leitura": routing.PASSAGES}) == ["leitura: trechos"]
+
+
 # --- biblioteca: contagem exata de termos e páginas soltas ---
 
 pytest.importorskip("pypdf")

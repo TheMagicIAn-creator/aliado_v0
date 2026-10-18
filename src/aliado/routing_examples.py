@@ -26,7 +26,7 @@ INTENTS: dict[str, tuple[str, ...]] = {
     "fato": (
         "Qual é a taxa de falha dos ventiladores segundo o artigo?", "Qual o tempo de reparo de um transformador?",
         "Em que ano o FMEA surgiu?", "Qual intervalo de manutenção foi obtido para o rolamento?",
-        "Quantas horas de operação por ano o estudo adota?", "Qual o valor do MTBF do inversor?",
+        "Quantas horas de operação por ano o estudo adota?",
         "What repair time does the standard give for the transformer?", "Qual a confiabilidade estimada do regulador?",
         "Qual é o limite usado para o NPR?", "Quem propôs esse método?",
     ),
@@ -34,7 +34,7 @@ INTENTS: dict[str, tuple[str, ...]] = {
         "Com citação direta, me diga, com base na literatura, o que são autoencoders.",
         "Trazendo de ao menos duas fontes, qual é a definição de manutenção centrada na confiabilidade?",
         "Compare o que os autores dizem sobre a curva da banheira.", "Explique como funciona o rastreamento do ponto de máxima potência.",
-        "Como se calcula a confiabilidade de um sistema em série e em paralelo?", "Resuma o que a literatura diz sobre falhas em inversores.",
+        "Como se calcula a confiabilidade de um sistema em série e em paralelo?",
         "Quais são os princípios da manutenção centrada na confiabilidade?", "Discuta as vantagens e os limites do FMEA.",
         "What causes random failures in the bathtub curve?", "Faça uma revisão do que os documentos dizem sobre detecção de anomalias.",
         "Defina disponibilidade e mantenabilidade com base nas fontes.",
@@ -48,9 +48,9 @@ INTENTS: dict[str, tuple[str, ...]] = {
     ),
     "resultados": (
         "Qual foi o F1 do autoencoder LSTM nos ensaios?", "Quantos alarmes falsos o detector denso deu?",
-        "Como ficou a comparação entre o Denso e o LSTM no GPVS?", "Qual limiar foi fixado para os detectores?",
-        "Quais falhas do GPVS não foram detectadas?", "Mostre os resultados da avaliação oficial.",
-        "Qual é o NPR do capacitor na nossa FMECA?", "Qual a disponibilidade do inversor nos nossos cenários?",
+        "Qual limiar foi fixado para os detectores?",
+        "Mostre os resultados da avaliação oficial.",
+        "Qual é o NPR do capacitor na nossa FMECA?",
         "Quando cada falha começa a aparecer nos nossos dados?", "Resuma os resultados do meu experimento.",
         # Lote 33: resultados sem a palavra "resultados".
         "Qual foi a especificidade do autoencoder denso?", "Quantos ensaios com falha cada modelo detectou?",
@@ -62,18 +62,13 @@ INTENTS: dict[str, tuple[str, ...]] = {
         "Por que o limiar é o percentil 99 dos dados saudáveis?", "Qual foi a decisão sobre a separação entre treino e teste?",
         "Como devo justificar a escolha do autoencoder na dissertação?", "Revise a metodologia do meu experimento.",
         "Quais hipóteses a pesquisa assume?", "O que as diretrizes aprovadas dizem sobre o conjunto de teste?",
-        "Como rodo de novo o pipeline do GPVS?", "Que critério usamos para comparar os modelos?",
+        "Que critério usamos para comparar os modelos?",
     ),
 }
 
-# A especialização que combina com a mensagem; "nenhuma" é a conversa geral.
+# A especialização que combina com a mensagem; "nenhuma" é a conversa geral. As frases que nomeiam o
+# domínio de uma pesquisa ficam na especialização dela (`ROUTING`, lote 36).
 SKILLS: dict[str, tuple[str, ...]] = {
-    "pesquisa-inversores": (
-        "Detecção de falhas em inversores fotovoltaicos com autoencoders.", "Resultados do GPVS com os modelos Denso e LSTM.",
-        "Literatura do mestrado sobre confiabilidade de sistemas fotovoltaicos.", "FMECA do inversor e taxas de falha dos componentes.",
-        "Protocolo de calibração, limiar e avaliação dos detectores.", "O que os artigos dizem sobre falhas em usinas solares?",
-        "Definição de manutenção centrada na confiabilidade com base na literatura.", "Fault detection in photovoltaic inverters.",
-    ),
     "confiabilidade": (
         "Converter uma taxa de falha por hora em probabilidade em 20 anos.", "Calcular a disponibilidade com MTBF e MTTR.",
         "Montar um cenário de confiabilidade com Weibull.", "Qual a confiabilidade de três componentes em série?",

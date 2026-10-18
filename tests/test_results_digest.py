@@ -12,7 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from aliado.science import digest
+from aliado.science import digest as core
+from aliado.specializations.mestrado import digest
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / "docs" / "pesquisa-inversores"
@@ -31,7 +32,7 @@ def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = T
     pytest.importorskip("numpy")
     from test_science_views import synthetic
 
-    from aliado.science.detection import gpvs, summary
+    from aliado.specializations.mestrado import gpvs, summary
 
     synthetic(root)
     official = root / summary.EVALUATION / "relatorio.json"
@@ -74,18 +75,20 @@ def ids(result):
 
 
 def test_formatters_write_numbers_as_the_science_tab_does():
-    assert digest.seconds(2041.4) == "2,04 s" and digest.seconds(1701.4) == "1,7 s" and digest.seconds(None) == "—"
-    assert digest.num(206.523) == "207" and digest.num(34300.2) == "34.300" and digest.num(2611, 4) == "2.611"
-    assert digest.num(0) == "0" and digest.num(-0.0714) == "-0,0714" and digest.num(19.43) == "19,4"
-    assert digest.num(0.00091) == "9,10e-4" and digest.num(1817016) == "1,82e+6"
-    assert digest.pct(0.99091, 5) == "99,091%" and digest.pct(0.0218) == "2,18%"
-    assert digest.dec(0.4017) == "0,402" and digest.dec(1.0) == "1,000" and digest.dec(None) == "—"
+    assert core.seconds(2041.4) == "2,04 s" and core.seconds(1701.4) == "1,7 s" and core.seconds(None) == "—"
+    assert core.num(206.523) == "207" and core.num(34300.2) == "34.300" and core.num(2611, 4) == "2.611"
+    assert core.num(0) == "0" and core.num(-0.0714) == "-0,0714" and core.num(19.43) == "19,4"
+    assert core.num(0.00091) == "9,10e-4" and core.num(1817016) == "1,82e+6"
+    assert core.pct(0.99091, 5) == "99,091%" and core.pct(0.0218) == "2,18%"
+    assert core.dec(0.4017) == "0,402" and core.dec(1.0) == "1,000" and core.dec(None) == "—"
 
 
 def test_notes_are_the_ones_of_the_science_tab():
-    page = (ROOT / "src" / "aliado" / "interfaces" / "web" / "static" / "graficos.js").read_text(encoding="utf-8")
-    glossary = dict(re.findall(r'^\s*(\w+): "(.*)",\s*$', page, re.MULTILINE))
-    assert digest.NOTES and all(glossary[key] == text for key, text in digest.NOTES.items())
+    """Lote 36: o glossário da aba e as notas do resumo são um só, o da especialização; a aba o lê de /api/ciencia."""
+    static = ROOT / "src" / "aliado" / "interfaces" / "web" / "static"
+    assert "const GLOSSARIO = {};" in (static / "graficos.js").read_text(encoding="utf-8")
+    assert "Object.assign(GLOSSARIO, science.status.notas || {});" in (static / "ciencia.js").read_text(encoding="utf-8")
+    assert digest.NOTES and set(digest.NOTE_NAMES) <= set(digest.NOTES)
 
 
 def test_eight_blocks_with_source_date_and_status(tmp_path):
@@ -101,7 +104,7 @@ def test_eight_blocks_with_source_date_and_status(tmp_path):
     assert "Secundária" in by_id["R5"]["fonte"] and "8,66 s" in by_id["R5"]["texto"]
     assert "168" in by_id["R7"]["texto"] and "63,7e-6/h" in by_id["R7"]["texto"]
     assert "99,091%" in by_id["R8"]["texto"] and "80,4 h" in by_id["R8"]["texto"]
-    text = digest.prompt_text(result)
+    text = core.prompt_text(result)
     assert len(text) <= digest.MAX_CHARS and not INTERNAL.search(text)
     assert "secao" not in json.loads(text)["blocos"][0] and result["cabecalho"].startswith("A avaliação oficial é a de 27/09/2026")
 
@@ -114,20 +117,20 @@ def test_every_indicator_has_its_note_and_notes_go_once_to_the_model(tmp_path):
     assert {"Sensibilidade", "Especificidade", "MCC", "Atraso"} <= set(names["R4"])  # o R4 traz as próprias notas
     assert {"Sensibilidade", "F1", "AUC-ROC", "Mudança observada"} <= set(names["R5"])
     assert all("Notas:" not in block["texto"] and "bloco R1" not in block["texto"] for block in result["blocos"])
-    sent = json.loads(digest.prompt_text(result))
+    sent = json.loads(core.prompt_text(result))
     assert sent["notas"]["Sensibilidade"] == digest.NOTES["sensibilidade"] and "notas" not in sent["blocos"][0]
-    assert digest.prompt_text(result).count(digest.NOTES["sensibilidade"]) == 1
-    assert "0,5" in digest.notes_text(result["blocos"])
+    assert core.prompt_text(result).count(digest.NOTES["sensibilidade"]) == 1
+    assert "0,5" in core.notes_text(result["blocos"])
 
 
 def test_each_block_says_where_to_see_it_with_the_names_of_the_science_tab(tmp_path):
     page = (ROOT / "src" / "aliado" / "interfaces" / "web" / "static" / "ciencia.js").read_text(encoding="utf-8")
     tabs = dict(re.findall(r'\["(\w+)", "([^"]+)"\]', page.split("const SCIENCE_TABS")[1].split("];")[0]))
-    assert all(tabs[key] == name for key, name in digest.SECTIONS.items())
+    assert all(tabs[key] == name for key, name in core.SECTIONS.items())
     from aliado.agent import RESULTS_RULES
 
-    assert all(name in RESULTS_RULES for name in digest.SECTIONS.values())
-    sent = json.loads(digest.prompt_text(digest.build_digest(synthetic_results(tmp_path / "resultados"), REFERENCE)))
+    assert all(name in RESULTS_RULES for name in core.SECTIONS.values())
+    sent = json.loads(core.prompt_text(digest.build_digest(synthetic_results(tmp_path / "resultados"), REFERENCE)))
     assert {block["citation_id"]: block["onde_ver"] for block in sent["blocos"]}["R4"] == "aba Ciência, seção Métricas por falha"
 
 
@@ -179,7 +182,7 @@ def test_cache_is_rebuilt_only_when_a_source_file_changes(tmp_path):
 def test_digest_and_interface_open_without_numpy_or_torch():
     code = ("import sys; sys.modules['numpy'] = None; sys.modules['torch'] = None\n"
             "import aliado.interfaces.web.app\n"
-            "from aliado.science import digest\n"
+            "from aliado.specializations.mestrado import digest\n"
             f"d = digest.build_digest(r'{RESULTS}', r'{REFERENCE}')\n"
             "print([b['citation_id'] for b in d['blocos']], len(d['faltando']))")
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=ROOT, timeout=120)
@@ -197,5 +200,5 @@ def test_real_digest_has_the_numbers_of_the_science_tab():
     assert "2,04 s" in by_id["R1"] and "0,402" in by_id["R1"] and "| Denso | 0 | 52,2 s | 0 | 207 |" in by_id["R2"]
     assert "0,06 s" in by_id["R5"] and "1,000" in by_id["R5"] and "| Denso | 19,4 | 0 a 53,4 |" in by_id["R6"]
     assert "168" in by_id["R7"] and "99,091%" in by_id["R8"]
-    text = digest.prompt_text(result)
+    text = core.prompt_text(result)
     assert len(text) <= digest.MAX_CHARS and not INTERNAL.search(text)

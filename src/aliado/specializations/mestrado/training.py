@@ -16,7 +16,6 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from aliado.science.detection import gpvs
 from aliado.science.detection.models import (
     MODEL_NAMES,
     MODELS,
@@ -36,6 +35,7 @@ from aliado.science.detection.threshold import (
     effective_sample_size,
     minimum_n_for_percentile,
 )
+from aliado.specializations.mestrado import gpvs
 
 TRAINING_ROLES = ("train", "validation", "calibration")
 SECONDS_PER_HOUR = 3600

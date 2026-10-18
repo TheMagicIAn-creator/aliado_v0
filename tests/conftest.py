@@ -37,9 +37,13 @@ def origin_gpvs_runs(tmp_path_factory):
     if not (data_dir / "F0L.csv").is_file():
         pytest.skip("GPVS real ausente nesta máquina")
     pytest.importorskip("torch")
-    from aliado.science.detection import gpvs
     from aliado.science.detection.models import Hyperparameters
-    from aliado.science.detection.training import ExperimentConfig, train_detectors, training_blocks
+    from aliado.specializations.mestrado import gpvs
+    from aliado.specializations.mestrado.training import (
+        ExperimentConfig,
+        train_detectors,
+        training_blocks,
+    )
 
     config = ExperimentConfig(purge=2, seeds=(42,), hyperparameters=Hyperparameters(max_epochs=150))
     data = gpvs.prepare(data_dir, cache=tmp_path_factory.mktemp("gpvs") / "cache.npz", purge=config.purge)

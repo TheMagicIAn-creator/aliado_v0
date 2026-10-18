@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from test_detection import ROOT, write_synthetic
 
-from aliado.science.detection import gpvs, onset
+from aliado.specializations.mestrado import gpvs, onset
 
 GPVS = ROOT / "data" / "gpvs"
 REAL = (GPVS / "proveniencia.json").is_file() and (GPVS / "F0L.csv").is_file()

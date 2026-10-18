@@ -28,7 +28,7 @@ from starlette.responses import FileResponse, HTMLResponse, JSONResponse, Stream
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 
-from aliado import routing
+from aliado import routing, specializations
 from aliado.interfaces.web.conversations import ConversationStore
 from aliado.interfaces.web.experiments import experiment_routes
 from aliado.interfaces.web.obsidian import ObsidianSync, build_notes, write_vault
@@ -54,7 +54,6 @@ UPLOAD_BATCH = re.compile(r"[0-9a-f]{8,32}")  # identificador do lote de envios,
 OUT_OF_CONTEXT = {"insufficient_evidence", "invalid_citations", "invalid_result_refs"}
 # Resposta com número que não está no resultado citado (lote 26): aparece com aviso e fica fora do histórico.
 UNVERIFIED_RESULTS = "numeros_nao_conferidos"
-RESULTS_SKILL = "pesquisa-inversores"
 # "Lembre que…", "lembre-se de que…", "lembra que…": pedido explícito de anotação.
 EXPLICIT_MEMORY = re.compile(r"^\s*lembr[ae](?:-se)?(?:\s+de)?\s+que\b", re.IGNORECASE)
 MEMORY_VIEW_KEYS = ("id", "kind", "text", "origin", "status", "skill", "source", "diverges_skill",
@@ -118,10 +117,11 @@ class WebSettings:
     # Consulta da busca (lote 22): (question=, history=) -> (consulta reescrita, resultado).
     query_rewriter: Callable[..., tuple[str, object]] | None = None
     # Aba Ciência (lote 20): resultados, a base de dados dos experimentos e as referências da pesquisa
-    # (FMECA e cenários). Sem `dataset_dir`, vale a base do experimento instalado.
+    # (FMECA e cenários). Sem `dataset_dir`, vale a base do experimento instalado; sem `reference_dir`, a pasta da
+    # especialização instalada (lote 36).
     results_dir: Path | None = None
     dataset_dir: Path | None = None
-    reference_dir: Path = Path("docs/pesquisa-inversores")
+    reference_dir: Path | None = None
     # Rodar um experimento (lote 34): (args, on_line, on_process) -> (código, stdout); padrão, subprocesso.
     experiment_command: Callable[..., tuple[int, str]] | None = None
     # Resultados no chat (lote 26): () -> resumo com os blocos [R1]…; montado sob demanda, em cache.
@@ -155,6 +155,8 @@ class WebSettings:
             bases = [item.DATASET_DIR for item in experiments.available()]
             self.dataset_dir = bases[0] if bases else self.data_dir / "base"
         self.dataset_dir = Path(self.dataset_dir).resolve()
+        if self.reference_dir is None:
+            self.reference_dir = specializations.first("REFERENCE_DIR", self.data_dir / "referencias")
         self.reference_dir = Path(self.reference_dir).resolve()
         if self.obsidian_dir is not None:
             self.obsidian_dir = Path(self.obsidian_dir).resolve()
@@ -279,9 +281,10 @@ def _passage_tokens(hits) -> int:
     return sum(len(hit.get("passagem") or hit.get("text") or "") for hit in hits) // reading.CHARS_PER_TOKEN
 
 
-def _deeper(rung: int, result, library_, budget: int) -> dict | None:
-    """O degrau seguinte da escada e quanto ele custaria, para o botão "Ler mais fundo" (lote 31)."""
-    if library_ is None or not routing.PASSAGES <= rung < routing.WIDE or result.provider == "local":
+def _deeper(rung: int, result, library_) -> dict | None:
+    """O degrau seguinte da escada e quanto ele custaria, para o botão "Ler mais fundo" (lote 31). Vai até o
+    documento citado: a leitura ampla só por pedido escrito (lote 35)."""
+    if library_ is None or not routing.PASSAGES <= rung < routing.DOCUMENT or result.provider == "local":
         return None
     used = (result.usage.input_tokens if result.usage else 0) or 0
     read = getattr(result, "reading", None) or {}
@@ -299,7 +302,7 @@ def _deeper(rung: int, result, library_, budget: int) -> dict | None:
             cost = sum(reading.page_cost(unit["text"], record["pdf"]) for unit in record["units"])
             return {"leitura": "documento", "tokens": base + min(cost, DOCUMENT_BUDGET), "documentos": [top],
                     "titulo": record["referencia"] or record["title"]}
-    return {"leitura": "integral", "tokens": base + budget, "ate": True}
+    return None
 
 
 def _index_conversations(store: ConversationStore, memory) -> int:
@@ -364,7 +367,7 @@ def create_app(settings: WebSettings) -> Starlette:
             "modelos": settings.models,
             "biblioteca": {"documentos": len(documents)},
             # Só diz se há de onde tirar os resultados; o resumo é montado na primeira pergunta.
-            "resultados": {"disponivel": settings.results_digest is not None, "skill": RESULTS_SKILL},
+            "resultados": {"disponivel": settings.results_digest is not None},
             "leitura": {"modo": settings.reading_mode, "teto": settings.reading_budget, "tetos": list(reading.BUDGETS),
                         "modos": list(READING_MODES), "limite": settings.ceiling, "aviso_diario": settings.daily_warning},
             "iniciado": started,
@@ -423,23 +426,44 @@ def create_app(settings: WebSettings) -> Starlette:
         if not isinstance(body, dict):
             return _error("Pedido inválido.")
         text = body.get("texto")
-        skill = body.get("skill") or "pesquisa-inversores"
-        support = body.get("apoio") or None
-        alias = body.get("modelo")
-        use_library = bool(body.get("biblioteca"))
-        use_web = bool(body.get("web"))
-        # Sem o campo, os resultados entram só na skill do mestrado.
-        use_results = bool(body["resultados"]) if "resultados" in body else skill == RESULTS_SKILL
         if not isinstance(text, str) or not text.strip() or len(text) > MAX_QUESTION_CHARS:
             return _error("Escreva uma pergunta de até 20 mil caracteres.")
+        last_user = next((m for m in reversed(data["messages"]) if m.get("role") == "user"), None)
+        last_reply = next((m for m in reversed(data["messages"]) if m.get("role") == "assistant"), None)
+        # Pedidos escritos (lote 35): o que antes eram seletores e chaves. A mensagem segue sem eles para o roteador,
+        # a busca, o modelo e o aprendizado; a que você digitou é a que fica guardada e aparece na conversa.
+        typed = text.strip()
+        written = routing.directives(typed, skills)
+        choices, redo = dict(written.choices), False
+        text = written.text
+        if not text:
+            # Só um pedido ("busque na web"): vale para a pergunta anterior, que é refeita com ele.
+            if last_user is None:
+                return _error("Escreva a pergunta junto do pedido.")
+            earlier = routing.directives(last_user["content"], skills)
+            text, choices, redo = earlier.text or last_user["content"].strip(), earlier.choices | written.choices, True
+        # Quem vence: o campo enviado por um botão da tela, o pedido escrito, a escolha aprendida e, por fim, o
+        # roteador ("auto"). Sem os campos, a biblioteca fica disponível e os resultados também: o roteador só os
+        # usa quando a pergunta pede. A web só entra por pedido.
+        def given(field: str):
+            """O campo enviado pela tela; "auto" é o mesmo que não enviar."""
+            value = body.get(field)
+            return None if value in (None, "", "auto") else value
+
+        skill = given("skill") or choices.get("skill") or "auto"
+        support = body.get("apoio") or choices.get("apoio") or None
+        alias = given("modelo") or choices.get("modelo") or "auto"
+        if given("modelo") is None and alias not in aliases:
+            alias = "auto"  # o modelo pedido por escrito não está configurado: vale a escolha automática
+        use_library = bool(body["biblioteca"]) if "biblioteca" in body else choices.get("biblioteca", True)
+        use_web = bool(body["web"]) if "web" in body else choices.get("web", False)
+        use_results = bool(body["resultados"]) if "resultados" in body else choices.get("resultados", True)
         # "auto" (lote 31): o roteador escolhe a skill, o modelo ou a leitura; um nome fixa a escolha.
         if skill not in {"nenhuma", "auto"} and skill not in skills or support and support not in skills:
             return _error("Skill desconhecida.")
         if alias != "auto" and alias not in aliases or not aliases:
             return _error("Modelo não configurado. Confira o .env.")
-        if "resultados" not in body:
-            use_results = skill in {RESULTS_SKILL, "auto"}
-        mode = body.get("leitura") or settings.reading_mode
+        mode = given("leitura") or MODE_OF.get(choices.get("leitura")) or settings.reading_mode
         budget = body.get("teto") or settings.reading_budget
         if mode not in READING_MODES or budget not in reading.BUDGETS:
             return _error("Modo de leitura ou teto desconhecido.")
@@ -448,8 +472,6 @@ def create_app(settings: WebSettings) -> Starlette:
             if isinstance(body.get("documentos"), list) else []
         pinned = [item for item in data.get("fixados") or () if isinstance(item, str)]
         history = store.history(data)
-        last_user = next((m for m in reversed(data["messages"]) if m.get("role") == "user"), None)
-        last_reply = next((m for m in reversed(data["messages"]) if m.get("role") == "assistant"), None)
         # A rota da resposta anterior: uma mensagem curta continua o assunto e a leitura dela.
         before = (last_reply or {}).get("rota") or {}
         # Uma leitura cara, escolhida por você, não é herdada sozinha: a continuação vai até as páginas.
@@ -475,6 +497,8 @@ def create_app(settings: WebSettings) -> Starlette:
                 current_skill=(last_user or {}).get("skill") if skill == "auto" else skill,
                 library=source is not None, results=use_results, previous=previous, vocabulary=vocabulary())
             reasons = list(found.reasons)
+            if redo:
+                reasons.insert(0, "a mensagem só tinha um pedido: a pergunta anterior foi refeita com ele")
             # Escolhas aprendidas (lote 33): numa mensagem muito parecida com outra, vale a escolha que você fez nela.
             auto_model, auto_skill, auto_rung, learned = found.model, found.skill or "nenhuma", found.rung, []
             lessons = lessons_for(text)
@@ -604,7 +628,9 @@ def create_app(settings: WebSettings) -> Starlette:
                 extra |= {"mentions": mentions} if mentions else {}
                 extra |= {"search_plan": search_plan} if search_plan else {}
                 if limit is not None:
-                    extra |= {"ceiling": limit, "salt": "dia" if over else ""} | ({"confirmed": confirmed} if confirmed else {})
+                    # A leitura ampla tem a sua própria chave: uma confirmação de outra leitura não vale para ela.
+                    salt = "dia" if over else "ampla" if step == routing.WIDE else ""
+                    extra |= {"ceiling": limit, "salt": salt} | ({"confirmed": confirmed} if confirmed else {})
                 return {"model_alias": alias_, "skill_name": memory_skill, "supporting_skill_name": support,
                         "library": source if step > routing.NONE else None, "history": history, "memories": memories,
                         "web_search": use_web, "recalled": recalled, "search_query": search_query} | extra
@@ -626,8 +652,9 @@ def create_app(settings: WebSettings) -> Starlette:
                         final = value
                 return "final", final
 
-            # Acima do teto, uma leitura pede confirmação; depois do aviso diário, toda leitura acima dos trechos.
-            limit = None if rung <= routing.PASSAGES else 0 if over else settings.ceiling
+            # Acima do teto, uma leitura pede confirmação; depois do aviso diário, toda leitura acima dos trechos. A leitura
+            # ampla (lote 35) pede sempre, mesmo abaixo do teto.
+            limit = None if rung <= routing.PASSAGES else 0 if over or rung == routing.WIDE else settings.ceiling
             first = reading_of(rung, from_trail=strong, first=priority, kept=reserve)
             call = options(rung, first, alias_=model, limit=limit) | ({"trail": trail} if trail and trail[
                 "conversation_id"] != cid else {})
@@ -637,8 +664,9 @@ def create_app(settings: WebSettings) -> Starlette:
                 kind, result = yield from run(call)
                 if kind == "confirmar":
                     yield line({"tipo": "confirmar", "tokens": result["tokens"], "chave": result.get("chave"),
-                                "limite": settings.ceiling, "motivo": "dia" if over else "teto", "hoje": today,
-                                "aviso_diario": settings.daily_warning, "lembrar": not over,
+                                "limite": settings.ceiling, "hoje": today,
+                                "motivo": "dia" if over else "ampla" if rung == routing.WIDE else "teto",
+                                "aviso_diario": settings.daily_warning, "lembrar": not over and rung != routing.WIDE,
                                 "modo": MODE_OF.get(rung, "trechos"), "leitura": result.get("leitura")})
                     return
                 # Lote 33: a segunda chamada só vale se houver o que ler de novo: partes sem citação com material
@@ -728,7 +756,7 @@ def create_app(settings: WebSettings) -> Starlette:
             # Resposta cortada pelo teto de tamanho (lote 27): aparece com aviso e fica fora do histórico.
             in_context = (result.validation_status not in OUT_OF_CONTEXT and result.provider != "local"
                           and result.results_status != UNVERIFIED_RESULTS and not result.truncated)
-            user = {"role": "user", "content": text.strip(), "in_context": in_context,
+            user = {"role": "user", "content": typed, "in_context": in_context,
                     "skill": chosen, "apoio": support, "biblioteca": use_library, "web": use_web,
                     "resultados": use_results, "leitura": mode, "teto": budget}
             # A rota (lote 31): o que o roteador decidiu, o que foi escolha sua e o que foi lido de fato.
@@ -736,6 +764,8 @@ def create_app(settings: WebSettings) -> Starlette:
                 "rung": rung, "leitura": "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung],
                 "skill": memory_skill, "model": model, "reasons": reasons, "results": bool(digest),
                 "automatico": {"modelo": alias == "auto", "skill": skill == "auto", "leitura": mode == "auto"},
+                # Lote 35: os pedidos escritos na mensagem, em palavras, e se ela só pedia e refez a anterior.
+                "pedidos": routing.describe(choices), "refeita": redo,
                 "tentativas": attempts,
                 # Lote 33: como a busca foi preparada: sem reescrita, reescrita simples ou uma busca por parte do pedido.
                 "busca": "plano" if search_plan else "simples" if preparation == "plano" else preparation,
@@ -766,7 +796,7 @@ def create_app(settings: WebSettings) -> Starlette:
                      "leitura_por_trechos": by_passages,
                      "cobertura": result.coverage,
                      "rota": route_view,
-                     "aprofundar": None if use_web else _deeper(rung, result, source, budget),
+                     "aprofundar": None if use_web else _deeper(rung, result, source),
                      "resultados_faltando": missing,
                      "memorias_usadas": [{"id": m["id"], "kind": m["kind"], "origin": m["origin"],
                                           "text": m["text"]} for m in memories],
@@ -838,34 +868,41 @@ def create_app(settings: WebSettings) -> Starlette:
                 return {}
 
         def learn(auto_model: str, auto_skill: str, auto_rung: int, asked_again: bool, complaint: bool) -> None:
-            """Aprendizado com o uso (lote 33), local e sem tokens. Uma escolha fixada na tela que difere da automática
-            fica guardada para a mensagem; a pergunta refeita, o "Ler mais fundo" e a reclamação enfraquecem a trilha
-            da resposta anterior, e a pergunta dela fica guardada com a leitura mais funda."""
+            """Aprendizado com o uso (lotes 33 e 35), local e sem tokens. Uma escolha sua que difere da automática (o
+            pedido escrito ou o campo de um botão da tela) fica guardada para a mensagem; nunca a leitura ampla nem a
+            web. A pergunta refeita, o "Ler mais fundo" e a reclamação enfraquecem a trilha da resposta anterior, e a
+            pergunta dela fica guardada com a leitura mais funda."""
             memory = settings.memory
             if memory is None or not hasattr(memory, "learn_route"):
                 return
-            again = bool(last_user and " ".join(last_user["content"].split()) == " ".join(text.split()))
-            # Só o que você escolheu nesta mensagem: um campo ausente do pedido não é escolha.
-            chosen_rung = RUNG_OF.get(mode) if body.get("leitura") else None
+            earlier = routing.directives(last_user["content"], skills).text if last_user else ""
+            again = bool(last_user and " ".join(earlier.split()) == " ".join(text.split()))
+            # Só o que você pediu nesta mensagem: um campo ausente do pedido e da mensagem não é escolha.
+            asked_model = given("modelo") or choices.get("modelo")
+            asked_skill = given("skill") or choices.get("skill")
+            asked_rung = RUNG_OF.get(mode) if given("leitura") or "leitura" in choices else None
             lessons = []
-            if body.get("modelo") and alias != "auto" and alias != auto_model:
+            if asked_model and alias != "auto" and alias != auto_model:
                 lessons.append((text, "model", alias, "escolha"))
-            if body.get("skill") and skill != "auto" and skill != auto_skill:
+            if asked_skill and skill != "auto" and skill != auto_skill:
                 lessons.append((text, "skill", skill, "escolha"))
-            if chosen_rung is not None and chosen_rung != routing.WIDE and chosen_rung != auto_rung:
-                lessons.append((text, "rung", str(chosen_rung), "refeita" if again else "escolha"))
+            if asked_rung is not None and asked_rung != routing.WIDE and asked_rung != auto_rung:
+                lessons.append((text, "rung", str(asked_rung), "refeita" if again else "escolha"))
             if asked_again:
                 lessons.append((text, "rung", str(routing.PAGES), "refeita"))
             complained = complaint and last_user is not None
             if complained:
-                lessons.append((last_user["content"], "rung", str(routing.PAGES), "reclamacao"))
-            try:
-                for question, field_, value, origin in lessons:
+                lessons.append((earlier or last_user["content"], "rung", str(routing.PAGES), "reclamacao"))
+            for question, field_, value, origin in lessons:
+                try:  # cada lição por si: uma que falha não leva as outras
                     memory.learn_route(question=question, field=field_, value=value, origin=origin, conversation_id=cid)
-                if last_reply and last_reply.get("id") and (again or asked_again or complained):
+                except (ValueError, OSError, sqlite3.DatabaseError):
+                    pass  # o aprendizado é um extra: a resposta já foi guardada
+            if last_reply and last_reply.get("id") and (again or asked_again or complained):
+                try:
                     memory.weaken_trail(last_reply["id"])
-            except (ValueError, OSError, sqlite3.DatabaseError):
-                pass  # o aprendizado é um extra: a resposta já foi guardada
+                except (ValueError, OSError, sqlite3.DatabaseError):
+                    pass
 
         def rewrite(*, plan: bool = False) -> tuple[str | dict | None, int]:
             """Consulta da busca pelo modelo mais barato; sem ela, a busca segue pela própria pergunta. Com `plan`,
@@ -1415,8 +1452,10 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     from aliado.llm.usage_log import FILES_LOG_NAME
     from aliado.memory.reviewer import check_memory, reading_card, review_exchange
     from aliado.memory.store import MemoryStore
-    from aliado.science import digest
 
+    # Os resultados do chat e o assunto da biblioteca vêm das especializações instaladas (lote 36).
+    make_digest = specializations.first("results_digest")
+    subject = ", ".join(specializations.gather("REWRITE_SUBJECT"))
     # O registro do que for enviado ao serviço de arquivos fica ao lado do registro de uso (lote 30).
     gateway = build_default_gateway(files=Path(data_dir) / "uso" / FILES_LOG_NAME)
     google = gateway.registry.provider("google")
@@ -1451,9 +1490,10 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
                        checker=lambda memory_: check_memory(execute, memory_),
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
-                       query_rewriter=lambda **kwargs: rewrite_query(execute, plan=True, **kwargs),
+                       query_rewriter=lambda **kwargs: rewrite_query(execute, plan=True, subject=subject, **kwargs),
                        results_dir=results_dir, dataset_dir=dataset_dir,
-                       results_digest=lambda: digest.cached(settings.results_dir, settings.reference_dir),
+                       results_digest=(lambda: make_digest(settings.results_dir, settings.reference_dir))
+                       if make_digest else None,
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
                        figure_reader=read_figures if figure_alias else None,
                        figure_model=MODEL_NAMES.get(figure_alias, figure_alias),

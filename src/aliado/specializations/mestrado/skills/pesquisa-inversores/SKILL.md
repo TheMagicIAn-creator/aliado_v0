@@ -4,6 +4,7 @@ description: Apoiar a pesquisa de mestrado de Rodolfo sobre detecção de falhas
 metadata:
   version: "0.2.2"
   references: "diretrizes-aprovadas-2026-09-22.md"
+  apoio: "confiabilidade"
 ---
 
 # Pesquisa em inversores fotovoltaicos

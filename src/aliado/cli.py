@@ -9,6 +9,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
+from aliado import specializations
 from aliado.agent import Agent, prepare_request
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.providers.gateway import build_default_gateway
@@ -28,15 +29,15 @@ def main(argv: list[str] | None = None) -> int:
     for name in ("preparar", "perguntar"):
         command = commands.add_parser(name)
         command.add_argument("question", help="Pergunta ao agente")
-        command.add_argument("--skill", default="pesquisa-inversores", help="Nome ou 'nenhuma'")
+        command.add_argument("--skill", help="Nome ou 'nenhuma' (padrão: a skill da especialização instalada)")
         command.add_argument("--apoio", help="Skill geral complementar")
         command.add_argument("--biblioteca", type=Path, help="Biblioteca local explicitamente selecionada")
         command.add_argument("--resultados", action="store_true",
                              help="Inclui os resultados da pesquisa (blocos [R1]…), como no chat")
         command.add_argument("--resultados-dir", type=Path, default=Path("data/resultados"),
-                             help="Pasta dos resultados do GPVS")
-        command.add_argument("--referencias", type=Path, default=Path("docs/pesquisa-inversores"),
-                             help="Pasta com a FMECA, os cenários e os tempos de reparo")
+                             help="Pasta dos resultados da pesquisa")
+        command.add_argument("--referencias", type=Path,
+                             help="Pasta com a FMECA, os cenários e os tempos de reparo (padrão: a da especialização)")
         if name == "perguntar":
             command.add_argument("--provider", choices=("openai", "google"), required=True)
             command.add_argument("--model-alias", required=True, help="Alias configurado no gateway")
@@ -113,33 +114,11 @@ def main(argv: list[str] | None = None) -> int:
     calculation.add_argument("--saida", type=Path, required=True)
     calculation.add_argument("--grafico", action="store_true")
     fmeca = science_commands.add_parser("fmeca", help="NPR e leitura separada pelas taxas de falha")
-    fmeca.add_argument("--tabela", type=Path, default=Path("docs/pesquisa-inversores/fmeca.json"))
+    fmeca.add_argument("--tabela", type=Path, help="Tabela da FMECA (padrão: a da especialização instalada)")
     fmeca.add_argument("--saida", type=Path, required=True, help="Pasta nova para o relatório")
-    gpvs = science_commands.add_parser("preparar-gpvs", help="Prepara os dados do GPVS: divisão e normalização, sem modelos")
-    gpvs.add_argument("--dados", type=Path, default=Path("data/gpvs"))
-    gpvs.add_argument("--saida", type=Path, required=True, help="Pasta nova para o relatório")
-    gpvs.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
-    gpvs.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: 11)")
-    training = science_commands.add_parser("treinar-gpvs", help="Treina os autoencoders e fixa o limiar p99")
-    training.add_argument("--dados", type=Path, default=Path("data/gpvs"))
-    training.add_argument("--saida", type=Path, required=True, help="Pasta nova para modelos e relatório")
-    training.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
-    training.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: 11)")
-    training.add_argument("--sementes", help="Lista separada por vírgulas (padrão: 13,29,42,71,101)")
-    training.add_argument("--teto-epocas", type=int,
-                          help="Teto de épocas (padrão: 2000, só de segurança; 150 reproduz a origem)")
-    evaluation = science_commands.add_parser("avaliar-gpvs", help="Avalia os modelos treinados nos ensaios de teste")
-    evaluation.add_argument("--modelos", type=Path, required=True, help="Pasta de uma rodada de treinar-gpvs")
-    evaluation.add_argument("--saida", type=Path, required=True, help="Pasta nova para a avaliação")
-    evaluation.add_argument("--dados", type=Path, default=Path("data/gpvs"))
-    evaluation.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
-    reanalysis = science_commands.add_parser(
-        "reanalisar-gpvs", help="Reanalisa os mesmos escores com o início observado das falhas")
-    reanalysis.add_argument("--avaliacao", type=Path, default=Path("data/resultados/gpvs-avaliacao-001"))
-    reanalysis.add_argument("--modelos", type=Path, default=Path("data/resultados/gpvs-modelos-002"))
-    reanalysis.add_argument("--saida", type=Path, required=True, help="Pasta nova para a reanálise")
-    reanalysis.add_argument("--dados", type=Path, default=Path("data/gpvs"))
-    reanalysis.add_argument("--cache", type=Path, default=Path("data/gpvs/processado/variaveis.npz"))
+    # Os comandos de cada especialização, como os do experimento por etapa (lote 36).
+    for add in specializations.gather("add_commands"):
+        add(science_commands)
     args = parser.parse_args(argv)
     try:
         if args.command == "skills":
@@ -193,29 +172,20 @@ def main(argv: list[str] | None = None) -> int:
             if isinstance(payload, list) and any(item.get("status") == "failed" for item in payload):
                 return 2
             return 0
-        if args.command == "ciencia" and args.operation == "preparar-gpvs":
-            from aliado.science.detection.gpvs import export_preparation, prepare, report
-
-            if args.saida.exists():
-                raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
-            prepared = prepare(args.dados, cache=args.cache, **_purge(args))
-            print(json.dumps(export_preparation(prepared, report(prepared), args.saida),
-                             ensure_ascii=False, indent=2))
-            return 0
         if args.command == "ciencia" and args.operation == "fmeca":
             from aliado.science.fmeca import evaluate_fmeca, export_fmeca, load_table
 
             if args.saida.exists():
                 raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
-            print(json.dumps(export_fmeca(evaluate_fmeca(*load_table(args.tabela)), args.saida),
+            reference = specializations.first("REFERENCE_DIR")
+            table = args.tabela or (reference / "fmeca.json" if reference else None)
+            if table is None:
+                raise ValueError("Informe a tabela da FMECA com --tabela.")
+            print(json.dumps(export_fmeca(evaluate_fmeca(*load_table(table)), args.saida),
                              ensure_ascii=False, indent=2))
             return 0
-        if args.command == "ciencia" and args.operation == "treinar-gpvs":
-            return _train_gpvs(args)
-        if args.command == "ciencia" and args.operation == "avaliar-gpvs":
-            return _evaluate_gpvs(args)
-        if args.command == "ciencia" and args.operation == "reanalisar-gpvs":
-            return _reanalyze_gpvs(args)
+        if getattr(args, "handler", None) is not None:  # um comando de especialização
+            return args.handler(args)
         if args.command == "ciencia":
             from aliado.science import evaluate_scenario, export_result
 
@@ -239,12 +209,13 @@ def main(argv: list[str] | None = None) -> int:
             from aliado.knowledge.library import DocumentLibrary
 
             selected_library = DocumentLibrary(args.biblioteca)
-        skill_name = None if args.skill == "nenhuma" else args.skill
+        skill_name = None if args.skill == "nenhuma" else (args.skill or specializations.first("DEFAULT_SKILL"))
         results = None
         if args.resultados:
-            from aliado.science.digest import build_digest
-
-            results = build_digest(args.resultados_dir, args.referencias)
+            digest = specializations.first("results_digest")
+            if digest is None:
+                raise ValueError("Nenhuma especialização com resultados está instalada.")
+            results = digest(args.resultados_dir, args.referencias or specializations.first("REFERENCE_DIR"))
         if args.command == "preparar":
             print(json.dumps(asdict(prepare_request(args.question, skill_name=skill_name,
                                                    supporting_skill_name=args.apoio, library=selected_library,
@@ -371,7 +342,7 @@ def _rewriter(args):
 
     def rewrite(question: str) -> str:
         query, result = rewrite_query(lambda request: gateway.execute(request, provider="google", model_alias=alias),
-                                      question=question)
+                                      question=question, subject=", ".join(specializations.gather("REWRITE_SUBJECT")))
         try:
             record_usage(result, args.registro_uso)
         except OSError:
@@ -427,72 +398,6 @@ def _experiment(args) -> int:
     experiments.write_result(folder, result)
     print(json.dumps({"pasta": str(folder), "rodada": result["rodada"], "rotulo": result["rotulo"]},
                      ensure_ascii=False, indent=2))
-    return 0
-
-
-def _purge(args) -> dict:
-    return {} if args.separacao is None else {"purge": args.separacao}
-
-
-def _train_gpvs(args) -> int:
-    from aliado.science.detection.gpvs import prepare
-    from aliado.science.detection.models import Hyperparameters
-    from aliado.science.detection.training import (
-        ExperimentConfig,
-        export_training,
-        train_detectors,
-        training_blocks,
-    )
-
-    if args.saida.exists():
-        raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
-    options = _purge(args)
-    if args.sementes:
-        seeds = tuple(int(item) for item in args.sementes.split(","))
-        options["seeds"] = seeds
-        options["reference_seed"] = 42 if 42 in seeds else seeds[0]
-    if args.teto_epocas is not None:
-        options["hyperparameters"] = Hyperparameters(max_epochs=args.teto_epocas)
-    config = ExperimentConfig(**options)
-    prepared = prepare(args.dados, cache=args.cache, purge=config.purge, fractions=config.fractions)
-    runs = train_detectors(prepared.scaled, training_blocks(prepared), config,
-                           progress=lambda line: print(line, file=sys.stderr, flush=True))
-    print(json.dumps(export_training(runs, prepared, config, args.saida), ensure_ascii=False, indent=2))
-    return 0
-
-
-def _evaluate_gpvs(args) -> int:
-    from aliado.science.detection.evaluation import (
-        EvaluationConfig,
-        export_evaluation,
-        load_training,
-        score_all,
-    )
-    from aliado.science.detection.gpvs import prepare
-
-    if args.saida.exists():
-        raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
-    trained = load_training(args.modelos)
-    prepared = prepare(args.dados, cache=args.cache, purge=trained.config.purge, fractions=trained.config.fractions)
-    config = EvaluationConfig()
-    print(json.dumps(export_evaluation(score_all(trained, prepared), trained, prepared, config, args.saida),
-                     ensure_ascii=False, indent=2))
-    return 0
-
-
-def _reanalyze_gpvs(args) -> int:
-    from aliado.science.detection import registry
-    from aliado.science.detection.reanalysis import EVALUATION, run
-
-    if args.saida.exists():
-        raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
-    paths = run(args.avaliacao, args.modelos, args.dados, args.saida, cache=args.cache)
-    frozen = json.loads(Path(paths["configuracao"]).read_text(encoding="utf-8"))
-    number = registry.record_reanalysis(args.saida.parent, source=args.avaliacao.name, output=args.saida.name,
-                                        training=args.modelos.name,
-                                        training_sha=frozen["origem"]["treino_configuracao_sha256"],
-                                        config_sha=frozen["sha256"], canonical=EVALUATION)
-    print(json.dumps(paths | {"consulta": number}, ensure_ascii=False, indent=2))
     return 0
 
 

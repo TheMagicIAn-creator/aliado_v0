@@ -12,7 +12,7 @@ import pytest
 
 np = pytest.importorskip("numpy")
 
-from aliado.science.detection import gpvs, summary  # noqa: E402
+from aliado.specializations.mestrado import gpvs, summary  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS, GPVS = ROOT / "data" / "resultados", ROOT / "data" / "gpvs"
@@ -179,7 +179,7 @@ def test_real_views_repeat_the_official_evaluation():
 
 @pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
 def test_real_panels_match_the_scores_and_the_official_alarms():
-    from aliado.science.detection.evaluation import _onset
+    from aliado.specializations.mestrado.evaluation import _onset
 
     panels = summary.score_panels(RESULTS, GPVS)
     report = json.loads((RESULTS / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))

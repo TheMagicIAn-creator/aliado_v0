@@ -130,6 +130,13 @@
       "runtimeArgs": ["tmp/lote-34/servidor_teste.py"],
       "port": 8782,
       "url": "http://127.0.0.1:8782"
+    },
+    {
+      "name": "aliado-web-lote-35",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["tmp/lote-35/servidor_teste.py", "--limpar"],
+      "port": 8783,
+      "url": "http://127.0.0.1:8783"
     }
   ]
 }

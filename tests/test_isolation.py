@@ -8,31 +8,6 @@ from pathlib import Path
 CORE = Path(__file__).resolve().parents[1] / "src" / "aliado"
 DOMAIN = re.compile(r"gpvs|inversor|mestrado|fotovolt", re.IGNORECASE)
 SUFFIXES = {".py", ".js", ".html", ".css", ".md", ".json"}
-# O que o lote 34 deixou no núcleo, por arquivo: cada lote só pode diminuir, e o lote 36 zera a lista.
-PENDING = {
-    "agent.py": 1,
-    "cli.py": 34,
-    "interfaces/web/app.py": 4,
-    "interfaces/web/static/app.js": 5,
-    "interfaces/web/static/graficos.js": 6,
-    "interfaces/web/static/index.html": 1,
-    "knowledge/rewrite.py": 1,
-    "routing.py": 2,
-    "routing_examples.py": 9,
-    "science/components.py": 1,
-    "science/detection/__init__.py": 3,
-    "science/detection/evaluation.py": 13,
-    "science/detection/gpvs.py": 17,
-    "science/detection/onset.py": 9,
-    "science/detection/reanalysis.py": 23,
-    "science/detection/summary.py": 22,
-    "science/detection/training.py": 14,
-    "science/digest.py": 14,
-    "science/explorer.py": 22,
-    "skills/builtin/pesquisa-inversores/references/decisoes-2026-09-13.md": 12,
-    "skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md": 6,
-    "skills/builtin/pesquisa-inversores/SKILL.md": 8,
-}
 
 
 def mentions() -> dict[str, int]:
@@ -50,9 +25,33 @@ def mentions() -> dict[str, int]:
     return found
 
 
-def test_nuc_01_core_has_no_new_domain_mentions():
-    """NUC-01: só os arquivos da lista têm menções, nunca mais que nela; uma redução atualiza a lista."""
-    assert mentions() == PENDING, "Atualize PENDING: uma menção nova entrou no núcleo, ou uma saiu e a lista ficou para trás."
+def test_nuc_01_core_has_no_domain_mentions():
+    """NUC-01: nenhum arquivo do núcleo menciona o domínio (o lote 36 zerou a lista de transição do lote 34)."""
+    assert mentions() == {}, "Uma menção ao domínio entrou no núcleo: o lugar dela é a pasta da especialização."
+
+
+def test_nuc_02_the_core_reads_the_specialization_only_through_its_attributes(capsys):
+    """NUC-02: a skill padrão, os comandos do terminal, as frases do roteador e os resultados vêm dos atributos da
+    especialização, lidos quando o núcleo precisa deles, nunca ao importá-lo."""
+    import subprocess
+    import sys
+
+    from aliado import routing, specializations
+    from aliado.cli import main
+
+    code = ("import sys, aliado.cli, aliado.routing, aliado.agent, aliado.interfaces.web.science\n"
+            "print(sorted(name for name in sys.modules if name.startswith('aliado.specializations.')))")
+    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert done.stdout.strip() == "[]"
+    assert specializations.first("DEFAULT_SKILL") == "pesquisa-inversores" and specializations.first("ausente", 7) == 7
+    assert callable(specializations.first("results_digest")) and specializations.first("REWRITE_SUBJECT")
+    assert routing._about_results("quais falhas do gpvs nao foram detectadas", None)
+    assert "pesquisa-inversores" in routing._specialized()["skills"]
+    try:
+        main(["ciencia", "treinar-gpvs", "--help"])
+    except SystemExit as exit_:
+        assert exit_.code == 0
+    assert "--teto-epocas" in capsys.readouterr().out
 
 
 def test_nuc_01_specialization_discovery_has_no_names():

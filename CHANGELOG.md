@@ -3,11 +3,53 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
-## [Não lançado] — lote 34
+## [0.7.0] — 2026-10-18
+
+Lotes 34 a 36: a fundação revista, pela [revisão da modularização e das specs](docs/revisao/2026-10-modularizacao-e-specs.md).
+
+### Lote 36: o mestrado fora do núcleo
+
+Detalhes na [spec 0036](docs/specs/0036-mestrado-fora-do-nucleo.md) e na
+[validação do lote 36](docs/migracao/validacao-lote-36.md).
+
+- **Zero menções ao domínio no núcleo:** o código da pesquisa (preparo da base, treino, avaliação, início das
+  falhas, reanálise, rodada atual, exploradores e o resumo dos resultados no chat) e a skill `pesquisa-inversores`
+  foram para `src/aliado/specializations/mestrado/`. O teste que mede as menções exige zero.
+- **O que a especialização entrega ao núcleo:** a skill padrão, as pastas da base e das referências, as frases do
+  roteador, o assunto da reescrita da busca, o glossário da aba Ciência, os comandos `aliado ciencia *-gpvs`, as
+  rotas da rodada atual e dos exploradores e os resultados do chat. O núcleo lê tudo isso quando precisa, nunca ao
+  abrir.
+- **O apoio da skill** (a de confiabilidade junto com a da pesquisa) passou a ser declarado no SKILL.md
+  (`metadata.apoio`), em vez de estar no código.
+- **O glossário da aba** (63 notas) passou a ter uma fonte só, na especialização; o resumo do chat usa as mesmas.
+- Para quem usa, nada muda: os mesmos comandos, a mesma aba e as mesmas respostas.
+
+### Lote 35: chat com tela mínima e pedidos escritos
+
+Detalhes na [spec 0035](docs/specs/0035-chat-tela-minima.md) e na
+[validação do lote 35](docs/migracao/validacao-lote-35.md).
+
+- **Tela mínima:** saem do chat os seletores de skill, modelo, leitura e teto e as chaves de biblioteca, web,
+  resultados e "+ confiabilidade". O AL-IAdo escolhe sozinho, como já fazia no modo automático; a biblioteca e os
+  resultados ficam à mão do roteador, e a web só entra por pedido.
+- **Pedido escrito:** quem quer escolher escreve na mensagem, no começo ou no fim de uma frase: "use o modelo
+  maior", "só trechos", "use as páginas inteiras", "leia o documento inteiro", "leitura ampla", "busque na web",
+  "sem biblioteca", "sem os resultados" ou "use a skill engenharia". O pedido sai do texto que vai ao modelo, e a
+  linha sob a resposta diz "seguiu o seu pedido". Um botão da tela vale sobre o pedido; o pedido, sobre o que foi
+  aprendido.
+- **Mensagem só com o pedido:** "busque na web" sozinho refaz a pergunta anterior com a busca.
+- **Leitura ampla** só por pedido escrito, com a confirmação do custo todas as vezes, mesmo abaixo de 30 mil
+  tokens. "Ler mais fundo" para no documento inteiro. Os limites de 30 mil tokens por pergunta e de 300 mil por
+  dia não mudaram.
+- **Aprendizado:** o modelo, a skill e a leitura pedidos por escrito valem de novo numa mensagem muito parecida;
+  a leitura ampla e a web nunca ficam guardadas.
+- "Lembrar…" e os envios de documentos ficam com a skill da conversa; "Completar pesquisa" lê as páginas inteiras.
+
+### Lote 34: experimentos do zero, rodada atual e PDF por pedido
 
 Detalhes na [spec 0034](docs/specs/0034-experimentos.md) e na [validação do lote 34](docs/migracao/validacao-lote-34.md).
 
-### Adicionado
+#### Adicionado
 
 - **Rodar experimento.** Na aba Ciência, a seção **Experimento** roda de novo, do zero e de ponta a ponta, o
   experimento **AE Denso × AE-LSTM** na base de dados GPVS:
@@ -31,7 +73,7 @@ Detalhes na [spec 0034](docs/specs/0034-experimentos.md) e na [validação do lo
 - **Specs vivas** por capacidade em `docs/specs/capacidades/`, com requisitos numerados, e o teste que confere que
   cada requisito tem teste; o teste que impede menções novas ao domínio no núcleo.
 
-### Alterado
+#### Alterado
 
 - A seção "Rodar e arquivos" deu lugar à seção "Experimento": saem os botões de preparar, treinar e avaliar por
   etapa e a lista das pastas de resultados. Os comandos por etapa do terminal continuam.

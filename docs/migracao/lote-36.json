@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-18",
+  "batch": "36",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0036-mestrado-fora-do-nucleo.md",
+  "living_specs": ["docs/specs/capacidades/nucleo.md"],
+  "validation": "docs/migracao/validacao-lote-36.md",
+  "base_commit": "fb39bb4",
+  "release": {"version": "0.7.0", "with_batches": ["34", "35", "36"], "commit_tag_push_release_by": "pesquisador"},
+  "decisions": {
+    "date": "2026-10-17",
+    "place": "o código do mestrado em src/aliado/specializations/mestrado/, dentro do AL-IAdo",
+    "rule": "zero menções a gpvs|inversor|mestrado|fotovolt em qualquer arquivo do núcleo",
+    "discovery": "o núcleo percorre a pasta das especializações e lê atributos; sem YAML",
+    "kept": "app.py inteiro e a dependência knowledge -> routing"
+  },
+  "changes": {
+    "moved": {
+      "src/aliado/science/detection/gpvs.py": "src/aliado/specializations/mestrado/gpvs.py",
+      "src/aliado/science/detection/training.py": "src/aliado/specializations/mestrado/training.py",
+      "src/aliado/science/detection/evaluation.py": "src/aliado/specializations/mestrado/evaluation.py",
+      "src/aliado/science/detection/onset.py": "src/aliado/specializations/mestrado/onset.py",
+      "src/aliado/science/detection/reanalysis.py": "src/aliado/specializations/mestrado/reanalysis.py",
+      "src/aliado/science/detection/summary.py": "src/aliado/specializations/mestrado/summary.py",
+      "src/aliado/science/explorer.py": "src/aliado/specializations/mestrado/explorer.py",
+      "src/aliado/skills/builtin/pesquisa-inversores/": "src/aliado/specializations/mestrado/skills/pesquisa-inversores/"
+    },
+    "split": {"src/aliado/science/digest.py": "formato no núcleo; blocos [R1]…[R8] em specializations/mestrado/digest.py"},
+    "specialization_new": ["src/aliado/specializations/mestrado/commands.py", "src/aliado/specializations/mestrado/digest.py",
+                           "src/aliado/specializations/mestrado/notes.py", "src/aliado/specializations/mestrado/routing.py",
+                           "src/aliado/specializations/mestrado/web.py"],
+    "core": ["src/aliado/specializations/__init__.py", "src/aliado/routing.py", "src/aliado/routing_examples.py",
+             "src/aliado/cli.py", "src/aliado/agent.py", "src/aliado/skills/library.py", "src/aliado/knowledge/rewrite.py",
+             "src/aliado/science/digest.py", "src/aliado/science/ram.py", "src/aliado/science/components.py",
+             "src/aliado/science/detection/__init__.py", "src/aliado/interfaces/web/app.py",
+             "src/aliado/interfaces/web/science.py", "src/aliado/interfaces/web/experiments.py",
+             "src/aliado/interfaces/web/static/ciencia.js", "src/aliado/interfaces/web/static/graficos.js"],
+    "package": {"version": "0.7.0", "package_data": "aliado.specializations.mestrado: skills/*/SKILL.md e skills/*/references/*.md"}
+  },
+  "checks": {
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest -q", "passed": 786, "failed": 0, "seconds": 195.1},
+    "ruff": {"command": ".venv/Scripts/python.exe -m ruff check .", "exit_code": 0},
+    "domain_mentions_in_core": {"v0.6.0": [294, 27], "batch_34": [227, 22], "batch_35": [218, 20], "batch_36": [0, 0]},
+    "interface": {"server": "aliado-web-lote-34", "results_copy": "tmp/lote-34/resultados", "science_sections": 8,
+                  "notes_with_text": 251, "failed_requests": ["/api/memoria (sem memória no servidor de teste)"]},
+    "wheel": {"path": "dist/v0.7.0/aliado-0.7.0-py3-none-any.whl", "files": 111,
+              "sha256": "b920d7d67a8605063316d6df87b453afec062502aa8c4ca6615f1a77678d9edb",
+              "built_from": "tmp/v070-build (cópia limpa de src)", "check": "tmp/v070-check/conferir_pacote.py"}
+  },
+  "paid_calls": 0
+}

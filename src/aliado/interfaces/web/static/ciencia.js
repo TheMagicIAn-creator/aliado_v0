@@ -81,6 +81,7 @@ async function openScience(tab) {
   if (tab) science.tab = tab;
   try {
     science.status = await api("/api/ciencia");
+    Object.assign(GLOSSARIO, science.status.notas || {});  // as notas vêm da especialização (lote 36)
     if (science.status.rodada !== science.rodada) {
       // Outra rodada (feita aqui ou no terminal): nada do que estava em memória vale mais.
       Object.assign(science, { rodada: science.status.rodada, cache: {}, options: null, threshold: null, alarms: null });

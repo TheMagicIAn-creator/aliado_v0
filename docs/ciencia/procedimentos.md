@@ -4,7 +4,7 @@ Estado: procedimentos do lote 02 alinhados às decisões aprovadas no lote 03.
 O lote 06 implementa o [serviço geral de cálculos RAM](confiabilidade.md), com
 parâmetros fornecidos e sem ajuste de dados. Treino e experimentos de detecção
 continuam fora do escopo executável. Este documento não é carregado automaticamente.
-As [diretrizes vigentes M09–M14](../../src/aliado/skills/builtin/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md)
+As [diretrizes vigentes M09–M14](../../src/aliado/specializations/mestrado/skills/pesquisa-inversores/references/diretrizes-aprovadas-2026-09-22.md)
 são a referência carregada pela skill de pesquisa. O registro de 13/09 permanece
 histórico, sem carregamento automático. As fontes do novo acervo ainda serão
 selecionadas; nenhuma regra substitui inspeção bibliográfica ou validação numérica.

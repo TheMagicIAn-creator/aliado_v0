@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from starlette.testclient import TestClient
 from test_routing import Words
-from test_web import BASE, SOURCE, ask, env, fim, new_conversation  # noqa: F401 (fixture env)
+from test_web import BASE, SOURCE, ask, env, fim, new_conversation, say  # noqa: F401 (fixture env)
 
 from aliado.interfaces.web.app import create_app
 from aliado.memory.store import MemoryStore
@@ -103,3 +103,18 @@ def test_the_deeper_button_weakens_the_trail_of_the_answer_it_replaces(learning)
     ask(client, cid, QUESTION, skill="auto", modelo="auto", leitura="paginas")  # "Ler mais fundo"
     weak = [match["fraca"] for match in memory.trail(QUESTION, limit=5)]
     assert True in weak and memory.route_lessons(QUESTION)["rung"]["origin"] == "refeita"
+
+
+def test_a_written_request_is_learned_but_never_the_wide_reading_nor_the_web(learning):
+    """ROT-06: o pedido escrito ensina como um botão, e o que você escreve depois vale sobre a lição; a leitura
+    ampla e a web nunca ficam guardadas."""
+    client, calls, memory = learning["client"], learning["calls"], learning["memory"]
+    say(client, new_conversation(client), "Use o modelo maior. Oi, tudo bem?")
+    assert memory.route_lessons("Oi, tudo bem?")["model"]["value"] == "flash"
+    reply = fim(say(client, new_conversation(client), "Oi, tudo bem?")[1])["mensagens"][1]
+    assert calls[-1]["model_alias"] == "flash" and reply["rota"]["aprendido"][0]["campo"] == "modelo"
+    say(client, new_conversation(client), "Oi, tudo bem? Use o modelo menor.")
+    assert calls[-1]["model_alias"] == "flash_lite"
+    say(client, new_conversation(client), f"Faça a leitura ampla. {QUESTION}")
+    say(client, new_conversation(client), f"Busque na web. {QUESTION}")
+    assert memory.route_lessons(QUESTION) == {}

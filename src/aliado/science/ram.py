@@ -23,6 +23,8 @@ METHOD_SOURCES = {
 TIME_UNITS = {"s", "min", "h", "day", "year"}
 TIME_BASES = {"operation": "horas de operação", "calendar": "horas de calendário"}
 _LOG_MAX = math.log(sys.float_info.max)
+# Fonte das curvas da exploração na aba Ciência: um cenário com ela não pode ser salvo como resultado.
+EXPLORATION_SOURCE = "Exploração na aba Ciência; sem fonte registrada."
 
 
 def _number(value: Any, label: str, *, positive: bool = False) -> float:
@@ -330,3 +332,20 @@ def export_result(result: dict, output_dir: str | Path, *, plot: bool = False) -
         lines.extend(["", "![Curvas](curvas.png)"])
     paths["markdown"].write_text("\n".join(lines) + "\n", encoding="utf-8")
     return {kind: str(path) for kind, path in paths.items()}
+
+
+def reliability(rate_per_hour: float, hours_per_year: float, basis: str, horizon_years: float,
+                points: int = 41) -> dict:
+    """Curvas de confiabilidade exponencial para os controles da aba Ciência, sem gravar nada (exploração)."""
+    horizon = float(horizon_years)
+    if not 0 < horizon <= 100:
+        raise ValueError("O horizonte deve estar entre 0 e 100 anos.")
+    times = {round(horizon * index / (points - 1), 6) for index in range(points)}
+    times = sorted(times | {1.0} if horizon >= 1 else times)  # 1 ano sempre aparece na tabela
+    scenario = {
+        "name": "Exploração na aba Ciência", "kind": "exponential", "time_unit": "year",
+        "time_base": {"rate_unit": "h", "hours_per_year": hours_per_year, "basis": basis},
+        "parameters": {"rate": rate_per_hour}, "times": times,
+        "sources": [EXPLORATION_SOURCE], "assumptions": ["Valores escolhidos nos controles; nada é gravado."],
+    }
+    return evaluate_scenario(scenario)

@@ -306,7 +306,7 @@ def test_real_run_goes_from_zero_to_the_current_run(tmp_path, capsys):
     """EXP-02, EXP-03, EXP-06 e EXP-08 com a base real: o experimento inteiro, de ponta a ponta (5 épocas)."""
     pytest.importorskip("torch")
     from aliado.cli import main
-    from aliado.science.detection import summary
+    from aliado.specializations.mestrado import summary
 
     results = tmp_path / "resultados"
     args = ["experimento", "rodar", "ae-denso-lstm", "--resultados", str(results), "--base", str(GPVS),

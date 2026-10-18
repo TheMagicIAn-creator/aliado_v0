@@ -71,15 +71,15 @@ def interrupted(results_dir: str | Path, folder: str | Path, state: str) -> None
 def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_dir: str | Path, phrase: str,
         progress=print) -> dict:
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
-    from aliado.science.detection import gpvs, reanalysis, summary
-    from aliado.science.detection.evaluation import (
+    from aliado.science.detection.models import Hyperparameters
+    from aliado.specializations.mestrado import gpvs, reanalysis, summary
+    from aliado.specializations.mestrado.evaluation import (
         EvaluationConfig,
         export_evaluation,
         load_training,
         score_all,
     )
-    from aliado.science.detection.models import Hyperparameters
-    from aliado.science.detection.training import (
+    from aliado.specializations.mestrado.training import (
         ExperimentConfig,
         export_training,
         train_detectors,
@@ -120,7 +120,7 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
 
 def legacy(results_dir: str | Path) -> dict | None:
     """A avaliação oficial de 27/09 e a reanálise dela, no formato de uma rodada; None se faltarem."""
-    from aliado.science.detection import summary
+    from aliado.specializations.mestrado import summary
 
     results_dir = Path(results_dir)
     try:
@@ -166,7 +166,7 @@ def command(params: dict) -> str:
 def collect(run_, params: dict, *, executed: str | None, duration: float | None = None) -> dict:
     """O resultado da rodada: identificação, parâmetros, hashes, os indicadores e as visões da aba."""
     from aliado.experiments import FORMAT
-    from aliado.science.detection import summary
+    from aliado.specializations.mestrado import summary
 
     overview, faults = summary.overview(run_), summary.per_fault(run_)
     try:
@@ -197,7 +197,8 @@ def collect(run_, params: dict, *, executed: str | None, duration: float | None 
 
 def numbers(overview: dict, onsets: dict | None) -> dict:
     """Os indicadores que o Markdown, o PDF e a comparação mostram, com o texto da tela e a nota."""
-    from aliado.science.digest import NOTES, dec, num, seconds
+    from aliado.science.digest import dec, num, seconds
+    from aliado.specializations.mestrado.notes import NOTES
 
     found = {}
 
@@ -229,7 +230,8 @@ def numbers(overview: dict, onsets: dict | None) -> dict:
 
 def report(result: dict) -> list[dict]:
     """Os blocos do PDF, só a partir do resultado: o PDF de uma rodada antiga sai igual ao de hoje."""
-    from aliado.science.digest import NOTES, dec, num, seconds
+    from aliado.science.digest import dec, num, seconds
+    from aliado.specializations.mestrado.notes import NOTES
 
     detail, protocol = result["detalhe"], result["protocolo"]
     overview, faults, onsets = detail["resumo"], detail["metricas"], detail.get("inicio")

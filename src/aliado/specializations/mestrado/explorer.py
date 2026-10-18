@@ -19,8 +19,8 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.science.detection import gpvs
 from aliado.science.detection.threshold import calibrate_threshold
+from aliado.specializations.mestrado import gpvs
 
 CACHE_VERSION = 1
 # Em palavras, sem códigos internos (lote 23): o controle por trás continua sendo o M14.
@@ -30,7 +30,6 @@ WINDOW_KEYS = ("sensibilidade", "especificidade", "precisao", "f1", "mcc", "auc_
 PERCENTILES = (90.0, 99.9)
 CONFIRMATIONS = (1, 10)
 MODEL_NAMES = {"denso": "Denso", "lstm": "AE-LSTM"}
-EXPLORATION_SOURCE = "Exploração na aba Ciência; sem fonte registrada."
 
 
 def plain(value):
@@ -54,7 +53,7 @@ class Explorer:
     """Estado carregado sob demanda: modelos, dados preparados e erros por variável."""
 
     def __init__(self, results_dir: str | Path, gpvs_dir: str | Path, cache_dir: str | Path):
-        from aliado.science.detection.summary import current
+        from aliado.specializations.mestrado.summary import current
 
         self.results_dir = Path(results_dir)
         self.gpvs_dir = Path(gpvs_dir)
@@ -89,8 +88,8 @@ class Explorer:
         return self.status()
 
     def _load(self, progress) -> dict:
-        from aliado.science.detection.evaluation import load_training
         from aliado.science.detection.models import MODELS
+        from aliado.specializations.mestrado.evaluation import load_training
 
         status = self.status()
         if not status["disponivel"]:
@@ -119,9 +118,9 @@ class Explorer:
                 "canonical_trials": canonical_trials, "models": MODELS}
 
     def _errors(self, trained, prepared) -> dict:
-        from aliado.science.detection.evaluation import segment_errors
         from aliado.science.detection.models import feature_errors
-        from aliado.science.detection.training import model_inputs, training_blocks
+        from aliado.specializations.mestrado.evaluation import segment_errors
+        from aliado.specializations.mestrado.training import model_inputs, training_blocks
 
         meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes}
         path = self.cache_dir / f"erros-{trained.frozen['sha256'][:12]}.npz"
@@ -190,9 +189,9 @@ class Explorer:
 
     def alarms(self, kind: str, seed: int, k: int, percentile: float, confirmations: int,
                trial: str | None = None) -> dict:
-        from aliado.science.detection.evaluation import _onset, run_metrics
         from aliado.science.detection.metrics import alarm_starts
         from aliado.science.detection.models import top_k_scores
+        from aliado.specializations.mestrado.evaluation import _onset, run_metrics
 
         state, errors = self._ready(kind, seed)
         k, percentile = _k(k), _range(percentile, PERCENTILES, "percentil")
@@ -274,21 +273,3 @@ def _range(value, bounds: tuple, label: str) -> float:
 def _span(indices) -> list[int] | None:
     return [int(indices[0]), int(indices[-1])] if len(indices) else None
 
-
-def reliability(rate_per_hour: float, hours_per_year: float, basis: str, horizon_years: float,
-                points: int = 41) -> dict:
-    """Curvas de confiabilidade exponencial pelo serviço RAM, sem gravar nada (exploração)."""
-    from aliado.science import evaluate_scenario
-
-    horizon = float(horizon_years)
-    if not 0 < horizon <= 100:
-        raise ValueError("O horizonte deve estar entre 0 e 100 anos.")
-    times = {round(horizon * index / (points - 1), 6) for index in range(points)}
-    times = sorted(times | {1.0} if horizon >= 1 else times)  # 1 ano sempre aparece na tabela
-    scenario = {
-        "name": "Exploração na aba Ciência", "kind": "exponential", "time_unit": "year",
-        "time_base": {"rate_unit": "h", "hours_per_year": hours_per_year, "basis": basis},
-        "parameters": {"rate": rate_per_hour}, "times": times,
-        "sources": [EXPLORATION_SOURCE], "assumptions": ["Valores escolhidos nos controles; nada é gravado."],
-    }
-    return evaluate_scenario(scenario)

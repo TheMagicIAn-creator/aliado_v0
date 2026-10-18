@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-18",
+  "batch": "35",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0035-chat-tela-minima.md",
+  "living_specs": ["docs/specs/capacidades/roteador.md"],
+  "validation": "docs/migracao/validacao-lote-35.md",
+  "base_commit": "fb39bb4",
+  "release": {"planned_version": "0.7.0", "with_batches": ["34", "35", "36"], "commit_by": "pesquisador"},
+  "decisions": {
+    "date": "2026-10-17",
+    "screen": "tela mínima: saem os seletores de skill, modelo, leitura e teto e as chaves de biblioteca, web, resultados e apoio",
+    "written_request": "o pedido escrito vale como escolha; um botão vale sobre ele, e ele sobre a escolha aprendida",
+    "wide_reading": "só por pedido escrito, sempre com confirmação; limites de 30 mil e 300 mil tokens sem mudança",
+    "request_only": "mensagem só com o pedido refaz a pergunta anterior",
+    "web": "só por pedido escrito, sem a regra de fato recente"
+  },
+  "changes": {
+    "router": ["src/aliado/routing.py"],
+    "server": ["src/aliado/interfaces/web/app.py"],
+    "screen": ["src/aliado/interfaces/web/static/index.html", "src/aliado/interfaces/web/static/app.js",
+               "src/aliado/interfaces/web/static/app.css"],
+    "removed_from_screen": ["#skill", "#support", "#model", "#use-library", "#reading-mode", "#reading-budget",
+                            "#use-web", "#use-results"]
+  },
+  "checks": {
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest -q", "passed": 785, "failed": 0, "seconds": 217.6},
+    "ruff": {"command": ".venv/Scripts/python.exe -m ruff check .", "exit_code": 0},
+    "interface": {"server": "aliado-web-lote-35", "written_model": "modelo maior", "request_only_redo": true,
+                  "wide_reading_confirmed": true, "console_errors": 0}
+  },
+  "paid_calls": 0
+}
