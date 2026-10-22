@@ -3,12 +3,12 @@ percentil e hiperparâmetros."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import asdict, dataclass, field
 
 from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS
 from aliado.science.deteccao.redes.autoencoders import Hyperparameters
+from aliado.science.identidade.hashes import config_digest
 from aliado.specializations.mestrado.preparo import preparacao
 
 
@@ -35,4 +35,4 @@ class ExperimentConfig:
         return json.loads(json.dumps(asdict(self)))
 
     def digest(self) -> str:
-        return hashlib.sha256(json.dumps(self.as_dict(), sort_keys=True).encode("utf-8")).hexdigest()
+        return config_digest(self.as_dict())

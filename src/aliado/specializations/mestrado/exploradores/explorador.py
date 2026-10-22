@@ -1,9 +1,10 @@
 """Exploradores da aba Ciência (lote 20): o do limiar e o dos alarmes e da detecção.
 
-Os do GPVS reaproveitam as funções da avaliação canônica (`segment_errors`, `top_k_scores`,
+Os do GPVS reaproveitam as funções da avaliação canônica (`errors_all`, `top_k_scores`,
 `calibrate_threshold` e `run_metrics`) com os modelos congelados. O erro por variável de cada
-janela é calculado uma vez e guardado fora de `data/resultados`, que não muda. Com k = 5, p99 e
-m = 3, os números são os da avaliação de 27/09/2026.
+janela vem da matriz que a avaliação gravou (`erros.npz`, lote 54), conferida pelo contrato e nunca
+recalculada; nas rodadas anteriores a ela, é calculado uma vez e guardado fora de `data/resultados`,
+que não muda. Com k = 5, p99 e m = 3, os números são os da avaliação de 27/09/2026.
 
 O explorador do limiar usa só a calibração. O de alarme e detecção usa o teste saudável e os
 ensaios com falha, já consultados: é exploração pós-teste, não canônica (M14), e não substitui
@@ -13,7 +14,6 @@ os resultados congelados. O de confiabilidade fica no núcleo (`science/confiabi
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 import threading
 from pathlib import Path
@@ -21,6 +21,8 @@ from pathlib import Path
 import numpy as np
 
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold
+from aliado.science.identidade.contrato import ContractViolationError
+from aliado.science.identidade.hashes import config_digest
 from aliado.specializations.mestrado.atributos import variaveis
 from aliado.specializations.mestrado.atributos.cache import features_cache
 from aliado.specializations.mestrado.base import ensaios
@@ -93,7 +95,10 @@ class Explorer:
 
     def _load(self, progress) -> dict:
         from aliado.science.deteccao.redes.autoencoders import MODELS
-        from aliado.specializations.mestrado.avaliacao.treino_congelado import load_training
+        from aliado.specializations.mestrado.avaliacao.treino_congelado import (
+            load_training,
+            weight_hashes,
+        )
 
         status = self.status()
         if not status["disponivel"]:
@@ -114,10 +119,7 @@ class Explorer:
         if progress:
             progress("erros por variável", 2, 3)
         # Os hashes dos pesos que `load_training` acabou de conferir com os arquivos (lote 46).
-        summary = json.loads((self.training_dir() / "relatorio.json").read_text(encoding="utf-8"))
-        weights = {f"{kind}_s{seed}": summary["modelos"][kind]["sementes"][str(seed)]["arquivos"]["modelo"]["sha256"]
-                   for kind, seed in trained.models}
-        errors = self._errors(trained, prepared, weights)
+        errors = self._errors(trained, prepared, weight_hashes(trained))
         with (self.evaluation_dir / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
             canonical_trials = list(csv.DictReader(handle))
         if progress:
@@ -126,31 +128,26 @@ class Explorer:
                 "canonical_trials": canonical_trials, "models": MODELS}
 
     def _errors(self, trained, prepared, weights: dict) -> dict:
-        from aliado.science.deteccao.inferencia.erros import feature_errors
-        from aliado.specializations.mestrado.avaliacao.pontuacao import segment_errors
-        from aliado.specializations.mestrado.treino.detectores import model_inputs, training_blocks
+        from aliado.specializations.mestrado.avaliacao.artefatos import ERRORS, load_errors
+        from aliado.specializations.mestrado.avaliacao.pontuacao import errors_all
 
+        saved = self.evaluation_dir / ERRORS
+        if saved.is_file():  # rodada com o contrato do lote 54: vale a matriz gravada, sem recalcular nem copiar
+            meta, arrays = load_errors(saved)
+            if (meta["treino"], meta["dados"], meta["pesos"]) != (trained.frozen["sha256"], prepared.hashes, weights):
+                raise ContractViolationError(f"{ERRORS}: não é desta rodada; o treino, os dados ou os pesos não conferem.")
+            return self._split(arrays, trained)
         meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes,
                 "pesos": weights, "variaveis": list(variaveis.FEATURES)}
         # O nome vem da chave inteira: um treino com a mesma configuração e outros pesos não reaproveita nem
         # sobrescreve os erros de outro (lote 46).
-        name = hashlib.sha256(json.dumps(meta, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+        name = config_digest(meta)[:12]
         path = self.cache_dir / f"erros-{name}.npz"
         if path.is_file():
             with np.load(path) as cached:
                 if json.loads(str(cached["meta"])) == meta:
                     return self._split(dict(cached), trained)
-        sequence = trained.config.hyperparameters.sequence
-        calibration = training_blocks(prepared)["calibration"]
-        arrays = {}
-        for (kind, seed), model in trained.models.items():
-            key = f"{kind}_s{seed}"
-            arrays[f"{key}_calibracao"] = feature_errors(model, model_inputs(kind, prepared.scaled, calibration, sequence))
-            for name in ensaios.HEALTHY:
-                block = prepared.split["por_ensaio"][name]["test"]
-                arrays[f"{key}_saudavel_{name}"] = segment_errors(kind, model, prepared.scaled[block], sequence)
-            for name, item in prepared.faults.items():
-                arrays[f"{key}_{name}"] = segment_errors(kind, model, item["scaled"], sequence)
+        arrays = errors_all(trained, prepared)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         partial = path.with_suffix(".tmp.npz")
         np.savez_compressed(partial, meta=np.array(json.dumps(meta)), **arrays)

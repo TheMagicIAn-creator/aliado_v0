@@ -3,7 +3,6 @@ numa pasta nova; nunca sobrescreve."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 import platform
 from pathlib import Path
@@ -12,6 +11,7 @@ import numpy as np
 import torch
 
 from aliado.science.deteccao.pesos.arquivos import save_model
+from aliado.science.identidade.hashes import sha256_file
 from aliado.specializations.mestrado.base import ensaios
 from aliado.specializations.mestrado.preparo import artefatos as artefatos_do_preparo
 from aliado.specializations.mestrado.preparo import preparacao
@@ -24,10 +24,6 @@ from aliado.specializations.mestrado.treino.resumo import summarize
 def environment() -> dict:
     return {"python": platform.python_version(), "torch": torch.__version__, "numpy": np.__version__,
             "threads": torch.get_num_threads(), "sistema": platform.platform()}
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def export_training(runs: list[Run], prepared: preparacao.PreparedGPVS, config: ExperimentConfig,
@@ -50,8 +46,8 @@ def export_training(runs: list[Run], prepared: preparacao.PreparedGPVS, config: 
         history_path.write_text("epoca,perda_treino,perda_validacao\n" + "".join(
             f"{epoch},{train!r},{validation!r}\n" for epoch, (train, validation) in enumerate(rows, start=1)),
             encoding="utf-8")
-        files[name] = {"modelo": {"caminho": f"modelos/{name}.pt", "sha256": _sha256(model_path)},
-                       "historico": {"caminho": f"historicos/{name}.csv", "sha256": _sha256(history_path)}}
+        files[name] = {"modelo": {"caminho": f"modelos/{name}.pt", "sha256": sha256_file(model_path)},
+                       "historico": {"caminho": f"historicos/{name}.csv", "sha256": sha256_file(history_path)}}
     paths = {"configuracao": folder / "configuracao.json", "relatorio_json": folder / "relatorio.json",
              "relatorio_md": folder / "relatorio.md", "escores": folder / "escores_calibracao.npz",
              "normalizacao": folder / "normalizacao.npz"}

@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from aliado.science.identidade.contrato import PRIOR
 from aliado.specializations.mestrado.rodada.declaracao import (
     CONFIRMATION,
     DATASET,
@@ -29,7 +30,7 @@ def legacy(results_dir: str | Path) -> dict | None:
         params = {"separacao": training["purge"], "sementes": sorted(training["seeds"]),
                   "teto_epocas": training["hyperparameters"]["max_epochs"]}
         run_ = rodada_atual.Run(results_dir / LEGACY_EVALUATION, rodada_atual._legacy_reanalysis(results_dir), True, LEGACY_ID, 1)
-        return collect(run_, params, executed=evaluation.get("executado_em"))
+        return collect(run_, params, executed=evaluation.get("executado_em"), identity={"contrato": None, "estado": PRIOR})
     except (OSError, KeyError, ValueError, TypeError):
         return None
 
@@ -63,8 +64,9 @@ def command(params: dict) -> str:
             + f' --frase "{CONFIRMATION}"')
 
 
-def collect(run_, params: dict, *, executed: str | None, duration: float | None = None) -> dict:
-    """O resultado da rodada: identificação, parâmetros, hashes, os indicadores e as visões da aba."""
+def collect(run_, params: dict, *, executed: str | None, identity: dict, duration: float | None = None) -> dict:
+    """O resultado da rodada: identificação, parâmetros, hashes, a identidade (lote 54), os indicadores e as visões
+    da aba. A identidade vem sempre de quem chama: a de uma rodada nova, ou a marca de anterior ao contrato."""
     from aliado.experiments import FORMAT
     from aliado.specializations.mestrado.resultados import paineis, rodada_atual
 
@@ -89,6 +91,7 @@ def collect(run_, params: dict, *, executed: str | None, duration: float | None 
                       "sequencia": hp["sequence"], "paciencia": hp["patience"]},
         "hashes": {"treino": training["sha256"], "avaliacao": evaluation["sha256"],
                    "inicio": onset["sha256"] if onset else None, "dados": evaluation["dados"]["hashes"]},
+        "identidade": identity,
         "ambiente": training.get("ambiente"),
         "numeros": numbers(overview, onsets),
         "detalhe": {"resumo": overview, "metricas": faults, "inicio": onsets},

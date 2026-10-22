@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "54",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "committed_locally_awaiting_review",
+  "base_commit": "7d576d2",
+  "decision": "plano aprovado pelo pesquisador em 21/10/2026: a identidade e o contrato da rodada (o lote 49 do relatório em LaTeX, corrigido)",
+  "spec": "docs/specs/0054-identidade-e-contrato-da-rodada.md",
+  "validation": "docs/migracao/validacao-lote-54.md",
+  "requirements": {
+    "added": [
+      "EXP-13"
+    ],
+    "changed": [],
+    "tested_again": [
+      "EXP-08",
+      "EXP-09",
+      "EXP-10"
+    ]
+  },
+  "checks": {
+    "pytest": {
+      "grupos": 36,
+      "passed": 849,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 212.49,
+      "treinos": 18
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0,
+      "faltando": 0,
+      "arquivos_novos": [
+        "avaliacao/erros.npz"
+      ],
+      "chaves_novas_em_resultado_json": 18
+    },
+    "autoteste_da_equivalencia": {
+      "iguais_sem_diferenca": true,
+      "arquivos_comparados": 29,
+      "alterada_com_diferenca": true
+    },
+    "hashes_de_configuracao": {
+      "ExperimentConfig": "be9e54fa5d2100814908d3178a6f2aa9073cd494a12de23d1552a702f36a73d8",
+      "EvaluationConfig": "ce8b06e483a0270dc2002714c7c3afa79406976255b8bd9b8a429b3a5bbdc2fc",
+      "OnsetConfig": "1510880c26336589a95afb6a5f4df09ddeb8f73f32f1f0f0ebe4ee7cfb677bdf"
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "copias_antigas_fora_dos_registros": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "pdf_bytes": 238737,
+    "wheel": {
+      "modulos_esperados": 148,
+      "faltando": 0,
+      "importados_do_wheel": 146
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "merged_copies": {
+    "science.identidade.hashes.sha256_file": [
+      "base.leitura.sha256_file",
+      "avaliacao.treino_congelado._sha256",
+      "treino.artefatos._sha256"
+    ],
+    "science.identidade.hashes.config_digest": [
+      "treino.configuracao.ExperimentConfig.digest",
+      "avaliacao.configuracao.EvaluationConfig.digest",
+      "inicio_das_falhas.estimativa.OnsetConfig.digest",
+      "exploradores.explorador (nome do cache)"
+    ],
+    "avaliacao.pontuacao.errors_all": [
+      "exploradores.explorador.Explorer._errors (o laço)"
+    ],
+    "avaliacao.treino_congelado.weight_hashes": [
+      "exploradores.explorador.Explorer._load (os hashes dos pesos)"
+    ]
+  },
+  "evidence": {
+    "bateria": "tmp/lote-54/bateria/pytest.json",
+    "equivalencia": "tmp/lote-54/equivalencia.log",
+    "autoteste": "tmp/lote-54/autoteste.log",
+    "verificacao": "tmp/lote-54/verificacao.json"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "c33469762c35b477432429ef7f3b927a0b5614f9ce08d87b069a70b6787f1fca",
+    "docs/arquitetura/modulos.md": "d8296d15f840b7924645ac6223ef41f37bf3c5444eff0f423751a513376a920d",
+    "docs/ciencia/mapa-das-pastas.md": "858cff5840d4ec129dfe27d6ade8a55a7fd3626c4346685c8b47987d219b36e6",
+    "docs/migracao/validacao-lote-54.md": "e1ab3640ac8ef46781e54e26035c32095ac82b8e7e3279964f2cb9c954e02bd6",
+    "docs/roteiro-v0.md": "a179c0fe50f22ff7e096415adf7de37c18bebaf075d20ca9692bb86109650ef5",
+    "docs/specs/0054-identidade-e-contrato-da-rodada.md": "1502d85a1e0fcc29363ccbafd0e2679c08990129b0f251f8830e867828cf6661",
+    "docs/specs/capacidades/experimentos.md": "e6437556a13e714926888a7e7fb19477230f643dfab5cfc949206c5769a3f314",
+    "src/aliado/science/identidade/__init__.py": "dfea553a4294729d926778f37bb83529f59513d1dae970ab1b50c72bf612bb93",
+    "src/aliado/science/identidade/codigo.py": "cf785b317ba69982ae942e48750f3d34d171efbe8a84de0d2693b176200cdda7",
+    "src/aliado/science/identidade/contrato.py": "34b9df737d02c96393e5412cf66330b16998496407c3755865f880e61ffd1138",
+    "src/aliado/science/identidade/hashes.py": "b27d6f6602cfa9f6504ffb52c94bf8f307838ec1db7e65e4877dda9741ac7bc7",
+    "src/aliado/specializations/mestrado/avaliacao/artefatos.py": "bee6f3e0dfcd7204731c21391c4496e27b34e4be469e9a217cf48011f0dacf5f",
+    "src/aliado/specializations/mestrado/avaliacao/configuracao.py": "26e5ee5f1dd9a0ee65da41f3a2dcc5bf89a69961bc9d4f3aa9bef3e5636cf54b",
+    "src/aliado/specializations/mestrado/avaliacao/pontuacao.py": "b0d3f5364b344788ddfe137d238bd28920fb0e4912b9f90e8272dc2111971d4a",
+    "src/aliado/specializations/mestrado/avaliacao/treino_congelado.py": "346c212f75c5b0f9dfd7a32e4c2aa32419fc34ada7644286db4f8fc9c5a7bbbc",
+    "src/aliado/specializations/mestrado/base/leitura.py": "b11b5b1837998033889c64144f693f79e92553b88aa013be017580ff74f00ad8",
+    "src/aliado/specializations/mestrado/exploradores/explorador.py": "2e2970911a959d39f61dc2cf70f3ef7891bb307a237121d6dd17b283de7a1f69",
+    "src/aliado/specializations/mestrado/inicio_das_falhas/estimativa.py": "e8b834cccc2c69dbb2f7aab2b65feb1bf1f34992018fb936cf2f906525393a1a",
+    "src/aliado/specializations/mestrado/rodada/apresentacao.py": "71778d9af0525ec4e8159e3ed3a9ed2974bf063e76e3725fbb31b5f8d848725d",
+    "src/aliado/specializations/mestrado/rodada/consolidacao.py": "93d505c6faba426f34fd5319d229d81d3cdaf27c4bfc0ef2387bc69f4725969f",
+    "src/aliado/specializations/mestrado/rodada/execucao.py": "8f1dd89179e1b6e12734a979f181d307a9e32250a9d2029a9d88d17f73c31fdc",
+    "src/aliado/specializations/mestrado/treino/artefatos.py": "867c4944a44048061daac4f9d28ac0760eda0b5748d11e83e6c3d6948b00f2e1",
+    "src/aliado/specializations/mestrado/treino/configuracao.py": "ef2b5a82f8969d6deccac852b480b31ff5229c1fc4a1856c4572f8fd4646bcbd",
+    "tests/mestrado/test_artefato_de_erros.py": "e254bde9823ce4fd21120cfa04cec1da2d3edb57ee42ad8dd4c89abb61e94c3f",
+    "tests/mestrado/test_exploradores.py": "dfc38b999c61d0274f2ff0742562dac11077a86238f56e7538a03f683d8c4655",
+    "tests/science/test_identidade.py": "c70e5329309f55af38a34eec7a756df364197249f93b8bca64af1cec5be1ead6",
+    "tests/test_experiments.py": "9ed69897a58c9102cb0841e7ebaebc902ffa406e73acb2491291c4f9c3ee7557"
+  }
+}

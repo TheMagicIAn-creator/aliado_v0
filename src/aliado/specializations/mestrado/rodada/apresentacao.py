@@ -3,7 +3,28 @@ ao de hoje."""
 
 from __future__ import annotations
 
+from aliado.science.identidade.contrato import NOT_RECORDED, PRIOR, check_version, require
 from aliado.specializations.mestrado.rodada.declaracao import DESCRIPTION, METRICS
+
+IDENTITY_FIELDS = ("contrato", "codigo", "pesos", "variaveis", "janela", "erros_sha256")
+CODE_FIELDS = ("estado", "commit", "alteracoes_locais")
+IDENTITY_LABELS = ("Versão do programa (commit do Git)", "Pesos dos modelos", "Matriz de erros por variável")
+
+
+def identity_rows(result: dict) -> list[list[str]]:
+    """As linhas da identidade (lote 54). Uma rodada que declara o contrato precisa de todos os campos; uma anterior a
+    ele mostra que não os gravou, sem inventar nenhum."""
+    identity = result.get("identidade") or {}
+    if check_version(identity, "resultado.json") is None:
+        return [[label, f"{NOT_RECORDED} ({PRIOR})"] for label in IDENTITY_LABELS]
+    require(identity, IDENTITY_FIELDS, "resultado.json")
+    code = identity["codigo"]
+    require(code, CODE_FIELDS, "resultado.json, versão do programa")
+    version = (code["commit"][:16] + (", com alterações locais" if code["alteracoes_locais"] else "")
+               if code["estado"] == "registrado" else code["estado"])
+    return [[IDENTITY_LABELS[0], version],
+            [IDENTITY_LABELS[1], f"{len(identity['pesos'])} arquivos conferidos; os códigos completos estão no JSON anexo"],
+            [IDENTITY_LABELS[2], identity["erros_sha256"][:16]]]
 
 
 def report(result: dict) -> list[dict]:
@@ -46,9 +67,16 @@ def report(result: dict) -> list[dict]:
          "linhas": [["Configuração do treino", result["hashes"]["treino"][:16]],
                     ["Configuração da avaliação", result["hashes"]["avaliacao"][:16]],
                     *([["Configuração do início das falhas", result["hashes"]["inicio"][:16]]] if result["hashes"].get("inicio") else []),
-                    ["Base de dados", f"{len(result['hashes']['dados'])} arquivos conferidos; os códigos completos estão no JSON anexo"]],
+                    ["Base de dados", f"{len(result['hashes']['dados'])} arquivos conferidos; os códigos completos estão no JSON anexo"],
+                    *identity_rows(result)],
          "notas": ["O código de cada arquivo muda com qualquer alteração dele: códigos iguais garantem os mesmos dados e as "
-                   "mesmas escolhas."]},
+                   "mesmas escolhas.",
+                   "Versão do programa: o commit do Git do AL-IAdo que rodou; \"com alterações locais\" quer dizer que havia "
+                   "mudanças no código ainda sem commit.",
+                   "Matriz de erros: o erro de cada uma das 24 variáveis em cada janela, por modelo e repetição; o código é o "
+                   "do conteúdo das matrizes, e não o do arquivo, que guarda a hora em que foi gravado.",
+                   "As rodadas anteriores ao contrato de 22/10/2026 não gravaram a versão do programa, os pesos nem a matriz "
+                   "de erros no resultado."]},
         {"tipo": "paragrafo", "texto": "Para rodar de novo pelo terminal, com os mesmos parâmetros:"},
         {"tipo": "codigo", "texto": result["comando"]},
     ]

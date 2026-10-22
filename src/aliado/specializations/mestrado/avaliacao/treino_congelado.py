@@ -3,13 +3,13 @@ qualquer pontuação."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
 
 from aliado.science.deteccao.pesos.arquivos import load_model
 from aliado.science.deteccao.redes.autoencoders import MODELS, Hyperparameters
+from aliado.science.identidade.hashes import sha256_file
 from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
 
 
@@ -22,8 +22,11 @@ class TrainedDetectors:
     thresholds: dict  # (modelo, semente, k) -> limiar
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+def weight_hashes(trained: TrainedDetectors) -> dict[str, str]:
+    """O hash gravado dos pesos de cada modelo e semente (`denso_s42`…), do relatório do treino."""
+    summary = json.loads((trained.folder / "relatorio.json").read_text(encoding="utf-8"))
+    return {f"{kind}_s{seed}": summary["modelos"][kind]["sementes"][str(seed)]["arquivos"]["modelo"]["sha256"]
+            for kind, seed in trained.models}
 
 
 def load_thresholds(folder: str | Path) -> tuple[TrainedDetectors, dict]:
@@ -53,7 +56,7 @@ def load_training(folder: str | Path) -> TrainedDetectors:
         for seed in trained.config.seeds:
             run = summary["modelos"][kind]["sementes"][str(seed)]
             path = trained.folder / run["arquivos"]["modelo"]["caminho"]
-            if _sha256(path) != run["arquivos"]["modelo"]["sha256"]:
+            if sha256_file(path) != run["arquivos"]["modelo"]["sha256"]:
                 raise ValueError(f"Os pesos de {path.name} não conferem com o hash gravado.")
             model, checkpoint = load_model(path)
             if (checkpoint["modelo"], checkpoint["semente"]) != (kind, seed):

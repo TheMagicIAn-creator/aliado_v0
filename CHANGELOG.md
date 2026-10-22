@@ -5,6 +5,18 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 54: a identidade e o contrato da rodada
+
+- **A identidade:** cada rodada nova grava em `resultado.json` a versão do programa (o commit e as alterações locais,
+  com um estado explícito), os hashes dos pesos, as 24 variáveis, a convenção da janela e o código da matriz de erros.
+- **A matriz de erros:** a avaliação grava `erros.npz`, com o erro de cada variável em cada janela, depois de conferir
+  que os k maiores dela dão os escores bit a bit. O explorador usa a matriz gravada, sem recalcular.
+- **O contrato (EXP-13):** quem lê um arquivo que declara o contrato exige cada campo e recusa, com o motivo, o que
+  falta ou não confere. As rodadas anteriores aparecem como "não gravado (anterior ao contrato)" e continuam
+  comparando e virando PDF.
+- **Os hashes num lugar só:** as cópias espalhadas viraram `science/identidade/`, com os mesmos valores.
+- **Estado:** commit local autorizado pelo pesquisador.
+
 ### Lote 53: o mestrado da rodada ao chat em pastas
 
 - **As pastas:**

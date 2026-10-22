@@ -9,6 +9,9 @@ from importlib.util import find_spec
 from pathlib import Path
 
 from aliado.science.deteccao.registro import consultas as registry
+from aliado.science.identidade.codigo import code_version
+from aliado.science.identidade.contrato import CONTRACT
+from aliado.science.identidade.hashes import arrays_digest
 from aliado.specializations.mestrado.atributos.cache import features_cache
 from aliado.specializations.mestrado.rodada.consolidacao import collect
 from aliado.specializations.mestrado.rodada.declaracao import DATASET, LEGACY_EVALUATION, STAGES
@@ -36,7 +39,11 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
         progress=print) -> dict:
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado.avaliacao.artefatos import export_evaluation
+    from aliado.specializations.mestrado.avaliacao.artefatos import (
+        ERRORS,
+        export_evaluation,
+        load_errors,
+    )
     from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig
     from aliado.specializations.mestrado.avaliacao.pontuacao import score_all
     from aliado.specializations.mestrado.avaliacao.treino_congelado import load_training
@@ -50,6 +57,7 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
 
     started = time.monotonic()
+    code = code_version()  # antes de preparar os dados: a versão que de fato roda
     folder, results_dir, dataset_dir = Path(folder), Path(results_dir), Path(dataset_dir)
     output = folder.resolve().relative_to(results_dir.resolve()).as_posix()
     cache = features_cache(dataset_dir)
@@ -76,6 +84,9 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
         raise
     registry.finish(results_dir, number, "concluida")
     progress("Montando o resumo…")
+    meta, errors = load_errors(folder / STAGES["avaliacao"] / ERRORS)
+    identity = {"contrato": CONTRACT, "codigo": code, "pesos": meta["pesos"], "variaveis": meta["variaveis"],
+                "janela": meta["janela"], "erros_sha256": arrays_digest(errors)}
     return collect(rodada_atual.Run(folder / STAGES["avaliacao"], folder / STAGES["inicio"], False, folder.name, number),
-                   params, executed=datetime.now().astimezone().isoformat(timespec="seconds"),
+                   params, executed=datetime.now().astimezone().isoformat(timespec="seconds"), identity=identity,
                    duration=time.monotonic() - started)

@@ -10,12 +10,12 @@ autoencoders entra. Só depende do numpy.
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from aliado.science.identidade.hashes import config_digest
 from aliado.specializations.mestrado.base import ensaios
 from aliado.specializations.mestrado.inicio_das_falhas.pontos_de_mudanca import (
     pelt,
@@ -47,7 +47,7 @@ class OnsetConfig:
         return json.loads(json.dumps(asdict(self)))
 
     def digest(self) -> str:
-        return hashlib.sha256(json.dumps(self.as_dict(), sort_keys=True).encode("utf-8")).hexdigest()
+        return config_digest(self.as_dict())
 
 
 def _changes(values, reference_windows: int, config: OnsetConfig) -> dict[float, list[int]]:

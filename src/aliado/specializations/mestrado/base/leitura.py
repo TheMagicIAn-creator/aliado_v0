@@ -2,26 +2,18 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
 import numpy as np
 
+from aliado.science.identidade.hashes import sha256_file
 from aliado.specializations.mestrado.base.ensaios import (
     EXPERIMENTS,
     GRID_HZ,
     SOURCE_COLUMNS,
     WINDOW,
 )
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def dataset_files(directory: str | Path) -> dict[str, Path]:

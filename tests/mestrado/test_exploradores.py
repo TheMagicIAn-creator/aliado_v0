@@ -34,18 +34,16 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
     pytest.importorskip("torch")
     from types import SimpleNamespace
 
-    from aliado.science.deteccao.inferencia import erros
     from aliado.specializations.mestrado.atributos import variaveis
     from aliado.specializations.mestrado.avaliacao import pontuacao
     from aliado.specializations.mestrado.base import ensaios
-    from aliado.specializations.mestrado.treino import detectores as training
 
     computed = []
-    monkeypatch.setattr(erros, "feature_errors",
+    monkeypatch.setattr(pontuacao, "feature_errors",
                         lambda model, inputs: computed.append(model) or np.zeros((2, 24), np.float32))
     monkeypatch.setattr(pontuacao, "segment_errors", lambda kind, model, scaled, sequence: np.ones((3, 24), np.float32))
-    monkeypatch.setattr(training, "training_blocks", lambda prepared: {"calibration": None})
-    monkeypatch.setattr(training, "model_inputs", lambda kind, scaled, blocks, sequence: scaled)
+    monkeypatch.setattr(pontuacao, "training_blocks", lambda prepared: {"calibration": None})
+    monkeypatch.setattr(pontuacao, "model_inputs", lambda kind, scaled, blocks, sequence: scaled)
     trained = SimpleNamespace(frozen={"sha256": "c" * 64}, models={("denso", 42): "rede"},
                               config=SimpleNamespace(hyperparameters=SimpleNamespace(sequence=8)))
     prepared = SimpleNamespace(hashes={"F0L.csv": "d" * 64}, scaled=np.zeros((4, 24), np.float32), faults={},

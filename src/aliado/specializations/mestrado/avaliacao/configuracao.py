@@ -3,12 +3,12 @@ reamostragens e semente."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import asdict, dataclass
 
 from aliado.science.deteccao.alarmes.confirmacao import CONFIRMATIONS
 from aliado.science.deteccao.metricas.incerteza import BLOCK, RESAMPLES
+from aliado.science.identidade.hashes import config_digest
 
 
 @dataclass(frozen=True)
@@ -31,4 +31,4 @@ class EvaluationConfig:
         return json.loads(json.dumps(asdict(self)))
 
     def digest(self) -> str:
-        return hashlib.sha256(json.dumps(self.as_dict(), sort_keys=True).encode("utf-8")).hexdigest()
+        return config_digest(self.as_dict())

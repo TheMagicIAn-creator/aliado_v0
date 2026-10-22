@@ -307,6 +307,17 @@ def test_real_run_goes_from_zero_to_the_current_run(base_real, tmp_path, capsys)
     assert result["parametros"] == {"separacao": 11, "sementes": [13, 42], "teto_epocas": 5}
     assert result["consulta"] == 1 and not result["oficial"] and result["detalhe"]["inicio"]
     assert {path.name for path in folder.iterdir()} >= {"preparo", "modelos", "avaliacao", "inicio", "resultado.md"}
+    # EXP-13: a rodada nova grava a identidade, com a matriz de erros que ela descreve.
+    from aliado.science.identidade.hashes import arrays_digest
+    from aliado.specializations.mestrado.avaliacao.artefatos import load_errors
+    from aliado.specializations.mestrado.rodada.apresentacao import IDENTITY_FIELDS, identity_rows
+
+    meta, errors = load_errors(folder / "avaliacao" / "erros.npz")
+    identity = result["identidade"]
+    assert set(identity) == set(IDENTITY_FIELDS) and identity["contrato"] == 1
+    assert identity["erros_sha256"] == arrays_digest(errors) and identity["pesos"] == meta["pesos"]
+    assert len(identity["pesos"]) == 4 and identity["codigo"]["estado"] == "registrado"
+    assert "não gravado" not in str(identity_rows(result))
     assert rodada_atual.current(results).evaluation == folder / "avaliacao"
     assert [(c["numero"], c["estado"]) for c in registry.consultations(results)] == [(1, "concluida")]
     assert result["rotulo"].endswith("1ª vez que os dados de teste foram usados")

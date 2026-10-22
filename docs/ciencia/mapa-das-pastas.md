@@ -92,6 +92,7 @@ Notas:
 | `fmeca/` | `tabela.py`: `load_table`; `calculo.py`: `evaluate_fmeca` (NPR = S × O × D e a leitura pelas taxas, sem fundir); `relatorio.py`: o Markdown; `artefatos.py`: `export_fmeca` | `tests/science/test_fmeca.py` |
 | `componentes/` | `reparos.py`: `load_repairs` e `validate_repairs`; `disponibilidade.py`: `component_view` | `tests/science/test_componentes.py` |
 | `resumo_citavel/` | `formato.py`: `num`, `pct`, `seconds`, `dec`, `prompt_text`, `notes_text` e `SECTIONS` | `tests/science/test_resumo_citavel.py` |
+| `identidade/` (lote 54) | `hashes.py`: `sha256_file`, `config_digest` e `arrays_digest` (o código do conteúdo de matrizes); `contrato.py`: `ContractViolationError`, `require` e `check_version`; `codigo.py`: `code_version` (o commit e as alterações locais, com estado explícito) | `tests/science/test_identidade.py` |
 
 ## Mestrado: `src/aliado/specializations/mestrado/`
 
@@ -104,11 +105,11 @@ A pesquisa de detecção de falhas na base GPVS-Faults, na ordem do método. Os 
 | 2. Atributos | `atributos/variaveis.py`, `extracao.py`, `cache.py` | as 24 variáveis de cada janela (mediana e IQR de Ipv, Vpv e Vdc; RMS e THD de cada fase; desequilíbrios; potências), a extração por ensaio e o cache | `test_atributos.py` |
 | 3. Preparo | `preparo/preparacao.py`, `resumo.py`, `artefatos.py`, `inicio_nominal.py` | a divisão 50/15/15/20 com separação de 11 janelas, a normalização pela linha de base do treino (piso de 10% do IQR), o comissionamento pela 1ª metade do pré-falha, o início nominal (o meio do registro) | `test_preparo.py` |
 | 4. Treino | `treino/configuracao.py`, `detectores.py`, `resumo.py`, `relatorio.py`, `artefatos.py` | a configuração congelada com hash, as entradas de cada modelo, o treino em cada repetição e o limiar p99 na calibração | `test_treino.py` |
-| 5. Avaliação | `avaliacao/configuracao.py`, `treino_congelado.py`, `pontuacao.py`, `decisao.py`, `incerteza.py`, `resumo.py`, `relatorio.py`, `artefatos.py`, `oficial.py` | o treino congelado conferido pelos hashes; os escores do teste; o alarme a partir do início nominal, datado pelo fim da janela que o confirma; as métricas por janela; os intervalos em blocos; a comparação pareada; a pasta oficial | `test_avaliacao.py` |
+| 5. Avaliação | `avaliacao/configuracao.py`, `treino_congelado.py`, `pontuacao.py`, `decisao.py`, `incerteza.py`, `resumo.py`, `relatorio.py`, `artefatos.py`, `oficial.py` | o treino congelado conferido pelos hashes; os escores do teste; o alarme a partir do início nominal, datado pelo fim da janela que o confirma; as métricas por janela; os intervalos em blocos; a comparação pareada; a pasta oficial; a matriz de erros por variável (`erros.npz`, lote 54), conferida bit a bit contra os escores e lida só pelo contrato | `test_avaliacao.py`, `test_artefato_de_erros.py` |
 | 6. Início das falhas | `inicio_das_falhas/pontos_de_mudanca.py`, `estimativa.py` | o PELT com penalidade c · d · ln n, com o menor c sem mudança nos sadios; o início observado e a classe (clara, fraca ou nenhuma) | `test_inicio_das_falhas.py` |
 | 7. Reanálise | `reanalise/reanalise.py`, `relatorio.py`, `artefatos.py` | os escores gravados relidos com o início observado, sem rodar os modelos | `test_reanalise.py` |
 | Comandos | `comandos/terminal.py` | `aliado ciencia preparar-gpvs`, `treinar-gpvs`, `avaliar-gpvs` e `reanalisar-gpvs` | `test_comandos.py` |
-| Rodada | `rodada/declaracao.py`, `execucao.py`, `consolidacao.py`, `apresentacao.py`, `experimento.py` | o experimento inteiro num processo só (preparo, treino, avaliação, início das falhas e resumo), o resultado em JSON e os blocos do PDF; `experimento.py` reúne os 14 atributos que o núcleo lê | `tests/test_experiments.py` |
+| Rodada | `rodada/declaracao.py`, `execucao.py`, `consolidacao.py`, `apresentacao.py`, `experimento.py` | o experimento inteiro num processo só (preparo, treino, avaliação, início das falhas e resumo), o resultado em JSON, com a identidade da rodada (lote 54), e os blocos do PDF; `experimento.py` reúne os 14 atributos que o núcleo lê | `tests/test_experiments.py`, `test_artefato_de_erros.py` |
 | Resultados | `resultados/rodada_atual.py`, `paineis.py` | qual rodada a aba e o chat mostram; o resumo, as métricas por falha, os escores e o início das falhas na aba Ciência | `test_resultados.py` |
 | Resumo para o chat | `resumo_para_o_chat/blocos.py` | os blocos citáveis [R1]…[R8] | `test_resumo_para_o_chat.py` |
 | Exploradores | `exploradores/explorador.py` | o limiar e os alarmes com outros k, percentis e confirmações (exploração pós-teste) | `test_exploradores.py` |
@@ -145,5 +146,7 @@ Nenhum arquivo de código fica solto na raiz do mestrado: só o `__init__.py`, o
 | `mestrado/web.py` | `tela/rotas.py` (lote 53) | `screen` |
 | `mestrado/routing.py` | `roteamento/frases.py` (lote 53) | `routing` |
 | `mestrado/notes.py` | `glossario/notas.py` (lote 53) | `glossary` |
+| `gpvs.sha256_file`, os `_sha256` da avaliação e do treino, os três `digest()` e o nome do cache do explorador | `science/identidade/hashes.py` (lote 54) | `identity` |
+| o laço dos erros em `explorer._errors` | `avaliacao/pontuacao.errors_all` (lote 54) | `errors_all` |
 
 Os mapas datados de `docs/arquitetura/2026-10-05/` são registros daquele dia e mantêm os caminhos antigos.

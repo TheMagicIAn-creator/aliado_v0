@@ -77,6 +77,27 @@ spec própria.
 *Cenário:* dado o código do mestrado, quando os testes leem os valores do protocolo, então eles são os de
 27/09/2026.
 
+**EXP-13. Identidade e contrato da rodada.** Uma rodada nova grava a sua identidade em `resultado.json`:
+- a versão do contrato;
+- a versão do programa, com o estado explícito (registrado, git ausente, fora de repositório, pacote fora do
+  repositório ou erro), e o commit e as alterações locais só no estado "registrado";
+- o hash dos pesos de cada modelo e repetição;
+- as 24 variáveis, na ordem, e a convenção da janela;
+- o código da matriz de erros.
+
+A avaliação grava `erros.npz`, com o erro de cada variável em cada janela: na calibração, no teste saudável e nos
+ensaios com falha. Os metadados trazem os hashes do treino, da avaliação e dos dados, e de onde vem cada linha. A
+convenção da janela: ela é datada pela primeira amostra; a janela i começa na amostra i × 200 do CSV; o alarme fica
+no fim da janela que completa a confirmação. Antes de gravar, a avaliação recalcula a matriz à parte e confere que os
+k maiores dela dão os escores bit a bit; senão, nada é gravado.
+
+Quem lê um arquivo que declara o contrato exige cada campo e recusa com `ContractViolationError`, com o motivo; nada é
+preenchido por suposição. O explorador usa a matriz gravada, sem recalcular. As rodadas sem a identidade (a
+avaliação de 27/09/2026, a rodada-001 e a rodada-002) são "anteriores ao contrato": o PDF diz "não gravado
+(anterior ao contrato)", e elas continuam comparando e virando PDF.
+*Cenário:* dada uma rodada nova, então `resultado.json` traz a identidade e `erros.npz` reproduz os escores; dado um
+`erros.npz` com um campo a menos ou com as variáveis em outra ordem, então o explorador recusa, com o motivo.
+
 ## Onde está
 
 - Núcleo: `src/aliado/experiments/` (rodadas, resultado, PDF, comparação), `src/aliado/interfaces/web/experiments.py`
@@ -84,3 +105,5 @@ spec própria.
 - Especialização: `src/aliado/specializations/mestrado/rodada/` (o experimento AE Denso × AE-LSTM): `experimento.py`
   reúne os 14 atributos do contrato; `declaracao.py`, `execucao.py`, `consolidacao.py` e `apresentacao.py` os
   definem.
+- Identidade (EXP-13): `src/aliado/science/identidade/` (hashes, contrato e versão do código, sem domínio) e
+  `src/aliado/specializations/mestrado/avaliacao/artefatos.py` (`erros.npz` e `load_errors`).

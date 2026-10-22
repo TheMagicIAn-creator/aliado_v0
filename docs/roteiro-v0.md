@@ -540,6 +540,7 @@ não dá para separá-los em commits.
 | 51 | O mestrado do dado ao treino em pastas: `base/`, `atributos/`, `preparo/` e `treino/`; a regra do início nominal, o cache e a pasta da base num lugar só | Feito em 22/10/2026: equivalência sem diferença ([spec 0051](specs/0051-mestrado-do-dado-ao-treino.md), [validação](migracao/validacao-lote-51.md)) |
 | 52 | O mestrado da avaliação aos comandos em pastas: `avaliacao/`, `inicio_das_falhas/`, `reanalise/` e `comandos/`; a pasta oficial num lugar só | Feito em 22/10/2026: equivalência sem diferença ([spec 0052](specs/0052-mestrado-da-avaliacao-aos-comandos.md), [validação](migracao/validacao-lote-52.md)) |
 | 53 | O mestrado da rodada ao chat em pastas: `rodada/` (com o contrato de 14 atributos), `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/` | Feito em 22/10/2026: equivalência sem diferença ([spec 0053](specs/0053-mestrado-da-rodada-ao-chat.md), [validação](migracao/validacao-lote-53.md)) |
+| 54 | A identidade e o contrato da rodada: `science/identidade/`, `erros.npz` conferido bit a bit, o explorador sem recalcular, as rodadas anteriores marcadas (EXP-13) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0054](specs/0054-identidade-e-contrato-da-rodada.md), [validação](migracao/validacao-lote-54.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -679,6 +680,22 @@ não dá para separá-los em commits.
   - nenhum arquivo de código solto na raiz do mestrado;
   - a reorganização das pastas (lotes 49 a 53) está completa.
 
+### Decisões e resultado do lote 54 (22/10/2026)
+
+- **O que mudou:**
+  - os hashes foram para `science/identidade/`, com o contrato e a versão do código;
+  - a avaliação grava a matriz de erros, conferida bit a bit contra os escores antes de gravar;
+  - a rodada grava a sua identidade;
+  - o explorador lê a matriz gravada.
+- **Decisões na implementação:**
+  - `score_all` não mudou: a matriz é recalculada à parte, para a conferência comparar duas contas;
+  - o código da matriz é o do conteúdo, porque o arquivo compactado guarda a hora em que foi gravado;
+  - dos 5 pontos que tratam `ValueError` de forma ampla, só o "Preparar" do explorador pode receber o erro de
+    contrato, e ele já mostra a mensagem. O PDF, na interface e no terminal, também a mostra.
+- **Resultado:**
+  - a equivalência sem diferença nos arquivos de antes, com `erros.npz` e a identidade listados como novos;
+  - a avaliação de 27/09 e a rodada-002 continuam comparando, com todos os indicadores iguais, e virando PDF.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -715,6 +732,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 51 | [0051](specs/0051-mestrado-do-dado-ao-treino.md) |
 | 52 | [0052](specs/0052-mestrado-da-avaliacao-aos-comandos.md) |
 | 53 | [0053](specs/0053-mestrado-da-rodada-ao-chat.md) |
+| 54 | [0054](specs/0054-identidade-e-contrato-da-rodada.md) |
 
 ## Fica para a v1
 
