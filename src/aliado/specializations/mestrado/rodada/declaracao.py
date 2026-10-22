@@ -18,7 +18,10 @@ DESCRIPTION = ("Compara dois detectores de falhas não supervisionados na base G
 DURATION = "cerca de 2 minutos"
 LEGACY_EVALUATION = "gpvs-avaliacao-001"
 LEGACY_ID = "avaliacao-oficial"
-STAGES = {"preparo": "preparo", "modelos": "modelos", "avaliacao": "avaliacao", "inicio": "inicio"}
+STAGES = {"preparo": "preparo", "modelos": "modelos", "avaliacao": "avaliacao", "inicio": "inicio",
+          "evidencia": "evidencia_espectral"}
+# A pasta dos exploradores dentro da pasta de dados do servidor, fora de data/resultados (lote 55: a tela e o chat).
+EXPLORATION_DIR = "ciencia"
 PARAMETERS = (
     {"nome": "separacao", "rotulo": "Separação entre blocos", "tipo": "inteiro", "padrao": 11, "minimo": 0,
      "maximo": 200, "unidade": "janelas",

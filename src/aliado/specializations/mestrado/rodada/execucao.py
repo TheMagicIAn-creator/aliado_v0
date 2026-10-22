@@ -47,6 +47,10 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig
     from aliado.specializations.mestrado.avaliacao.pontuacao import score_all
     from aliado.specializations.mestrado.avaliacao.treino_congelado import load_training
+    from aliado.specializations.mestrado.evidencia_espectral import (
+        artefatos as artefatos_da_evidencia,
+    )
+    from aliado.specializations.mestrado.evidencia_espectral import evidencia
     from aliado.specializations.mestrado.preparo import artefatos as artefatos_do_preparo
     from aliado.specializations.mestrado.preparo import preparacao
     from aliado.specializations.mestrado.preparo import resumo as resumo_do_preparo
@@ -74,19 +78,23 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     number = registry.start(results_dir, training=f"{output}/{STAGES['modelos']}", training_sha=trained.frozen["sha256"],
                             output=output, phrase=phrase, canonical=LEGACY_EVALUATION, origin="experimento")
     progress(f"Pontuando os ensaios de teste: é a {number}ª vez que os dados de teste são usados…")
+    run_ = rodada_atual.Run(folder / STAGES["avaliacao"], folder / STAGES["inicio"], False, folder.name, number)
     try:
         export_evaluation(score_all(trained, prepared), trained, prepared, EvaluationConfig(), folder / STAGES["avaliacao"])
         progress("Procurando quando cada falha aparece nos sinais…")
         reanalise.run(folder / STAGES["avaliacao"], folder / STAGES["modelos"], dataset_dir, folder / STAGES["inicio"],
                        cache=cache)
+        # A evidência espectral também lê os ensaios de teste: fica dentro da consulta registrada (lote 55).
+        progress("Medindo os harmônicos na janela do primeiro alarme…")
+        meta, errors = load_errors(folder / STAGES["avaliacao"] / ERRORS)
+        artefatos_da_evidencia.write(evidencia.build(run_, dataset_dir, prepared, errors, origin="rodada"),
+                                     artefatos_da_evidencia.run_file(run_))
     except BaseException:
         registry.finish(results_dir, number, "falhou")
         raise
     registry.finish(results_dir, number, "concluida")
     progress("Montando o resumo…")
-    meta, errors = load_errors(folder / STAGES["avaliacao"] / ERRORS)
     identity = {"contrato": CONTRACT, "codigo": code, "pesos": meta["pesos"], "variaveis": meta["variaveis"],
                 "janela": meta["janela"], "erros_sha256": arrays_digest(errors)}
-    return collect(rodada_atual.Run(folder / STAGES["avaliacao"], folder / STAGES["inicio"], False, folder.name, number),
-                   params, executed=datetime.now().astimezone().isoformat(timespec="seconds"), identity=identity,
+    return collect(run_, params, executed=datetime.now().astimezone().isoformat(timespec="seconds"), identity=identity,
                    duration=time.monotonic() - started)

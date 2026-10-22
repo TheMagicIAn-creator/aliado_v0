@@ -541,6 +541,7 @@ não dá para separá-los em commits.
 | 52 | O mestrado da avaliação aos comandos em pastas: `avaliacao/`, `inicio_das_falhas/`, `reanalise/` e `comandos/`; a pasta oficial num lugar só | Feito em 22/10/2026: equivalência sem diferença ([spec 0052](specs/0052-mestrado-da-avaliacao-aos-comandos.md), [validação](migracao/validacao-lote-52.md)) |
 | 53 | O mestrado da rodada ao chat em pastas: `rodada/` (com o contrato de 14 atributos), `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/` | Feito em 22/10/2026: equivalência sem diferença ([spec 0053](specs/0053-mestrado-da-rodada-ao-chat.md), [validação](migracao/validacao-lote-53.md)) |
 | 54 | A identidade e o contrato da rodada: `science/identidade/`, `erros.npz` conferido bit a bit, o explorador sem recalcular, as rodadas anteriores marcadas (EXP-13) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0054](specs/0054-identidade-e-contrato-da-rodada.md), [validação](migracao/validacao-lote-54.md)) |
+| 55 | A evidência espectral descritiva: `science/espectro/`, `evidencia_espectral/` no mestrado, o 4º passo do explorador, R9 e R10 sob pedido no chat (EXP-14) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0055](specs/0055-evidencia-espectral.md), [validação](migracao/validacao-lote-55.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -696,6 +697,25 @@ não dá para separá-los em commits.
   - a equivalência sem diferença nos arquivos de antes, com `erros.npz` e a identidade listados como novos;
   - a avaliação de 27/09 e a rodada-002 continuam comparando, com todos os indicadores iguais, e virando PDF.
 
+### Decisões e resultado do lote 55 (22/10/2026)
+
+- **O que mudou:**
+  - a THD foi para `science/espectro/`, com a decomposição harmônica de uma janela;
+  - o mestrado ganhou `evidencia_espectral/`: os espectros, a tabela, a evidência no primeiro alarme, os arquivos e
+    o texto;
+  - a rodada nova a calcula, e o "Preparar" dos exploradores a monta para as rodadas anteriores;
+  - o chat ganhou R9 e R10, sob pedido.
+- **Decisões na implementação:**
+  - a marca de passo irregular é por janela, porque todos os ensaios têm de 3 a 9 janelas com passo fora de 1%;
+  - a janela do alarme vem da aba, sem cópia da regra;
+  - o que mais muda é medido em IQRs do comissionamento;
+  - os indicadores aparecem em porcentagem da fundamental;
+  - a nota da fundamental diz quando ela quase some (F2 e F3) e as porcentagens perdem o sentido.
+- **Resultado, na avaliação de 27/09:**
+  - o Denso fica sem alarme em F4L, F4M, F6M e F7L, e o AE-LSTM, em seis ensaios;
+  - em F1L, a fase do maior erro tem nível DC perto da fundamental e 2ª harmônica de cerca de metade dela;
+  - R9 e R10 somam 6.339 caracteres e só vão nas perguntas sobre o assunto.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -733,6 +753,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 52 | [0052](specs/0052-mestrado-da-avaliacao-aos-comandos.md) |
 | 53 | [0053](specs/0053-mestrado-da-rodada-ao-chat.md) |
 | 54 | [0054](specs/0054-identidade-e-contrato-da-rodada.md) |
+| 55 | [0055](specs/0055-evidencia-espectral.md) |
 
 ## Fica para a v1
 

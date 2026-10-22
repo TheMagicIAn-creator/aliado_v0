@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "55",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "committed_locally_awaiting_review",
+  "base_commit": "06034d2",
+  "decision": "plano aprovado pelo pesquisador em 21/10/2026: a evidência espectral descritiva (o lote 50 do relatório em LaTeX, com as três correções: janela retangular, só as 6 fases e sem FMECA)",
+  "spec": "docs/specs/0055-evidencia-espectral.md",
+  "validation": "docs/migracao/validacao-lote-55.md",
+  "requirements": {
+    "added": [
+      "EXP-14"
+    ],
+    "changed": [],
+    "tested_again": [
+      "EXP-08",
+      "EXP-09",
+      "EXP-13"
+    ]
+  },
+  "checks": {
+    "pytest": {
+      "grupos": 36,
+      "passed": 860,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 251.99,
+      "treinos": 18
+    },
+    "pytest_primeira_bateria": {
+      "passed": 859,
+      "failed": 1,
+      "falha": "tests/mestrado/test_artefato_de_erros.py: a pasta do explorador passou a guardar a evidência; o teste foi ajustado para conferir só o cache dos erros"
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0,
+      "faltando": 0,
+      "arquivos_novos": [
+        "avaliacao/erros.npz",
+        "evidencia_espectral/evidencia.json"
+      ],
+      "chaves_novas_em_resultado_json": {
+        "identidade": 18,
+        "detalhe.evidencia_espectral": 767
+      }
+    },
+    "autoteste_da_equivalencia": {
+      "iguais_sem_diferenca": true,
+      "arquivos_comparados": 30,
+      "alterada_com_diferenca": true
+    },
+    "base_real_em_copia": {
+      "sem_alarme": {
+        "denso": [
+          "F4L",
+          "F4M",
+          "F6M",
+          "F7L"
+        ],
+        "lstm": [
+          "F4L",
+          "F4M",
+          "F6L",
+          "F6M",
+          "F7L",
+          "F7M"
+        ]
+      },
+      "janelas_antes_da_mudanca": {
+        "F3L": 188,
+        "F3M": 163
+      },
+      "janelas_com_passo_irregular_por_ensaio": [
+        3,
+        9
+      ],
+      "caracteres": {
+        "blocos_de_sempre": 15347,
+        "R9": 3897,
+        "R10": 2442,
+        "com_R9_e_R10": 24158
+      },
+      "roteador_com_o_modelo_local": {
+        "O que os harmônicos mostram no primeiro alarme da falha de IGBT?": "resultados",
+        "Qual a THD no alarme do Denso em F1L?": "resultados",
+        "O que a literatura diz sobre harmônicos em inversores?": "sintese"
+      }
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "copias_antigas_fora_dos_registros": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "pdf_bytes_da_rodada_atual": 238737,
+    "wheel": {
+      "modulos_esperados": 156,
+      "faltando": 0,
+      "importados_do_wheel": 154
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "merged_copies": {
+    "science.espectro.decomposicao.thd": [
+      "atributos.variaveis._thd"
+    ]
+  },
+  "evidence": {
+    "bateria": "tmp/lote-55/bateria-final/pytest.json",
+    "equivalencia": "tmp/lote-55/equivalencia.log",
+    "autoteste": "tmp/lote-55/autoteste.log",
+    "verificacao": "tmp/lote-55/verificacao.json",
+    "base_real": "tmp/lote-55/evidencia-real.json",
+    "r9_r10_reais": "tmp/lote-55/r9-r10-real.md"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "02e172d90665130e99ed639213dd70b1651c0b5fb2fe70e433d8a668ef7003ef",
+    "docs/arquitetura/modulos.md": "26fb4771d18c61cd3950198b430a6ba1ca4d9b248aaef6365a08a9a13ead41ce",
+    "docs/ciencia/mapa-das-pastas.md": "84a9ad469016cceadd6e7d3021c394f3ca1b0e385c80434f5f1e9d5eaf61bd4f",
+    "docs/migracao/validacao-lote-55.md": "ab2aa446d0c60760c1bb9849733b7a2a7fb5e0903daca7db827434ec071b97a7",
+    "docs/roteiro-v0.md": "6d72233f46517bea171604a0734566d8eb8c9d318476ea61619dfa7c6b5afaa3",
+    "docs/specs/0055-evidencia-espectral.md": "3f62bc6365185c820b09664b8a8eee4a509e9f39d6aa997b4788afe9954c32db",
+    "docs/specs/capacidades/experimentos.md": "a76fa1ee4c041cfa108c988da1dca87108d8866d3bec4081e234267abf5b634a",
+    "src/aliado/agent.py": "3c294ad2bb306abbd1c9894729be2c30dbd554874ce587dc61d0259d0ca7f5b6",
+    "src/aliado/interfaces/web/app.py": "55ca24ac5caf41e808c5fe55b4ba123dea948415fc65714169a35f3ac04d4e65",
+    "src/aliado/science/espectro/__init__.py": "a4037a4091342b55aace25de8c55899c4c95b2935169dd5315945c82b11e640c",
+    "src/aliado/science/espectro/decomposicao.py": "4d6f108b07e4446028ecc673af38f6589a438d991c837eb63aaaa56503cb585a",
+    "src/aliado/science/resumo_citavel/formato.py": "481897c251c1d53b2f2ff7ef3d1950e9b81e3ab9a1f722ef1293dd8535f9b080",
+    "src/aliado/specializations/mestrado/atributos/variaveis.py": "b1808fbec68e50c9efa61f9a3c61740a05ce12bc4d18466cdc70178ac5b42aaa",
+    "src/aliado/specializations/mestrado/evidencia_espectral/__init__.py": "0e44cc100614c3c77b12d45ce541ed3d2740f5b9c369bcbc0a3b116afda310b6",
+    "src/aliado/specializations/mestrado/evidencia_espectral/artefatos.py": "b0627502695775ada71244900f7c20980e0feb945dc214b7ea84c1d35828dfa5",
+    "src/aliado/specializations/mestrado/evidencia_espectral/espectros.py": "6c75cb3fce9f616b235360e83f85e67a668e989db4f8e8d507524aca7663ea76",
+    "src/aliado/specializations/mestrado/evidencia_espectral/evidencia.py": "6f10848184b4c2dc63f6dbe6886fd650b19be2442a3625ebadfdc14f3f2e2287",
+    "src/aliado/specializations/mestrado/evidencia_espectral/relatorio.py": "71b7a7ecfac1663b9a430554592612b487af17b5649a2328bb2ccb8181d84f25",
+    "src/aliado/specializations/mestrado/evidencia_espectral/tabela.py": "ababea948df316d221b9150545167cd91083a771dd6dfe9520a0aebad205dce8",
+    "src/aliado/specializations/mestrado/exploradores/explorador.py": "09a9116cc19574413d4e249751d827378476645ed6163e6501223693dc01a9ce",
+    "src/aliado/specializations/mestrado/glossario/notas.py": "dcefd96eb68ee610cf1957c9182c3525bdb7bd040cef71aac21ec73e0c624f84",
+    "src/aliado/specializations/mestrado/resumo_para_o_chat/blocos.py": "d945e426573c126a52a5fe74c4dda12ba64e189fb4d64d29472e70898f080723",
+    "src/aliado/specializations/mestrado/rodada/apresentacao.py": "a935e8ad498475499135ca6750de2bc4758feaf30ff72c330e5967176859d0fc",
+    "src/aliado/specializations/mestrado/rodada/consolidacao.py": "88f9beeee1f26b3d7d3201cb8601f8acc43720e2c4ee23a83ebd8181e0144979",
+    "src/aliado/specializations/mestrado/rodada/declaracao.py": "e08efd99f11c080fe48ed24ab0d0a817e7fcb1568df9fd17c35a73b05da7449f",
+    "src/aliado/specializations/mestrado/rodada/execucao.py": "0181293b6c6f9eac9595f70d40789d5a2bde667c136a6c1a263062a2237f7223",
+    "src/aliado/specializations/mestrado/roteamento/frases.py": "a75cff7dc143f3f437391778b04aca216ed5cbc4377bba424e3761f6afcf22e6",
+    "src/aliado/specializations/mestrado/tela/rotas.py": "f29ca794732cb14490a5fb25f2244d3bf617bf8a30300586decc32371ea7d616",
+    "tests/mestrado/test_artefato_de_erros.py": "d6746e8e95993c468aa590a75b2d13288698c72ac73577a779d8b145a1efade4",
+    "tests/mestrado/test_evidencia_espectral.py": "5cfc637c754b36a0aec826852c258be9cbae2a968811f128b79484a27ffb0bf6",
+    "tests/mestrado/test_exploradores.py": "eda1b2e7a3bac19641408bddedb5eb2b11ad50b93ef5129916b841a946724040",
+    "tests/mestrado/test_resumo_para_o_chat.py": "aad48c8fca675a30eb332294d071b945044270fa8b89e63641e9c3727a13957b",
+    "tests/science/test_espectro.py": "59830414a95000d13f20234fd6b69a75793f43558bc3dbff81e4a43b1e6f7a75",
+    "tests/test_experiments.py": "2bf3d8a646330a47748fe3f6c120ed27a277402544718487b65eca45b502ac22",
+    "tests/test_results_chat.py": "06519541da9ebe900e6a921ca8c0a21c1ad2baf7b922175ca19344cc58fcdd2b",
+    "tests/test_routing.py": "d427155660f7a79afaa91d98b54250e60fe6b4a62912232fd11e3afaf5809e2b"
+  }
+}

@@ -98,6 +98,36 @@ avaliação de 27/09/2026, a rodada-001 e a rodada-002) são "anteriores ao cont
 *Cenário:* dada uma rodada nova, então `resultado.json` traz a identidade e `erros.npz` reproduz os escores; dado um
 `erros.npz` com um campo a menos ou com as variáveis em outra ordem, então o explorador recusa, com o motivo.
 
+**EXP-14. Evidência espectral descritiva.** Na janela em que cada modelo confirmou o primeiro alarme de cada ensaio
+com falha, a evidência mostra:
+- a fase com o maior erro de reconstrução, entre as 6 de corrente e tensão, com a posição desse erro entre os 24;
+- a variável de maior erro geral;
+- os indicadores de Fourier da fase: nível DC e 2ª, 3ª e 5ª harmônicas sobre a fundamental, a fundamental sobre a do
+  comissionamento e a THD, com a mediana do comissionamento do ensaio ao lado.
+
+Uma tabela por ensaio mostra o que mais muda depois do início nominal da falha. Ensaio sem alarme aparece como "sem
+alarme".
+
+**Regras:**
+- A janela é retangular, de um ciclo: com Hann, um seno puro mostraria nível DC e 2ª harmônica de metade da
+  fundamental.
+- A THD é a mesma conta das variáveis dos modelos, bit a bit.
+- A janela do alarme é a da aba Ciência.
+- A matriz de erros precisa dar os escores salvos.
+- Janelas com um passo de tempo irregular ficam marcadas.
+- A evidência descreve o sinal: não classifica a falha, e a FMECA não entra.
+
+**Onde é montada:**
+- **Uma rodada nova:** dentro da consulta registrada dela.
+- **Uma rodada anterior:** só pelo "Preparar" dos exploradores, como exploração pós-teste, na pasta dos exploradores,
+  nunca em `data/resultados`.
+
+No chat, os blocos R9 e R10 só existem com a evidência e só vão ao modelo quando a pergunta fala de Fourier, harmônicos,
+nível DC ou THD.
+*Cenário:* dada a evidência de uma rodada, quando a pergunta é "o que os harmônicos mostram no primeiro alarme da falha
+de IGBT?", então ela vai aos resultados com R9 e R10; quando a pergunta é sobre a sensibilidade, então R9 e R10 não
+vão.
+
 ## Onde está
 
 - Núcleo: `src/aliado/experiments/` (rodadas, resultado, PDF, comparação), `src/aliado/interfaces/web/experiments.py`
@@ -107,3 +137,5 @@ avaliação de 27/09/2026, a rodada-001 e a rodada-002) são "anteriores ao cont
   definem.
 - Identidade (EXP-13): `src/aliado/science/identidade/` (hashes, contrato e versão do código, sem domínio) e
   `src/aliado/specializations/mestrado/avaliacao/artefatos.py` (`erros.npz` e `load_errors`).
+- Evidência espectral (EXP-14): `src/aliado/science/espectro/` (a decomposição de uma janela, sem domínio),
+  `src/aliado/specializations/mestrado/evidencia_espectral/` e o filtro `requested_results` em `src/aliado/agent.py`.

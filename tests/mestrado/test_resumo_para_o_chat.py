@@ -147,7 +147,7 @@ def test_missing_pieces_leave_the_other_blocks_and_say_what_is_missing(tmp_path,
     no_evaluation = blocos.build_digest(tmp_path / "vazio", REFERENCE)
     assert ids(no_evaluation) == ["R7", "R8"] and "avaliação oficial" in no_evaluation["faltando"][0]
 
-    def without_numpy(results_dir):
+    def without_numpy(results_dir, explorer_dir=None):
         raise ImportError("numpy")
 
     monkeypatch.setattr(blocos, "_gpvs_blocks", without_numpy)

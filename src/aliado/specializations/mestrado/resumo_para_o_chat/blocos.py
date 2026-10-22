@@ -1,4 +1,4 @@
-"""Resumo dos resultados do mestrado para o chat (lotes 26, 34 e 36): blocos [R1]…[R8] gerados por código.
+"""Resumo dos resultados do mestrado para o chat (lotes 26, 34, 36 e 55): blocos [R1]…[R10] gerados por código.
 
 Os números saem das mesmas funções da aba Ciência (`resultados/paineis`, `fmeca` e `componentes`), nunca dos
 relatórios em markdown, e vão no formato da tela. São os da rodada que a aba mostra. Cada bloco diz
@@ -6,6 +6,9 @@ a fonte, a data e o estatuto: a avaliação de 27/09/2026 é a oficial, uma roda
 exploração, e o início observado das falhas é secundário. O que não puder ser montado (sem numpy,
 sem a avaliação ou sem o início das falhas) fica de fora, com o motivo em palavras. O módulo abre
 sem numpy: `resultados/paineis` só é importado dentro da função que o usa.
+
+A evidência espectral (R9 e R10, lote 55) só entra com o arquivo dela, e os dois blocos vão "sob pedido": o
+núcleo só os manda ao modelo quando a pergunta cita um dos termos deles (Fourier, harmônicos, nível DC, THD).
 """
 
 from __future__ import annotations
@@ -14,8 +17,11 @@ import threading
 from pathlib import Path
 
 from aliado.science.resumo_citavel.formato import dec, num, pct, seconds
+from aliado.specializations.mestrado.evidencia_espectral import artefatos as evidencia
 from aliado.specializations.mestrado.glossario.notas import NOTES
+from aliado.specializations.mestrado.resultados import rodada_atual
 from aliado.specializations.mestrado.rodada import experimento
+from aliado.specializations.mestrado.rodada.declaracao import EXPLORATION_DIR
 
 MAX_CHARS = 16_000
 HEADER = ("A avaliação oficial é a de 27/09/2026 (treino de referência). A reanálise de 30/09/2026, com o "
@@ -35,8 +41,14 @@ NOTE_NAMES = {
     "ic95": "Intervalo de 95%", "mudanca": "Mudança observada", "trecho_incerto": "Trecho entre o meio e a mudança",
     "alarmes_estimados": "Alarmes falsos estimados", "faixa_limiar": "Faixa esperada pelo limiar", "npr": "NPR",
     "base_tempo": "Base de tempo", "disponibilidade": "Disponibilidade", "cenario_reparo": "Cenários de reparo",
-    "horas_paradas": "Horas paradas por ano",
+    "horas_paradas": "Horas paradas por ano", "janela_alarme": "Janela do alarme",
+    "fase_maior_erro": "Fase com maior erro", "maior_erro_geral": "Maior erro geral", "nivel_dc": "Nível DC / fundamental",
+    "fundamental_relativa": "Fundamental / comissionamento", "thd": "THD", "harmonicas": "Harmônicas / fundamental",
+    "entre_parenteses": "Valores entre parênteses", "passo_irregular": "Passo irregular", "mais_muda": "Mais muda",
+    "janelas_antes_mudanca": "Janelas antes da mudança observada",
 }
+# Os termos que levam R9 e R10 ao modelo, sem acento e em minúsculas (o núcleo compara assim).
+SPECTRAL_TERMS = ("fourier", "harmonic", "espectr", "nivel dc", "componente continua", "thd", "distorcao harmonica")
 # O treino repetido, em palavras, sem o termo interno da nota da tela.
 TRAININGS = ("O treino foi repetido {n} vezes, cada uma partindo de um ponto aleatório diferente. Os números são os do "
              "treino de referência, e a faixa entre parênteses vai do menor ao maior valor das {n} repetições.")
@@ -75,8 +87,9 @@ def _spread(values, formatter) -> str:
     return f"{formatter(values[0])} a {formatter(values[1])}" if values else "—"
 
 
-def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str], dict]:
-    """R1 a R6, das funções da aba; o início observado (R5 e R6) só entra se existir."""
+def _gpvs_blocks(results_dir: Path, explorer_dir: Path | None = None) -> tuple[list[dict], list[str], dict]:
+    """R1 a R6, das funções da aba; o início observado (R5 e R6) só entra se existir, e a evidência espectral (R9 e
+    R10), só com o arquivo dela, da própria rodada ou do explorador."""
     from aliado.specializations.mestrado.resultados import paineis  # numpy só aqui
 
     overview = paineis.overview(results_dir)
@@ -141,11 +154,38 @@ def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str], dict]:
         "Sensibilidade, especificidade e MCC somam as janelas dos dois; o atraso é a média dos ensaios detectados.",
         ("detectados", "sensibilidade", "especificidade", "mcc", "atraso")))
 
+    missing = []
     try:
         blocks += _reanalysis_blocks(paineis.onsets(results_dir), models, day, run)
     except Exception:  # o início observado é secundário: ausente ou incompleto, os blocos da avaliação ficam
-        return blocks, ["a reanálise com o início observado das falhas"], run
-    return blocks, [], run
+        missing.append("a reanálise com o início observado das falhas")
+    try:
+        found = evidencia.find(rodada_atual.current(results_dir), explorer_dir)
+        if found:
+            names = {fault["id"]: fault["nome"] for fault in faults["falhas"]}
+            blocks += _spectral_blocks(run, evidencia.read(found), names)
+    except Exception:  # a evidência é exploração: com o arquivo quebrado, os outros blocos ficam
+        missing.append("a evidência espectral (o arquivo dela está incompleto)")
+    return blocks, missing, run
+
+
+def _spectral_blocks(run: dict, evidence: dict, fault_names: dict[str, str]) -> list[dict]:
+    """R9 e R10: os harmônicos na janela do primeiro alarme e o que mais muda em cada ensaio, sempre exploração."""
+    from aliado.specializations.mestrado.evidencia_espectral import relatorio
+
+    origin = ("calculada na própria rodada" if evidence["origem"] == "rodada" else
+              "exploração pós-teste, montada pelo Preparar da aba Ciência, sem mudar os números oficiais")
+    source = f"{run['rotulo']}: harmônicos das 6 fases no primeiro alarme, com o treino de referência; {origin}"
+    day = evidence["executado_em"]
+    alarm = _block("R9", "Harmônicos na janela do primeiro alarme", source, day, EXPLORATION, "explorar",
+                   _table(relatorio.ALARM_HEADERS, relatorio.alarm_rows(evidence)) + "\n\n" + relatorio.ALARM_TEXT,
+                   ("janela_alarme", "fase_maior_erro", "maior_erro_geral", "nivel_dc", "fundamental_relativa", "thd",
+                    "harmonicas", "entre_parenteses", "passo_irregular"))
+    change = _block("R10", "Os dois indicadores espectrais que mais mudam em cada ensaio", source, day, EXPLORATION,
+                    "explorar", _table(relatorio.CHANGE_HEADERS, relatorio.change_rows(evidence, fault_names))
+                    + "\n\n" + relatorio.CHANGE_TEXT,
+                    ("mais_muda", "janelas_antes_mudanca", "nivel_dc", "thd", "harmonicas"))
+    return [block | {"sob_pedido": SPECTRAL_TERMS} for block in (alarm, change)]
 
 
 def _reanalysis_blocks(onsets: dict, models: dict, day: str, run: dict) -> list[dict]:
@@ -265,12 +305,14 @@ def _components_block(reference_dir: Path) -> dict:
         ("base_tempo", "disponibilidade", "horas_paradas", "cenario_reparo"))
 
 
-def build_digest(results_dir: str | Path, reference_dir: str | Path) -> dict:
-    """Cabeçalho, blocos na ordem R1…R8 e o que ficou de fora, em palavras."""
+def build_digest(results_dir: str | Path, reference_dir: str | Path, data_dir: str | Path | None = None) -> dict:
+    """Cabeçalho, blocos na ordem R1…R10 e o que ficou de fora, em palavras. `data_dir`, a pasta de dados do servidor,
+    traz a evidência espectral que o explorador montou para uma rodada anterior."""
     results_dir, reference_dir = Path(results_dir), Path(reference_dir)
+    explorer_dir = Path(data_dir) / EXPLORATION_DIR if data_dir else None
     blocks, missing, run = [], [], None
     try:
-        gpvs, partial, run = _gpvs_blocks(results_dir)
+        gpvs, partial, run = _gpvs_blocks(results_dir, explorer_dir)
         blocks += gpvs
         missing += partial
     except ImportError:
@@ -284,16 +326,19 @@ def build_digest(results_dir: str | Path, reference_dir: str | Path) -> dict:
             blocks.append(maker(reference_dir))
         except Exception:
             missing.append(label)
+    blocks.sort(key=lambda block: int(block["citation_id"][1:]))  # R9 e R10 vêm depois de R7 e R8
     header = _header(run) + (" Não entraram neste pedido: " + "; ".join(missing) + "." if missing else "")
     return {"cabecalho": header, "blocos": blocks, "faltando": missing}
 
 
-def _signature(results_dir: Path, reference_dir: Path) -> tuple:
+def _signature(results_dir: Path, reference_dir: Path, explorer_dir: Path | None) -> tuple:
     """Caminho, data e tamanho de cada arquivo lido: o resumo só é refeito quando um deles muda."""
     files = [reference_dir / "fmeca.json", reference_dir / "reparos.json", *sorted((reference_dir / "cenarios").glob("*.json"))]
     for folder in sorted(results_dir.glob("gpvs-*")) if results_dir.is_dir() else []:
         files += [folder / name for name in ("relatorio.json", "configuracao.json", "metricas_por_ensaio.csv")]
     files += sorted((results_dir / experimento.KEY).glob("rodada-*/resultado.json"))  # uma rodada nova muda tudo
+    files += sorted((results_dir / experimento.KEY).glob(f"rodada-*/*/{evidencia.FILE}"))
+    files += sorted(explorer_dir.glob("evidencia-espectral-*.json")) if explorer_dir else []
     marks = []
     for path in files:
         try:
@@ -304,12 +349,13 @@ def _signature(results_dir: Path, reference_dir: Path) -> tuple:
     return tuple(marks)
 
 
-def cached(results_dir: str | Path, reference_dir: str | Path) -> dict:
+def cached(results_dir: str | Path, reference_dir: str | Path, data_dir: str | Path | None = None) -> dict:
     """O resumo em memória, refeito só quando algum arquivo de origem muda."""
     results_dir, reference_dir = Path(results_dir), Path(reference_dir)
-    signature = _signature(results_dir, reference_dir)
-    key = (str(results_dir), str(reference_dir))
+    explorer_dir = Path(data_dir) / EXPLORATION_DIR if data_dir else None
+    signature = _signature(results_dir, reference_dir, explorer_dir)
+    key = (str(results_dir), str(reference_dir), str(explorer_dir))
     with _lock:
         if _cache.get(key, (None, None))[0] != signature:
-            _cache[key] = (signature, build_digest(results_dir, reference_dir))
+            _cache[key] = (signature, build_digest(results_dir, reference_dir, data_dir))
         return _cache[key][1]

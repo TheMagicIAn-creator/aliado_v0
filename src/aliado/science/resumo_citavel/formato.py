@@ -12,7 +12,7 @@ from decimal import Decimal
 
 # Nomes das seções da aba Ciência, como na tela (SCIENCE_TABS em ciencia.js); um teste compara.
 SECTIONS = {"resumo": "Resumo", "metricas": "Métricas por falha", "inicio": "Início das falhas", "fmeca": "FMECA",
-            "confiabilidade": "Confiabilidade"}
+            "confiabilidade": "Confiabilidade", "explorar": "Explorar"}
 
 
 # Formatação igual à da tela (num, pct, seconds e dec de graficos.js e ciencia.js).

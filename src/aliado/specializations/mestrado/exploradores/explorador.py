@@ -8,7 +8,9 @@ que não muda. Com k = 5, p99 e m = 3, os números são os da avaliação de 27/
 
 O explorador do limiar usa só a calibração. O de alarme e detecção usa o teste saudável e os
 ensaios com falha, já consultados: é exploração pós-teste, não canônica (M14), e não substitui
-os resultados congelados. O de confiabilidade fica no núcleo (`science/confiabilidade` e a rota da aba).
+os resultados congelados. O "Preparar" monta também a evidência espectral das rodadas que não a
+trazem (lote 55), na pasta dos exploradores, com o mesmo estatuto. O de confiabilidade fica no
+núcleo (`science/confiabilidade` e a rota da aba).
 """
 
 from __future__ import annotations
@@ -67,6 +69,7 @@ class Explorer:
         self.run = current(self.results_dir)  # a rodada que a aba mostra; outra rodada pede outro explorador
         self.evaluation_dir = self.run.evaluation
         self._state = None
+        self._evidence_error = None
         self._lock = threading.Lock()
 
     # Disponibilidade e preparo
@@ -84,7 +87,16 @@ class Explorer:
             missing.append(f"a rodada de treino {self.training_dir().name}")
         if not (self.gpvs_dir / "proveniencia.json").is_file():
             missing.append(f"os dados do GPVS em {self.gpvs_dir}")
-        return {"disponivel": not missing, "faltando": missing, "pronto": self._state is not None}
+        return {"disponivel": not missing, "faltando": missing, "pronto": self._state is not None,
+                "evidencia_espectral": self.evidence_status()}
+
+    def evidence_status(self) -> dict:
+        """A evidência espectral da rodada: a da própria rodada, a de exploração pós-teste ou nenhuma, e o erro dela."""
+        from aliado.specializations.mestrado.evidencia_espectral import artefatos
+
+        found = artefatos.find(self.run, self.cache_dir)
+        origin = None if found is None else ("exploracao" if found.parent == self.cache_dir else "rodada")
+        return {"pronta": found is not None, "origem": origin, "erro": self._evidence_error}
 
     def prepare(self, progress=None) -> dict:
         """Carrega modelos e dados e calcula (ou lê do cache) o erro por variável de cada janela."""
@@ -106,26 +118,45 @@ class Explorer:
         evaluation = json.loads((self.evaluation_dir / "configuracao.json").read_text(encoding="utf-8"))
         report = json.loads((self.evaluation_dir / "relatorio.json").read_text(encoding="utf-8"))
         if progress:
-            progress("modelos", 0, 3)
+            progress("modelos", 0, 4)
         trained = load_training(self.training_dir())
         if evaluation["treino"]["configuracao_sha256"] != trained.frozen["sha256"]:
             raise ValueError("A avaliação não é da rodada de treino encontrada.")
         if progress:
-            progress("dados", 1, 3)
+            progress("dados", 1, 4)
         prepared = preparacao.prepare(self.gpvs_dir, cache=features_cache(self.gpvs_dir),
                                 purge=trained.config.purge, fractions=trained.config.fractions)
         if prepared.hashes != trained.frozen["dados"]["hashes"]:
             raise ValueError("Os dados do GPVS não são os do treino.")
         if progress:
-            progress("erros por variável", 2, 3)
+            progress("erros por variável", 2, 4)
         # Os hashes dos pesos que `load_training` acabou de conferir com os arquivos (lote 46).
         errors = self._errors(trained, prepared, weight_hashes(trained))
         with (self.evaluation_dir / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
             canonical_trials = list(csv.DictReader(handle))
         if progress:
-            progress("pronto", 3, 3)
+            progress("evidência espectral", 3, 4)
+        self._evidence(prepared, errors)
+        if progress:
+            progress("pronto", 4, 4)
         return {"trained": trained, "prepared": prepared, "errors": errors, "report": report,
                 "canonical_trials": canonical_trials, "models": MODELS}
+
+    def _evidence(self, prepared, errors: dict) -> None:
+        """Numa rodada sem a evidência espectral, monta a de exploração pós-teste na pasta dos exploradores, nunca em
+        data/resultados. Ela é secundária: uma falha fica no estado, com o motivo, e os exploradores seguem."""
+        from aliado.specializations.mestrado.evidencia_espectral import artefatos, evidencia
+
+        if artefatos.find(self.run) is not None:  # a rodada já traz a dela
+            return
+        flat = {f"{kind}_s{seed}_{group}": array for (kind, seed), groups in errors.items()
+                for group, array in groups.items()}
+        try:
+            built = evidencia.build(self.run, self.gpvs_dir, prepared, flat, origin="exploracao")
+            artefatos.write(built, artefatos.exploration_file(self.cache_dir, self.run))
+            self._evidence_error = None
+        except Exception as exc:  # secundária: qualquer falha, o erro de contrato inclusive, fica no estado
+            self._evidence_error = str(exc) or type(exc).__name__
 
     def _errors(self, trained, prepared, weights: dict) -> dict:
         from aliado.specializations.mestrado.avaliacao.artefatos import ERRORS, load_errors

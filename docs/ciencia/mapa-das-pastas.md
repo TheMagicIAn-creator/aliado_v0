@@ -92,6 +92,7 @@ Notas:
 | `fmeca/` | `tabela.py`: `load_table`; `calculo.py`: `evaluate_fmeca` (NPR = S × O × D e a leitura pelas taxas, sem fundir); `relatorio.py`: o Markdown; `artefatos.py`: `export_fmeca` | `tests/science/test_fmeca.py` |
 | `componentes/` | `reparos.py`: `load_repairs` e `validate_repairs`; `disponibilidade.py`: `component_view` | `tests/science/test_componentes.py` |
 | `resumo_citavel/` | `formato.py`: `num`, `pct`, `seconds`, `dec`, `prompt_text`, `notes_text` e `SECTIONS` | `tests/science/test_resumo_citavel.py` |
+| `espectro/` (lote 55) | `decomposicao.py`: `thd` (a conta das variáveis de THD) e `harmonics` (o nível médio e a amplitude de cada harmônica, janela retangular de um período, Nyquist sem dobrar) | `tests/science/test_espectro.py` |
 | `identidade/` (lote 54) | `hashes.py`: `sha256_file`, `config_digest` e `arrays_digest` (o código do conteúdo de matrizes); `contrato.py`: `ContractViolationError`, `require` e `check_version`; `codigo.py`: `code_version` (o commit e as alterações locais, com estado explícito) | `tests/science/test_identidade.py` |
 
 ## Mestrado: `src/aliado/specializations/mestrado/`
@@ -108,6 +109,7 @@ A pesquisa de detecção de falhas na base GPVS-Faults, na ordem do método. Os 
 | 5. Avaliação | `avaliacao/configuracao.py`, `treino_congelado.py`, `pontuacao.py`, `decisao.py`, `incerteza.py`, `resumo.py`, `relatorio.py`, `artefatos.py`, `oficial.py` | o treino congelado conferido pelos hashes; os escores do teste; o alarme a partir do início nominal, datado pelo fim da janela que o confirma; as métricas por janela; os intervalos em blocos; a comparação pareada; a pasta oficial; a matriz de erros por variável (`erros.npz`, lote 54), conferida bit a bit contra os escores e lida só pelo contrato | `test_avaliacao.py`, `test_artefato_de_erros.py` |
 | 6. Início das falhas | `inicio_das_falhas/pontos_de_mudanca.py`, `estimativa.py` | o PELT com penalidade c · d · ln n, com o menor c sem mudança nos sadios; o início observado e a classe (clara, fraca ou nenhuma) | `test_inicio_das_falhas.py` |
 | 7. Reanálise | `reanalise/reanalise.py`, `relatorio.py`, `artefatos.py` | os escores gravados relidos com o início observado, sem rodar os modelos | `test_reanalise.py` |
+| 8. Evidência espectral (lote 55) | `evidencia_espectral/espectros.py`, `tabela.py`, `evidencia.py`, `artefatos.py`, `relatorio.py` | os harmônicos das 6 fases em cada janela, conferidos contra a THD das variáveis; na janela do primeiro alarme, a fase do maior erro e os indicadores de Fourier dela; o que mais muda em cada ensaio; descritiva, sem FMECA | `test_evidencia_espectral.py` |
 | Comandos | `comandos/terminal.py` | `aliado ciencia preparar-gpvs`, `treinar-gpvs`, `avaliar-gpvs` e `reanalisar-gpvs` | `test_comandos.py` |
 | Rodada | `rodada/declaracao.py`, `execucao.py`, `consolidacao.py`, `apresentacao.py`, `experimento.py` | o experimento inteiro num processo só (preparo, treino, avaliação, início das falhas e resumo), o resultado em JSON, com a identidade da rodada (lote 54), e os blocos do PDF; `experimento.py` reúne os 14 atributos que o núcleo lê | `tests/test_experiments.py`, `test_artefato_de_erros.py` |
 | Resultados | `resultados/rodada_atual.py`, `paineis.py` | qual rodada a aba e o chat mostram; o resumo, as métricas por falha, os escores e o início das falhas na aba Ciência | `test_resultados.py` |
@@ -148,5 +150,6 @@ Nenhum arquivo de código fica solto na raiz do mestrado: só o `__init__.py`, o
 | `mestrado/notes.py` | `glossario/notas.py` (lote 53) | `glossary` |
 | `gpvs.sha256_file`, os `_sha256` da avaliação e do treino, os três `digest()` e o nome do cache do explorador | `science/identidade/hashes.py` (lote 54) | `identity` |
 | o laço dos erros em `explorer._errors` | `avaliacao/pontuacao.errors_all` (lote 54) | `errors_all` |
+| `gpvs._thd` (depois `atributos/variaveis._thd`) | `science/espectro/decomposicao.thd` (lote 55) | `spectrum` |
 
 Os mapas datados de `docs/arquitetura/2026-10-05/` são registros daquele dia e mantêm os caminhos antigos.

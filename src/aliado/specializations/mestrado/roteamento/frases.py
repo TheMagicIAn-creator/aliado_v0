@@ -7,7 +7,8 @@ ROUTING = {
         "fato": ("Qual o valor do MTBF do inversor?",),
         "sintese": ("Resuma o que a literatura diz sobre falhas em inversores.",),
         "resultados": ("Como ficou a comparação entre o Denso e o LSTM no GPVS?", "Quais falhas do GPVS não foram detectadas?",
-                       "Qual a disponibilidade do inversor nos nossos cenários?"),
+                       "Qual a disponibilidade do inversor nos nossos cenários?",
+                       "O que os harmônicos mostram no primeiro alarme de cada falha?"),
         "metodo": ("Como rodo de novo o pipeline do GPVS?",),
     },
     # A skill do mestrado, ao lado das do núcleo em `aliado.routing_examples.SKILLS`.

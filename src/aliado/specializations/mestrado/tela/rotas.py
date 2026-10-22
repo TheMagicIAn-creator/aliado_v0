@@ -41,7 +41,7 @@ def science_routes(settings, worker, lock) -> tuple[list[Route], object]:
     async def prepare(request: Request):
         job = uuid.uuid4().hex
         with lock:
-            settings.jobs[job] = {"estado": "processando", "etapa": "preparando", "atual": 0, "total": 3}
+            settings.jobs[job] = {"estado": "processando", "etapa": "preparando", "atual": 0, "total": 4}
 
         def progress(stage: str, current: int, total: int) -> None:
             with lock:

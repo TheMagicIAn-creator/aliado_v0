@@ -141,6 +141,13 @@ def test_results_vocabulary_comes_from_the_results_digest():
     assert go("Qual o MCC do Novo-AE?", vocabulary=names).intent == "resultados"
 
 
+def test_a_question_about_the_harmonics_at_the_alarm_goes_to_the_results():
+    """EXP-14 (lote 55): a pergunta sobre os harmônicos no primeiro alarme vai aos resultados pela frase de exemplo da
+    especialização."""
+    question = "O que os harmônicos mostram no primeiro alarme da falha de IGBT?"
+    assert routing.route(question, encoder=Words(), cards=CARDS, skills=SKILLS, results=True).intent == "resultados"
+
+
 def test_results_questions_without_the_word_results_go_to_the_results():
     for text in ("Quantas falhas o LSTM detectou?", "Qual a sensibilidade do autoencoder denso?",
                  "O que eu consegui até agora no mestrado?", "Em quanto tempo o Denso percebe a falha F3?",

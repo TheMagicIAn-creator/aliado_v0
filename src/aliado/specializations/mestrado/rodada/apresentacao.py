@@ -150,6 +150,27 @@ def report(result: dict) -> list[dict]:
              "linhas": indicator_rows, "numericas": [False, True, True, True, True],
              "notas": [f"Trecho entre o meio e a mudança: {NOTES['trecho_incerto']}"]},
         ]
+    evidence = detail.get("evidencia_espectral")
+    if evidence:  # só as rodadas feitas a partir do lote 55 trazem a evidência no resultado
+        from aliado.specializations.mestrado.evidencia_espectral import relatorio as espectral
+
+        blocks += [
+            {"tipo": "secao", "titulo": "Evidência espectral no primeiro alarme"},
+            {"tipo": "paragrafo", "texto": espectral.ALARM_TEXT},
+            {"tipo": "tabela", "legenda": "Harmônicos na janela do primeiro alarme", "colunas": espectral.ALARM_HEADERS,
+             "linhas": espectral.alarm_rows(evidence), "numericas": [False, False, True, False, False, *[True] * 6],
+             "notas": [f"{label}: {NOTES[key]}" for key, label in (
+                 ("fase_maior_erro", "Fase com maior erro"), ("nivel_dc", "Nível DC / fundamental"),
+                 ("fundamental_relativa", "Fundamental / comissionamento"), ("thd", "THD"),
+                 ("harmonicas", "Harmônicas / fundamental"), ("passo_irregular", "Passo irregular"))]},
+            {"tipo": "paragrafo", "texto": espectral.CHANGE_TEXT},
+            {"tipo": "tabela", "legenda": "Os dois indicadores que mais mudam em cada ensaio",
+             "colunas": espectral.CHANGE_HEADERS,
+             "linhas": espectral.change_rows(evidence, {fault["id"]: fault["nome"] for fault in faults["falhas"]}),
+             "numericas": [False, False, False, False, True],
+             "notas": [f"Mais muda: {NOTES['mais_muda']}",
+                       f"Janelas antes da mudança observada: {NOTES['janelas_antes_mudanca']}"]},
+        ]
     blocks += [
         {"tipo": "secao", "titulo": "Limites"},
         {"tipo": "lista", "itens": [

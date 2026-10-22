@@ -318,6 +318,11 @@ def test_real_run_goes_from_zero_to_the_current_run(base_real, tmp_path, capsys)
     assert identity["erros_sha256"] == arrays_digest(errors) and identity["pesos"] == meta["pesos"]
     assert len(identity["pesos"]) == 4 and identity["codigo"]["estado"] == "registrado"
     assert "não gravado" not in str(identity_rows(result))
+    # EXP-14: a evidência espectral da rodada nova fica na pasta dela e vai para o resultado e o PDF.
+    assert (folder / "evidencia_espectral" / "evidencia.json").is_file()
+    assert result["detalhe"]["evidencia_espectral"]["origem"] == "rodada"
+    assert {"secao", "Evidência espectral no primeiro alarme"} <= {value for block in experimento.report(result)
+                                                                   for value in (block["tipo"], block.get("titulo"))}
     assert rodada_atual.current(results).evaluation == folder / "avaliacao"
     assert [(c["numero"], c["estado"]) for c in registry.consultations(results)] == [(1, "concluida")]
     assert result["rotulo"].endswith("1ª vez que os dados de teste foram usados")

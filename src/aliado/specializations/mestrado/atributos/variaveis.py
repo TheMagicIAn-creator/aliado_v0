@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from aliado.science.espectro.decomposicao import thd
 from aliado.specializations.mestrado.base.ensaios import WINDOW
 
 PRIMARY_COLUMNS = ("Ipv", "Vpv", "Vdc", "ia", "ib", "ic", "va", "vb", "vc")
@@ -21,13 +22,6 @@ def _iqr(values: np.ndarray) -> float:
     return float(q75 - q25)
 
 
-def _thd(values: np.ndarray, max_harmonic: int = 40) -> float:
-    spectrum = np.abs(np.fft.rfft(values - np.mean(values)))
-    fundamental = max(float(spectrum[1]), np.finfo(float).eps)
-    limit = min(max_harmonic + 1, len(spectrum))
-    return float(np.sqrt(np.sum(spectrum[2:limit] ** 2)) / fundamental)
-
-
 def feature_vector(window: np.ndarray) -> np.ndarray:
     """24 variáveis de uma janela (200 × 9 colunas primárias, na ordem de PRIMARY_COLUMNS)."""
     matrix = np.asarray(window, dtype=np.float64)
@@ -39,7 +33,7 @@ def feature_vector(window: np.ndarray) -> np.ndarray:
     current_rms = np.sqrt(np.mean(matrix[:, 3:6] ** 2, axis=0))
     voltage_rms = np.sqrt(np.mean(matrix[:, 6:9] ** 2, axis=0))
     values += current_rms.tolist() + voltage_rms.tolist()
-    values += [_thd(matrix[:, column]) for column in range(3, 9)]
+    values += [thd(matrix[:, column]) for column in range(3, 9)]  # a mesma conta da evidência espectral (lote 55)
     eps = np.finfo(float).eps
     values += [float(np.std(current_rms) / max(float(np.mean(current_rms)), eps)),
                float(np.std(voltage_rms) / max(float(np.mean(voltage_rms)), eps))]

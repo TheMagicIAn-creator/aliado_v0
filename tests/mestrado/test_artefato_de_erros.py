@@ -134,7 +134,7 @@ def test_the_explorer_reads_the_saved_matrix_without_recomputing(rodada_sintetic
     explorer.prepare()
     threshold = explorer.threshold("lstm", 4, 5, 90.0)
     assert threshold["limiar"]["limiar"] == threshold["canonico"]["limiar"]
-    assert not (tmp_path / "cache").exists()
+    assert not list((tmp_path / "cache").glob("erros-*.npz"))  # a pasta guarda só a evidência espectral (lote 55)
 
     meta, arrays = load_errors(run.avaliacao / ERRORS)
     other = meta | {"pesos": meta["pesos"] | {"denso_s3": "0" * 64}}

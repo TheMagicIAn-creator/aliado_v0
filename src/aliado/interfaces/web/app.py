@@ -1551,7 +1551,9 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        # O plano vem de quem chama, só com partes (lote 33); antes chegava duas vezes (lote 46).
                        query_rewriter=lambda **kwargs: rewrite_query(execute, subject=subject, **kwargs),
                        results_dir=results_dir, dataset_dir=dataset_dir,
-                       results_digest=(lambda: make_digest(settings.results_dir, settings.reference_dir))
+                       # A pasta de dados traz o que a especialização montou fora dos resultados (lote 55).
+                       results_digest=(lambda: make_digest(settings.results_dir, settings.reference_dir,
+                                                           data_dir=settings.data_dir))
                        if make_digest else None,
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
                        figure_reader=read_figures if figure_alias else None,

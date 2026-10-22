@@ -65,4 +65,16 @@ NOTES = {
     "ocorrencia": "O, a ocorrência: nota de 1 a 10 para a frequência da falha. Aqui, pelo percentual de chamados de manutenção.",
     "deteccao": "D, a detecção: nota de 1 a 10 para a dificuldade de perceber a falha antes do efeito. 10 = quase impossível de detectar.",
     "npr": "Número de prioridade de risco: S × O × D. Quanto maior, mais prioritário. As notas vêm de Cristaldi et al. (2017).",
+    # Evidência espectral (lote 55): descreve o sinal na janela do alarme, sem dizer qual é a falha.
+    "janela_alarme": "A janela de 20 ms em que o modelo confirmou o primeiro alarme depois do início nominal da falha, contada do começo do registro. Sem alarme: o modelo não alarmou nesse ensaio.",
+    "fase_maior_erro": "Entre as 6 fases de corrente (ia, ib, ic) e de tensão (va, vb, vc), a de maior erro de reconstrução no RMS ou na THD, na janela do alarme. Entre parênteses, a posição desse erro entre os 24 da janela: 1º é o maior de todos.",
+    "maior_erro_geral": "A variável, entre as 24, com o maior erro de reconstrução na janela do alarme. Pode não ser de uma fase.",
+    "nivel_dc": "A média do sinal na janela (o nível contínuo), em porcentagem da amplitude da fundamental de 50 Hz. Numa fase saudável fica perto de 0.",
+    "fundamental_relativa": "A amplitude da fundamental de 50 Hz na janela dividida pela mediana dela no comissionamento do mesmo ensaio. 1 é igual ao começo do registro. Perto de 0, a fase quase não tem mais 50 Hz, e as porcentagens sobre a fundamental (nível DC, THD e harmônicas) ficam enormes e perdem o sentido físico.",
+    "thd": "Distorção harmônica total: a energia da 2ª à 40ª harmônica em relação à fundamental. É a mesma conta das variáveis de THD que os modelos recebem.",
+    "harmonicas": "A amplitude da 2ª, da 3ª ou da 5ª harmônica, em porcentagem da fundamental. Harmônicas pares, como a 2ª, aparecem quando os dois semiciclos do sinal ficam diferentes.",
+    "entre_parenteses": "No nível DC, na THD e nas harmônicas da janela do alarme, o número entre parênteses é a mediana do mesmo indicador nas janelas de comissionamento do ensaio, o começo do registro, para comparar.",
+    "passo_irregular": "A janela tem um intervalo entre amostras mais de 1% diferente do normal; os harmônicos dela podem sair distorcidos. Na base, são poucas janelas por ensaio, cada passo isolado.",
+    "mais_muda": "O par de fase e indicador cuja mediana depois do início nominal da falha mais se afasta da mediana no comissionamento, medido em amplitudes interquartis (IQR) do comissionamento.",
+    "janelas_antes_mudanca": "Quantas janelas depois do início nominal ainda vêm antes da mudança observada nos sinais. Quando são muitas, como nos afundamentos de tensão (F3), a mediana depois do início mistura janelas ainda sem mudança.",
 }

@@ -101,6 +101,21 @@ def test_invented_marks_block_the_answer():
     assert invented.validation_status == "invalid_result_refs" and invented.result_sources == ()
 
 
+def test_blocks_on_request_go_only_when_the_question_names_them():
+    """EXP-14 (lote 55), no núcleo, sem domínio: um bloco com `sob_pedido` só vai ao modelo quando a pergunta cita um
+    dos termos dele, sem acento e sem diferença de maiúsculas. Citado sem ter ido, reprova como uma marca inventada."""
+    extra = block("R9", "| F1L | 0,25 |", status="exploracao") | {"sob_pedido": ("harmonic", "fourier")}
+    digest = DIGEST | {"blocos": [*DIGEST["blocos"], extra]}
+    assert prepare_request("Quantos ensaios?", results=digest).metadata["results"] == ["R1", "R4"]
+    assert prepare_request("E os HARMÔNICOS no alarme?", results=digest).metadata["results"] == ["R1", "R4", "R9"]
+    answer = "No F1L, 0,25 [R9]."
+    unsent = agent(answer).answer("Quantos ensaios?", provider="fake", model_alias="x", results=digest)
+    assert unsent.validation_status == "invalid_result_refs"
+    (_, final), = [item for item in agent(answer).stream_answer("E a série de Fourier?", provider="fake",
+                                                                 model_alias="x", results=digest) if item[0] == "final"]
+    assert final.results_status == "conferido" and [block["citation_id"] for block in final.result_sources] == ["R9"]
+
+
 def test_document_citations_are_checked_first():
     both = ask("O artigo diz isso [Kabc] e o Denso detectou 10 de 14 [R1].", library=Library(), append_sources=False)
     assert both.validation_status == "citation_ids_verified" and both.results_status == "conferido"

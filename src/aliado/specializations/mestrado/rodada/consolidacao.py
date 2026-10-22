@@ -68,9 +68,12 @@ def collect(run_, params: dict, *, executed: str | None, identity: dict, duratio
     """O resultado da rodada: identificação, parâmetros, hashes, a identidade (lote 54), os indicadores e as visões
     da aba. A identidade vem sempre de quem chama: a de uma rodada nova, ou a marca de anterior ao contrato."""
     from aliado.experiments import FORMAT
+    from aliado.specializations.mestrado.evidencia_espectral import artefatos as evidencia
     from aliado.specializations.mestrado.resultados import paineis, rodada_atual
 
     overview, faults = paineis.overview(run_), paineis.per_fault(run_)
+    spectral = None if run_.official else evidencia.run_file(run_)  # a evidência da própria rodada (lote 55)
+    spectral = evidencia.read(spectral) if spectral and spectral.is_file() else None
     try:
         onsets = paineis.onsets(run_)
     except (FileNotFoundError, KeyError, ValueError):
@@ -94,7 +97,8 @@ def collect(run_, params: dict, *, executed: str | None, identity: dict, duratio
         "identidade": identity,
         "ambiente": training.get("ambiente"),
         "numeros": numbers(overview, onsets),
-        "detalhe": {"resumo": overview, "metricas": faults, "inicio": onsets},
+        "detalhe": {"resumo": overview, "metricas": faults, "inicio": onsets,
+                    "evidencia_espectral": spectral and {key: spectral[key] for key in evidencia.SUMMARY_KEYS}},
     }
 
 

@@ -5,6 +5,20 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 55: a evidência espectral descritiva
+
+- **Os harmônicos no primeiro alarme:** na janela em que cada modelo confirmou o alarme, a fase com o maior erro e os
+  indicadores de Fourier dela (nível DC, fundamental, THD e 2ª, 3ª e 5ª harmônicas), ao lado do comissionamento do
+  ensaio. Ensaio sem alarme diz isso.
+- **O que mais muda em cada ensaio:** os dois indicadores que mais se afastam do comissionamento depois do início
+  nominal da falha.
+- **Janela retangular, de um ciclo, e a THD de sempre:** a conta das variáveis dos modelos, conferida bit a bit. A
+  evidência descreve o sinal, sem classificar a falha e sem a FMECA.
+- **Onde aparece:** a rodada nova a calcula e a leva ao resultado e ao PDF. Numa rodada anterior, o "Preparar" dos
+  exploradores a monta como exploração pós-teste, fora de `data/resultados`.
+- **No chat:** os blocos R9 e R10 só vão ao modelo quando a pergunta fala de Fourier, harmônicos, nível DC ou THD.
+- **Estado:** commit local autorizado pelo pesquisador.
+
 ### Lote 54: a identidade e o contrato da rodada
 
 - **A identidade:** cada rodada nova grava em `resultado.json` a versão do programa (o commit e as alterações locais,

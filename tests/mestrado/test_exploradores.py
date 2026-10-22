@@ -64,8 +64,10 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
 
 
 def test_explorers_reproduce_the_canonical_evaluation_exactly(tmp_path, official_results, base_real):
-    explorer = Explorer(official_results, base_real, tmp_path / "cache")
+    cache = tmp_path / "dados" / "ciencia"
+    explorer = Explorer(official_results, base_real, cache)
     explorer.prepare()
+    _spectral_evidence_of_the_official_run(explorer, official_results, base_real, tmp_path / "dados")
     report = json.loads((official_results / "gpvs-avaliacao-001" / "relatorio.json").read_text(encoding="utf-8"))
     with (official_results / "gpvs-avaliacao-001" / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -98,13 +100,39 @@ def test_explorers_reproduce_the_canonical_evaluation_exactly(tmp_path, official
                 assert got["falsos_alarmes"]["teste_saudavel"]["alarmes"] == expected["alarmes_teste_saudavel"]
                 assert got["falsos_alarmes"]["pre_falha"]["alarmes"] == expected["alarmes_pre_falha"]
     # O cache é reaproveitado e outro k muda o limiar sem tocar nos resultados congelados.
-    again = Explorer(official_results, base_real, tmp_path / "cache")
+    again = Explorer(official_results, base_real, cache)
     again.prepare()
     other = again.threshold("denso", 42, 10, 99.0)
     assert other["limiar"]["limiar"] != other["canonico"]["limiar"]
     assert not again.alarms("denso", 42, 10, 99.0, 3)["parametros_canonicos"]
-    assert len(list((tmp_path / "cache").glob("erros-*.npz"))) == 1
+    assert len(list(cache.glob("erros-*.npz"))) == 1
     with pytest.raises(ValueError):
         again.threshold("denso", 42, 25, 99.0)
     with pytest.raises(ValueError):
         again.alarms("denso", 42, 5, 99.0, 11)
+
+
+def _spectral_evidence_of_the_official_run(explorer, official_results, base_real, data_dir):
+    """EXP-14 com os dados reais: o 4º passo do "Preparar" montou a evidência da avaliação de 27/09 como exploração
+    pós-teste. A THD dos espectros em float32 é a das 24 variáveis em toda janela (conferida ao montar o cache), a janela
+    do alarme é a da aba, e o Denso não alarma nos sombreamentos (F4L e F4M)."""
+    from apoio.caminhos import REFERENCE
+
+    from aliado.science.resumo_citavel import formato
+    from aliado.specializations.mestrado.evidencia_espectral import artefatos, espectros
+    from aliado.specializations.mestrado.resultados import paineis
+    from aliado.specializations.mestrado.resumo_para_o_chat import blocos
+
+    assert explorer.status()["evidencia_espectral"] == {"pronta": True, "origem": "exploracao", "erro": None}
+    evidence = artefatos.read(artefatos.find(explorer.run, explorer.cache_dir))
+    panels = {panel["id"]: panel["modelos"] for panel in paineis.score_panels(official_results, base_real)["ensaios"]}
+    assert all(evidence["alarmes"][kind][name]["alarme"] == panels[name][kind]["alarme_deteccao"]
+               for kind in ("denso", "lstm") for name in panels)
+    assert evidence["alarmes"]["denso"]["F4L"] == evidence["alarmes"]["denso"]["F4M"] == {"alarme": None}
+    assert min(evidence["janelas_antes_da_mudanca"]["F3L"], evidence["janelas_antes_da_mudanca"]["F3M"]) > 100
+    spectra = espectros.load_spectra(base_real)  # já em cache: o mesmo conteúdo que a evidência usou
+    assert all(1 <= int(spectra[name]["irregular"].sum()) <= 20 for name in spectra)
+    digest = blocos.build_digest(official_results, REFERENCE, data_dir)
+    spectral = [block for block in digest["blocos"] if block["citation_id"] in ("R9", "R10")]
+    assert [block["citation_id"] for block in spectral] == ["R9", "R10"] and "sem alarme" in spectral[0]["texto"]
+    assert sum(len(formato.block_text(block)) for block in spectral) <= 7_500
