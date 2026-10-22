@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 import pytest
+from apoio.avaliacao_sintetica import SHA, legacy_results
 
 from aliado import experiments
 from aliado.science.detection import registry
@@ -17,24 +18,6 @@ from aliado.specializations.mestrado import autoencoders
 np = pytest.importorskip("numpy")
 ROOT = Path(__file__).resolve().parents[1]
 HEADERS = {"x-aliado": "1"}
-SHA = "a" * 64
-
-
-def legacy_results(root: Path) -> Path:
-    """A avaliação de 27/09 em miniatura: avaliação sintética, treino e os hashes que o resultado cita."""
-    from test_science_views import synthetic
-
-    results = synthetic(root / "resultados")
-    evaluation = results / autoencoders.LEGACY_EVALUATION / "configuracao.json"
-    evaluation.write_text(json.dumps({"executado_em": "2026-09-27", "sha256": "c" * 64,
-                                      "treino": {"pasta": "data/resultados/gpvs-modelos-002", "configuracao_sha256": SHA},
-                                      "dados": {"hashes": {"F0L": "d" * 64}}}), encoding="utf-8")
-    training = results / "gpvs-modelos-002"
-    training.mkdir()
-    (training / "configuracao.json").write_text(json.dumps({"sha256": SHA, "ambiente": {"python": "3.12"}, "configuracao": {
-        "purge": 11, "seeds": [2, 1], "reference_seed": 2, "fractions": [0.5, 0.15, 0.15, 0.2], "top_k": 5,
-        "percentile": 99.0, "hyperparameters": {"max_epochs": 2000, "sequence": 8, "patience": 20}}}), encoding="utf-8")
-    return results
 
 
 def test_core_finds_the_experiment_and_checks_parameters():

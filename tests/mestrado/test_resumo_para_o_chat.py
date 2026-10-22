@@ -15,7 +15,7 @@ import pytest
 from aliado.science import digest as core
 from aliado.specializations.mestrado import digest
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 REFERENCE = ROOT / "docs" / "pesquisa-inversores"
 RESULTS = ROOT / "data" / "resultados"
 REAL = (RESULTS / "gpvs-avaliacao-001" / "relatorio.json").is_file() and (RESULTS / "gpvs-reanalise-001").is_dir()
@@ -30,7 +30,7 @@ COMPARISON = [{"objetivo": "Detecta mais falhas", "metrica": "sensibilidade", "m
 def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = True) -> Path:
     """Avaliação sintética (a de test_science_views), o treino com a posição do limiar e, se pedida, a reanálise."""
     pytest.importorskip("numpy")
-    from test_science_views import synthetic
+    from apoio.avaliacao_sintetica import synthetic
 
     from aliado.specializations.mestrado import gpvs, summary
 

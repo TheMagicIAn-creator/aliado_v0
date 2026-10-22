@@ -20,8 +20,9 @@ def requirements() -> dict[str, str]:
 
 
 def _tests() -> str:
-    return "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "tests").glob("test_*.py"))
-                     if path.name != Path(__file__).name)
+    # Lote 49: os testes da ciência e do mestrado ficam em subpastas; todas contam.
+    return "\n".join(path.read_text(encoding="utf-8") for path in sorted((ROOT / "tests").rglob("test_*.py"))
+                     if path != Path(__file__).resolve())
 
 
 def test_every_living_requirement_is_cited_by_a_test():

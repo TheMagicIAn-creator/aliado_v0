@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from test_detection import ROOT, write_synthetic
+from apoio.caminhos import ROOT
+from apoio.gpvs_sintetico import write_synthetic
 
 from aliado.specializations.mestrado import gpvs, onset
 

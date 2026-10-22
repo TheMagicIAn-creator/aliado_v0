@@ -14,7 +14,7 @@ from aliado.science.components import component_view, load_repairs, validate_rep
 from aliado.science.fmeca import evaluate_fmeca, load_table
 from aliado.science.ram import evaluate_scenario
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 REFERENCE = ROOT / "docs" / "pesquisa-inversores"
 INTERNAL = re.compile(r"semente|canônic|canonic|M1[0-9]", re.IGNORECASE)
 

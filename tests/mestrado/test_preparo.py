@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import csv
 import json
-from pathlib import Path
 
 import numpy as np
 import pytest
+from apoio.caminhos import ROOT
+from apoio.gpvs_sintetico import SHORT_PURGE, write_synthetic
 
 from aliado.science.detection.protocol import (
     RobustScaler,
@@ -20,7 +21,6 @@ from aliado.science.detection.protocol import (
 )
 from aliado.specializations.mestrado import gpvs
 
-ROOT = Path(__file__).resolve().parents[1]
 REAL_DATA = ROOT / "data" / "gpvs"
 
 
@@ -91,32 +91,6 @@ def test_feature_vector_on_known_signals():
     assert features["p_dc_median"] == pytest.approx(200.0)
     with pytest.raises(ValueError):
         gpvs.feature_vector(window[:100])
-
-
-def write_synthetic(folder: Path, rows: int = 16_000, seed: int = 3) -> None:
-    """16 ensaios pequenos: senoides trifásicas a 10 kHz; a falha muda a amplitude no meio do registro."""
-    rng = np.random.default_rng(seed)
-    folder.mkdir(parents=True, exist_ok=True)
-    t = np.arange(rows) / gpvs.SAMPLING_HZ
-    for name in gpvs.EXPERIMENTS:
-        amplitude = np.full(rows, 10.0)
-        if name not in gpvs.HEALTHY:
-            amplitude[rows // 2:] *= 1.0 + 0.1 * int(name[1])
-        data = np.zeros((rows, len(gpvs.SOURCE_COLUMNS)))
-        data[:, 0] = t + 1e-5
-        data[:, 1] = 2 + 0.05 * rng.normal(size=rows)
-        data[:, 2] = 100 + 0.2 * rng.normal(size=rows)
-        data[:, 3] = 150 + 0.2 * rng.normal(size=rows)
-        for k, shift in enumerate((0, -2 * np.pi / 3, 2 * np.pi / 3)):
-            data[:, 4 + k] = amplitude * np.sin(2 * np.pi * 50 * t + shift) + 0.1 * rng.normal(size=rows)
-            data[:, 7 + k] = 200 * np.sin(2 * np.pi * 50 * t + shift) + rng.normal(size=rows)
-        data[:, 10:] = (1, 50, 1, 50)
-        np.savetxt(folder / f"{name}.csv", data, delimiter=",", header=",".join(gpvs.SOURCE_COLUMNS),
-                   comments="")
-
-
-# Os ensaios sintéticos são curtos (80 janelas saudáveis): os testes usam a separação da origem.
-SHORT_PURGE = 2
 
 
 @pytest.fixture(scope="module")

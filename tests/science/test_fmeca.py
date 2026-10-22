@@ -12,7 +12,7 @@ import pytest
 from aliado.science import evaluate_scenario
 from aliado.science.fmeca import evaluate_fmeca, export_fmeca, load_table
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / "docs" / "pesquisa-inversores" / "fmeca.json"
 
 
