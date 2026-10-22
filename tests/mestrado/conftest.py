@@ -32,13 +32,13 @@ def rodada_sintetica(gpvs_sintetico, preparado_sintetico, tmp_path_factory):
     com a avaliação, nas pastas com os nomes reais (`gpvs-modelos-002` e `gpvs-avaliacao-001`)."""
     pytest.importorskip("torch")
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado import reanalysis
-    from aliado.specializations.mestrado.evaluation import (
+    from aliado.specializations.mestrado.avaliacao.resumo import (
         EvaluationConfig,
         export_evaluation,
         load_training,
         score_all,
     )
+    from aliado.specializations.mestrado.reanalise import reanalise as reanalysis
     from aliado.specializations.mestrado.treino.artefatos import export_training
     from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
     from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks

@@ -93,7 +93,7 @@ class Explorer:
 
     def _load(self, progress) -> dict:
         from aliado.science.deteccao.redes.autoencoders import MODELS
-        from aliado.specializations.mestrado.evaluation import load_training
+        from aliado.specializations.mestrado.avaliacao.resumo import load_training
 
         status = self.status()
         if not status["disponivel"]:
@@ -127,7 +127,7 @@ class Explorer:
 
     def _errors(self, trained, prepared, weights: dict) -> dict:
         from aliado.science.deteccao.inferencia.erros import feature_errors
-        from aliado.specializations.mestrado.evaluation import segment_errors
+        from aliado.specializations.mestrado.avaliacao.resumo import segment_errors
         from aliado.specializations.mestrado.treino.detectores import model_inputs, training_blocks
 
         meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes,
@@ -203,7 +203,7 @@ class Explorer:
                trial: str | None = None) -> dict:
         from aliado.science.deteccao.alarmes.confirmacao import alarm_starts
         from aliado.science.deteccao.escore.top_k import top_k_scores
-        from aliado.specializations.mestrado.evaluation import run_metrics
+        from aliado.specializations.mestrado.avaliacao.resumo import run_metrics
         from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
 
         state, errors = self._ready(kind, seed)

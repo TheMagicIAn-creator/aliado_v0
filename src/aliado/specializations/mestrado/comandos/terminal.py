@@ -93,7 +93,7 @@ def _train(args) -> int:
 
 
 def _evaluate(args) -> int:
-    from aliado.specializations.mestrado.evaluation import (
+    from aliado.specializations.mestrado.avaliacao.resumo import (
         EvaluationConfig,
         export_evaluation,
         load_training,
@@ -112,7 +112,7 @@ def _evaluate(args) -> int:
 
 def _reanalyze(args) -> int:
     from aliado.science.deteccao.registro import consultas as registry
-    from aliado.specializations.mestrado.reanalysis import EVALUATION, run
+    from aliado.specializations.mestrado.reanalise.reanalise import EVALUATION, run
 
     _new(args.saida)
     paths = run(args.avaliacao, args.modelos, args.dados, args.saida, cache=args.cache)

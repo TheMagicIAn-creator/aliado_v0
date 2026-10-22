@@ -5,9 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.specializations.mestrado import onset
 from aliado.specializations.mestrado.atributos import extracao
 from aliado.specializations.mestrado.atributos.cache import features_cache
+from aliado.specializations.mestrado.inicio_das_falhas import estimativa as onset
 
 
 def test_pelt_finds_a_mean_shift_and_nothing_in_noise():

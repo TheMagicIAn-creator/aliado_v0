@@ -9,8 +9,8 @@ pytest.importorskip("torch")
 
 from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS  # noqa: E402
 from aliado.specializations.mestrado.atributos import variaveis  # noqa: E402
+from aliado.specializations.mestrado.avaliacao.resumo import EvaluationConfig  # noqa: E402
 from aliado.specializations.mestrado.base import ensaios  # noqa: E402
-from aliado.specializations.mestrado.evaluation import EvaluationConfig  # noqa: E402
 from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
 from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig  # noqa: E402
 

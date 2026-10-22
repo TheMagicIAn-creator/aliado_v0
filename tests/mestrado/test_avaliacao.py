@@ -15,8 +15,7 @@ torch = pytest.importorskip("torch")
 
 from apoio.caminhos import ROOT  # noqa: E402
 
-from aliado.specializations.mestrado.base import ensaios  # noqa: E402
-from aliado.specializations.mestrado.evaluation import (  # noqa: E402
+from aliado.specializations.mestrado.avaliacao.resumo import (  # noqa: E402
     EvaluationConfig,
     TrainedDetectors,
     export_evaluation,
@@ -24,6 +23,7 @@ from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     run_metrics,
     score_all,
 )
+from aliado.specializations.mestrado.base import ensaios  # noqa: E402
 
 QUICK = EvaluationConfig(resamples=200)
 

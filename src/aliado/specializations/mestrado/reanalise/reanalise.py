@@ -23,10 +23,8 @@ import numpy as np
 from aliado.science.deteccao.alarmes.taxa import markov_alarm_rate
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold, false_alarm_interval
 from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS
-from aliado.specializations.mestrado import onset
 from aliado.specializations.mestrado.atributos import extracao
-from aliado.specializations.mestrado.base import ensaios
-from aliado.specializations.mestrado.evaluation import (
+from aliado.specializations.mestrado.avaliacao.resumo import (
     PAIRED_NAMES,
     EvaluationConfig,
     TrainedDetectors,
@@ -37,6 +35,8 @@ from aliado.specializations.mestrado.evaluation import (
     run_metrics,
     summarize,
 )
+from aliado.specializations.mestrado.base import ensaios
+from aliado.specializations.mestrado.inicio_das_falhas import estimativa as onset
 from aliado.specializations.mestrado.preparo import preparacao
 from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
 from aliado.specializations.mestrado.treino.artefatos import environment

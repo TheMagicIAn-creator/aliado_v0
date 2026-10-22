@@ -35,8 +35,8 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
     from types import SimpleNamespace
 
     from aliado.science.deteccao.inferencia import erros
-    from aliado.specializations.mestrado import evaluation
     from aliado.specializations.mestrado.atributos import variaveis
+    from aliado.specializations.mestrado.avaliacao import resumo as evaluation
     from aliado.specializations.mestrado.base import ensaios
     from aliado.specializations.mestrado.treino import detectores as training
 

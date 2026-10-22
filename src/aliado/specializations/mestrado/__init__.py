@@ -14,7 +14,7 @@ interface web entram dentro das funções.
 from pathlib import Path
 
 from aliado.specializations.mestrado import autoencoders
-from aliado.specializations.mestrado.commands import add_commands
+from aliado.specializations.mestrado.comandos.terminal import add_commands
 from aliado.specializations.mestrado.digest import cached as results_digest
 from aliado.specializations.mestrado.notes import NOTES
 from aliado.specializations.mestrado.routing import ROUTING

@@ -74,8 +74,8 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
         progress=print) -> dict:
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado import reanalysis, summary
-    from aliado.specializations.mestrado.evaluation import (
+    from aliado.specializations.mestrado import summary
+    from aliado.specializations.mestrado.avaliacao.resumo import (
         EvaluationConfig,
         export_evaluation,
         load_training,
@@ -84,6 +84,7 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     from aliado.specializations.mestrado.preparo import artefatos as artefatos_do_preparo
     from aliado.specializations.mestrado.preparo import preparacao
     from aliado.specializations.mestrado.preparo import resumo as resumo_do_preparo
+    from aliado.specializations.mestrado.reanalise import reanalise as reanalysis
     from aliado.specializations.mestrado.treino.artefatos import export_training
     from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
     from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
