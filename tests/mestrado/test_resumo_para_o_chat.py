@@ -11,14 +11,11 @@ import sys
 from pathlib import Path
 
 import pytest
+from apoio.caminhos import REFERENCE, RESULTS, ROOT
 
 from aliado.science import digest as core
 from aliado.specializations.mestrado import digest
 
-ROOT = Path(__file__).resolve().parents[2]
-REFERENCE = ROOT / "docs" / "pesquisa-inversores"
-RESULTS = ROOT / "data" / "resultados"
-REAL = (RESULTS / "gpvs-avaliacao-001" / "relatorio.json").is_file() and (RESULTS / "gpvs-reanalise-001").is_dir()
 INTERNAL = re.compile(r"semente|canônic|canonic|\bM\d{2}\b|gpvs-|sha256|commit|\.json|lote \d", re.IGNORECASE)
 SUMMARY = {"detectados": 10, "atraso_mediano_ms": 1000.0, "sensibilidade_media": 0.5, "especificidade_media": 0.5,
            "precisao_media": 0.5, "f1_media": 0.5, "acuracia_balanceada_media": 0.5, "mcc_media": 0.5,
@@ -72,15 +69,6 @@ def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = T
 
 def ids(result):
     return [block["citation_id"] for block in result["blocos"]]
-
-
-def test_formatters_write_numbers_as_the_science_tab_does():
-    assert core.seconds(2041.4) == "2,04 s" and core.seconds(1701.4) == "1,7 s" and core.seconds(None) == "—"
-    assert core.num(206.523) == "207" and core.num(34300.2) == "34.300" and core.num(2611, 4) == "2.611"
-    assert core.num(0) == "0" and core.num(-0.0714) == "-0,0714" and core.num(19.43) == "19,4"
-    assert core.num(0.00091) == "9,10e-4" and core.num(1817016) == "1,82e+6"
-    assert core.pct(0.99091, 5) == "99,091%" and core.pct(0.0218) == "2,18%"
-    assert core.dec(0.4017) == "0,402" and core.dec(1.0) == "1,000" and core.dec(None) == "—"
 
 
 def test_notes_are_the_ones_of_the_science_tab():
@@ -190,7 +178,6 @@ def test_digest_and_interface_open_without_numpy_or_torch():
     assert done.stdout.strip() == "['R7', 'R8'] 1"
 
 
-@pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e a reanálise neste computador.")
 def test_real_digest_has_the_numbers_of_the_science_tab(official_results):
     pytest.importorskip("numpy")
     result = digest.build_digest(official_results, REFERENCE)

@@ -1,3 +1,6 @@
+"""A confiabilidade: os cenários de confiabilidade, mantenabilidade e disponibilidade, a validação deles, os
+artefatos e o explorador da aba Ciência."""
+
 from __future__ import annotations
 
 import copy
@@ -6,8 +9,10 @@ import json
 import math
 
 import pytest
+from apoio.caminhos import REFERENCE
 
 from aliado.science import evaluate_scenario, export_result
+from aliado.science.ram import reliability
 from aliado.skills.library import load_skill
 
 
@@ -290,3 +295,16 @@ def test_general_skill_has_no_physical_parameters_or_research_defaults():
     assert not any(text in content for text in ("20 anos", "GPVS", "p99"))
     assert "MTTF" in content
     assert "MTBF" in content
+
+
+def test_reliability_explorer_matches_the_saved_igbt_scenario():
+    scenario = json.loads((REFERENCE / "cenarios" / "igbt-operacao.json").read_text(encoding="utf-8"))
+    expected = {row["time"]: row for row in evaluate_scenario(scenario)["rows"]}
+    rows = {row["time"]: row for row in reliability(8.9e-6, 4015, "operation", 20)["rows"]}
+    for year in (1.0, 5.0, 10.0, 20.0):
+        assert rows[year]["failure_probability"] == expected[year]["failure_probability"]
+    assert reliability(8.9e-6, 8760, "calendar", 0.5)["rows"][-1]["time"] == 0.5
+    with pytest.raises(ValueError):
+        reliability(8.9e-6, 4015, "operation", 0)
+    with pytest.raises(ValueError):
+        reliability(8.9e-6, 9000, "operation", 20)

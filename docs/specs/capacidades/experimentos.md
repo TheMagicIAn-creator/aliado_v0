@@ -65,6 +65,18 @@ ruim vira aviso (400, ou 413 acima de 5 MB), nunca um erro do servidor.
 DD/MM/AAAA · Nª vez que os dados de teste foram usados", na aba, no chat e no PDF.
 *Cenário:* sem rodada nova, a aba diz "Avaliação oficial de 27/09/2026".
 
+**EXP-12. Protocolo fixo.** O experimento AE Denso × AE-LSTM segue sempre o protocolo de 27/09/2026:
+- os 24 atributos, na ordem, por janela de 200 amostras (um ciclo de 50 Hz a 10 kHz);
+- a normalização robusta pela linha de base do treino (mediana e IQR, com piso de 10% do IQR);
+- a divisão 50/15/15/20, com separação padrão de 11 janelas;
+- o escore pela média dos 5 maiores erros e o limiar no percentil 99 da calibração;
+- o alarme com 3 janelas seguidas e sequências de 8 janelas no AE-LSTM.
+
+A tela muda só a separação, as repetições e o teto de épocas. Mudar qualquer outro valor é mudar o método e pede
+spec própria.
+*Cenário:* dado o código do mestrado, quando os testes leem os valores do protocolo, então eles são os de
+27/09/2026.
+
 ## Onde está
 
 - Núcleo: `src/aliado/experiments/` (rodadas, resultado, PDF, comparação), `src/aliado/interfaces/web/experiments.py`

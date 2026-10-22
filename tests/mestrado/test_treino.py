@@ -1,4 +1,5 @@
-"""Lote 14: autoencoders, treino congelado e exportação; reprodução exata da origem com os dados reais."""
+"""O treino dos detectores do mestrado: configuração congelada, calibração sem o teste e exportação (lote 14); com
+os dados reais, a reprodução exata da origem."""
 
 from __future__ import annotations
 
@@ -12,16 +13,13 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from apoio.caminhos import ROOT  # noqa: E402
-from apoio.gpvs_sintetico import SHORT_PURGE, write_synthetic  # noqa: E402
+from apoio.gpvs_sintetico import SHORT_PURGE  # noqa: E402
 
 from aliado.science.detection.models import (  # noqa: E402
     Hyperparameters,
-    build,
     feature_errors,
-    fit,
     load_model,
     parameter_count,
-    save_model,
     top_k_scores,
 )
 from aliado.specializations.mestrado import gpvs  # noqa: E402
@@ -37,87 +35,11 @@ from aliado.specializations.mestrado.training import (  # noqa: E402
 FAST = Hyperparameters(max_epochs=3)
 
 
-class Zero(torch.nn.Module):
-    def forward(self, x):
-        return torch.zeros_like(x)
-
-
-@pytest.fixture(scope="module")
-def prepared(tmp_path_factory):
-    folder = tmp_path_factory.mktemp("gpvs")
-    write_synthetic(folder)
-    return folder, gpvs.prepare(folder, purge=SHORT_PURGE)
-
-
 def small_config(**changes) -> ExperimentConfig:
     # 20 janelas de calibração sintéticas não sustentam p99; p90 exige só 11.
     options = {"purge": SHORT_PURGE, "seeds": (3,), "reference_seed": 3, "percentile": 90.0,
                "hyperparameters": FAST} | changes
     return ExperimentConfig(**options)
-
-
-def test_top_k_score_is_the_mean_of_the_largest_errors():
-    errors = np.array([[1, 2, 3, 4, 5, 6], [6, 5, 4, 3, 2, 1]], dtype=np.float32)
-    assert np.allclose(top_k_scores(errors, 2), [5.5, 5.5])
-    assert np.allclose(top_k_scores(errors, 6), [3.5, 3.5])
-    for k in (0, 7, True):
-        with pytest.raises(ValueError):
-            top_k_scores(errors, k)
-
-
-def test_feature_errors_use_only_the_last_step_of_each_sequence():
-    sequences = np.arange(2 * 4 * 3, dtype=np.float32).reshape(2, 4, 3)
-    assert np.array_equal(feature_errors(Zero(), sequences), sequences[:, -1, :] ** 2)
-    windows = sequences[:, 0, :]
-    assert np.array_equal(feature_errors(Zero(), windows), windows ** 2)
-
-
-def test_architectures_match_the_reference_parameter_counts():
-    hp = Hyperparameters()
-    assert parameter_count(build("denso", 24, hp)) == 1088
-    assert parameter_count(build("lstm", 24, hp)) == 17216
-    with pytest.raises(ValueError):
-        build("atencao", 24, hp)
-
-
-def test_training_is_deterministic_and_keeps_the_best_validation_epoch():
-    rng = np.random.default_rng(0)
-    train, validation = rng.normal(size=(64, 24)), rng.normal(size=(20, 24))
-    hp = Hyperparameters(max_epochs=6)
-    model, history = fit("denso", train, validation, seed=5, hp=hp)
-    again, _ = fit("denso", train, validation, seed=5, hp=hp)
-    other, _ = fit("denso", train, validation, seed=6, hp=hp)
-    state = model.state_dict()
-    assert all(torch.equal(state[key], again.state_dict()[key]) for key in state)
-    assert not all(torch.equal(state[key], other.state_dict()[key]) for key in state)
-    assert history.epochs == 6 and 1 <= history.best_epoch <= 6
-    target = torch.as_tensor(validation, dtype=torch.float32)
-    with torch.no_grad():
-        restored = float(torch.nn.functional.mse_loss(model(target), target))
-    assert restored == pytest.approx(history.best_validation_loss, rel=1e-6)
-
-
-def test_training_stops_after_patience_without_improvement():
-    rng = np.random.default_rng(1)
-    train, validation = rng.normal(size=(64, 24)), rng.normal(size=(20, 24))
-    # Sem aprendizado, a validação não melhora depois da 1ª época: para após 3 épocas paradas.
-    _, history = fit("denso", train, validation, seed=1,
-                     hp=Hyperparameters(max_epochs=50, patience=3, learning_rate=0.0))
-    assert (history.best_epoch, history.epochs) == (1, 4) and history.stop_reason(3) == "paciencia"
-    _, capped = fit("denso", train, validation, seed=1, hp=Hyperparameters(max_epochs=2, learning_rate=0.0))
-    assert capped.epochs == 2 and capped.stop_reason(20) == "teto"
-
-
-def test_lstm_trains_on_sequences_and_models_reload_without_pickle(tmp_path):
-    sequences = np.random.default_rng(2).normal(size=(40, 8, 24)).astype(np.float32)
-    hp = Hyperparameters(max_epochs=2)
-    model, _ = fit("lstm", sequences[:30], sequences[30:], seed=3, hp=hp)
-    path = tmp_path / "lstm.pt"
-    save_model(model, path, kind="lstm", seed=3, n_features=24, hp=hp)
-    loaded, checkpoint = load_model(path)
-    assert checkpoint["semente"] == 3 and checkpoint["hiperparametros"]["max_epochs"] == 2
-    assert feature_errors(model, sequences).shape == (40, 24)
-    assert np.array_equal(feature_errors(model, sequences), feature_errors(loaded, sequences))
 
 
 def test_config_is_validated_and_hashed():
@@ -131,8 +53,9 @@ def test_config_is_validated_and_hashed():
             ExperimentConfig(**bad)
 
 
-def test_training_scores_only_calibration_and_never_the_test_block(prepared, monkeypatch):
-    _, data = prepared
+@pytest.mark.treina
+def test_training_scores_only_calibration_and_never_the_test_block(preparado_sintetico, monkeypatch):
+    data = preparado_sintetico
     sealed = data.scaled.copy()
     sealed[data.split["test"]] = np.nan  # se o teste entrasse, o limiar não seria finito
     scored = []
@@ -151,10 +74,9 @@ def test_training_scores_only_calibration_and_never_the_test_block(prepared, mon
     assert all(np.isfinite(run.thresholds[k].value) for run in runs for k in (5, 10, 20))
 
 
-def test_export_writes_frozen_configuration_models_and_report(prepared, tmp_path):
-    _, data = prepared
-    config = small_config(seeds=(3, 4))
-    runs = train_detectors(data.scaled, training_blocks(data), config)
+def test_export_writes_frozen_configuration_models_and_report(rodada_sintetica, tmp_path):
+    data, config, runs = rodada_sintetica.preparado, rodada_sintetica.config, rodada_sintetica.runs
+    assert config == small_config(seeds=(3, 4))  # o treino da sessão é o deste teste
     output = tmp_path / "treino"
     paths = export_training(runs, data, config, output)
     frozen = json.loads(Path(paths["configuracao"]).read_text(encoding="utf-8"))
@@ -178,19 +100,6 @@ def test_export_writes_frozen_configuration_models_and_report(prepared, tmp_path
         export_training(runs, data, config, output)
     with pytest.raises(ValueError, match="divisão"):
         export_training(runs, data, small_config(purge=11, seeds=(3, 4)), tmp_path / "outra")
-
-
-def test_cli_refuses_degenerate_threshold_before_training_and_existing_folder(prepared, tmp_path, capsys):
-    from aliado.cli import main
-
-    folder, _ = prepared
-    output = tmp_path / "treino"
-    args = ["ciencia", "treinar-gpvs", "--dados", str(folder), "--saida", str(output),
-            "--cache", str(tmp_path / "cache.npz"), "--separacao", str(SHORT_PURGE), "--sementes", "7"]
-    assert main(args) == 2
-    assert "exige ao menos 101 janelas" in capsys.readouterr().err and not output.exists()
-    output.mkdir()
-    assert main(args) == 2 and "já existe" in capsys.readouterr().err
 
 
 def _weights_digest(model) -> str:

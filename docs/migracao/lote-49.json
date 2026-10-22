@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "49",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "committed_locally_awaiting_review",
+  "base_commit": "c2768f1",
+  "decision": "plano aprovado pelo pesquisador em 21/10/2026, com commits locais autorizados e sem push nem tag",
+  "spec": "docs/specs/0049-lacos-dos-testes.md",
+  "validation": "docs/migracao/validacao-lote-49.md",
+  "requirements": {
+    "added": [
+      "EXP-12"
+    ],
+    "changed": []
+  },
+  "commit_split": {
+    "mudanca_de_lugar": "5e1de6f",
+    "divisao": "o commit deste manifesto"
+  },
+  "checks": {
+    "pytest": {
+      "grupos": 36,
+      "passed": 836,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 217.43
+    },
+    "ruff": {
+      "exit_code": 0
+    },
+    "diff_check": {
+      "exit_code": 0
+    },
+    "nomes_dos_testes": {
+      "antes": 834,
+      "depois": 836,
+      "sumiram": 0,
+      "novos": [
+        "test_the_protocol_values_are_the_ones_decided",
+        "test_normalization_is_the_robust_one_of_the_training_baseline"
+      ]
+    }
+  },
+  "measurement": {
+    "antes": {
+      "testes": 834,
+      "treinos": 28,
+      "bateria_s": 279.5,
+      "ciencia_s": 180.3,
+      "pico_memoria_mib": 559.3,
+      "pico_ciencia_mib": 473.5
+    },
+    "depois": {
+      "testes": 836,
+      "treinos": 18,
+      "bateria_s": 217.43,
+      "ciencia_s": 124.1,
+      "pico_memoria_mib": 559.4,
+      "pico_ciencia_mib": 473.7
+    },
+    "equivalencia": {
+      "execucoes_iguais_sem_diferenca": true,
+      "arquivos_comparados": 28,
+      "alterada_com_diferenca": true,
+      "referencia": "tmp/equivalencia/referencia"
+    }
+  },
+  "evidence": {
+    "bateria_antes": "tmp/lote-49/antes/pytest.json",
+    "bateria_depois": "tmp/lote-49/depois/pytest.json",
+    "equivalencia": "tmp/lote-49/equivalencia-autoteste.log"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "fbd8b16ebd49b983012989e848fb03aa278afc2e3f6d0f84cb7f0872a66e5632",
+    "docs/migracao/validacao-lote-49.md": "6c9abc7bbc4e2e7ad76643cf5b788d69024af23a24b4d34f9c8e339f157166ca",
+    "docs/revisao/2026-10-21-diagnostico-modularizacao.md": "50a76a8d3fe55a6e85c531dac16ba1789a1aa93b8b1c76b8ea55794a4ae953aa",
+    "docs/revisao/2026-10-21-relatorio-latex-conferido.md": "b4dbe2c4361e647a7a0f2e48841736751004508b9410f160ba928900ce40e907",
+    "docs/roteiro-v0.md": "32247ace03f4fedb46b707cc45bf3a63ec84628b3d63bc0c47da70d429baa8cb",
+    "docs/specs/0049-lacos-dos-testes.md": "d54d9187d924dd261920acf72a6f3d14fe5aaeb4738c1b571c532e80d699f027",
+    "docs/specs/capacidades/experimentos.md": "d4c895dee157d1e9aa4c0c75a8b2798c7e9683ac6754926936750c98356156f1",
+    "ferramentas/bateria.py": "01212778e6a76f5571b15bb7ae78f1bccb155ab30148693232bda5ec2a0389b2",
+    "ferramentas/equivalencia.py": "6e646791d306a570d99190c178ac0fd353d53167366d8e28bfd68119af02c8e4",
+    "ferramentas/medicao.py": "6d372b2194b01f61d1da34300e6890f8c2255bad8f17b225ed353c372636f5d7",
+    "pyproject.toml": "4dd49db741d40958498993106cc1368ed99f17246e374275a70fbc5921d9ec84",
+    "tests/conftest.py": "e68bce02c82651d652dbe8a75c76f7ee56e9f4e6ff0f4546334a7f7bf73236c9",
+    "tests/mestrado/conftest.py": "58507c2d6097957dc3a245a603321f35410f15000176209a60181b057d20836b",
+    "tests/mestrado/test_atributos.py": "a03c77ec4e9a6958a6474354f1161cb8d102302c4507df66d102331388c7ba14",
+    "tests/mestrado/test_avaliacao.py": "4256872e3d075e3d2e1d68352065b3e751c7cd05081fe7c27ab74f2ce6fa8484",
+    "tests/mestrado/test_base.py": "41fd12bfd93027de3730153c44ad23c5765ddedb8a9439841fd88b27e9317068",
+    "tests/mestrado/test_comandos.py": "131e4820b4a2d3f4545e0258f8a83eed0fdcbace4a5322710a06bc8e0b7a10d8",
+    "tests/mestrado/test_exploradores.py": "758c488c5039e8ce928c212de7356296208e55844f77ee59492d6bee55b7789c",
+    "tests/mestrado/test_inicio_das_falhas.py": "95240380825d28d70e6aadf9151923a0513940f8a6d13b90c0a8b145435ef521",
+    "tests/mestrado/test_preparo.py": "e81a661b2c8dc5b771fb92eada398df4454c22b0cd82d1c904611ac8d99bf73e",
+    "tests/mestrado/test_protocolo_fixo.py": "ae28fffc14bcaabec5eb2d7efbce871f6ff99e1e7f0dc1884b863cc90aaca000",
+    "tests/mestrado/test_reanalise.py": "d2b347f96a9e9b274e58479552ecdcef92ef5e13bf703c0c061890c1c6072244",
+    "tests/mestrado/test_resultados.py": "5ef9e0355f50fe566b20d8ed297c29ac17595176ac3c0ae240a853f6553c7fba",
+    "tests/mestrado/test_resumo_para_o_chat.py": "f8bbee81886c09989b5e68dcc19fe03e19eca2e9cc953e63049a4b0cf659c8be",
+    "tests/mestrado/test_tela.py": "dd526c7ca00de476c9fadc31d9a33e02f78a57904deb0ef2b06eb50df73b2aef",
+    "tests/mestrado/test_treino.py": "4a0cb488240c535a59a5158b77b5d5436b1d916bba7a5a4582b5080a1f33d1cf",
+    "tests/science/test_alarmes.py": "bb157d464aa753186b6d2fe9b99cb565e4c9926311e997a7331c77eb59b9a36a",
+    "tests/science/test_confiabilidade.py": "4854a42329db575280dca64053eca612c92bd6aa0f30ad6d85d7fdeaf72fd5b5",
+    "tests/science/test_escore.py": "4ed24ecde82e03f05d148ce56ed712c1cfb4076771847129a9963f0db53ee158",
+    "tests/science/test_inferencia.py": "752da99510ccf656363934ae538f706c94f9f865b9eadee4631e9e75765237f6",
+    "tests/science/test_metricas.py": "de7e077bf5d12b9bedbbd535b15cc5ce57fefe4a84ce9590380c44465b7146e0",
+    "tests/science/test_normalizacao.py": "79f89265e7df4c697bf38b0f94ba72068587e1f5794fda7542f59cf7ebf8e03e",
+    "tests/science/test_particao.py": "c333e7a191f98ca980b75d211aa930563a8a8bd86b3827c35dc7c6da6dcf804d",
+    "tests/science/test_pesos.py": "271c9903a3e7d2992c2f6245485a61f20b9f8f05a9114bc7f6dcc0af538bab05",
+    "tests/science/test_redes.py": "a147675a9cb87ea48b2610795e6a9ddb88a362a5e7f043d4da11ebf5f423c4fc",
+    "tests/science/test_resumo_citavel.py": "847cab78370471b0095197484c343b4cfb0e33c1c1663d877a6682a895df91c0",
+    "tests/science/test_treino.py": "4222b8e0242bf7efdb8f5cb2a62bfdbc698e2e4daf3eab680c826417f059847e",
+    "tests/test_experiments.py": "ba348a9ebb3cd3ea7736dfbb0848d0833bf95ef43292e0e8adcc656a107f47bd",
+    "tests/test_science_tab.py": "d7497be6560de6793fe0f28537da7ec5a985537415fde7fe4d562074c6c13b84"
+  }
+}

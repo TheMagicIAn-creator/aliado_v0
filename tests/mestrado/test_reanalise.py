@@ -10,51 +10,19 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from apoio.caminhos import ROOT  # noqa: E402
-from apoio.gpvs_sintetico import SHORT_PURGE, write_synthetic  # noqa: E402
-
 from aliado.science.detection import registry  # noqa: E402
-from aliado.science.detection.models import Hyperparameters  # noqa: E402
 from aliado.specializations.mestrado import gpvs, reanalysis, summary  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
-    EvaluationConfig,
-    export_evaluation,
     load_thresholds,
     load_training,
     run_metrics,
     score_all,
     summarize,
 )
-from aliado.specializations.mestrado.training import (  # noqa: E402
-    ExperimentConfig,
-    export_training,
-    train_detectors,
-    training_blocks,
-)
-
-RESULTS, GPVS = ROOT / "data" / "resultados", ROOT / "data" / "gpvs"
-REAL = (RESULTS / reanalysis.EVALUATION / "escores.npz").is_file() and (GPVS / "proveniencia.json").is_file()
-QUICK = EvaluationConfig(resamples=200)
 
 
-@pytest.fixture(scope="module")
-def evaluated(tmp_path_factory):
-    """Treino e avaliação sintéticos, com os nomes das pastas reais."""
-    data_dir = tmp_path_factory.mktemp("gpvs")
-    write_synthetic(data_dir)
-    data = gpvs.prepare(data_dir, purge=SHORT_PURGE)
-    config = ExperimentConfig(purge=SHORT_PURGE, seeds=(3, 4), reference_seed=3, percentile=90.0,
-                              hyperparameters=Hyperparameters(max_epochs=3))
-    results = tmp_path_factory.mktemp("resultados")
-    export_training(train_detectors(data.scaled, training_blocks(data), config), data, config,
-                    results / "gpvs-modelos-002")
-    detectors = load_training(results / "gpvs-modelos-002")
-    export_evaluation(score_all(detectors, data), detectors, data, QUICK, results / reanalysis.EVALUATION)
-    return data_dir, data, results
-
-
-def test_thresholds_load_without_the_weights(evaluated):
-    _, _, results = evaluated
+def test_thresholds_load_without_the_weights(rodada_sintetica):
+    results = rodada_sintetica.resultados
     light, summary = load_thresholds(results / "gpvs-modelos-002")
     full = load_training(results / "gpvs-modelos-002")
     assert light.thresholds == full.thresholds and light.models == {} and set(full.models) == {
@@ -62,8 +30,8 @@ def test_thresholds_load_without_the_weights(evaluated):
     assert summary["configuracao_sha256"] == full.frozen["sha256"]
 
 
-def test_stored_scores_are_the_ones_of_the_evaluation(evaluated):
-    _, data, results = evaluated
+def test_stored_scores_are_the_ones_of_the_evaluation(rodada_sintetica):
+    data, results = rodada_sintetica.preparado, rodada_sintetica.resultados
     trained, _ = load_thresholds(results / "gpvs-modelos-002")
     stored = reanalysis.load_scores(results / reanalysis.EVALUATION / "escores.npz", trained)
     fresh = score_all(load_training(results / "gpvs-modelos-002"), data)
@@ -72,8 +40,8 @@ def test_stored_scores_are_the_ones_of_the_evaluation(evaluated):
         assert all(np.array_equal(values["ensaios"][name], stored[key]["ensaios"][name]) for name in gpvs.FAULTY)
 
 
-def test_relabel_moves_the_positives_and_leaves_the_gap_out(evaluated):
-    _, data, _ = evaluated
+def test_relabel_moves_the_positives_and_leaves_the_gap_out(rodada_sintetica):
+    data = rodada_sintetica.preparado
     item = data.faults["F1L"]
     nominal = int(item["pos_falha"][0])
     trials = {"F1L": {"classe": "clara", "observado_janela": nominal + 5},
@@ -100,10 +68,10 @@ def test_relabel_moves_the_positives_and_leaves_the_gap_out(evaluated):
     assert result["vp"] + result["fn"] == len(later["pos_falha"]) and result["sensibilidade"] == 1.0
 
 
-def test_reanalysis_exports_registers_and_never_overwrites(evaluated, capsys):
+def test_reanalysis_exports_registers_and_never_overwrites(rodada_sintetica_copia, capsys):
     from aliado.cli import main
 
-    data_dir, _, results = evaluated
+    data_dir, results = rodada_sintetica_copia.dados, rodada_sintetica_copia.resultados
     output = results / "gpvs-reanalise-001"
     args = ["ciencia", "reanalisar-gpvs", "--avaliacao", str(results / reanalysis.EVALUATION),
             "--modelos", str(results / "gpvs-modelos-002"), "--saida", str(output), "--dados", str(data_dir),
@@ -144,23 +112,21 @@ def test_reanalysis_exports_registers_and_never_overwrites(evaluated, capsys):
     assert summary.current(results).reanalysis == output and view["rodada"]["oficial"]
 
 
-@pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
-def test_real_nominal_onsets_repeat_the_official_report():
-    trained, _ = load_thresholds(RESULTS / "gpvs-modelos-002")
-    config, _ = reanalysis.evaluation_config(RESULTS / reanalysis.EVALUATION)
-    data = gpvs.prepare(GPVS, cache=GPVS / "processado" / "variaveis.npz", purge=trained.config.purge,
+def test_real_nominal_onsets_repeat_the_official_report(official_results, base_real):
+    trained, _ = load_thresholds(official_results / "gpvs-modelos-002")
+    config, _ = reanalysis.evaluation_config(official_results / reanalysis.EVALUATION)
+    data = gpvs.prepare(base_real, cache=base_real / "processado" / "variaveis.npz", purge=trained.config.purge,
                         fractions=trained.config.fractions)
-    scores = reanalysis.load_scores(RESULTS / reanalysis.EVALUATION / "escores.npz", trained)
-    official = json.loads((RESULTS / reanalysis.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
+    scores = reanalysis.load_scores(official_results / reanalysis.EVALUATION / "escores.npz", trained)
+    official = json.loads((official_results / reanalysis.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     same = summarize(scores, trained, reanalysis.relabel(data, {}), config)
     assert json.loads(json.dumps(same, allow_nan=False)) == official
 
 
-@pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
-def test_real_reanalysis_keeps_detection_and_moves_delay_and_sensitivity():
-    report = reanalysis.reanalyze(RESULTS / reanalysis.EVALUATION, RESULTS / "gpvs-modelos-002", GPVS,
-                                  cache=GPVS / "processado" / "variaveis.npz")
-    official = json.loads((RESULTS / reanalysis.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
+def test_real_reanalysis_keeps_detection_and_moves_delay_and_sensitivity(official_results, base_real):
+    report = reanalysis.reanalyze(official_results / reanalysis.EVALUATION, official_results / "gpvs-modelos-002",
+                                  base_real, cache=base_real / "processado" / "variaveis.npz")
+    official = json.loads((official_results / reanalysis.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     clear = report["so_mudanca_clara"]["ensaios"]
     assert len(clear) == 8
     for kind in ("denso", "lstm"):

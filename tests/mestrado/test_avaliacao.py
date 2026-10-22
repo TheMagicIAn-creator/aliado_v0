@@ -1,4 +1,5 @@
-"""Lote 15: avaliação M13 com dados sintéticos; conferência com a origem se os dados reais existirem."""
+"""A avaliação dos detectores congelados: pesos conferidos, pontuação dos ensaios, alarmes, detecção e grades
+(lote 15); com os dados reais, as métricas por janela da origem."""
 
 from __future__ import annotations
 
@@ -13,9 +14,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from apoio.caminhos import ROOT  # noqa: E402
-from apoio.gpvs_sintetico import SHORT_PURGE, write_synthetic  # noqa: E402
 
-from aliado.science.detection.models import Hyperparameters  # noqa: E402
 from aliado.specializations.mestrado import gpvs  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     EvaluationConfig,
@@ -25,30 +24,12 @@ from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     run_metrics,
     score_all,
 )
-from aliado.specializations.mestrado.training import (  # noqa: E402
-    ExperimentConfig,
-    export_training,
-    train_detectors,
-    training_blocks,
-)
 
 QUICK = EvaluationConfig(resamples=200)
 
 
-@pytest.fixture(scope="module")
-def trained(tmp_path_factory):
-    folder = tmp_path_factory.mktemp("gpvs")
-    write_synthetic(folder)
-    data = gpvs.prepare(folder, purge=SHORT_PURGE)
-    config = ExperimentConfig(purge=SHORT_PURGE, seeds=(3, 4), reference_seed=3, percentile=90.0,
-                              hyperparameters=Hyperparameters(max_epochs=3))
-    output = tmp_path_factory.mktemp("treino") / "rodada"
-    export_training(train_detectors(data.scaled, training_blocks(data), config), data, config, output)
-    return folder, data, output
-
-
-def test_loading_checks_configuration_and_weight_hashes(trained, tmp_path):
-    _, _, output = trained
+def test_loading_checks_configuration_and_weight_hashes(rodada_sintetica, tmp_path):
+    output = rodada_sintetica.treino
     detectors = load_training(output)
     report = json.loads((output / "relatorio.json").read_text(encoding="utf-8"))
     assert detectors.thresholds[("lstm", 3, 5)] == report["modelos"]["lstm"]["sementes"]["3"]["limiar"]["limiar"]
@@ -68,8 +49,8 @@ def test_loading_checks_configuration_and_weight_hashes(trained, tmp_path):
         load_training(changed)
 
 
-def test_scoring_refuses_data_that_differ_from_the_training(trained):
-    _, data, output = trained
+def test_scoring_refuses_data_that_differ_from_the_training(rodada_sintetica):
+    data, output = rodada_sintetica.preparado, rodada_sintetica.treino
     detectors = load_training(output)
     with pytest.raises(ValueError, match="não são os do treino"):
         score_all(detectors, dataclasses.replace(data, hashes={}))
@@ -77,8 +58,8 @@ def test_scoring_refuses_data_that_differ_from_the_training(trained):
         score_all(detectors, dataclasses.replace(data, purge=5))
 
 
-def test_evaluation_exports_alarms_detection_comparison_and_grids(trained, tmp_path):
-    _, data, output = trained
+def test_evaluation_exports_alarms_detection_comparison_and_grids(rodada_sintetica, tmp_path):
+    data, output = rodada_sintetica.preparado, rodada_sintetica.treino
     detectors = load_training(output)
     paths = export_evaluation(score_all(detectors, data), detectors, data, QUICK, tmp_path / "avaliacao")
     report = json.loads(Path(paths["relatorio_json"]).read_text(encoding="utf-8"))
@@ -107,17 +88,6 @@ def test_evaluation_exports_alarms_detection_comparison_and_grids(trained, tmp_p
     assert "foram consultados em" in markdown and "Não há vencedor geral" in markdown
     with pytest.raises(FileExistsError):
         export_evaluation(score_all(detectors, data), detectors, data, QUICK, tmp_path / "avaliacao")
-
-
-def test_cli_evaluates_and_refuses_existing_folder(trained, tmp_path, capsys):
-    from aliado.cli import main
-
-    folder, _, output = trained
-    args = ["ciencia", "avaliar-gpvs", "--modelos", str(output), "--saida", str(tmp_path / "avaliacao"),
-            "--dados", str(folder), "--cache", str(tmp_path / "cache.npz")]
-    assert main(args) == 0 and (tmp_path / "avaliacao" / "relatorio.md").is_file()
-    capsys.readouterr()
-    assert main(args) == 2 and "já existe" in capsys.readouterr().err
 
 
 def test_evaluation_config_is_validated():

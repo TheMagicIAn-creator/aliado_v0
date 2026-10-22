@@ -5,13 +5,30 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 49: os laços dos testes dos autoencoders
+
+- **Os treinos:** cada treino de rede dos testes é feito uma vez por bateria. Eram 28, agora são 18, e o treino com os
+  dados reais roda uma vez (eram duas). Os testes da ciência caem de 180 para 124 s, e a bateria inteira, de 280 para
+  217 s.
+- **As pastas dos testes:**
+  - os testes da ciência e do mestrado ficam em `tests/science/` e `tests/mestrado/`, um arquivo por pasta;
+  - nenhum teste importa outro;
+  - os dados reais entram por fixtures numa pasta temporária, e nada é gravado em `data/`.
+- **O protocolo fixo (EXP-12):** os 24 atributos, a janela, a normalização, a divisão, o escore, o limiar e o alarme
+  viram requisito com teste.
+- **Ferramentas:**
+  - `ferramentas/bateria.py`, com `--rapida`, que deixa de fora os testes que treinam ou leem os dados reais;
+  - `ferramentas/equivalencia.py`, que prova que mudar arquivos de lugar não muda nenhum número.
+- **O relatório em LaTeX de 21/10:** conferido em `docs/revisao/2026-10-21-relatorio-latex-conferido.md`.
+- **Estado:** commits locais autorizados pelo pesquisador; o produto não muda.
+
 ### Lote 48: sem raciocínio na leitura de páginas e do documento
 
 - **A mudança:** o modelo local responde sem o raciocínio oculto quando lê páginas inteiras ou o documento. Os trechos
   e a conversa continuam com ele, e o Gemini não muda.
 - **A medição, com critério fixado antes:** nas 6 perguntas de páginas e de documento, duas vezes, sem token pago,
   a chamada mediana caiu de 133 para 71 s. Houve 1 descarte em 12, e o documento esperado foi citado em 10 de 12.
-- **Estado:** adotado; aguarda revisão e commit do pesquisador.
+- **Estado:** adotado; commit c2768f1.
 
 ### Lote 47: roteador e intervalo de páginas
 
@@ -34,7 +51,7 @@ O relatório de eficiência do modelo local foi conferido com as medições; a v
 - **Ciência:** o cache dos erros por variável fica ligado aos pesos e à ordem das variáveis; nenhum número muda.
 - **Medição:** nas 16 perguntas reais, sem custo, o local respondeu 12 (eram 10), e as respostas descartadas por
   marca caíram de 4 para 2.
-- **Estado:** validado localmente, com 827 testes; aguarda revisão e commit do pesquisador.
+- **Estado:** validado localmente, com 827 testes; commit 71afeed, com o lote 45.
 
 ## [0.8.0] — em fechamento local (20/10/2026)
 

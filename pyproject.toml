@@ -39,6 +39,11 @@ namespaces = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Lote 49: a bateria rápida é `-m "not treina and not dados_reais"` (ferramentas/bateria.py --rapida).
+markers = [
+    "treina: treina redes (o laço de treino ou as fixtures de treino)",
+    "dados_reais: lê a base GPVS real ou os resultados oficiais",
+]
 
 [tool.ruff]
 target-version = "py312"

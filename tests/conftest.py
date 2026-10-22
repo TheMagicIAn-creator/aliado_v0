@@ -1,11 +1,28 @@
-"""A bateria não usa rede nem credenciais do ambiente do pesquisador."""
+"""A bateria não usa rede nem credenciais do ambiente do pesquisador.
+
+Lote 49: os dados reais (a base GPVS e os resultados oficiais) entram por fixtures de sessão, numa pasta temporária,
+e nada é gravado em `data/`. Os testes que treinam redes ou leem esses dados ficam marcados (`treina` e
+`dados_reais`), para a bateria rápida deixá-los de fora."""
 
 import os
 import shutil
 import socket
-from pathlib import Path
 
 import pytest
+from apoio.caminhos import BASE_PRESENTE, GPVS, OFFICIAL, RESULTADOS_OFICIAIS, RESULTS
+
+# A marcação vem do uso da fixture: quem pede uma destas treina redes ou lê os dados reais.
+TRAINING_FIXTURES = frozenset({"rodada_sintetica", "rodada_sintetica_copia", "origin_gpvs_runs"})
+REAL_DATA_FIXTURES = frozenset({"base_real", "official_results", "origin_gpvs_runs"})
+
+
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        used = set(getattr(item, "fixturenames", ()))
+        if used & TRAINING_FIXTURES:
+            item.add_marker(pytest.mark.treina)
+        if used & REAL_DATA_FIXTURES:
+            item.add_marker(pytest.mark.dados_reais)
 
 
 @pytest.fixture(autouse=True)
@@ -37,29 +54,29 @@ def official_results(tmp_path_factory):
 
     Uma rodada feita depois pela aba Ciência vira a rodada atual em `data/resultados`; os testes com os dados
     reais conferem os números de 27/09, que não mudam."""
-    source = Path(__file__).resolve().parents[1] / "data" / "resultados"
+    if not RESULTADOS_OFICIAIS:
+        pytest.skip("Sem a avaliação oficial, o treino dela e a reanálise neste computador.")
     copy = tmp_path_factory.mktemp("resultados-oficiais")
-    for name in ("gpvs-avaliacao-001", "gpvs-modelos-002", "gpvs-reanalise-001"):
-        if (source / name).is_dir():
-            shutil.copytree(source / name, copy / name)
+    for name in OFFICIAL:
+        shutil.copytree(RESULTS / name, copy / name)
     return copy
 
 
 @pytest.fixture(scope="session")
-def origin_gpvs_runs(tmp_path_factory):
-    """Semente 42 com a separação e o teto de épocas da origem, treinada uma vez para as conferências reais."""
-    data_dir = Path(__file__).resolve().parents[1] / "data" / "gpvs"
-    if not (data_dir / "F0L.csv").is_file():
-        pytest.skip("GPVS real ausente nesta máquina")
-    pytest.importorskip("torch")
-    from aliado.science.detection.models import Hyperparameters
-    from aliado.specializations.mestrado import gpvs
-    from aliado.specializations.mestrado.training import (
-        ExperimentConfig,
-        train_detectors,
-        training_blocks,
-    )
+def base_real(tmp_path_factory):
+    """A base GPVS real numa pasta temporária, com o cache dos 24 atributos montado uma vez a partir dos CSVs.
 
-    config = ExperimentConfig(purge=2, seeds=(42,), hyperparameters=Hyperparameters(max_epochs=150))
-    data = gpvs.prepare(data_dir, cache=tmp_path_factory.mktemp("gpvs") / "cache.npz", purge=config.purge)
-    return config, data, train_detectors(data.scaled, training_blocks(data), config)
+    Os CSVs entram por ligação (sem copiar os 460 MB) quando o disco permite; os testes só os leem. O cache é feito
+    pelo código de hoje, e nada é gravado em `data/gpvs`."""
+    if not BASE_PRESENTE:
+        pytest.skip("Sem a base GPVS neste computador.")
+    from aliado.specializations.mestrado import gpvs
+
+    folder = tmp_path_factory.mktemp("gpvs-real")
+    for path in [*sorted(GPVS.glob("*.csv")), GPVS / "proveniencia.json"]:
+        try:
+            os.link(path, folder / path.name)
+        except OSError:
+            shutil.copy2(path, folder / path.name)
+    gpvs.extract_all(folder, cache=folder / "processado" / "variaveis.npz")
+    return folder

@@ -4,13 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from apoio.caminhos import ROOT
-from apoio.gpvs_sintetico import write_synthetic
 
 from aliado.specializations.mestrado import gpvs, onset
-
-GPVS = ROOT / "data" / "gpvs"
-REAL = (GPVS / "proveniencia.json").is_file() and (GPVS / "F0L.csv").is_file()
 
 
 def test_pelt_finds_a_mean_shift_and_nothing_in_noise():
@@ -64,9 +59,8 @@ def test_config_is_validated_and_hashed():
             onset.OnsetConfig(**bad)
 
 
-def test_synthetic_faults_change_at_the_middle(tmp_path):
-    write_synthetic(tmp_path / "gpvs")
-    experiments, _ = gpvs.extract_all(tmp_path / "gpvs")
+def test_synthetic_faults_change_at_the_middle(gpvs_sintetico):
+    experiments, _ = gpvs.extract_all(gpvs_sintetico)
     result = onset.estimate(experiments)
     assert result["controle_saudavel"]["F0L"][str(result["penalidade_c"])] == 0
     for name, trial in result["ensaios"].items():
@@ -77,9 +71,8 @@ def test_synthetic_faults_change_at_the_middle(tmp_path):
         assert trial["observado_s"] == pytest.approx(trial["nominal_s"], abs=1e-3)
 
 
-@pytest.mark.skipif(not REAL, reason="Sem os dados do GPVS neste computador.")
-def test_real_onsets_are_the_ones_reported_on_30_09():
-    experiments, _ = gpvs.extract_all(GPVS, cache=GPVS / "processado" / "variaveis.npz")
+def test_real_onsets_are_the_ones_reported_on_30_09(base_real):
+    experiments, _ = gpvs.extract_all(base_real, cache=base_real / "processado" / "variaveis.npz")
     result = onset.estimate(experiments)
     assert result["penalidade_c"] == 4.0
     control = result["controle_saudavel"]

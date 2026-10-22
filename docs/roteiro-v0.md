@@ -454,7 +454,7 @@ não dá para separá-los em commits.
 | 41 | Reescrita da busca sem raciocínio no local; trechos sem raciocínio experimentados e desfeitos; OCR por página conferido (já existia) | Concluído e medido em 18/10/2026: tempo médio de 265 para 158 s; a reescrita volta a funcionar ([spec 0041](specs/0041-local-mais-rapido.md), [validação](migracao/validacao-lote-41.md)) |
 | 42 | O modelo local quase todo na VRAM: 32 das 33 camadas na placa, no lugar do limite de 4 GB | Aplicado e medido em 19/10/2026: escrita de 15 para 25 tokens/s; tempo médio de 158 para 102 s ([spec 0042](specs/0042-local-na-vram.md), [validação](migracao/validacao-lote-42.md)) |
 | 43 | Temperatura 0,6 no modelo local, medida em duas rodadas | Aplicado e medido em 19/10/2026: o mesmo desfecho nas duas rodadas em 13 de 16 perguntas, contra 7; o local respondeu 13 e 11; 4 a 5 chamadas ao Gemini ([spec 0043](specs/0043-temperatura-local.md), [validação](migracao/validacao-lote-43.md)) |
-| 44 | Revisão e fechamento da 0.8.0: anexos, navegação, escalada explícita ao Flash, registros e pacote | Validado localmente em 20/10/2026: 814 testes e Ruff; aguarda revisão e commit |
+| 44 | Revisão e fechamento da 0.8.0: anexos, navegação, escalada explícita ao Flash, registros e pacote | Validado localmente em 20/10/2026: 814 testes e Ruff; commit 6770061 (0.8.0), em 22/10/2026 |
 
 ### Decisões e resultado do lote 44 (20/10/2026)
 
@@ -532,9 +532,10 @@ não dá para separá-los em commits.
 | Lote | Entrega | Situação |
 |---|---|---|
 | 45 | Comparação real das 16 perguntas: o modelo local com escalada × o Gemini direto | Executada em 20/10/2026, sem mudança no produto: Gemini direto 80% mais rápido; 4 respostas locais descartadas ([spec 0045](specs/0045-comparacao-real.md), [validação](migracao/validacao-lote-45.md)) |
-| 46 | Correções do relatório de eficiência, conferidas com as medições: citação do local, marca inequívoca, parada cedo, reescrita por partes e cache da Ciência | Validado em 20 e 21/10/2026: 827 testes; o local respondeu 12 das 16 perguntas reais, contra 10; aguarda revisão e commit ([spec 0046](specs/0046-correcoes-do-relatorio.md), [validação](migracao/validacao-lote-46.md)) |
-| 47 | Roteador na P7 e na E3 e intervalo de páginas nas marcas | Validado sem modelo em 21/10/2026: só a P7 e a E3 mudaram de rota, e as duas agora vão à biblioteca; aguarda revisão e commit ([spec 0047](specs/0047-roteador-e-intervalos.md), [validação](migracao/validacao-lote-47.md)) |
-| 48 | Sem raciocínio no local na leitura de páginas e do documento, medido com critério fixado antes | Adotado em 21/10/2026: chamada mediana de 133 para 71 s; 1 descarte em 12; documento esperado citado em 10 de 12; aguarda revisão e commit ([spec 0048](specs/0048-raciocinio-nas-paginas.md), [validação](migracao/validacao-lote-48.md)) |
+| 46 | Correções do relatório de eficiência, conferidas com as medições: citação do local, marca inequívoca, parada cedo, reescrita por partes e cache da Ciência | Validado em 20 e 21/10/2026: 827 testes; o local respondeu 12 das 16 perguntas reais, contra 10; commit 71afeed, com o lote 45 ([spec 0046](specs/0046-correcoes-do-relatorio.md), [validação](migracao/validacao-lote-46.md)) |
+| 47 | Roteador na P7 e na E3 e intervalo de páginas nas marcas | Validado sem modelo em 21/10/2026: só a P7 e a E3 mudaram de rota, e as duas agora vão à biblioteca; commit 450a95a ([spec 0047](specs/0047-roteador-e-intervalos.md), [validação](migracao/validacao-lote-47.md)) |
+| 48 | Sem raciocínio no local na leitura de páginas e do documento, medido com critério fixado antes | Adotado em 21/10/2026: chamada mediana de 133 para 71 s; 1 descarte em 12; documento esperado citado em 10 de 12; commit c2768f1 ([spec 0048](specs/0048-raciocinio-nas-paginas.md), [validação](migracao/validacao-lote-48.md)) |
+| 49 | Os laços dos testes dos autoencoders: testes em pastas, fixtures de sessão, protocolo fixo (EXP-12), bateria e equivalência versionadas | Feito em 21 e 22/10/2026: treinos por bateria de 28 para 18; ciência de 180 para 124 s; os mesmos 834 testes, mais 2 ([spec 0049](specs/0049-lacos-dos-testes.md), [validação](migracao/validacao-lote-49.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -593,6 +594,47 @@ não dá para separá-los em commits.
   - a folga da placa;
   - o arquivo oficial dos erros da rodada.
 
+### Decisões do plano de 21/10/2026: a ciência em pastas (lotes 49 a 55)
+
+- **Pedido:** o pesquisador pediu um diagnóstico do que é necessário, do que é resíduo e do que a modularização
+  melhora ([diagnóstico](revisao/2026-10-21-diagnostico-modularizacao.md)), e depois o plano refeito.
+  - **As pastas:** em português, com nomes do que têm e só aquilo; o inglês vem depois.
+  - **O Ollama:** é base procedural da v1, não requisito imediato.
+- **Decisões dele:**
+  - os commits dos lotes 37 a 48 antes de mover arquivos;
+  - pastas e arquivos em português, com funções e classes como estão;
+  - o escopo é a ciência do mestrado.
+- **O relatório em LaTeX de 21/10:** ele pediu para implementá-lo e terminar de uma vez. A conferência está em
+  [docs/revisao](revisao/2026-10-21-relatorio-latex-conferido.md). Decisões dele:
+  - `src/aliado/science/` fica, com as pastas técnicas em português dentro;
+  - a parte do Ollama não entra, e vale a decisão de 20/10;
+  - Fourier entra como evidência descritiva, com janela retangular e sem FMECA;
+  - eu faço os commits locais, sem push nem tag.
+- **Os lotes:**
+  - 49: os laços dos testes;
+  - 50: a ciência geral em pastas;
+  - 51 a 53: o mestrado em pastas;
+  - 54: a identidade e o contrato da rodada;
+  - 55: a evidência espectral.
+
+### Decisões e resultado do lote 49 (21 e 22/10/2026)
+
+- **O que estava errado:**
+  - 28 treinos de rede por bateria, com o treino com os dados reais duas vezes;
+  - os mesmos 4 modelos sintéticos treinados três vezes;
+  - testes importando testes;
+  - 6 condições diferentes para os dados reais.
+- **O que mudou:**
+  - os testes da ciência e do mestrado foram para `tests/science/` e `tests/mestrado/`, um arquivo por pasta;
+  - as fixtures de sessão fazem cada dado e cada treino uma vez;
+  - as marcações `treina` e `dados_reais` alimentam a bateria rápida;
+  - o protocolo fixo virou o EXP-12.
+- **Resultado:**
+  - os mesmos 834 testes, mais os 2 do EXP-12, sem nenhum ignorado;
+  - de 28 para 18 treinos;
+  - a ciência de 180 para 124 s, e a bateria inteira de 280 para 217 s.
+  - O produto não mudou.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -624,6 +666,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 46 | [0046](specs/0046-correcoes-do-relatorio.md) |
 | 47 | [0047](specs/0047-roteador-e-intervalos.md) |
 | 48 | [0048](specs/0048-raciocinio-nas-paginas.md) |
+| 49 | [0049](specs/0049-lacos-dos-testes.md) |
 
 ## Fica para a v1
 

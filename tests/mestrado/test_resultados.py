@@ -1,4 +1,4 @@
-"""Lote 23: visões dos resultados oficiais do GPVS na aba Ciência (resumo, métricas e escores)."""
+"""Os resultados da rodada: as visões da aba Ciência (resumo, métricas por falha e painéis dos escores), do lote 23."""
 
 from __future__ import annotations
 
@@ -8,14 +8,11 @@ import re
 
 import pytest
 from apoio.avaliacao_sintetica import synthetic
-from apoio.caminhos import ROOT
 
 np = pytest.importorskip("numpy")
 
 from aliado.specializations.mestrado import gpvs, summary  # noqa: E402
 
-RESULTS, GPVS = ROOT / "data" / "resultados", ROOT / "data" / "gpvs"
-REAL = (RESULTS / summary.EVALUATION / "escores.npz").is_file() and (GPVS / "proveniencia.json").is_file()
 INTERNAL = re.compile(r"semente|canônic|canonic|M1[0-9]", re.IGNORECASE)
 def test_counts_give_the_same_metrics_as_the_window_formulas():
     from aliado.science.detection.metrics import window_metrics
@@ -60,35 +57,6 @@ def test_missing_evaluation_is_a_clear_error(tmp_path):
         summary.score_panels(tmp_path, tmp_path / "gpvs")
 
 
-@pytest.fixture
-def client(tmp_path):
-    pytest.importorskip("starlette")
-    from starlette.testclient import TestClient
-
-    from aliado.interfaces.web.app import WebSettings, create_app
-
-    settings = WebSettings(data_dir=tmp_path / "dados", library_dir=tmp_path / "biblioteca", port=8765,
-                           stream=lambda *a, **k: iter(()), models=[{"alias": "flash", "model_id": "x"}],
-                           library_factory=lambda: None, results_dir=synthetic(tmp_path / "resultados"),
-                           dataset_dir=tmp_path / "gpvs")
-    return TestClient(create_app(settings), base_url="http://127.0.0.1:8765")
-
-
-def test_routes_serve_the_views_and_explain_what_is_missing(client):
-    overview = client.get("/api/ciencia/resumo")
-    assert overview.status_code == 200 and overview.json()["modelos"]["lstm"]["nome"] == "AE-LSTM"
-    assert client.get("/api/ciencia/metricas").json()["falhas"][0]["nome"] == "Falha em IGBT"
-    missing = client.get("/api/ciencia/escores")
-    assert missing.status_code == 404 and "dados do GPVS" in missing.json()["erro"]
-    # Lote 24: sem a reanálise, a seção do início das falhas diz o que falta, e o Resumo segue sem a estimativa.
-    onsets = client.get("/api/ciencia/inicio")
-    assert onsets.status_code == 404 and "reanálise" in onsets.json()["erro"]
-    denso = overview.json()["modelos"]["denso"]
-    assert denso["alarmes_estimados"] is None and denso["limiar_faixa"] is None
-    assert denso["saudavel"]["janelas"] == 263 + 2348 and denso["saudavel"]["alarmes"] == 7
-    assert denso["saudavel"]["alarmes_por_hora"] == pytest.approx(7 / 52.22 * 3600)
-
-
 def test_score_panels_gain_only_the_clear_change():
     panels = {"ensaios": [{"id": name, "modelos": {"denso": {"atraso_ms": 1.0}}} for name in ("F1L", "F4L")]}
     report = {"inicio": {"ensaios": {"F1L": {"classe": "clara", "observado_janela": 433},
@@ -101,16 +69,6 @@ def test_score_panels_gain_only_the_clear_change():
     assert "inicio_observado" not in panels["ensaios"][0] and summary._with_onsets(panels, None) is panels
 
 
-def test_page_loads_d3_and_the_charts_before_the_science_tab():
-    page = (ROOT / "src" / "aliado" / "interfaces" / "web" / "static" / "index.html").read_text(encoding="utf-8")
-    order = [page.index(name) for name in ("vendor/d3/d3.min.js", "graficos.js", "ciencia.js")]
-    assert order == sorted(order)
-    d3 = ROOT / "src" / "aliado" / "interfaces" / "web" / "static" / "vendor" / "d3"
-    assert (d3 / "d3.min.js").read_text(encoding="utf-8").startswith("// https://d3js.org v7.9.0")
-    assert "Mike Bostock" in (d3 / "LICENSE").read_text(encoding="utf-8")
-
-
-@pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
 def test_real_views_repeat_the_official_evaluation(official_results):
     report = json.loads((official_results / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     overview = summary.overview(official_results)
@@ -126,15 +84,14 @@ def test_real_views_repeat_the_official_evaluation(official_results):
             assert all(math.isclose(again[k], trial[k]) for k in summary.COUNT_METRICS if trial[k] is not None)
 
 
-@pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
-def test_real_panels_match_the_scores_and_the_official_alarms(official_results):
+def test_real_panels_match_the_scores_and_the_official_alarms(official_results, base_real):
     from aliado.specializations.mestrado.evaluation import _onset
 
-    panels = summary.score_panels(official_results, GPVS)
+    panels = summary.score_panels(official_results, base_real)
     report = json.loads((official_results / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     seed, k = report["semente_referencia"], report["top_k"]
     config = json.loads((official_results / "gpvs-modelos-002" / "configuracao.json").read_text(encoding="utf-8"))["configuracao"]
-    prepared = gpvs.prepare(GPVS, cache=GPVS / "processado" / "variaveis.npz", purge=config["purge"],
+    prepared = gpvs.prepare(base_real, cache=base_real / "processado" / "variaveis.npz", purge=config["purge"],
                             fractions=tuple(config["fractions"]))
     with np.load(official_results / summary.EVALUATION / "escores.npz") as scores:
         for panel in panels["ensaios"]:

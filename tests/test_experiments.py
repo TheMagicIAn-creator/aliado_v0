@@ -281,18 +281,15 @@ def test_pdf_is_downloaded_on_request_and_compares_with_itself(web):
     assert client.post(url, headers=HEADERS).status_code == 400
 
 
-GPVS = ROOT / "data" / "gpvs"
-
-
-@pytest.mark.skipif(not (GPVS / "proveniencia.json").is_file(), reason="Sem a base GPVS neste computador.")
-def test_real_run_goes_from_zero_to_the_current_run(tmp_path, capsys):
+@pytest.mark.treina
+def test_real_run_goes_from_zero_to_the_current_run(base_real, tmp_path, capsys):
     """EXP-02, EXP-03, EXP-06 e EXP-08 com a base real: o experimento inteiro, de ponta a ponta (5 épocas)."""
     pytest.importorskip("torch")
     from aliado.cli import main
     from aliado.specializations.mestrado import summary
 
     results = tmp_path / "resultados"
-    args = ["experimento", "rodar", "ae-denso-lstm", "--resultados", str(results), "--base", str(GPVS),
+    args = ["experimento", "rodar", "ae-denso-lstm", "--resultados", str(results), "--base", str(base_real),
             "--parametro", "teto_epocas=5", "--parametro", "sementes=42,13"]
     assert main(args) == 2 and "consultar o teste" in capsys.readouterr().err  # sem a frase, nada roda
     assert not results.exists()
