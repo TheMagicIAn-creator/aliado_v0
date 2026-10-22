@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.specializations.mestrado import gpvs
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 # Os ensaios sintéticos são curtos (80 janelas saudáveis): os testes usam a separação da origem.
 SHORT_PURGE = 2

@@ -14,7 +14,8 @@ FIELDS = ["modelo", "semente", "ensaio", "detectado", "atraso_ms", "atraso_janel
 
 def synthetic(root: Path) -> Path:
     """Uma avaliação sintética com 2 modelos, 2 treinamentos (sementes 1 e 2) e os 14 ensaios."""
-    from aliado.specializations.mestrado import gpvs, summary
+    from aliado.specializations.mestrado import summary
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
     folder = root / summary.EVALUATION
     folder.mkdir(parents=True)

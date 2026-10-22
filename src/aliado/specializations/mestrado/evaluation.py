@@ -33,8 +33,8 @@ from aliado.science.deteccao.metricas.por_janela import window_metrics
 from aliado.science.deteccao.particao.sequencias import sequences_from_flow
 from aliado.science.deteccao.pesos.arquivos import load_model
 from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS, Hyperparameters
-from aliado.specializations.mestrado import gpvs
-from aliado.specializations.mestrado.training import ExperimentConfig, environment
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
+from aliado.specializations.mestrado.treino.detectores import ExperimentConfig, environment
 
 SECONDS_PER_HOUR = 3600
 SECONDARY = ("precisao", "f1", "acuracia_balanceada", "mcc", "auc_roc", "auc_pr")

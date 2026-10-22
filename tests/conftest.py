@@ -70,7 +70,7 @@ def base_real(tmp_path_factory):
     pelo código de hoje, e nada é gravado em `data/gpvs`."""
     if not BASE_PRESENTE:
         pytest.skip("Sem a base GPVS neste computador.")
-    from aliado.specializations.mestrado import gpvs
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
     folder = tmp_path_factory.mktemp("gpvs-real")
     for path in [*sorted(GPVS.glob("*.csv")), GPVS / "proveniencia.json"]:

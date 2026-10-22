@@ -72,14 +72,15 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
         progress=print) -> dict:
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado import gpvs, reanalysis, summary
+    from aliado.specializations.mestrado import reanalysis, summary
     from aliado.specializations.mestrado.evaluation import (
         EvaluationConfig,
         export_evaluation,
         load_training,
         score_all,
     )
-    from aliado.specializations.mestrado.training import (
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.treino.detectores import (
         ExperimentConfig,
         export_training,
         train_detectors,

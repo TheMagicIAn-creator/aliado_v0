@@ -11,7 +11,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from aliado.science.deteccao.registro import consultas as registry  # noqa: E402
-from aliado.specializations.mestrado import gpvs, reanalysis, summary  # noqa: E402
+from aliado.specializations.mestrado import reanalysis, summary  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     load_thresholds,
     load_training,
@@ -19,6 +19,7 @@ from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     score_all,
     summarize,
 )
+from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
 
 
 def test_thresholds_load_without_the_weights(rodada_sintetica):

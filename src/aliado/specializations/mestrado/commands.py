@@ -57,7 +57,11 @@ def _new(folder: Path) -> None:
 
 
 def _prepare(args) -> int:
-    from aliado.specializations.mestrado.gpvs import export_preparation, prepare, report
+    from aliado.specializations.mestrado.preparo.preparacao import (
+        export_preparation,
+        prepare,
+        report,
+    )
 
     _new(args.saida)
     prepared = prepare(args.dados, cache=args.cache, **_purge(args))
@@ -67,8 +71,8 @@ def _prepare(args) -> int:
 
 def _train(args) -> int:
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado.gpvs import prepare
-    from aliado.specializations.mestrado.training import (
+    from aliado.specializations.mestrado.preparo.preparacao import prepare
+    from aliado.specializations.mestrado.treino.detectores import (
         ExperimentConfig,
         export_training,
         train_detectors,
@@ -98,7 +102,7 @@ def _evaluate(args) -> int:
         load_training,
         score_all,
     )
-    from aliado.specializations.mestrado.gpvs import prepare
+    from aliado.specializations.mestrado.preparo.preparacao import prepare
 
     _new(args.saida)
     trained = load_training(args.modelos)

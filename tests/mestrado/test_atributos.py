@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 from apoio.caminhos import ROOT
 
-from aliado.specializations.mestrado import gpvs
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 
 def test_feature_vector_on_known_signals():

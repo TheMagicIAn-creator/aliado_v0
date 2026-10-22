@@ -8,7 +8,7 @@ import json
 import numpy as np
 from apoio.gpvs_sintetico import SHORT_PURGE
 
-from aliado.specializations.mestrado import gpvs
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 
 def test_prepare_on_synthetic_dataset_follows_the_contract(gpvs_sintetico, tmp_path):

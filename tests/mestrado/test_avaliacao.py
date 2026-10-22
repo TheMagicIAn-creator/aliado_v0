@@ -15,7 +15,6 @@ torch = pytest.importorskip("torch")
 
 from apoio.caminhos import ROOT  # noqa: E402
 
-from aliado.specializations.mestrado import gpvs  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     EvaluationConfig,
     TrainedDetectors,
@@ -24,6 +23,7 @@ from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     run_metrics,
     score_all,
 )
+from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
 
 QUICK = EvaluationConfig(resamples=200)
 

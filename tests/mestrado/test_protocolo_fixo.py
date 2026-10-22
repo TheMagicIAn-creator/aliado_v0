@@ -8,9 +8,9 @@ import pytest
 pytest.importorskip("torch")
 
 from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS  # noqa: E402
-from aliado.specializations.mestrado import gpvs  # noqa: E402
 from aliado.specializations.mestrado.evaluation import EvaluationConfig  # noqa: E402
-from aliado.specializations.mestrado.training import ExperimentConfig  # noqa: E402
+from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
+from aliado.specializations.mestrado.treino.detectores import ExperimentConfig  # noqa: E402
 
 FEATURES = (
     "Ipv_median", "Ipv_iqr", "Vpv_median", "Vpv_iqr", "Vdc_median", "Vdc_iqr",

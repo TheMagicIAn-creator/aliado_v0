@@ -23,7 +23,7 @@ import numpy as np
 from aliado.science.deteccao.alarmes.taxa import markov_alarm_rate
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold, false_alarm_interval
 from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS
-from aliado.specializations.mestrado import gpvs, onset
+from aliado.specializations.mestrado import onset
 from aliado.specializations.mestrado.evaluation import (
     PAIRED_NAMES,
     EvaluationConfig,
@@ -35,7 +35,8 @@ from aliado.specializations.mestrado.evaluation import (
     run_metrics,
     summarize,
 )
-from aliado.specializations.mestrado.training import environment
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
+from aliado.specializations.mestrado.treino.detectores import environment
 
 EVALUATION = "gpvs-avaliacao-001"
 PERCENTILES = (95.0, 97.5, 99.0)

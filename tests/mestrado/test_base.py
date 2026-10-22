@@ -7,7 +7,7 @@ import json
 import numpy as np
 import pytest
 
-from aliado.specializations.mestrado import gpvs
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 
 def test_provenance_cache_and_dataset_errors(gpvs_sintetico, tmp_path):

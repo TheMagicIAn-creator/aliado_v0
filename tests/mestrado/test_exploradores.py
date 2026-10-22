@@ -35,7 +35,9 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
     from types import SimpleNamespace
 
     from aliado.science.deteccao.inferencia import erros
-    from aliado.specializations.mestrado import evaluation, gpvs, training
+    from aliado.specializations.mestrado import evaluation
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.treino import detectores as training
 
     computed = []
     monkeypatch.setattr(erros, "feature_errors",

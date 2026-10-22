@@ -29,7 +29,8 @@ def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = T
     pytest.importorskip("numpy")
     from apoio.avaliacao_sintetica import synthetic
 
-    from aliado.specializations.mestrado import gpvs, summary
+    from aliado.specializations.mestrado import summary
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
     synthetic(root)
     official = root / summary.EVALUATION / "relatorio.json"

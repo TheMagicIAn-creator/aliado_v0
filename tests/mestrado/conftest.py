@@ -21,7 +21,7 @@ def gpvs_sintetico(tmp_path_factory):
 @pytest.fixture(scope="session")
 def preparado_sintetico(gpvs_sintetico):
     """O GPVS sintético preparado com a separação da origem (2 janelas), sem cache."""
-    from aliado.specializations.mestrado import gpvs
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
     return gpvs.prepare(gpvs_sintetico, purge=SHORT_PURGE)
 
@@ -39,7 +39,7 @@ def rodada_sintetica(gpvs_sintetico, preparado_sintetico, tmp_path_factory):
         load_training,
         score_all,
     )
-    from aliado.specializations.mestrado.training import (
+    from aliado.specializations.mestrado.treino.detectores import (
         ExperimentConfig,
         export_training,
         train_detectors,
@@ -74,8 +74,8 @@ def origin_gpvs_runs(base_real):
     """Semente 42 com a separação e o teto de épocas da origem, treinada uma vez para as conferências reais."""
     pytest.importorskip("torch")
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado import gpvs
-    from aliado.specializations.mestrado.training import (
+    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.treino.detectores import (
         ExperimentConfig,
         train_detectors,
         training_blocks,

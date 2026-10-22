@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold
-from aliado.specializations.mestrado import gpvs
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 CACHE_VERSION = 2  # lote 46: a chave inclui os hashes dos pesos e a ordem das variáveis
 # Em palavras, sem códigos internos (lote 23): o controle por trás continua sendo o M14.
@@ -125,7 +125,7 @@ class Explorer:
     def _errors(self, trained, prepared, weights: dict) -> dict:
         from aliado.science.deteccao.inferencia.erros import feature_errors
         from aliado.specializations.mestrado.evaluation import segment_errors
-        from aliado.specializations.mestrado.training import model_inputs, training_blocks
+        from aliado.specializations.mestrado.treino.detectores import model_inputs, training_blocks
 
         meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes,
                 "pesos": weights, "variaveis": list(gpvs.FEATURES)}

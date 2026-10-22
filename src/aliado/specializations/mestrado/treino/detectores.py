@@ -35,7 +35,7 @@ from aliado.science.deteccao.redes.autoencoders import (
     parameter_count,
 )
 from aliado.science.deteccao.treino.laco import TrainingHistory, fit
-from aliado.specializations.mestrado import gpvs
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 TRAINING_ROLES = ("train", "validation", "calibration")
 SECONDS_PER_HOUR = 3600

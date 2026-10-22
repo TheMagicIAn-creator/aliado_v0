@@ -22,9 +22,9 @@ from aliado.science.deteccao.redes.autoencoders import (  # noqa: E402
     Hyperparameters,
     parameter_count,
 )
-from aliado.specializations.mestrado import gpvs  # noqa: E402
-from aliado.specializations.mestrado import training as training_module  # noqa: E402
-from aliado.specializations.mestrado.training import (  # noqa: E402
+from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
+from aliado.specializations.mestrado.treino import detectores as training_module  # noqa: E402
+from aliado.specializations.mestrado.treino.detectores import (  # noqa: E402
     ExperimentConfig,
     export_training,
     model_inputs,

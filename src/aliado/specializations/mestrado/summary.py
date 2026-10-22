@@ -25,7 +25,8 @@ import numpy as np
 from aliado import experiments
 from aliado.science.deteccao.alarmes.confirmacao import alarm_starts, first_alarm
 from aliado.science.deteccao.limiar.calibracao import false_alarm_interval
-from aliado.specializations.mestrado import autoencoders, gpvs
+from aliado.specializations.mestrado import autoencoders
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 EVALUATION = autoencoders.LEGACY_EVALUATION
 REANALYSIS_PREFIX = "gpvs-reanalise-"

@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.specializations.mestrado import gpvs, onset
+from aliado.specializations.mestrado import onset
+from aliado.specializations.mestrado.preparo import preparacao as gpvs
 
 
 def test_pelt_finds_a_mean_shift_and_nothing_in_noise():
