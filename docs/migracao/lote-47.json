@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-21",
+  "batch": "47",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "validated_locally_awaiting_review",
+  "base_commit": "77fb76d",
+  "decision": "planejamento aprovado pelo pesquisador em 21/10/2026",
+  "spec": "docs/specs/0047-roteador-e-intervalos.md",
+  "validation": "docs/migracao/validacao-lote-47.md",
+  "requirements": {
+    "added": [
+      "ROT-08"
+    ],
+    "changed": [
+      "BIB-05"
+    ]
+  },
+  "checks": {
+    "pytest": {
+      "files": 46,
+      "passed": 834,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 237.89
+    },
+    "ruff": {
+      "exit_code": 0
+    },
+    "diff_check": {
+      "exit_code": 0
+    }
+  },
+  "offline_routes": {
+    "questions": 16,
+    "changed": [
+      "P7",
+      "E3"
+    ],
+    "model_calls": 0
+  },
+  "real_check_in_lote_48": {
+    "P7": {
+      "s": 74.3,
+      "reading": "trechos",
+      "exact_citations": 8,
+      "expected_cited": true
+    },
+    "E3": {
+      "s": 47.0,
+      "reading": "trechos",
+      "exact_citations": 5,
+      "expected_cited": true
+    }
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "src/aliado/routing.py": "5417dbb1842f7d4b888b8da673930f6527379dc9f7af0c1d488c54b6c8d92835",
+    "src/aliado/agent.py": "7a2025e2ef3b35dee1848ef98f25c051226f940a9cbb2e37023499ebae1c4260",
+    "tests/test_routing.py": "7a9ef5ed5c2d0958f9dc5b003403eb6d1090639e5c141c2c4b25920f04a962f5",
+    "tests/test_knowledge.py": "e578dfc57c91b5f2ff1e71ba3bbe1a7568f75c2fdac302a0e9d046e9d27e2385",
+    "docs/specs/capacidades/roteador.md": "fdce008544f4b424a97fd6a82d30310c182a06c72394a6cda83e7f920d7baee6",
+    "docs/specs/capacidades/biblioteca.md": "ba791e76ec43b0f13ebac401300b5baf31d6b6dd4539ca07f75b15fa9f0e3027",
+    "docs/roteiro-v0.md": "2fabda0d12efcf97f33abcd5ea573c1b761bda8c72796c3b539c0d64fb63b19a",
+    "CHANGELOG.md": "e1029b8a1282f425c696d74707803a133beba5145cc57c076e77fe557a7159ed",
+    "docs/specs/0047-roteador-e-intervalos.md": "9e3df5b3f45189f654a570a03d659ede71e354648cdbecf29e9f2abbf5128f9a",
+    "docs/migracao/validacao-lote-47.md": "70cf766fc5445718a2fe2f5eac9af7f6ccb077b9d9ef0cee3cd8864b85a17602"
+  },
+  "evidence": {
+    "tmp/lote-47/pytest.json": "2b111143b01d7d4da5b2cffa2371441af21691e4e8b515b7f8c3f0caa01e09f0",
+    "tmp/lote-47/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "tmp/lote-47/diff_check.log": "a7270e37e8f6aa8907440cf86672dfe0bb197d6505a7b6227145eae07ecbb1e9",
+    "tmp/lote-47/rotas.py": "703ed39f449f9b81fc7cd685b6b82ae1b90896010ff6755dc41c7c9d8177d609",
+    "tmp/lote-47/rotas.json": "6d72b27f505328eea835097603e8911f69efbf49a428eec36d41b8b1edce955a",
+    "tmp/lote-47/separar.py": "d9582247988f76593c52b768d0ee46a73304a0e625e8ea8baf3548b2ffe4b8c4",
+    "tmp/lote-47/lote-47.patch": "6d0a7eb11c3817818851a7573ce0a7cbb70e1b99ced1b85a35e60a98b8afd97d"
+  },
+  "commit_split": {
+    "patch": "tmp/lote-47/lote-47.patch",
+    "tracked_files": 8
+  },
+  "files_note": "hashes do estado ao fim do lote 47; o roteiro e o CHANGELOG mudaram de novo no lote 48"
+}

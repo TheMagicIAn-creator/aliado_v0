@@ -157,6 +157,21 @@ def test_results_questions_without_the_word_results_go_to_the_results():
     assert go("Qual foi melhor, o Denso ou o AE-LSTM?").intent == "resultados"  # dois modelos da pesquisa
 
 
+def test_how_to_compute_and_other_peoples_theses_go_to_the_library(monkeypatch):
+    """ROT-08: "como se calcula" é pergunta de conceito, e a tese, o TCC ou a monografia de outro autor é material da
+    biblioteca, mesmo com palavras dos resultados. No lote 46, a P7 e a E3 das perguntas reais iam aos resultados."""
+    p7 = go("Como se calcula a confiabilidade de um sistema com componentes em série e em paralelo?")
+    assert p7.intent != "resultados" and p7.rung == routing.PASSAGES
+    # O classificador por exemplos marca "resultados", como o modelo de busca real fez na E3; a obra citada vence.
+    monkeypatch.setattr(routing, "_scores", lambda encoder, name, groups, text: (
+        {"resultados": 0.9, "sintese": 0.5} if name == "intents" else {}))
+    e3 = go("Which machine learning models were used to predict failures in frequency inverters in the UFSC "
+            "undergraduate thesis?")
+    assert (e3.intent, e3.rung, e3.results) == ("sintese", routing.PASSAGES, False)
+    for text in ("Faça um resumo dos resultados da avaliação.", "Mostre os resultados da avaliação oficial."):
+        assert go(text).intent == "resultados", text
+
+
 def test_after_a_library_answer_small_talk_stays_out_and_a_complaint_reads_deeper():
     after = {"rung": routing.PASSAGES}
     for text in ("Cara, como você tá tão sabido assim? kkkkk", "relaxa, pode adotar uma conversa mais descontraída agora.",

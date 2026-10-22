@@ -147,6 +147,9 @@ _MARK = re.compile(r"\[(K[^\]\s]*)\]")
 # Lote 46: o formato das regras ([K...]) escrito como se fosse uma citação, como na E8 do lote 45; sai do texto.
 _PLACEHOLDER = re.compile(r"\s*\[K(?:\.\.\.|…)?\]")
 _PAGE_MARK = re.compile(r"(K[0-9a-f]{8,})p(\d+)")
+# Lote 47: um intervalo de páginas numa marca só, como o da E2 do lote 46 ([Kdocp1–Kdocp6]).
+_RANGE = re.compile(r"\[(K[0-9a-f]{8,})p(\d+)\s*[–-]\s*(K[0-9a-f]{8,})p(\d+)\]")
+MAX_RANGE = 10
 WEB_RULES = """Busca na web habilitada neste pedido. Use-a para conferir fatos externos ou
 atuais; busque fontes primárias, técnicas e acadêmicas (normas, fabricantes, artigos) e
 evite lojas, fóruns e agregadores. Não escreva lista de fontes nem atribua a afirmação a
@@ -779,6 +782,18 @@ def _ungroup(text: str) -> str:
     return _GROUPED.sub(lambda m: "".join(f"[{part.strip()}]" for part in re.split(r"[,;]", m.group(1))), text)
 
 
+def _ranges(text: str, allowed: dict) -> str:
+    """[Kdocp1–Kdocp6] vira [Kdocp1]…[Kdocp6] quando é do mesmo documento, em ordem, até `MAX_RANGE` páginas, todas
+    enviadas (lote 47, BIB-05); fora disso, fica como está e reprova."""
+    def expand(match):
+        pages = [f"{match[1]}p{page}" for page in range(int(match[2]), int(match[4]) + 1)]
+        if match[3] != match[1] or not 1 < len(pages) <= MAX_RANGE or not all(page in allowed for page in pages):
+            return match[0]
+        return "".join(f"[{page}]" for page in pages)
+
+    return _RANGE.sub(expand, text)
+
+
 def _canonical(mark: str, allowed: dict) -> str:
     """O identificador enviado que a marca aponta sem ambiguidade, ou a própria marca (lote 46, BIB-05).
 
@@ -798,7 +813,7 @@ def _canonical(mark: str, allowed: dict) -> str:
 def _stray(text: str, allowed: dict) -> bool:
     """Alguma marca completa do texto que a conferência das citações reprovaria (lote 46)."""
     return any(_canonical(mark, allowed) not in allowed
-               for mark in _MARK.findall(_PLACEHOLDER.sub("", _ungroup(text))))
+               for mark in _MARK.findall(_PLACEHOLDER.sub("", _ranges(_ungroup(text), allowed))))
 
 
 def _check_citations(result: LLMResult, hits: list[dict], library, append_sources: bool,
@@ -812,8 +827,10 @@ def _check_citations(result: LLMResult, hits: list[dict], library, append_source
     if library is None:
         return result
     allowed = {hit["citation_id"]: hit for hit in hits}
-    # A marca que aponta um só trecho enviado vira o identificador dele, e o [K...] literal sai (lote 46, BIB-05).
-    content = _MARK.sub(lambda m: f"[{_canonical(m[1], allowed)}]", _PLACEHOLDER.sub("", _ungroup(result.content)))
+    # A marca que aponta um só trecho enviado vira o identificador dele, o intervalo de páginas enviadas vira as
+    # páginas (lote 47), e o [K...] literal sai (lote 46, BIB-05).
+    content = _MARK.sub(lambda m: f"[{_canonical(m[1], allowed)}]",
+                        _PLACEHOLDER.sub("", _ranges(_ungroup(result.content), allowed)))
     if content != result.content:
         result = replace(result, content=content)
     used = set(_MARK.findall(result.content))

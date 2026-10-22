@@ -62,7 +62,8 @@ _DONE = re.compile(r"\b(detect(ou|aram)|teve|tiveram|deu|deram|ficou|ficaram|obt
                    r"alcancou|alcancaram|atingiu|atingiram|perdeu|perderam)\b")
 _RANK = re.compile(r"\b(maior|menor|melhor|pior|mais alt[oa]|mais baix[oa])\b")
 _PROGRESS = re.compile(r"\bo que (eu )?(ja )?(consegui|obtive|alcancei|produzi)\b|\bmeu progresso\b")
-_CONCEPT = re.compile(r"^(o que (e|sao)|defina|como funciona|qual (e )?a definicao)\b")
+# "Como se calcula a confiabilidade de um sistema com componentes..." é conceito, não resultado (lote 47, a P7).
+_CONCEPT = re.compile(r"^(o que (e|sao)|defina|como funciona|qual (e )?a definicao|como (se )?calcul\w*)\b")
 # Depois de uma resposta com a biblioteca (lote 33): conversa solta não volta à biblioteca; reclamação lê mais fundo.
 _CHAT = re.compile(r"\b(k{3,}\w*|kak\w*|(ha){2,}|rs+|valeu|obrigad[oa]s?|legal|show|massa|nossa|relaxa|tranquil\w*|"
                    r"beleza|otim[oa]|excelente|perfeit[oa]|incrivel|sabido|esperto|cansad[oa]|informal|descontraid[oa])\b")
@@ -75,7 +76,9 @@ _COMPLAINT = re.compile(r"\b(voce|vc)\b.{0,30}\b(nao (conseguiu|trouxe|respondeu
 _METHOD = re.compile(r"\b(protocolo|particao|calibrac\w+|metodologia|hipoteses?|diretriz(es)?|decis(ao|oes)|criterios?|"
                      r"pipeline|dissertacao)\b")
 _SOURCES = re.compile(r"\b(literatura|fontes?|citac\w+|definic\w+|conceitos?|referencias?|artigos?|documentos?|autor(es)?|"
-                      r"normas?|livros?|papers?|resumo|abstract)\b")
+                      r"normas?|livros?|papers?|resumo|abstract|teses?|thesis|theses|tcc|monografias?)\b")
+# A obra de outro autor é material da biblioteca, não resultado desta pesquisa (lote 47, a E3).
+_WORKS = re.compile(r"\b(teses?|thesis|theses|tcc|monografias?)\b")
 _TASK = re.compile(r"\b(traceback|python|codigo|script|planilha|e-?mail|https?|na web|noticias?|programa\w*)\b")
 _CODE = re.compile(r"\b(traceback|python|codigo|script|programa\w*)\b")
 _SYNTHESIS = re.compile(r"\b(compare|comparar|explique|discuta|resuma|o que (e|sao)|como funciona|por que)\b")
@@ -335,7 +338,7 @@ def _intent(text: str, question: str, words: list[str], named: tuple, encoder, c
     label, value, margin = _best(_scores(encoder, "intents", _specialized()["intents"], question))
     sources = bool(_SOURCES.search(text))
     if (label is not None and value >= MIN_SIMILARITY and margin >= MIN_MARGIN
-            and not (label in {"conversa", "tarefa"} and sources)):
+            and not (label in {"conversa", "tarefa"} and sources) and not (label == "resultados" and _WORKS.search(text))):
         return label, f"parece uma mensagem do tipo «{label}»"
     if _METHOD.search(text):
         return "metodo", "a pergunta é de método ou de decisões da pesquisa"

@@ -401,6 +401,32 @@ def test_a_mark_that_points_to_two_sent_passages_still_fails():
     assert result.validation_status == "invalid_citations"
 
 
+PAGES = [{"citation_id": f"K0cad7c48p{page}", "document_id": "colli", "page": page, "sha256": "0cad7c48" + "0" * 56,
+          "leitura": "pagina"} for page in range(1, 13)]
+
+
+@pytest.mark.parametrize("content,expected", [
+    ("Escala [K0cad7c48p1–K0cad7c48p6].", "Escala " + "".join(f"[K0cad7c48p{page}]" for page in range(1, 7)) + "."),
+    ("Escala [K0cad7c48p2-K0cad7c48p3].", "Escala [K0cad7c48p2][K0cad7c48p3]."),
+    ("Escala [K0cad7c48p1–K0cad7c48p11].", None),  # 11 páginas: largo demais
+    ("Escala [K0cad7c48p11–K0cad7c48p14].", None),  # a 13 e a 14 não foram enviadas
+    ("Escala [K0cad7c48p1–K2d575284p6].", None),  # documentos diferentes
+    ("Escala [K0cad7c48p6–K0cad7c48p1].", None),  # de trás para a frente
+])
+def test_a_page_range_counts_when_every_page_in_it_was_sent(content, expected):
+    """BIB-05: o intervalo de páginas de um documento, como o da E2 do lote 46, vale pelas páginas dele quando todas
+    foram enviadas, em ordem e até 10; fora disso, continua reprovando. A parada cedo aceita o mesmo."""
+    from aliado.agent import _check_citations, _stray
+
+    allowed = {hit["citation_id"]: hit for hit in PAGES}
+    result = _check_citations(LLMResult(content, "ollama", "m", "critical_reasoning"), PAGES, object(), False)
+    if expected is None:
+        assert result.validation_status == "invalid_citations" and _stray(content, allowed)
+    else:
+        assert (result.validation_status, result.content) == ("citation_ids_verified", expected)
+        assert not _stray(content, allowed)
+
+
 def test_the_local_answer_stops_at_the_first_mark_that_does_not_check(tmp_path):
     """PRV-02: no modelo local, a geração para na primeira marca que não confere (lote 46): o resto não é puxado,
     o fluxo é fechado e a resposta sai reprovada para o Gemini Flash refazer. O [K...] literal não para nada, e uma

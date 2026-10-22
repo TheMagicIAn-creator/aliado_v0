@@ -5,6 +5,15 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 47: roteador e intervalo de páginas
+
+- **Roteador:** "como se calcula…" e as perguntas sobre uma tese, um TCC ou uma monografia vão à biblioteca, mesmo
+  com palavras dos resultados da pesquisa. Nas 16 perguntas aprovadas, só a P7 e a E3 mudaram de rota, e as duas
+  agora vão à biblioteca; antes iam aos resultados.
+- **Citações:** o intervalo de páginas de um documento numa marca só (`[K…p1–K…p6]`), com todas as páginas enviadas,
+  vale como cada uma delas.
+- **Estado:** validado sem modelo; a conferência real vai junto da medição do lote 48.
+
 ### Lote 46: correções do relatório de eficiência
 
 O relatório de eficiência do modelo local foi conferido com as medições; a versão corrigida está em

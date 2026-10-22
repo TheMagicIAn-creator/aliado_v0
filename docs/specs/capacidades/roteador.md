@@ -6,7 +6,8 @@ retira. Cada requisito é citado por pelo menos um teste (`tests/test_specs.py`)
 
 Criada no lote 35 (18/10/2026), pela [spec 0035](../0035-chat-tela-minima.md). O roteador nasceu no lote 31
 ([spec 0031](../0031-roteador-e-escada.md)), e o aprendizado com o uso, no lote 33
-([spec 0033](../0033-reescrita-aprendizado-resultados.md)).
+([spec 0033](../0033-reescrita-aprendizado-resultados.md)). O lote 47, pela [spec 0047](../0047-roteador-e-intervalos.md),
+acrescentou o ROT-08.
 
 ## O que é
 
@@ -59,3 +60,12 @@ confirmação; depois de 300 mil tokens no dia, toda leitura acima dos trechos p
 não é reaproveitada.
 *Cenário:* dada uma leitura do documento de 46 mil tokens, então a tela pergunta, e nada é gravado antes da
 resposta.
+
+**ROT-08. Conceito e obras de outros vão à biblioteca.** Pergunta que começa por "como se calcula" ou "como
+calcular" é de conceito, e a que fala de uma tese, um TCC ou uma monografia pede o que essa obra diz. As duas vão à
+biblioteca, com trechos, mesmo que tenham palavras dos resultados da pesquisa ("confiabilidade", "componentes",
+"modelos") ou que pareçam com as frases de exemplo dos resultados. Os resultados continuam valendo para as perguntas
+sobre eles, inclusive "faça um resumo dos resultados".
+*Cenário:* dadas a P7 ("Como se calcula a confiabilidade de um sistema com componentes em série e em paralelo?") e a
+E3 (os modelos usados no TCC da UFSC) das perguntas aprovadas, então as duas vão à biblioteca, com trechos; "Mostre
+os resultados da avaliação oficial" continua nos resultados.

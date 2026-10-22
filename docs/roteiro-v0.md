@@ -533,6 +533,7 @@ não dá para separá-los em commits.
 |---|---|---|
 | 45 | Comparação real das 16 perguntas: o modelo local com escalada × o Gemini direto | Executada em 20/10/2026, sem mudança no produto: Gemini direto 80% mais rápido; 4 respostas locais descartadas ([spec 0045](specs/0045-comparacao-real.md), [validação](migracao/validacao-lote-45.md)) |
 | 46 | Correções do relatório de eficiência, conferidas com as medições: citação do local, marca inequívoca, parada cedo, reescrita por partes e cache da Ciência | Validado em 20 e 21/10/2026: 827 testes; o local respondeu 12 das 16 perguntas reais, contra 10; aguarda revisão e commit ([spec 0046](specs/0046-correcoes-do-relatorio.md), [validação](migracao/validacao-lote-46.md)) |
+| 47 | Roteador na P7 e na E3 e intervalo de páginas nas marcas | Validado sem modelo em 21/10/2026: só a P7 e a E3 mudaram de rota, e as duas agora vão à biblioteca; aguarda revisão e commit ([spec 0047](specs/0047-roteador-e-intervalos.md), [validação](migracao/validacao-lote-47.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -563,6 +564,17 @@ não dá para separá-los em commits.
   - a folga da placa depois do erro 500 passageiro da P6;
   - o arquivo oficial dos erros da rodada.
 
+### Decisões e resultado do lote 47 (21/10/2026)
+
+- **Pedido:** o pesquisador pediu que eu decidisse o próximo passo com um planejamento. Decidi corrigir primeiro o
+  que se prova sem gastar nada; o raciocínio desligado nas páginas fica para o lote 48, com critério de adoção fixado
+  antes da medição.
+- **Correções:**
+  - a P7 ("como se calcula a confiabilidade…") e a E3 (o TCC da UFSC) vão à biblioteca, e não mais aos resultados;
+  - o intervalo de páginas numa marca, como o da E2, vale quando todas as páginas foram enviadas.
+- **Resultado sem modelo:** nas 16 perguntas aprovadas, só a P7 e a E3 mudaram de rota; as outras 14 ficaram
+  idênticas às do lote 46.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -592,6 +604,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 44 | [0044](specs/0044-revisao-fechamento.md) |
 | 45 | [0045](specs/0045-comparacao-real.md) |
 | 46 | [0046](specs/0046-correcoes-do-relatorio.md) |
+| 47 | [0047](specs/0047-roteador-e-intervalos.md) |
 
 ## Fica para a v1
 

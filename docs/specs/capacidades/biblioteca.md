@@ -6,7 +6,8 @@ requisitos que acrescenta, altera ou retira. Cada requisito é citado por pelo m
 
 Criada no lote 37 (18/10/2026), pela [spec 0037](../0037-paginas-sem-leitura.md), só com os requisitos da leitura
 das páginas. A indexação, a busca e as fichas seguem descritas nas specs 0004, 0019, 0029, 0030 e 0032. O lote 46,
-pela [spec 0046](../0046-correcoes-do-relatorio.md), acrescentou o BIB-05.
+pela [spec 0046](../0046-correcoes-do-relatorio.md), acrescentou o BIB-05. O lote 47, pela
+[spec 0047](../0047-roteador-e-intervalos.md), alterou o BIB-05.
 
 ## Requisitos
 
@@ -35,16 +36,20 @@ conferido na biblioteca real no lote 41.
 *Cenário:* dado um PDF todo digital, nenhuma página passa por OCR; todo escaneado, todas passam; misto (capa em
 imagem ou folha de aprovação escaneada), só essas páginas; o número da página fica certo nos três casos.
 
-**BIB-05. Marca que aponta um só trecho.** Na conferência das citações de uma resposta, a marca que não é um
-identificador enviado, mas aponta sem ambiguidade um único trecho enviado, vale como esse trecho e é reescrita com o
-identificador dele. São só duas formas, as do lote 45:
+**BIB-05. Marca que aponta sem ambiguidade o que foi enviado.** Na conferência das citações de uma resposta, a
+marca que não é um identificador enviado, mas aponta sem ambiguidade um trecho ou páginas enviados, vale como eles e
+é reescrita com os identificadores deles. São só três formas, as dos lotes 45 e 46:
 - o identificador do trecho com a página dele colada no fim (`p11`);
 - o documento e a página, no formato das páginas, quando um único trecho enviado é daquele documento e daquela
-  página.
+  página;
+- um intervalo de páginas do mesmo documento (`[K…p1–K…p6]`), em ordem, de até 10 páginas, todas enviadas: vale
+  como cada uma delas (lote 47).
 
 O formato das regras escrito como citação (`[K...]`, `[K…]` ou `[K]`) sai do texto. Qualquer outra marca fora do
 que foi enviado continua reprovando a resposta (identificador truncado, copiado de um exemplo, página que não é a
-do trecho, ou dois trechos da mesma página). Não há comparação aproximada.
+do trecho, dois trechos da mesma página, ou um intervalo com página não enviada ou com mais de 10).
+Não há comparação aproximada.
 *Cenário:* dadas as marcas das 4 respostas locais descartadas no lote 45, quando a resposta é conferida, então a da
 P8 (trecho com a página dele) e a da E8 (documento e página de um trecho enviado) valem como os trechos, e o
-`[K...]` sai. As da P5 (truncada) e da E7 (o exemplo das regras) continuam reprovando.
+`[K...]` sai. As da P5 (truncada) e da E7 (o exemplo das regras) continuam reprovando. O intervalo da E2 do lote
+46 (páginas 1 a 6, todas enviadas) vale pelas seis páginas.
