@@ -66,12 +66,6 @@ def choose_penalty(healthy: dict[str, np.ndarray], config: OnsetConfig) -> tuple
     raise ValueError("Nenhuma penalidade da grade deixa os ensaios saudáveis sem mudança.")
 
 
-def commissioning_windows(phase: np.ndarray) -> int:
-    """O comissionamento de `preparacao.prepare`: a primeira metade do pré-falha, com o mínimo de janelas."""
-    pre = int(np.sum(phase == "pre_fault"))
-    return max(preparacao.BASELINE_MIN_WINDOWS, int(np.floor(pre * preparacao.BASELINE_FRACTION)))
-
-
 def classify(first: dict[float, int | None], chosen: float) -> str:
     """Clara se a mesma mudança fica de c em diante; fraca se some com um c maior; senão, nenhuma."""
     at = first[chosen]
@@ -91,7 +85,7 @@ def estimate(experiments: dict, config: OnsetConfig | None = None) -> dict:
     for name in ensaios.FAULTY:
         item = experiments[name]
         fs = float(item.metadata["fs_hz"])
-        reference = commissioning_windows(item.phase)
+        reference = preparacao.commissioning_windows(item.phase)
         first = {}
         for c, found in _changes(item.values, reference, config).items():
             after = [t for t in found if t > reference]

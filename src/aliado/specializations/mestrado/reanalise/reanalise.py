@@ -133,7 +133,8 @@ def _analysis(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: st
         threshold = trained.thresholds[(kind, reference, k)]
         estimates[kind] = markov_alarm_rate(healthy_flags(scores[(kind, reference, k)], threshold, relabeled),
                                             config.confirmations, resamples=config.resamples,
-                                            seed=_seed(config.seed, kind, "markov"))
+                                            seed=_seed(config.seed, kind, "markov"),
+                                            windows_per_hour=ensaios.WINDOWS_PER_HOUR)
         limit = training_summary["modelos"][kind]["sementes"][str(reference)]["limiar"]
         alarms = summary["modelos"][kind]["referencia"]["falsos_alarmes"]
         spread[kind] = false_alarm_interval(limit["posicao"], limit["n_calibracao"]) | {

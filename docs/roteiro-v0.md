@@ -542,6 +542,7 @@ não dá para separá-los em commits.
 | 53 | O mestrado da rodada ao chat em pastas: `rodada/` (com o contrato de 14 atributos), `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/` | Feito em 22/10/2026: equivalência sem diferença ([spec 0053](specs/0053-mestrado-da-rodada-ao-chat.md), [validação](migracao/validacao-lote-53.md)) |
 | 54 | A identidade e o contrato da rodada: `science/identidade/`, `erros.npz` conferido bit a bit, o explorador sem recalcular, as rodadas anteriores marcadas (EXP-13) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0054](specs/0054-identidade-e-contrato-da-rodada.md), [validação](migracao/validacao-lote-54.md)) |
 | 55 | A evidência espectral descritiva: `science/espectro/`, `evidencia_espectral/` no mestrado, o 4º passo do explorador, R9 e R10 sob pedido no chat (EXP-14) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0055](specs/0055-evidencia-espectral.md), [validação](migracao/validacao-lote-55.md)) |
+| 56 | As duplicatas da ciência: `from_counts` na ciência geral, o comissionamento num lugar só e as janelas por hora como argumento | Feito em 22/10/2026, sem commit: equivalência sem diferença ([spec 0056](specs/0056-duplicatas-da-ciencia.md), [validação](migracao/validacao-lote-56.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -716,6 +717,31 @@ não dá para separá-los em commits.
   - em F1L, a fase do maior erro tem nível DC perto da fundamental e 2ª harmônica de cerca de metade dela;
   - R9 e R10 somam 6.339 caracteres e só vão nas perguntas sobre o assunto.
 
+### Decisões de 22/10/2026: a 0.9.0 e o lote 56
+
+- **O pedido:**
+  - fazer os itens "Depois" do plano de 21/10;
+  - juntar na 0.9.0 o relatório em LaTeX, colado de novo, com as regras dele.
+- **O relatório:** é o de 21/10, já conferido. Os lotes 49 e 50 dele são os nossos 54 e 55; os lotes 46 a 48 foram
+  recusados pelo pesquisador em 20/10.
+- **O Fourier:** a pergunta foi se ele estava na arquitetura do AL-IAdo, e não só nos testes.
+  - Está, desde o lote 55. A conta fica no núcleo científico, a rodada nova o calcula, o "Preparar" o monta para as
+    rodadas anteriores, e o chat o recebe sob pedido.
+  - O pesquisador respondeu: "Ele não precisa aparecer". A subaba "Harmônicos" sai da lista.
+- **A lista da 0.9.0:**
+
+  | Lote | O quê |
+  |---|---|
+  | 56 | As duplicatas |
+  | 57 | O exemplo [K1] das regras comuns |
+  | 58 | A medição do cache q4_0, com autorização |
+  | 59 | A limpeza, com a lista autorizada |
+  | 60 | O fechamento da versão |
+
+  Os nomes em inglês ficam de fora, salvo decisão contrária.
+- **O lote 56:** as três contas repetidas ficam num lugar só, sem mudar nenhum número. A rodada sintética deu os
+  mesmos arquivos da referência.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -754,6 +780,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 53 | [0053](specs/0053-mestrado-da-rodada-ao-chat.md) |
 | 54 | [0054](specs/0054-identidade-e-contrato-da-rodada.md) |
 | 55 | [0055](specs/0055-evidencia-espectral.md) |
+| 56 | [0056](specs/0056-duplicatas-da-ciencia.md) |
 
 ## Fica para a v1
 

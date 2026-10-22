@@ -37,6 +37,19 @@ def auc_pr(positive: np.ndarray, scores: np.ndarray) -> float:
     return float(-np.trapezoid(precision, recall))
 
 
+def from_counts(vp: int, fn: int, fp: int, vn: int) -> dict:
+    """Sensibilidade, especificidade, precisão, F1, acurácia balanceada e MCC a partir das contagens de janelas
+    (lote 56: era repetida no painel por tipo de falha, que soma as contagens dos dois modos)."""
+    sensitivity, specificity = vp / (vp + fn), vn / (vn + fp)
+    denominator = math.sqrt((vp + fp) * (vp + fn) * (vn + fp) * (vn + fn))
+    return {"sensibilidade": sensitivity, "especificidade": specificity,
+            "precisao": vp / (vp + fp) if vp + fp else None,
+            "f1": 2 * vp / (2 * vp + fp + fn) if 2 * vp + fp + fn else 0.0,
+            "acuracia_balanceada": (sensitivity + specificity) / 2,
+            "mcc": (vp * vn - fp * fn) / denominator if denominator else 0.0,
+            "vp": vp, "fn": fn, "fp": fp, "vn": vn}
+
+
 def window_metrics(negative_scores, positive_scores, threshold: float) -> dict:
     """Métricas por janela: saudáveis (negativas) contra pós-falha (positivas), sem regra de alarme.
 
@@ -50,21 +63,9 @@ def window_metrics(negative_scores, positive_scores, threshold: float) -> dict:
     if not (np.isfinite(negatives).all() and np.isfinite(positives).all() and math.isfinite(threshold)):
         raise ValueError("Escores e limiar devem ser finitos.")
     tp = int((positives > threshold).sum())
-    fn = len(positives) - tp
     fp = int((negatives > threshold).sum())
-    tn = len(negatives) - fp
-    sensitivity, specificity = tp / (tp + fn), tn / (tn + fp)
-    denominator = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    metrics = from_counts(tp, len(positives) - tp, fp, len(negatives) - fp)
+    counts = {key: metrics.pop(key) for key in ("vp", "fn", "fp", "vn")}  # depois das AUCs, como sempre foram gravadas
     labels = np.r_[np.zeros(len(negatives), dtype=bool), np.ones(len(positives), dtype=bool)]
     scores = np.r_[negatives, positives]
-    return {
-        "sensibilidade": sensitivity,
-        "especificidade": specificity,
-        "precisao": tp / (tp + fp) if tp + fp else None,
-        "f1": 2 * tp / (2 * tp + fp + fn) if 2 * tp + fp + fn else 0.0,
-        "acuracia_balanceada": (sensitivity + specificity) / 2,
-        "mcc": (tp * tn - fp * fn) / denominator if denominator else 0.0,
-        "auc_roc": auc_roc(labels, scores),
-        "auc_pr": auc_pr(labels, scores),
-        "vp": tp, "fn": fn, "fp": fp, "vn": tn,
-    }
+    return {**metrics, "auc_roc": auc_roc(labels, scores), "auc_pr": auc_pr(labels, scores), **counts}

@@ -5,6 +5,17 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 56: as duplicatas da ciência
+
+- **Uma conta só para as métricas de contagem:** `from_counts` foi para a ciência geral, ao lado de `window_metrics`,
+  que a usa. O painel por tipo de falha a importa.
+- **Uma regra só para o comissionamento:** `commissioning_windows`, em `preparo/`, vale para o preparo e para o
+  início das falhas.
+- **A ciência geral sem os 50 Hz:** `markov_alarm_rate` recebe as janelas por hora como argumento obrigatório, e o
+  mestrado passa 180.000.
+- **Nenhum número muda:** a rodada sintética deu os mesmos arquivos da referência.
+- **Estado:** sem commit; o commit fica com o pesquisador.
+
 ### Lote 55: a evidência espectral descritiva
 
 - **Os harmônicos no primeiro alarme:** na janela em que cada modelo confirmou o alarme, a fase com o maior erro e os

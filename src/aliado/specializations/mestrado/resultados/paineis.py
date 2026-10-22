@@ -7,14 +7,13 @@ treino de referência do relatório; a faixa dos treinamentos repetidos vem do p
 CSV. Nada é gravado.
 
 As métricas por tipo de falha somam as contagens de janelas dos modos L e M e recalculam
-sensibilidade, especificidade, precisão, F1, acurácia balanceada e MCC com as fórmulas de
+sensibilidade, especificidade, precisão, F1, acurácia balanceada e MCC com `from_counts`, a mesma conta de
 `window_metrics` (`science/deteccao/metricas/por_janela.py`); AUC e atraso não se somam e entram como a média dos dois modos.
 """
 
 from __future__ import annotations
 
 import csv
-import math
 import threading
 from pathlib import Path
 
@@ -22,6 +21,7 @@ import numpy as np
 
 from aliado.science.deteccao.alarmes.confirmacao import alarm_starts, first_alarm
 from aliado.science.deteccao.limiar.calibracao import false_alarm_interval
+from aliado.science.deteccao.metricas.por_janela import from_counts
 from aliado.specializations.mestrado.atributos.cache import features_cache
 from aliado.specializations.mestrado.base import ensaios
 from aliado.specializations.mestrado.preparo import preparacao
@@ -58,18 +58,6 @@ def _rows(folder: Path) -> list[dict]:
         for key in METRICS:
             row[key] = float(row[key]) if row[key] not in ("", "None") else None
     return rows
-
-
-def from_counts(vp: int, fn: int, fp: int, vn: int) -> dict:
-    """As mesmas fórmulas de `window_metrics`, a partir das contagens de janelas."""
-    sensitivity, specificity = vp / (vp + fn), vn / (vn + fp)
-    denominator = math.sqrt((vp + fp) * (vp + fn) * (vn + fp) * (vn + fn))
-    return {"sensibilidade": sensitivity, "especificidade": specificity,
-            "precisao": vp / (vp + fp) if vp + fp else None,
-            "f1": 2 * vp / (2 * vp + fp + fn) if 2 * vp + fp + fn else 0.0,
-            "acuracia_balanceada": (sensitivity + specificity) / 2,
-            "mcc": (vp * vn - fp * fn) / denominator if denominator else 0.0,
-            "vp": vp, "fn": fn, "fp": fp, "vn": vn}
 
 
 def _counts(rows) -> dict:

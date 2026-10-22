@@ -63,12 +63,14 @@ cada pasta só explica o que ela tem (NUC-04).
   - o alarme é a m-ésima janela seguida com s_t > τ, com m = 3;
   - uma sequência longa conta como um alarme só;
   - na avaliação, o alarme é datado pelo fim da janela que o confirma.
-- `taxa.py` (`markov_alarm_rate` e `WINDOWS_PER_HOUR`): a chance de alarme por janela é π₀ · p₀₁ · p₁₁^(m−1), numa
-  cadeia de Markov de dois estados (Brook e Evans, 1972).
+- `taxa.py` (`markov_alarm_rate`): a chance de alarme por janela é π₀ · p₀₁ · p₁₁^(m−1), numa cadeia de Markov de
+  dois estados (Brook e Evans, 1972). Quem chama informa as janelas por hora; o mestrado passa
+  `base/ensaios.WINDOWS_PER_HOUR` = 3.600 · 10.000 / 200 = 180.000 (lote 56).
 
 **10. Métricas** (`metricas/`, teste `test_metricas.py`)
-- `por_janela.py` (`window_metrics`, `auc_roc` e `auc_pr`):
-  - sensibilidade = VP/(VP + FN), especificidade = VN/(VN + FP), precisão, F1, MCC e acurácia balanceada;
+- `por_janela.py` (`window_metrics`, `from_counts`, `auc_roc` e `auc_pr`):
+  - sensibilidade = VP/(VP + FN), especificidade = VN/(VN + FP), precisão, F1, MCC e acurácia balanceada, todas em
+    `from_counts`, que o painel por tipo de falha também usa (lote 56);
   - AUC-ROC por Mann-Whitney e AUC-PR por trapézios.
 - `incerteza.py` (`proportion_interval`, `poisson_upper`, `paired_interval` e `verdict`):
   - bootstrap em blocos móveis de 12 janelas, com 20.000 reamostragens;
@@ -104,7 +106,7 @@ A pesquisa de detecção de falhas na base GPVS-Faults, na ordem do método. Os 
 |---|---|---|---|
 | 1. Base | `base/ensaios.py`, `base/leitura.py` | os 16 ensaios (F0L e F0M sadios; F1L a F7M com falha), as 14 colunas, as 7 falhas, a amostragem de 10 kHz, a janela de 200 amostras (um ciclo de 50 Hz), a pasta da base; os arquivos, a proveniência pelos hashes, os CSVs | `test_base.py` |
 | 2. Atributos | `atributos/variaveis.py`, `extracao.py`, `cache.py` | as 24 variáveis de cada janela (mediana e IQR de Ipv, Vpv e Vdc; RMS e THD de cada fase; desequilíbrios; potências), a extração por ensaio e o cache | `test_atributos.py` |
-| 3. Preparo | `preparo/preparacao.py`, `resumo.py`, `artefatos.py`, `inicio_nominal.py` | a divisão 50/15/15/20 com separação de 11 janelas, a normalização pela linha de base do treino (piso de 10% do IQR), o comissionamento pela 1ª metade do pré-falha, o início nominal (o meio do registro) | `test_preparo.py` |
+| 3. Preparo | `preparo/preparacao.py`, `resumo.py`, `artefatos.py`, `inicio_nominal.py` | a divisão 50/15/15/20 com separação de 11 janelas, a normalização pela linha de base do treino (piso de 10% do IQR), o comissionamento pela 1ª metade do pré-falha (`commissioning_windows`, também usado pelo início das falhas), o início nominal (o meio do registro) | `test_preparo.py` |
 | 4. Treino | `treino/configuracao.py`, `detectores.py`, `resumo.py`, `relatorio.py`, `artefatos.py` | a configuração congelada com hash, as entradas de cada modelo, o treino em cada repetição e o limiar p99 na calibração | `test_treino.py` |
 | 5. Avaliação | `avaliacao/configuracao.py`, `treino_congelado.py`, `pontuacao.py`, `decisao.py`, `incerteza.py`, `resumo.py`, `relatorio.py`, `artefatos.py`, `oficial.py` | o treino congelado conferido pelos hashes; os escores do teste; o alarme a partir do início nominal, datado pelo fim da janela que o confirma; as métricas por janela; os intervalos em blocos; a comparação pareada; a pasta oficial; a matriz de erros por variável (`erros.npz`, lote 54), conferida bit a bit contra os escores e lida só pelo contrato | `test_avaliacao.py`, `test_artefato_de_erros.py` |
 | 6. Início das falhas | `inicio_das_falhas/pontos_de_mudanca.py`, `estimativa.py` | o PELT com penalidade c · d · ln n, com o menor c sem mudança nos sadios; o início observado e a classe (clara, fraca ou nenhuma) | `test_inicio_das_falhas.py` |

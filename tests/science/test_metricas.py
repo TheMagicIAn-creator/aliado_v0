@@ -14,7 +14,7 @@ from aliado.science.deteccao.metricas.incerteza import (
     proportion_interval,
     verdict,
 )
-from aliado.science.deteccao.metricas.por_janela import auc_pr, auc_roc, window_metrics
+from aliado.science.deteccao.metricas.por_janela import auc_pr, auc_roc, from_counts, window_metrics
 
 
 def test_window_metrics_match_hand_calculation():
@@ -33,6 +33,15 @@ def test_window_metrics_match_hand_calculation():
     assert auc_roc(tied, np.ones(4)) == 0.5 and auc_pr(tied, np.ones(4)) == pytest.approx(0.75)
     with pytest.raises(ValueError):
         window_metrics([], [1.0], 0.5)
+
+
+def test_window_metrics_are_the_counts_metrics_plus_the_aucs():
+    """Lote 56: as métricas de contagem são uma conta só, `from_counts`, nos mesmos bits e na mesma ordem."""
+    rng = np.random.default_rng(3)
+    result = window_metrics(rng.random(500), rng.random(300) + 0.4, 0.8)
+    counts = from_counts(result["vp"], result["fn"], result["fp"], result["vn"])
+    assert list(result) == [*list(counts)[:6], "auc_roc", "auc_pr", "vp", "fn", "fp", "vn"]
+    assert all(result[key] == value for key, value in counts.items())
 
 
 def test_poisson_upper_bound_is_the_rule_of_three_for_zero_events():

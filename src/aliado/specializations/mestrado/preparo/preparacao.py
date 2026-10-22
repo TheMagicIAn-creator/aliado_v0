@@ -41,6 +41,13 @@ class PreparedGPVS:
     purge: int
 
 
+def commissioning_windows(phase: np.ndarray) -> int:
+    """O comissionamento de um ensaio com falha: a primeira metade do pré-falha, com o mínimo de janelas. O início
+    das falhas usa a mesma conta (lote 56: era repetida lá)."""
+    pre = int(np.sum(phase == "pre_fault"))
+    return max(BASELINE_MIN_WINDOWS, int(np.floor(pre * BASELINE_FRACTION)))
+
+
 def prepare(directory: str | Path, *, cache: str | Path | None = None,
             fractions=DEFAULT_FRACTIONS, purge: int = PURGE) -> PreparedGPVS:
     experiments, hashes = extract_all(directory, cache=cache)
@@ -76,7 +83,7 @@ def prepare(directory: str | Path, *, cache: str | Path | None = None,
     for name in FAULTY:
         item = experiments[name]
         pre = np.flatnonzero(item.phase == "pre_fault")
-        n_baseline = max(BASELINE_MIN_WINDOWS, int(np.floor(len(pre) * BASELINE_FRACTION)))
+        n_baseline = commissioning_windows(item.phase)
         if n_baseline >= len(pre):
             raise ValueError(f"{name}: pré-falha insuficiente para comissionamento e teste.")
         # Comissionamento: cada ensaio com falha usa a primeira metade do próprio pré-falha.

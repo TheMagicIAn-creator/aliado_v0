@@ -49,3 +49,12 @@ def test_commissioning_uses_only_first_half_of_pre_fault(gpvs_sintetico):
     rms = [variaveis.FEATURES.index(n) for n in ("ia_rms", "ib_rms", "ic_rms")]
     # A corrente cresce 70% depois da falha: o pós-falha se afasta da linha de base do pré-falha.
     assert np.abs(post[:, rms]).mean() > 10 * np.abs(pre_test[:, rms]).mean()
+
+
+def test_commissioning_rule_is_one_for_the_preparation_and_the_onset():
+    """Lote 56: o início das falhas usa a conta do preparo, sem cópia."""
+    from aliado.specializations.mestrado.inicio_das_falhas import estimativa
+
+    assert preparacao.commissioning_windows(np.array(["pre_fault"] * 100 + ["transition", "post_fault"])) == 50
+    assert preparacao.commissioning_windows(np.array(["pre_fault"] * 40 + ["post_fault"] * 60)) == 30  # o mínimo
+    assert not hasattr(estimativa, "commissioning_windows")

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "56",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado, rumo à 0.9.0)",
+  "status": "validated_uncommitted",
+  "base_commit": "ec46430",
+  "decision": "plano aprovado pelo pesquisador em 22/10/2026: as duplicatas da lista 'Depois' do plano de 21/10, sem mudar nenhum número; o Fourier fica como está, sem tela ('Ele não precisa aparecer')",
+  "spec": "docs/specs/0056-duplicatas-da-ciencia.md",
+  "validation": "docs/migracao/validacao-lote-56.md",
+  "requirements": {
+    "added": [],
+    "changed": [],
+    "tested_again": [
+      "NUC-01"
+    ]
+  },
+  "checks": {
+    "pytest_arquivos_afetados": {
+      "passed": 27,
+      "deselected_dados_reais": 5
+    },
+    "pytest_selecao_rapida_do_pedido": {
+      "passed": 43
+    },
+    "pytest_bateria_rapida": {
+      "grupos": 36,
+      "passed": 829,
+      "failed": 0,
+      "skipped": 0,
+      "deselected": 33,
+      "treinos": 0,
+      "seconds": 124.5,
+      "pico_memoria_mib": 559.3
+    },
+    "pytest_treinos_sinteticos": {
+      "passed": 21,
+      "seconds": 35.7
+    },
+    "pytest_dados_reais": {
+      "nao_rodados": 12,
+      "motivo": "treinam com a base real; esperam o OK do pesquisador"
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0,
+      "faltando": 0,
+      "arquivos_novos": [
+        "avaliacao/erros.npz",
+        "evidencia_espectral/evidencia.json"
+      ]
+    },
+    "janelas_por_hora": {
+      "valor": 180000.0,
+      "mesmos_bits_que_o_inteiro": true,
+      "valores_conferidos": 10000
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "nomes_antigos_fora_dos_registros": 0,
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "merged_copies": {
+    "science.deteccao.metricas.por_janela.from_counts": [
+      "mestrado.resultados.paineis.from_counts"
+    ],
+    "mestrado.preparo.preparacao.commissioning_windows": [
+      "mestrado.inicio_das_falhas.estimativa.commissioning_windows",
+      "mestrado.preparo.preparacao.prepare (a conta do n_baseline)"
+    ],
+    "mestrado.base.ensaios.WINDOWS_PER_HOUR": [
+      "science.deteccao.alarmes.taxa.WINDOWS_PER_HOUR"
+    ]
+  },
+  "evidence": {
+    "equivalencia": "tmp/lote-56/equivalencia.log",
+    "bateria_rapida": "tmp/lote-56/bateria-rapida.log",
+    "treinos_sinteticos": "tmp/lote-56/treinos-sinteticos.log",
+    "antes": "tmp/lote-56/antes"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "fa166b6ebabd28be53ddd0bf2ae5ca7224f141bc32ae4f2ac95196de49e1cd08",
+    "docs/ciencia/mapa-das-pastas.md": "0087e613361c6870da07f662b1a5e1daa2fb2fd6a2f9b7c3f9c100a85853223c",
+    "docs/migracao/validacao-lote-56.md": "cb644e2e0a48a3b7080de18c7fd315f8c1aaad2026363429dfd41866dd20d7ac",
+    "docs/roteiro-v0.md": "f4b932b4aa568c31aeee670081d8d1fafb4e0cb01cc01e470ee3288fde482df9",
+    "docs/specs/0056-duplicatas-da-ciencia.md": "c63d0444708c28a1683c894f1ade66c961fe901b01fad77319c094466b61a68e",
+    "src/aliado/science/deteccao/alarmes/taxa.py": "4a44b3e38ca22991604486fc85a6c7727dfe88e69de3b9d3bd77d7fdfe2e4ae4",
+    "src/aliado/science/deteccao/metricas/por_janela.py": "b1647f1b152f4f37f05193079ffd425444deb5f64f520d77c4860556ec4ea78c",
+    "src/aliado/specializations/mestrado/base/ensaios.py": "a714fdab57fd0c2fe436892614be5d1d03bbaa463b32cfa6b019427eca35d049",
+    "src/aliado/specializations/mestrado/inicio_das_falhas/estimativa.py": "0c498baf117139d526a518b036dfb004a4016a3d509371e6cad19f224cf4bcfb",
+    "src/aliado/specializations/mestrado/preparo/preparacao.py": "e7202360127a0bfeb7e1fc70ca01497d975ff7bace3da106cbdcfbea8b85690f",
+    "src/aliado/specializations/mestrado/reanalise/reanalise.py": "20a6680659f9cce8e863589f0559491d80b75d53a76c519e122b73f1e4f57992",
+    "src/aliado/specializations/mestrado/resultados/paineis.py": "f19bc285a4d67f345404f7b8c60fde6dca844c2a531b1443575464d79f52bf8d",
+    "tests/mestrado/test_preparo.py": "d0da43a201c36fcd9fba4317a2f3debb431e675800c21c61162b129f2d22aead",
+    "tests/mestrado/test_resultados.py": "a0949f56df458b452ec50a5c58f5377baa6b027e00e1c6e64a26dcf44717ffa4",
+    "tests/science/test_alarmes.py": "cca6db71b7ad975e406dc420a188f42ee73f2b6e51e58033e7a1de2fc91030f2",
+    "tests/science/test_metricas.py": "7a59fe6d5979346c407774001193479571b7d08e7c69ebbcf9280b6d6627ed2d"
+  }
+}

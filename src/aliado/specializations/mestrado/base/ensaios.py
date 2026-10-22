@@ -30,3 +30,4 @@ MODES = {"L": "IPPT (potência limitada)", "M": "MPPT (potência máxima)"}
 SAMPLING_HZ = 10_000.0
 GRID_HZ = 50.0
 WINDOW = int(round(SAMPLING_HZ / GRID_HZ))  # um ciclo de rede: 200 amostras
+WINDOWS_PER_HOUR = 3600 * SAMPLING_HZ / WINDOW  # 180.000, para a taxa de alarmes por hora
