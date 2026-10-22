@@ -194,16 +194,17 @@ def test_stopping_the_local_stream_early_closes_the_ollama_response():
     assert response.closed
 
 
-def test_only_the_light_route_goes_without_reasoning():
-    """PRV-07: só o pedido de raciocínio baixo (a reescrita da busca e a rota leve do roteador) vai sem raciocínio; os
-    trechos e as páginas seguem com ele, porque sem raciocínio o local deixou de citar no lote 41."""
+def test_the_light_route_and_page_readings_go_without_reasoning():
+    """PRV-07: vão sem raciocínio o pedido de raciocínio baixo (a reescrita da busca e a rota leve do roteador) e,
+    desde o lote 48, a leitura de páginas inteiras ou do documento. Os trechos seguem com ele, porque sem raciocínio o
+    local deixou de citar no lote 41."""
     provider, completions = local(answer("Leve."), answer("Trechos."), answer("Páginas."))
     citations = [{"citation_id": "Kabc1"}]
     provider.generate(ask(reasoning_level="low"), model_id="m")
     provider.generate(ask(metadata={"citations": citations}), model_id="m")
     provider.generate(ask(metadata={"citations": citations, "reading": {"tokens_estimados": 900}}), model_id="m")
-    assert completions.calls[0]["reasoning_effort"] == "none"
-    assert "reasoning_effort" not in completions.calls[1] and "reasoning_effort" not in completions.calls[2]
+    assert completions.calls[0]["reasoning_effort"] == "none" and completions.calls[2]["reasoning_effort"] == "none"
+    assert "reasoning_effort" not in completions.calls[1]
 
 
 def test_structured_output_goes_as_json_schema_without_the_help_rule():

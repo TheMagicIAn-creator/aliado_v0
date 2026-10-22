@@ -5,6 +5,14 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 48: sem raciocínio na leitura de páginas e do documento
+
+- **A mudança:** o modelo local responde sem o raciocínio oculto quando lê páginas inteiras ou o documento. Os trechos
+  e a conversa continuam com ele, e o Gemini não muda.
+- **A medição, com critério fixado antes:** nas 6 perguntas de páginas e de documento, duas vezes, sem token pago,
+  a chamada mediana caiu de 133 para 71 s. Houve 1 descarte em 12, e o documento esperado foi citado em 10 de 12.
+- **Estado:** adotado; aguarda revisão e commit do pesquisador.
+
 ### Lote 47: roteador e intervalo de páginas
 
 - **Roteador:** "como se calcula…" e as perguntas sobre uma tese, um TCC ou uma monografia vão à biblioteca, mesmo

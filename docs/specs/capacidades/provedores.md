@@ -8,7 +8,8 @@ Criada no lote 38 (18/10/2026), pela [spec 0038](../0038-modelo-local.md). O lot
 [spec 0039](../0039-local-le-texto.md), alterou o PRV-01 e o PRV-03 e acrescentou o PRV-06. O uso do Gemini e as
 chaves seguem descritos nas specs 0009 e 0012; o roteador, o teto de 30 mil e o aviso de 300 mil tokens, em
 [roteador.md](roteador.md). O lote 44 amplia os cenários de PRV-02, sem alterar os limites de custo. O lote 46, pela
-[spec 0046](../0046-correcoes-do-relatorio.md), altera PRV-02, PRV-06 e PRV-07.
+[spec 0046](../0046-correcoes-do-relatorio.md), altera PRV-02, PRV-06 e PRV-07; o lote 48, pela
+[spec 0048](../0048-raciocinio-nas-paginas.md), altera o PRV-07.
 
 ## Requisitos
 
@@ -69,17 +70,21 @@ original.
 recebe o texto e a descrição das 10 páginas, o PDF não é aberto, e a pergunta não vai ao Gemini por ter mais de 4
 páginas.
 
-**PRV-07. A reescrita da busca vai sem raciocínio.**
+**PRV-07. Sem raciocínio na reescrita da busca e na leitura de páginas.**
 - **A reescrita:** vai com raciocínio baixo, no local e no Gemini, porque é uma tarefa mecânica. Com raciocínio, o
   local gastava os 2.048 tokens dela pensando, cerca de 2 minutos, e a reescrita falhava em silêncio.
 - **Simples ou por partes:** a reescrita simples pede só a consulta, com até 512 tokens. O plano por partes, com até
   2.048, só vem quando o pedido tem partes. Até o lote 46, o pedido do plano chegava duas vezes à função, o erro era
   calado, e as perguntas com partes seguiam sem a reescrita.
-- **As respostas:** os trechos, as páginas, o documento e a conversa seguem com o raciocínio que o roteador decidir.
-  No lote 41, os trechos sem raciocínio fizeram o local deixar de citar, e essa parte foi desfeita.
+- **As respostas:** os trechos e a conversa seguem com o raciocínio que o roteador decidir. No lote 41, os trechos
+  sem raciocínio fizeram o local deixar de citar, e essa parte foi desfeita.
+- **A leitura de páginas inteiras ou do documento:** vai sem raciocínio no local (lote 48). Medido com o critério
+  fixado antes: a chamada mediana caiu de 133 para 71 s, e 11 das 12 respostas citaram certo. O Gemini segue como
+  antes.
 - **A segurança da resposta não muda:** a resposta sem citação, com números que não conferem ou com o pedido de ajuda
   é refeita pelo Gemini (PRV-02).
 
 *Cenário:* dada uma pergunta que precisa de reescrita, quando a busca é preparada, então a reescrita sai em segundos,
 sem raciocínio, e a resposta é escrita com o raciocínio que o roteador pediu. Dada uma pergunta com partes, então o
-plano é pedido uma vez, e a pergunta sem partes pede só a consulta.
+plano é pedido uma vez, e a pergunta sem partes pede só a consulta. Dada uma pergunta que lê páginas inteiras ou o
+documento, então o local responde sem raciocínio; com trechos, com o raciocínio do roteador.

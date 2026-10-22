@@ -181,7 +181,9 @@ class LocalProvider:
             kwargs["temperature"] = float(request.temperature)
         # "none" desliga o raciocínio no Ollama: na Etapa 3, 4 tokens em 0,5 s, contra 372 tokens em 27 s. No lote 41, sem
         # raciocínio também nos trechos, o local deixou de citar (P5 e P6) e a trava de qualidade desfez essa parte.
-        if request.reasoning_level == "low":
+        # Lote 48: na leitura de páginas ou do documento, sem raciocínio, a chamada mediana caiu de 133 para 71 s, e 11
+        # das 12 respostas citaram certo.
+        if request.reasoning_level == "low" or request.metadata.get("reading"):
             kwargs["reasoning_effort"] = "none"
         if request.tools:
             kwargs["tools"] = request.tools

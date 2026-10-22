@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-21",
+  "batch": "48",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "validated_locally_awaiting_review",
+  "base_commit": "77fb76d",
+  "decision": "planejamento aprovado pelo pesquisador em 21/10/2026",
+  "spec": "docs/specs/0048-raciocinio-nas-paginas.md",
+  "validation": "docs/migracao/validacao-lote-48.md",
+  "requirements": {
+    "added": [],
+    "changed": [
+      "PRV-07"
+    ]
+  },
+  "checks": {
+    "pytest": {
+      "files": 46,
+      "passed": 834,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 234.75
+    },
+    "ruff": {
+      "exit_code": 0
+    },
+    "diff_check": {
+      "exit_code": 0
+    }
+  },
+  "measurement": {
+    "criterio": {
+      "respostas": 12,
+      "completas": 11,
+      "mediana_s": 71.3,
+      "base_mediana_s": 133.0,
+      "descartadas": 1,
+      "esperado_citado": 10,
+      "com_erro": 0,
+      "criterios": {
+        "mediana": true,
+        "descartes": true,
+        "esperado": true
+      },
+      "adotar": true
+    },
+    "roteador": [
+      {
+        "id": "P7",
+        "leitura": "trechos",
+        "motivos": [
+          "parece uma mensagem do tipo «sintese»",
+          "o assunto combina com a skill confiabilidade"
+        ],
+        "provedor": "ollama",
+        "validacao": "citation_ids_verified",
+        "citou_esperado": true,
+        "resposta_s": 74.295
+      },
+      {
+        "id": "E3",
+        "leitura": "trechos",
+        "motivos": [
+          "a pergunta pede o que os documentos dizem"
+        ],
+        "provedor": "ollama",
+        "validacao": "citation_ids_verified",
+        "citou_esperado": true,
+        "resposta_s": 47.048
+      }
+    ],
+    "chamadas_locais": 21,
+    "chamadas_gemini_simulado": 1,
+    "paid_tokens": 0
+  },
+  "gate_fixed_before": {
+    "median_max_s": 93.0,
+    "discards_max": 2,
+    "expected_min": 8,
+    "base_median_s": 133.0
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "src/aliado/llm/providers/local.py": "0f0e0f5bf8e0bd90556ac59c232bc70d8c2bb2fac8a522cdccb76e51db47a6ed",
+    "tests/test_local_provider.py": "c2a941a31ca6ad8b37bdaded6216b2d4e51b6017206a3bf1ce2a61ea61e9b657",
+    "docs/specs/capacidades/provedores.md": "8a09a1bdd08373c19d2fb36e56d49e6f944641078d7e3e3a9e045747ea814513",
+    "docs/roteiro-v0.md": "bf8cbc97ec6412e3a2e8d05684fe14c32d55280cbd10d9345079d7a9aceed395",
+    "CHANGELOG.md": "d3aebcb0e75b3201070e41bc778ecdb1b3fac1cd4796ab4f39259c85e76b4dab",
+    "docs/specs/0048-raciocinio-nas-paginas.md": "c5cbe3332d82b97b93a366907b3cd8f0c90e4b23c1d3a12008243da27a573664",
+    "docs/migracao/validacao-lote-48.md": "4be922d3682b811cd7fd34a6bf5a12f47087f3ebb78e1268335408ca90077865"
+  },
+  "evidence": {
+    "tmp/lote-48/pytest.json": "4ca3633a6c266d00e6f4fb3f84c7582d497ef749159ee47d321fd324b27fb5c0",
+    "tmp/lote-48/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "tmp/lote-48/diff_check.log": "a7270e37e8f6aa8907440cf86672dfe0bb197d6505a7b6227145eae07ecbb1e9",
+    "tmp/lote-48/medir_raciocinio.py": "ead501d2c942b5f551e2c16a0f8da6b1bd26e824d6c7b239f2b952c9abb90efa",
+    "tmp/lote-48/medicao/resultado.json": "d4fe0674a8e74447f4b8a99348874406dd1ebf83583ff7f53a9524ec624e09c7",
+    "tmp/lote-48/medicao/escalada.json": "523f662661fa4d636a136b9e093134a46d3df778d6f8d32ac7a60a820b8a51b2",
+    "tmp/lote-48/medicao/calls.json": "59a1fd7aa3c31b5a013c84deb2dac6a2b4fdc87865f3b0ae3d0173c7546ab934",
+    "tmp/lote-48/medicao/metadata.json": "231f9408488fe1added46f491bb7c63c1c11577b955cde65094e2e8f8866a1e4",
+    "tmp/lote-48/separar.py": "352f95389674b661d4619c16b09be3481ca00f8fb8618d590c4addaa6eb88f8f",
+    "tmp/lote-48/cadeia.py": "d66570219f507bd197060c7c6d292aa2872a2b57fb4e355f3b6655202da724c6",
+    "tmp/lote-48/lote-48.patch": "27a374aebf15db9631ed8aba015c65c80bbcc9cd0ee9bae31dc95231cf7b11a5"
+  },
+  "commit_split": {
+    "patch": "tmp/lote-48/lote-48.patch",
+    "tracked_files": 5
+  }
+}

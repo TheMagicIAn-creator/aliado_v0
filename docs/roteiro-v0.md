@@ -534,6 +534,7 @@ não dá para separá-los em commits.
 | 45 | Comparação real das 16 perguntas: o modelo local com escalada × o Gemini direto | Executada em 20/10/2026, sem mudança no produto: Gemini direto 80% mais rápido; 4 respostas locais descartadas ([spec 0045](specs/0045-comparacao-real.md), [validação](migracao/validacao-lote-45.md)) |
 | 46 | Correções do relatório de eficiência, conferidas com as medições: citação do local, marca inequívoca, parada cedo, reescrita por partes e cache da Ciência | Validado em 20 e 21/10/2026: 827 testes; o local respondeu 12 das 16 perguntas reais, contra 10; aguarda revisão e commit ([spec 0046](specs/0046-correcoes-do-relatorio.md), [validação](migracao/validacao-lote-46.md)) |
 | 47 | Roteador na P7 e na E3 e intervalo de páginas nas marcas | Validado sem modelo em 21/10/2026: só a P7 e a E3 mudaram de rota, e as duas agora vão à biblioteca; aguarda revisão e commit ([spec 0047](specs/0047-roteador-e-intervalos.md), [validação](migracao/validacao-lote-47.md)) |
+| 48 | Sem raciocínio no local na leitura de páginas e do documento, medido com critério fixado antes | Adotado em 21/10/2026: chamada mediana de 133 para 71 s; 1 descarte em 12; documento esperado citado em 10 de 12; aguarda revisão e commit ([spec 0048](specs/0048-raciocinio-nas-paginas.md), [validação](migracao/validacao-lote-48.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -575,6 +576,23 @@ não dá para separá-los em commits.
 - **Resultado sem modelo:** nas 16 perguntas aprovadas, só a P7 e a E3 mudaram de rota; as outras 14 ficaram
   idênticas às do lote 46.
 
+### Decisões e resultado do lote 48 (21/10/2026)
+
+- **Decisão (planejamento aprovado em 21/10):** desligar o raciocínio do local nas leituras de páginas e do
+  documento só se uma medição passasse em três critérios fixados antes. Limites: no máximo 30 chamadas locais e
+  nenhum token pago.
+- **Resultado, com 21 chamadas locais:** os três passaram.
+  - A chamada mediana caiu de 133,0 para 71,3 s.
+  - Houve 1 descarte em 12, contra 2 em 12 na base.
+  - O documento esperado foi citado em 10 de 12.
+  - A mudança foi adotada no provedor local (PRV-07).
+- **Lote 47 com o modelo real:** a P7 caiu de 201 para 74 s e passou a citar o manual esperado; a E3 passou a citar
+  o TCC.
+- **Para o próximo lote, a escolher por ele:**
+  - o `[K1]` copiado do exemplo `[K1][K2]` das regras comuns, o único descarte da medição;
+  - a folga da placa;
+  - o arquivo oficial dos erros da rodada.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -605,6 +623,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 45 | [0045](specs/0045-comparacao-real.md) |
 | 46 | [0046](specs/0046-correcoes-do-relatorio.md) |
 | 47 | [0047](specs/0047-roteador-e-intervalos.md) |
+| 48 | [0048](specs/0048-raciocinio-nas-paginas.md) |
 
 ## Fica para a v1
 
