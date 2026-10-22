@@ -32,12 +32,14 @@ ESCALATE_RULE = (f"Se a pergunta pedir um raciocínio que você não consegue fa
 # Letras guardadas no começo do fluxo: na Etapa 3, o pedido de ajuda veio depois de um rótulo ("Resposta ao usuário:").
 HOLD = 160
 # Lote 39: o local lê o texto guardado das páginas, e não o PDF de que as regras falam; e, na medição do lote 38, citou
-# documentos por extenso, sem as marcas, em 3 das 16 perguntas, refeitas pelo Gemini.
-TEXT_NOTE = ("Para você, os PDFs vieram como o texto guardado de cada página, com o [K...] dela, e a descrição "
-             "automática das figuras e tabelas; onde as regras falam em ler o PDF, leia por esse texto. A descrição é "
-             "automática e deve ser conferida no original.")
-CITE_RULE = ("Cite cada afirmação com o identificador entre colchetes, exatamente como veio, por exemplo [K12ab34p5], "
-             "logo depois da frase; não cite só pelo nome do arquivo ou do autor.")
+# documentos por extenso, sem as marcas, em 3 das 16 perguntas, refeitas pelo Gemini. Lote 46: nenhum identificador de
+# exemplo; no lote 45, ele copiou o [K12ab34p5] e o [K...] daqui nas 4 respostas descartadas.
+TEXT_NOTE = ("Para você, os PDFs vieram como o texto guardado de cada página, com o identificador dela entre colchetes, "
+             "e a descrição automática das figuras e tabelas; onde as regras falam em ler o PDF, leia por esse texto. "
+             "A descrição é automática e deve ser conferida no original.")
+CITE_RULE = ("Cite cada afirmação logo depois da frase, com o identificador entre colchetes copiado letra por letra do "
+             "material enviado: sem encurtar, sem acrescentar a página e sem juntar dois; as reticências das regras só "
+             "mostram o formato. Não cite só pelo nome do arquivo ou do autor.")
 # O num_ctx do Modelfile: o Ollama corta em silêncio o que passa dele, então o pedido maior nem vai ao local.
 CONTEXT = 16_384
 MIN_ANSWER = 1_024  # tokens que precisam sobrar para a resposta
@@ -228,9 +230,11 @@ class LocalProvider:
                                  truncated=result.truncated)
             return
         kwargs = self._kwargs(request, model_id) | {"stream": True, "stream_options": {"include_usage": True}}
+        response = None
         try:
             held, shown, usage, truncated = "", False, None, False
-            for event in self._get_client().chat.completions.create(**kwargs):
+            response = self._get_client().chat.completions.create(**kwargs)
+            for event in response:
                 choice = event.choices[0] if getattr(event, "choices", None) else None
                 text = (getattr(getattr(choice, "delta", None), "content", None) or "") if choice else ""
                 cut = getattr(choice, "finish_reason", None) == "length"
@@ -256,6 +260,10 @@ class LocalProvider:
             raise
         except Exception as exc:
             raise self._failure(exc) from exc
+        finally:
+            # Lote 46: a conversa para de ler na marca que não confere; fechar a resposta faz o Ollama parar de gerar.
+            if (close := getattr(response, "close", None)) is not None:
+                close()
 
 
 __all__ = ["ESCALATE", "LocalLimit", "LocalOutOfReach", "LocalProvider", "LocalUnavailable"]

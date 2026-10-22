@@ -3,6 +3,22 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Lote 46: correções do relatório de eficiência
+
+O relatório de eficiência do modelo local foi conferido com as medições; a versão corrigida está em
+`docs/revisao/2026-10-20-relatorio-eficiencia-conferido.md`. O pacote fechado da 0.8.0 não muda.
+- **Citações do local:** as instruções não mostram mais identificadores de exemplo, que o local copiava. A marca que
+  aponta um único trecho enviado vale como ele, e o `[K...]` literal sai do texto.
+- **Parada cedo:** na primeira marca que não confere, o local para de escrever, e o Gemini Flash refaz sem esperar.
+- **Reescrita por partes:** desde a 0.6.0, o plano das perguntas com partes nunca chamava o modelo. Volta a chamar, e
+  a reescrita simples pede só a consulta.
+- **Ciência:** o cache dos erros por variável fica ligado aos pesos e à ordem das variáveis; nenhum número muda.
+- **Medição:** nas 16 perguntas reais, sem custo, o local respondeu 12 (eram 10), e as respostas descartadas por
+  marca caíram de 4 para 2.
+- **Estado:** validado localmente, com 827 testes; aguarda revisão e commit do pesquisador.
+
 ## [0.8.0] — em fechamento local (20/10/2026)
 
 Lotes 37 a 44: o modelo local (Ollama, `qwen3.5:9b`) como principal, com o Gemini Flash só no limite dele, e a leitura

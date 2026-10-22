@@ -1548,7 +1548,8 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        card_maker=lambda **kwargs: reading_card(execute, **kwargs),
                        checker=lambda memory_: check_memory(execute, memory_),
                        card_extractor=lambda **kwargs: extract_card(execute, **kwargs),
-                       query_rewriter=lambda **kwargs: rewrite_query(execute, plan=True, subject=subject, **kwargs),
+                       # O plano vem de quem chama, só com partes (lote 33); antes chegava duas vezes (lote 46).
+                       query_rewriter=lambda **kwargs: rewrite_query(execute, subject=subject, **kwargs),
                        results_dir=results_dir, dataset_dir=dataset_dir,
                        results_digest=(lambda: make_digest(settings.results_dir, settings.reference_dir))
                        if make_digest else None,

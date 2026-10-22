@@ -1,0 +1,307 @@
+{
+  "date": "2026-10-20",
+  "batch": 45,
+  "version": "0.8.0",
+  "status": "real_measurement_awaiting_review",
+  "limits": {
+    "calls": 96,
+    "paid_calls": 64,
+    "tokens": 1200000,
+    "paid_tokens": 600000
+  },
+  "budget_used_with_reservations": {
+    "calls": 52,
+    "paid_calls": 29,
+    "tokens": 581888,
+    "paid_tokens": 294416
+  },
+  "stats": {
+    "cascade": {
+      "responses": 16,
+      "mean_s": 111.681875,
+      "median_s": 83.763,
+      "p90_s": 224.765,
+      "first_visible_mean_s": 83.744375,
+      "accepted_first_mean_s": 95.56175,
+      "local_final": 10,
+      "google_final": 6,
+      "source_expected": 13,
+      "sdk_calls": 29,
+      "google_calls": 6,
+      "google_tokens": 88427,
+      "known_tokens": 297109,
+      "unknown_calls": 2,
+      "unknown_reserved_tokens": 78790
+    },
+    "gemini": {
+      "responses": 16,
+      "mean_s": 22.021,
+      "median_s": 19.014,
+      "p90_s": 44.449,
+      "first_visible_mean_s": 17.1391875,
+      "accepted_first_mean_s": 17.1391875,
+      "local_final": 0,
+      "google_final": 16,
+      "source_expected": 13,
+      "sdk_calls": 23,
+      "google_calls": 23,
+      "google_tokens": 205989,
+      "known_tokens": 205989,
+      "unknown_calls": 0,
+      "unknown_reserved_tokens": 0
+    }
+  },
+  "pairs": [
+    {
+      "id": "P1",
+      "question": "Segundo Baschel et al. (2018), qual é a taxa de falha dos ventiladores de refrigeração?",
+      "cascade_s": 22.768,
+      "gemini_s": 15.374,
+      "cascade_provider": "google",
+      "cascade_reading": "documento inteiro",
+      "gemini_reading": "documento inteiro",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "P2",
+      "question": "O que Cristaldi, Khalil e Soulatiantork concluem sobre as falhas do balanço do sistema fotovoltaico?",
+      "cascade_s": 90.432,
+      "gemini_s": 26.516,
+      "cascade_provider": "ollama",
+      "cascade_reading": "documento inteiro",
+      "gemini_reading": "documento inteiro",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "P3",
+      "question": "Quais componentes entram na árvore de falhas do risco de choque elétrico em sistemas fotovoltaicos residenciais?",
+      "cascade_s": 188.65,
+      "gemini_s": 53.754,
+      "cascade_provider": "ollama",
+      "cascade_reading": "páginas inteiras",
+      "gemini_reading": "páginas inteiras",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "P4",
+      "question": "Qual intervalo de manutenção foi obtido para o rolamento do ventilador de tiragem induzida com vibração alta?",
+      "cascade_s": 38.837,
+      "gemini_s": 11.205,
+      "cascade_provider": "ollama",
+      "cascade_reading": "trechos",
+      "gemini_reading": "trechos",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "P5",
+      "question": "Como o aprendizado por reforço ajusta a taxa de contaminação do Isolation Forest em usinas solares?",
+      "cascade_s": 77.094,
+      "gemini_s": 16.543,
+      "cascade_provider": "google",
+      "cascade_reading": "trechos",
+      "gemini_reading": "trechos",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "P6",
+      "question": "Como funciona o rastreamento do ponto de máxima potência (MPPT) em sistemas fotovoltaicos?",
+      "cascade_s": 110.978,
+      "gemini_s": 22.137,
+      "cascade_provider": "ollama",
+      "cascade_reading": "trechos",
+      "gemini_reading": "trechos",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "P7",
+      "question": "Como se calcula a confiabilidade de um sistema com componentes em série e em paralelo?",
+      "cascade_s": 181.5,
+      "gemini_s": 13.596,
+      "cascade_provider": "ollama",
+      "cascade_reading": "sem a biblioteca",
+      "gemini_reading": "sem a biblioteca",
+      "cascade_expected": false,
+      "gemini_expected": false
+    },
+    {
+      "id": "P8",
+      "question": "Qual a confiabilidade estimada dos reguladores de tensão de bateria em sistemas fotovoltaicos?",
+      "cascade_s": 71.59,
+      "gemini_s": 14.935,
+      "cascade_provider": "google",
+      "cascade_reading": "trechos",
+      "gemini_reading": "trechos",
+      "cascade_expected": false,
+      "gemini_expected": false
+    },
+    {
+      "id": "E1",
+      "question": "According to Sarquis Filho et al., what failure rates are reported for PV inverters and transformers?",
+      "cascade_s": 29.183,
+      "gemini_s": 23.082,
+      "cascade_provider": "google",
+      "cascade_reading": "documento inteiro",
+      "gemini_reading": "documento inteiro",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "E2",
+      "question": "Which ranking scales did Colli apply in the FMEA of the Brookhaven photovoltaic array?",
+      "cascade_s": 141.88,
+      "gemini_s": 21.485,
+      "cascade_provider": "ollama",
+      "cascade_reading": "documento inteiro",
+      "gemini_reading": "documento inteiro",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "E3",
+      "question": "Which machine learning models were used to predict failures in frequency inverters in the UFSC undergraduate thesis?",
+      "cascade_s": 55.526,
+      "gemini_s": 6.643,
+      "cascade_provider": "ollama",
+      "cascade_reading": "sem a biblioteca",
+      "gemini_reading": "sem a biblioteca",
+      "cascade_expected": false,
+      "gemini_expected": false
+    },
+    {
+      "id": "E4",
+      "question": "When did FMEA originate, and which military procedure introduced it?",
+      "cascade_s": 40.572,
+      "gemini_s": 4.845,
+      "cascade_provider": "ollama",
+      "cascade_reading": "trechos",
+      "gemini_reading": "trechos",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "E5",
+      "question": "What repair time and spare replacement time does IEEE Std 493 give for a 7500 kVA transformer?",
+      "cascade_s": 231.553,
+      "gemini_s": 25.067,
+      "cascade_provider": "ollama",
+      "cascade_reading": "páginas inteiras",
+      "gemini_reading": "páginas inteiras",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "E6",
+      "question": "What are the principles of reliability-centered maintenance for facilities according to NASA?",
+      "cascade_s": 224.765,
+      "gemini_s": 37.32,
+      "cascade_provider": "ollama",
+      "cascade_reading": "páginas inteiras",
+      "gemini_reading": "páginas inteiras",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "E7",
+      "question": "How was a Random Forest regressor used to predict the active power of 30 kW and 40 kW PV inverters?",
+      "cascade_s": 72.354,
+      "gemini_s": 15.385,
+      "cascade_provider": "google",
+      "cascade_reading": "trechos",
+      "gemini_reading": "trechos",
+      "cascade_expected": true,
+      "gemini_expected": true
+    },
+    {
+      "id": "E8",
+      "question": "What causes random failures in the bathtub curve, such as stress-strength interference or an insufficient safety factor?",
+      "cascade_s": 209.228,
+      "gemini_s": 44.449,
+      "cascade_provider": "google",
+      "cascade_reading": "páginas inteiras",
+      "gemini_reading": "páginas inteiras",
+      "cascade_expected": true,
+      "gemini_expected": true
+    }
+  ],
+  "failed_attempts": [
+    {
+      "id": "P2",
+      "mode": "cascade",
+      "attempt": 1,
+      "seconds": 11.185,
+      "errors": [
+        "O modelo local não respondeu em http://localhost:11434/v1: o Ollama recusou o pedido (código 500); confira a memória livre e o modelo."
+      ]
+    },
+    {
+      "id": "P2",
+      "mode": "cascade",
+      "attempt": 2,
+      "seconds": 32.333,
+      "errors": [
+        "O modelo local não respondeu em http://localhost:11434/v1: o Ollama recusou o pedido (código 500); confira a memória livre e o modelo."
+      ]
+    }
+  ],
+  "mean_ratio": 5.071607783479406,
+  "direct_faster_pairs": 16,
+  "metadata": {
+    "date": "2026-10-20",
+    "limits": {
+      "calls": 96,
+      "paid_calls": 64,
+      "tokens": 1200000,
+      "paid_tokens": 600000
+    },
+    "questions": 16,
+    "baseline_paid_usage": {
+      "hoje": 0,
+      "total": 5205096,
+      "chamadas": 1519
+    },
+    "library_documents": 31,
+    "library_catalog_sha256": "d0c8fded49d7ce9ea03aeceb5171856abd577561192ce531f6b07fb3b73611b8",
+    "local_model": "aliado-local",
+    "local_context": "32768",
+    "gemini_flash": "gemini-3.8-flash",
+    "gemini_lite": "gemini-3.5-flash-lite",
+    "ollama_initially_loaded": [],
+    "authorization": "16 perguntas nos dois modos; orcamento aprovado pelo pesquisador no chat",
+    "method": "HTTP NDJSON real, ordem alternada; memoria vazia por caso; biblioteca e resultados copiados; SDKs reais sem respostas substituidas"
+  },
+  "operations": {
+    "verified_utc": "2026-10-20T18:10:32.543580+00:00",
+    "remote_files_remaining": 0,
+    "local_file_registries": 34,
+    "all_test_registries_empty": true,
+    "sdk_paid_tokens": 294416,
+    "application_paid_tokens": 294416,
+    "production_usage_updated": true,
+    "usage_entries_added": 50,
+    "paid_entries_added": 29,
+    "usage_before_sha256": "4284292798b3b52de0631bdf7ce8abfc88db3a02c1ac345e7190d16e6fc9b061",
+    "usage_after_sha256": "c4e3210eae8cd2c0fd27721e0fa4982e8bae81e1d1049338200758d97cec6ed4",
+    "wheel_sha256": "47d1076c09868f9fdaeb1463a225c0d27b3ce3f888947cebe49bb7223c922b20",
+    "lote44_manifest_sha256": "f55dc6276e110f293d285e2ff46713e7c1d1dd284176aaea8df5b4103d7d334f",
+    "closed_normally": [
+      "Firefox",
+      "VS Code"
+    ],
+    "server_http_status": 200,
+    "server_url": "http://127.0.0.1:8765",
+    "server_checked_utc": "2026-10-20T18:13:09.048571+00:00"
+  },
+  "evidence": {
+    "tmp/lote-45/results.json": "6627e2223bfcd9b93fdf99e67ccbc656c1dbb585751e1db8b8dc16825f7f4fcf",
+    "tmp/lote-45/calls.json": "a667a1465db465f057f5150f8c7ab29f21b7b86f76f84815f4570326486c0fd5",
+    "tmp/lote-45/comparar_real.py": "58ab188d8f5f8d4a3f68bfbbcfc2c74bac998d2a3acfc64b4411b7e821ab6aa1",
+    "tmp/lote-45/continuar_real.py": "1bd5fcf8f518967a90fac6ab47d62f88be3eec875c202a0723635680c8d8aa05",
+    "tmp/lote-45/operational-final.json": "cccf7e646a8ebc7619a0697179589451c47bdc385a79d418807fe8f4c94eef66"
+  }
+}

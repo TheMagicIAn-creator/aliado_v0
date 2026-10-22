@@ -160,6 +160,40 @@ def test_pdf_parts_with_their_text_go_as_text_with_the_reading_note_and_the_cita
     assert CITE_RULE not in completions.calls[1]["messages"][0]["content"]
 
 
+def test_the_local_notes_show_no_identifier_to_copy():
+    """PRV-06: no lote 45, o local copiou o exemplo [K12ab34p5] e o [K...] das notas em 4 respostas, que foram
+    descartadas; as notas não mostram mais nenhum identificador, só pedem o que veio copiado sem mudança."""
+    import re
+
+    for note in (TEXT_NOTE, CITE_RULE):
+        assert not re.search(r"\[K[^\]]*\]", note)
+    assert "sem acrescentar a página" in CITE_RULE
+
+
+class Response:
+    """O fluxo do SDK, que o adapter fecha quando para de ler (lote 46)."""
+
+    def __init__(self, items):
+        self.items, self.closed = items, False
+
+    def __iter__(self):
+        return iter(self.items)
+
+    def close(self):
+        self.closed = True
+
+
+def test_stopping_the_local_stream_early_closes_the_ollama_response():
+    """PRV-02: quando a conversa para de ler o local (a marca não conferiu), o fluxo HTTP é fechado e o Ollama
+    deixa de gerar o resto."""
+    response = Response(events("x" * 200, " resto", " fim."))
+    provider, _ = local(response)
+    stream = provider.stream(ask(), model_id="m")
+    assert next(stream).content == "x" * 200 and not response.closed
+    stream.close()
+    assert response.closed
+
+
 def test_only_the_light_route_goes_without_reasoning():
     """PRV-07: só o pedido de raciocínio baixo (a reescrita da busca e a rota leve do roteador) vai sem raciocínio; os
     trechos e as páginas seguem com ele, porque sem raciocínio o local deixou de citar no lote 41."""

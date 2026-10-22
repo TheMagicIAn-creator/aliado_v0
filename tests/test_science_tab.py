@@ -37,6 +37,41 @@ def test_explorer_reports_what_is_missing_without_loading_models(tmp_path):
         explorer.prepare()
 
 
+def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path, monkeypatch):
+    """Lote 46: o cache dos erros por variável guarda o hash dos pesos e a ordem das 24 variáveis. Um treino com a
+    mesma configuração e outros pesos recalcula em outro arquivo, sem reaproveitar os erros do anterior."""
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("torch")
+    from types import SimpleNamespace
+
+    from aliado.science.detection import models
+    from aliado.specializations.mestrado import evaluation, gpvs, training
+
+    computed = []
+    monkeypatch.setattr(models, "feature_errors",
+                        lambda model, inputs: computed.append(model) or np.zeros((2, 24), np.float32))
+    monkeypatch.setattr(evaluation, "segment_errors", lambda kind, model, scaled, sequence: np.ones((3, 24), np.float32))
+    monkeypatch.setattr(training, "training_blocks", lambda prepared: {"calibration": None})
+    monkeypatch.setattr(training, "model_inputs", lambda kind, scaled, blocks, sequence: scaled)
+    trained = SimpleNamespace(frozen={"sha256": "c" * 64}, models={("denso", 42): "rede"},
+                              config=SimpleNamespace(hyperparameters=SimpleNamespace(sequence=8)))
+    prepared = SimpleNamespace(hashes={"F0L.csv": "d" * 64}, scaled=np.zeros((4, 24), np.float32), faults={},
+                               split={"por_ensaio": {name: {"test": slice(2, 4)} for name in gpvs.HEALTHY}})
+    explorer = Explorer(tmp_path / "resultados", tmp_path / "gpvs", tmp_path / "cache")
+    first = explorer._errors(trained, prepared, {"denso_s42": "a" * 64})
+    again = explorer._errors(trained, prepared, {"denso_s42": "a" * 64})
+    assert len(computed) == 1 and again[("denso", 42)].keys() == first[("denso", 42)].keys()
+    explorer._errors(trained, prepared, {"denso_s42": "b" * 64})
+    files = sorted((tmp_path / "cache").glob("erros-*.npz"))
+    assert len(computed) == 2 and len(files) == 2
+    metas = []
+    for path in files:
+        with np.load(path) as cached:
+            metas.append(json.loads(str(cached["meta"])))
+    assert {meta["pesos"]["denso_s42"] for meta in metas} == {"a" * 64, "b" * 64}
+    assert all(meta["variaveis"] == list(gpvs.FEATURES) and meta["treino"] == "c" * 64 for meta in metas)
+
+
 def test_reliability_explorer_matches_the_saved_igbt_scenario():
     scenario = json.loads((REFERENCE / "cenarios" / "igbt-operacao.json").read_text(encoding="utf-8"))
     expected = {row["time"]: row for row in evaluate_scenario(scenario)["rows"]}

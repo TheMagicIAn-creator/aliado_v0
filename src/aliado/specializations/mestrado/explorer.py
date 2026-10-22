@@ -13,6 +13,7 @@ os resultados congelados. O de confiabilidade chama o serviço RAM; o navegador 
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import threading
 from pathlib import Path
@@ -22,7 +23,7 @@ import numpy as np
 from aliado.science.detection.threshold import calibrate_threshold
 from aliado.specializations.mestrado import gpvs
 
-CACHE_VERSION = 1
+CACHE_VERSION = 2  # lote 46: a chave inclui os hashes dos pesos e a ordem das variáveis
 # Em palavras, sem códigos internos (lote 23): o controle por trás continua sendo o M14.
 POST_TEST_NOTICE = ("Estes controles reusam os ensaios de teste. Servem para explorar; os números oficiais "
                     "continuam os da avaliação de 27/09/2026.")
@@ -109,7 +110,11 @@ class Explorer:
             raise ValueError("Os dados do GPVS não são os do treino.")
         if progress:
             progress("erros por variável", 2, 3)
-        errors = self._errors(trained, prepared)
+        # Os hashes dos pesos que `load_training` acabou de conferir com os arquivos (lote 46).
+        summary = json.loads((self.training_dir() / "relatorio.json").read_text(encoding="utf-8"))
+        weights = {f"{kind}_s{seed}": summary["modelos"][kind]["sementes"][str(seed)]["arquivos"]["modelo"]["sha256"]
+                   for kind, seed in trained.models}
+        errors = self._errors(trained, prepared, weights)
         with (self.evaluation_dir / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
             canonical_trials = list(csv.DictReader(handle))
         if progress:
@@ -117,13 +122,17 @@ class Explorer:
         return {"trained": trained, "prepared": prepared, "errors": errors, "report": report,
                 "canonical_trials": canonical_trials, "models": MODELS}
 
-    def _errors(self, trained, prepared) -> dict:
+    def _errors(self, trained, prepared, weights: dict) -> dict:
         from aliado.science.detection.models import feature_errors
         from aliado.specializations.mestrado.evaluation import segment_errors
         from aliado.specializations.mestrado.training import model_inputs, training_blocks
 
-        meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes}
-        path = self.cache_dir / f"erros-{trained.frozen['sha256'][:12]}.npz"
+        meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes,
+                "pesos": weights, "variaveis": list(gpvs.FEATURES)}
+        # O nome vem da chave inteira: um treino com a mesma configuração e outros pesos não reaproveita nem
+        # sobrescreve os erros de outro (lote 46).
+        name = hashlib.sha256(json.dumps(meta, sort_keys=True).encode("utf-8")).hexdigest()[:12]
+        path = self.cache_dir / f"erros-{name}.npz"
         if path.is_file():
             with np.load(path) as cached:
                 if json.loads(str(cached["meta"])) == meta:

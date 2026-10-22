@@ -11,6 +11,7 @@ from time import perf_counter
 from aliado.llm.contracts import LLMRequest, LLMResult
 from aliado.llm.providers.base import ProviderError
 from aliado.llm.providers.gateway import ProviderGateway
+from aliado.llm.providers.local import LocalProvider
 from aliado.numbers import check_numbers, split_grouped
 from aliado.skills.library import load_skill
 
@@ -142,6 +143,10 @@ FOLLOW_UP_WORDS = 6
 SEARCH_LIMIT = 10
 MAX_CATALOG = 200
 _GROUPED = re.compile(r"\[(K[^\]\s,;]*(?:\s*[,;]\s*K[^\]\s,;]*)+)\]")
+_MARK = re.compile(r"\[(K[^\]\s]*)\]")
+# Lote 46: o formato das regras ([K...]) escrito como se fosse uma citação, como na E8 do lote 45; sai do texto.
+_PLACEHOLDER = re.compile(r"\s*\[K(?:\.\.\.|…)?\]")
+_PAGE_MARK = re.compile(r"(K[0-9a-f]{8,})p(\d+)")
 WEB_RULES = """Busca na web habilitada neste pedido. Use-a para conferir fatos externos ou
 atuais; busque fontes primárias, técnicas e acadêmicas (normas, fabricantes, artigos) e
 evite lojas, fóruns e agregadores. Não escreva lista de fontes nem atribua a afirmação a
@@ -673,20 +678,30 @@ class Agent:
             # O pedido passou pelo teto e vai ao modelo: a interface já pode dizer o que está sendo lido.
             yield "inicio", {"tokens": estimate, "leitura": request.metadata.get("reading")}
         hits = request.metadata["citations"]
+        allowed = {hit["citation_id"]: hit for hit in hits}
         parts, usage, model, web, truncated = [], None, model_alias, {}, False
         source, marks = provider, {}  # quem respondeu de fato e, se o local foi pulado, o porquê (lote 38)
         started = perf_counter()
-        for chunk in self.gateway.stream(request, provider=provider, model_alias=model_alias, local=local):
-            model, usage, source = chunk.model, chunk.usage or usage, chunk.provider
-            if chunk.route_reason:
-                marks = {"escalation_used": chunk.fallback_used, "route_reason": chunk.route_reason}
-            truncated = truncated or bool(getattr(chunk, "truncated", False))
-            if chunk.web_sources or chunk.web_queries:
-                web = {"web_sources": chunk.web_sources, "web_queries": chunk.web_queries,
-                       "web_supports": chunk.web_supports}
-            if chunk.content:
-                parts.append(chunk.content)
-                yield "texto", chunk.content
+        stream = self.gateway.stream(request, provider=provider, model_alias=model_alias, local=local)
+        try:
+            for chunk in stream:
+                model, usage, source = chunk.model, chunk.usage or usage, chunk.provider
+                if chunk.route_reason:
+                    marks = {"escalation_used": chunk.fallback_used, "route_reason": chunk.route_reason}
+                truncated = truncated or bool(getattr(chunk, "truncated", False))
+                if chunk.web_sources or chunk.web_queries:
+                    web = {"web_sources": chunk.web_sources, "web_queries": chunk.web_queries,
+                           "web_supports": chunk.web_supports}
+                if chunk.content:
+                    parts.append(chunk.content)
+                    yield "texto", chunk.content
+                    # Lote 46: no local, a primeira marca que não confere já reprova a resposta, que o Gemini Flash
+                    # refaz (PRV-02); parar aqui poupa o resto da geração.
+                    if source == LocalProvider.name and library is not None and _stray("".join(parts), allowed):
+                        break
+        finally:
+            if (close := getattr(stream, "close", None)) is not None:
+                close()
         content = "".join(parts)
         if not content.strip():
             if not truncated:
@@ -759,6 +774,33 @@ def _check_results(result: LLMResult, blocks: list[dict], append_sources: bool) 
                    unverified_numbers=tuple(report["unverified"]), unmarked_numbers=unmarked)
 
 
+def _ungroup(text: str) -> str:
+    """[K1, K2] vira [K1][K2], para cada citação ser conferida e exibida."""
+    return _GROUPED.sub(lambda m: "".join(f"[{part.strip()}]" for part in re.split(r"[,;]", m.group(1))), text)
+
+
+def _canonical(mark: str, allowed: dict) -> str:
+    """O identificador enviado que a marca aponta sem ambiguidade, ou a própria marca (lote 46, BIB-05).
+
+    Só duas formas exatas, vistas no lote 45: o trecho com a própria página colada ([Ktrecho…p11]) e o documento com
+    a página de um único trecho enviado ([K<sha256>p64]). Nenhuma comparação aproximada."""
+    found = None if mark in allowed else _PAGE_MARK.fullmatch(mark)
+    if not found:
+        return mark
+    base, page = found[1], int(found[2])
+    if allowed.get(base, {}).get("page") == page:
+        return base
+    same = [key for key, hit in allowed.items()
+            if hit.get("page") == page and str(hit.get("sha256") or "").startswith(base[1:])]
+    return same[0] if len(same) == 1 else mark
+
+
+def _stray(text: str, allowed: dict) -> bool:
+    """Alguma marca completa do texto que a conferência das citações reprovaria (lote 46)."""
+    return any(_canonical(mark, allowed) not in allowed
+               for mark in _MARK.findall(_PLACEHOLDER.sub("", _ungroup(text))))
+
+
 def _check_citations(result: LLMResult, hits: list[dict], library, append_sources: bool,
                      *, web: bool = False, found: list[dict] | None = None) -> LLMResult:
     """Confere as citações de documentos antes de exibir a resposta.
@@ -769,13 +811,12 @@ def _check_citations(result: LLMResult, hits: list[dict], library, append_source
     """
     if library is None:
         return result
-    # [K1, K2] vira [K1][K2], para cada citação ser conferida e exibida.
-    content = _GROUPED.sub(lambda m: "".join(f"[{part.strip()}]" for part in re.split(r"[,;]", m.group(1))),
-                           result.content)
+    allowed = {hit["citation_id"]: hit for hit in hits}
+    # A marca que aponta um só trecho enviado vira o identificador dele, e o [K...] literal sai (lote 46, BIB-05).
+    content = _MARK.sub(lambda m: f"[{_canonical(m[1], allowed)}]", _PLACEHOLDER.sub("", _ungroup(result.content)))
     if content != result.content:
         result = replace(result, content=content)
-    used = set(re.findall(r"\[(K[^\]\s]*)\]", result.content))
-    allowed = {hit["citation_id"]: hit for hit in hits}
+    used = set(_MARK.findall(result.content))
     # O que a busca trouxe e a resposta não citou fica guardado para a janela de fontes (lote 27).
     if not used:
         return replace(result, retrieved=_rest(hits, found),
@@ -785,7 +826,7 @@ def _check_citations(result: LLMResult, hits: list[dict], library, append_source
             "A resposta não apresentou referências documentais verificáveis e não foi exibida. "
             "Revise a busca com ‘biblioteca buscar’. Qual será o próximo passo?"
         ), validation_status="invalid_citations", retrieved=_rest(hits, found))
-    order = list(dict.fromkeys(re.findall(r"\[(K[^\]\s]*)\]", result.content)))
+    order = list(dict.fromkeys(_MARK.findall(result.content)))
     cited = tuple({k: v for k, v in allowed[key].items() if k != "vector"} for key in order)
     rest = _rest(hits, found, used)
     if not append_sources:

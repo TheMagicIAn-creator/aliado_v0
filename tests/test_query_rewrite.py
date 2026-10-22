@@ -41,6 +41,26 @@ def test_rewrite_uses_recent_conversation_and_returns_the_query():
     assert "português e em inglês" in request.messages[0]["content"]
 
 
+def test_the_app_passes_the_plan_choice_through_to_the_rewrite(monkeypatch, tmp_path):
+    """PRV-07: a reescrita simples pede só a consulta, e o plano, só quando o pedido tem partes. Desde a 0.6.0, o
+    plano chegava duas vezes à função, e o erro calado fazia a busca seguir sem reescrita (lote 46)."""
+    from aliado.interfaces.web import app as web_app
+    from aliado.knowledge import rewrite
+
+    seen = []
+
+    def fake(execute, **kwargs):
+        seen.append(kwargs.get("plan", False))
+        return QUERY, LLMResult("{}", "ollama", "local", "biblioteca-consulta")
+
+    monkeypatch.setattr(rewrite, "rewrite_query", fake)
+    settings = web_app.default_settings(data_dir=tmp_path / "dados", library_dir=tmp_path / "biblioteca", port=8765,
+                                        obsidian=False)
+    settings.query_rewriter(question="Compare FMEA e FMECA.", history=[], plan=True)
+    settings.query_rewriter(question="E o segundo?", history=[])
+    assert seen == [True, False]
+
+
 @pytest.mark.parametrize("answer", [{}, {"consulta": "   "}, {"consulta": "x" * 401}])
 def test_empty_or_long_query_is_refused(answer):
     with pytest.raises(ValueError):

@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-21",
+  "batch": "46",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "validated_locally_awaiting_review",
+  "base_commit": "77fb76d",
+  "source": "Relatório de Melhoria e Eficiência do Modelo Local (PDF, 20/10/2026), conferido em docs/revisao/2026-10-20-relatorio-eficiencia-conferido.md",
+  "spec": "docs/specs/0046-correcoes-do-relatorio.md",
+  "living_specs": [
+    "docs/specs/capacidades/biblioteca.md",
+    "docs/specs/capacidades/provedores.md"
+  ],
+  "validation": "docs/migracao/validacao-lote-46.md",
+  "requirements": {
+    "added": [
+      "BIB-05"
+    ],
+    "changed": [
+      "PRV-02",
+      "PRV-06",
+      "PRV-07"
+    ]
+  },
+  "decisions": {
+    "chat": [
+      "regra de citação",
+      "marca inequívoca",
+      "parada cedo",
+      "reescrita por partes"
+    ],
+    "ciencia": "chave do cache dos erros",
+    "medicao": "16 perguntas só no local, Gemini simulado",
+    "ollama": "configuração mantida (32 camadas, 32k, cache q8_0)"
+  },
+  "checks": {
+    "pytest": {
+      "files": 46,
+      "passed": 827,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 235.93,
+      "command": ".venv/Scripts/python.exe tmp/lote-46/bateria.py",
+      "evidence": "tmp/lote-46/pytest.json"
+    },
+    "red_before_fix": {
+      "failed": 8,
+      "already_passing_negative_cases": 4
+    },
+    "ruff": {
+      "exit_code": 0,
+      "log": "tmp/lote-46/ruff.log"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "log": "tmp/lote-46/diff_check.log"
+    }
+  },
+  "measurement": {
+    "questions": 16,
+    "local_calls": 24,
+    "simulated_gemini_calls": 5,
+    "paid_tokens": 0,
+    "max_local_calls": 30,
+    "local_final": 12,
+    "local_final_lote_45": 10,
+    "invalid_mark_discards": 2,
+    "invalid_mark_discards_lote_45": 4,
+    "stopped_early": 2,
+    "normalized_marks": 0,
+    "uncited_local": 1,
+    "ollama_500_transient": 1,
+    "reasoning_share": 0.54,
+    "prefill_share": 0.14,
+    "text_share": 0.32,
+    "summary_run": {
+      "perguntas": 16,
+      "respondidas_pelo_local": 11,
+      "refeitas_pelo_gemini": 3,
+      "fora_do_alcance": 2,
+      "com_erro": 1,
+      "confirmacoes": 0,
+      "citaram_o_esperado": 7,
+      "citaram_o_esperado_no_local": 7,
+      "chamadas_locais": 22,
+      "chamadas_ao_gemini_simulado": 5,
+      "paradas_cedo": 2,
+      "respostas_locais_com_marca_invalida": 2,
+      "respostas_locais_com_marca_normalizada": 0,
+      "respostas_locais_com_marca_literal": 0,
+      "segundos_medio": 87.6,
+      "segundos_mediana": 87.7,
+      "primeiro_texto_medio": 54.8,
+      "respostas_locais": {
+        "primeiro_token_medio_s": 13.4,
+        "primeiro_texto_medio_s": 63.0,
+        "segundos_medio": 93.1,
+        "tokens_de_saida_medio": 1921.4,
+        "caracteres_raciocinio_medio": 4989.8,
+        "caracteres_texto_medio": 2637.6
+      }
+    }
+  },
+  "paid_calls": 0,
+  "real_model_calls": 24,
+  "downloads": 0,
+  "limitations": [
+    "Uma rodada por configuração, com temperatura 0,6.",
+    "Gemini simulado: tempos das perguntas escaladas não se comparam ao lote 45.",
+    "Erro 500 da P6 sem log do servidor do Ollama; causa não identificada.",
+    "Economia da parada cedo estimada, não medida."
+  ],
+  "files": {
+    "src/aliado/agent.py": "404590fc03e60dc9d202a849de311af48eb48a6d16a78027c90634dc09b9f798",
+    "src/aliado/llm/providers/local.py": "2c24715ff9e4c014964e2b20967cd47ae010928b2d1ebb8de1387cb8a45903ce",
+    "src/aliado/interfaces/web/app.py": "eb7a5f81bd1efe80fd0dc61e6ce7a40e53cf1d986b9944e6a68b0cae8a62c2a9",
+    "src/aliado/specializations/mestrado/explorer.py": "44710275b2c0d144a164f4da91659e98ad0cebb9846eb49fd8b678d10897752c",
+    "tests/test_knowledge.py": "2a55b680bc6256480729952c017f09663071bd6c1afeb94e2a184fc2dd798403",
+    "tests/test_local_provider.py": "11f444b95bb8908cf4ad9c21a64ae25d0679a9aed6f7a2ea8c6fc057360a12ab",
+    "tests/test_web.py": "0bf493dd9cb4eefc34f1e5ab97cc95ec9d1d0a6de71fe03b2327dca15beb09ae",
+    "tests/test_query_rewrite.py": "c3dbc77f2ab1e9abfb7df2c6962ba3a2d3c6ad34a3b760101d15767aa5dd7ac1",
+    "tests/test_science_tab.py": "9e60220e2a672596e17f66ccb4177440cdecd92fbb1e968f2b70ff6c8867cc49",
+    "docs/specs/0046-correcoes-do-relatorio.md": "7b62a001aef07d74640392bd9053797cb8ac32d59a1fdb21aef27d15b1f66305",
+    "docs/specs/capacidades/biblioteca.md": "8b552444048ba65bac4065f43e8d1944fc32160cf27025cceef037494a8011ed",
+    "docs/specs/capacidades/provedores.md": "2c1072db00d2c9d0b8f2b3cfd0971e687a1fdae764393a19b7fb128acd5a52fc",
+    "docs/revisao/2026-10-20-relatorio-eficiencia-conferido.md": "3c32e45026ac22c1c06e1a650f2bae92f57b52e60a9fd89de5fd724f77268c68",
+    "docs/migracao/validacao-lote-46.md": "6cc49cbd62b4f1fb4ba0addeb53f40a0cdc6c89a780dfee230b707e821106590",
+    "docs/roteiro-v0.md": "571a275ca9c67d5ceda53803b8b33dd2be52708ff71422fb60e027f0582bc8f4",
+    "CHANGELOG.md": "3a624a4c5831b08f426dcff55fbbca197ae5f98cf76eb6ade3dd85fa9eb91bf3"
+  },
+  "evidence": {
+    "tmp/lote-46/pytest.json": "0fc2095262abe0eb487bc44fc5c7071333ebacdac023ab2951e4ae9172472dfd",
+    "tmp/lote-46/ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "tmp/lote-46/diff_check.log": "5c0363dc2014f28fb5db8f0512db818797f2afc4112cd70c142fbfcec0db25ba",
+    "tmp/lote-46/bateria.py": "12f101648eb4e7f71467466e45fa07a3805563d59e6df4ec4ec595bfebf4a794",
+    "tmp/lote-46/medir.py": "f13cfcf763ec430dec70d3d9700c7314bd6a859bb5520d8ca33ec79372dd822b",
+    "tmp/lote-46/repetir_p6.py": "b3516920c2c48817b700001256191c9aa3f52a6440f548b0b4d952840b923368",
+    "tmp/lote-46/medicao/metadata.json": "f1b56211271fc8b739ca68e54930a67f1ab25a057f24fd459b75c6ac8e130806",
+    "tmp/lote-46/medicao/escalada.json": "579f0730e07aeefca0eea3ae6da4b18c95dc18cc037d9a3dc1ac5291b0c4a922",
+    "tmp/lote-46/medicao/escalada-resumo.json": "857a31af7f058e7283bc7813b6dffe1125ddff4517190fcb92a11520fa7008e6",
+    "tmp/lote-46/medicao/calls.json": "81566d0dbe077ad6c7f35b9c21faeb16b9585666c92d24e9f4364b135e34f1a9",
+    "tmp/lote-46/medicao-p6/P6.json": "ab0827f34bdb3f1fe787baee75ce2237bcc3e3b5491e80218846ba5b86eda75e",
+    "tmp/lote-46/medicao-p6/calls.json": "ddbf16755774f07d06ce204e5b4330f3f09b896f1b36be5ed030b27240362c00",
+    "tmp/lote-46/separar.py": "7b88bbbe455c35deafa1d6daa3d1de0f3bcf84022740c706d04788a9256ebdcc",
+    "tmp/lote-46/lote-46-codigo.patch": "3e736f8c7776cddcc33149d9e50f9df66051f8f5dac5ba5321e63d6e5eac0f66"
+  },
+  "excluded_local_files": [
+    ".claude/launch.json",
+    ".claude/settings.local.json",
+    ".smart-env/",
+    ".codex-remote-attachments/"
+  ],
+  "commit_split": {
+    "patch": "tmp/lote-46/lote-46-codigo.patch",
+    "tracked_files": 13,
+    "round_trip": "conferido, com o fim de linha normalizado",
+    "previous_state_spec_tests": "2 passaram"
+  }
+}

@@ -7,7 +7,8 @@ altera ou retira. Cada requisito é citado por pelo menos um teste (`tests/test_
 Criada no lote 38 (18/10/2026), pela [spec 0038](../0038-modelo-local.md). O lote 39, pela
 [spec 0039](../0039-local-le-texto.md), alterou o PRV-01 e o PRV-03 e acrescentou o PRV-06. O uso do Gemini e as
 chaves seguem descritos nas specs 0009 e 0012; o roteador, o teto de 30 mil e o aviso de 300 mil tokens, em
-[roteador.md](roteador.md). O lote 44 amplia os cenários de PRV-02, sem alterar os limites de custo.
+[roteador.md](roteador.md). O lote 44 amplia os cenários de PRV-02, sem alterar os limites de custo. O lote 46, pela
+[spec 0046](../0046-correcoes-do-relatorio.md), altera PRV-02, PRV-06 e PRV-07.
 
 ## Requisitos
 
@@ -25,6 +26,9 @@ busca trouxe, cita o que não foi enviado ou traz números que não conferem com
 vez, antes de a resposta aparecer na tela; se ela já começou, o aviso "O modelo local não chegou lá" apaga o texto
 parcial. A linha da rota diz o motivo. Resposta cortada no teto de saída não escala: é limite de tamanho, não de
 raciocínio.
+Na primeira marca de citação que a conferência reprovaria (BIB-05), o local para de escrever: a conversa fecha o
+fluxo, o Ollama deixa de gerar o resto, e o Flash refaz sem esperar o fim do texto (lote 46). A tentativa
+interrompida fica no registro de uso sem a contagem de tokens.
 A escolha escrita do modelo menor vale antes da escalada: a repetição usa o Flash. Se ele não estiver configurado
 ou falhar ao refazer uma resposta local completa reprovada pela conferência do chat, essa resposta é mantida
 com os avisos e o motivo na rota, sem nova tentativa automática (lote 44).
@@ -57,7 +61,8 @@ cada uma. Leva ainda a descrição automática das figuras e tabelas da página,
 original.
 - **O local:** lê esse texto, sem abrir o PDF e sem limite de páginas; vale o contexto dele. Recebe também uma nota
   de que os PDFs vieram como texto e, quando o pedido traz fontes citáveis, a regra de citar cada afirmação com o
-  [K...].
+  identificador copiado letra por letra, sem encurtar, sem acrescentar a página e sem juntar dois. A nota e a regra
+  não mostram nenhum identificador de exemplo: no lote 45, o local copiou os exemplos nas 4 respostas descartadas.
 - **O Gemini:** segue recebendo o PDF e a lista das páginas, como antes, sem tokens a mais.
 
 *Cenário:* dada uma pergunta sobre uma tabela que pede as páginas inteiras, quando o local responde, então ele
@@ -67,10 +72,14 @@ páginas.
 **PRV-07. A reescrita da busca vai sem raciocínio.**
 - **A reescrita:** vai com raciocínio baixo, no local e no Gemini, porque é uma tarefa mecânica. Com raciocínio, o
   local gastava os 2.048 tokens dela pensando, cerca de 2 minutos, e a reescrita falhava em silêncio.
+- **Simples ou por partes:** a reescrita simples pede só a consulta, com até 512 tokens. O plano por partes, com até
+  2.048, só vem quando o pedido tem partes. Até o lote 46, o pedido do plano chegava duas vezes à função, o erro era
+  calado, e as perguntas com partes seguiam sem a reescrita.
 - **As respostas:** os trechos, as páginas, o documento e a conversa seguem com o raciocínio que o roteador decidir.
   No lote 41, os trechos sem raciocínio fizeram o local deixar de citar, e essa parte foi desfeita.
 - **A segurança da resposta não muda:** a resposta sem citação, com números que não conferem ou com o pedido de ajuda
   é refeita pelo Gemini (PRV-02).
 
 *Cenário:* dada uma pergunta que precisa de reescrita, quando a busca é preparada, então a reescrita sai em segundos,
-sem raciocínio, e a resposta é escrita com o raciocínio que o roteador pediu.
+sem raciocínio, e a resposta é escrita com o raciocínio que o roteador pediu. Dada uma pergunta com partes, então o
+plano é pedido uma vez, e a pergunta sem partes pede só a consulta.

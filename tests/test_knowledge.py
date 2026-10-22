@@ -361,6 +361,79 @@ def test_streamed_answer_is_checked_for_citations_at_the_end(tmp_path):
     assert final.provider == "fake" and final.validation_status == "uncited"
 
 
+# As marcas das 4 respostas locais descartadas no lote 45 (P5, P8, E7 e E8), sobre trechos como os enviados.
+NASA, SAYED = "2d5752842bccfac4" + "0" * 48, "9" * 64
+SENT = [{"citation_id": "K2fef6efcbcb34f98", "document_id": "sayed", "page": 11, "sha256": SAYED},
+        {"citation_id": "K805122b847e44e7d", "document_id": "nasa", "page": 64, "sha256": NASA},
+        {"citation_id": "K2d575284p36", "document_id": "nasa", "page": 36, "sha256": NASA, "leitura": "pagina"},
+        {"citation_id": "Ke3935f2b12564980", "document_id": "sharma", "page": 1, "sha256": "e" * 64},
+        {"citation_id": "K1238921ee7c04cd8", "document_id": "francisti", "page": 11, "sha256": "f" * 64}]
+
+
+@pytest.mark.parametrize("content,expected", [
+    ("Taxa [K2fef6efcbcb34f98p11].", "Taxa [K2fef6efcbcb34f98]."),  # P8: o trecho com a página dele colada
+    ("Falhas [K2d575284p64] e [K2d575284p36].", "Falhas [K805122b847e44e7d] e [K2d575284p36]."),  # E8
+    ("Causa [K...]. Outra [K…], mais [K]. Fonte [K2d575284p36].", "Causa. Outra, mais. Fonte [K2d575284p36]."),
+    ("Taxa [K2fef6efcbcb34f98p12].", None),  # a página não é a do trecho
+    ("Taxa [Ke3935f2b1256498p5].", None),  # P5: identificador truncado e o "p5" do exemplo
+    ("Taxa [K12ab97c6d0504cd8].", None),  # E7: o começo do exemplo [K12ab34p5]
+])
+def test_a_mark_that_points_to_a_single_sent_passage_counts_as_that_passage(content, expected):
+    """BIB-05: a marca que aponta um único trecho enviado vale como ele e é reescrita; o [K...] literal sai do texto;
+    as outras marcas fora do que foi enviado continuam reprovando a resposta."""
+    from aliado.agent import _check_citations
+
+    result = _check_citations(LLMResult(content, "ollama", "m", "critical_reasoning"), SENT, object(), False)
+    if expected is None:
+        assert result.validation_status == "invalid_citations" and result.sources == ()
+    else:
+        assert (result.validation_status, result.content) == ("citation_ids_verified", expected)
+        assert all(source["citation_id"] in result.content for source in result.sources)
+
+
+def test_a_mark_that_points_to_two_sent_passages_still_fails():
+    """BIB-05: com dois trechos enviados da mesma página, a marca do documento e da página é ambígua e reprova."""
+    from aliado.agent import _check_citations
+
+    twin = {"citation_id": "K0a0b0c0d0e0f0a0b", "document_id": "nasa", "page": 64, "sha256": NASA}
+    result = _check_citations(LLMResult("Falhas [K2d575284p64].", "ollama", "m", "critical_reasoning"),
+                              [*SENT, twin], object(), False)
+    assert result.validation_status == "invalid_citations"
+
+
+def test_the_local_answer_stops_at_the_first_mark_that_does_not_check(tmp_path):
+    """PRV-02: no modelo local, a geração para na primeira marca que não confere (lote 46): o resto não é puxado,
+    o fluxo é fechado e a resposta sai reprovada para o Gemini Flash refazer. O [K...] literal não para nada, e uma
+    resposta paga segue até o fim, como antes."""
+    from aliado.llm.contracts import LLMStreamChunk
+
+    lib = library(tmp_path)
+    lib.add(put(tmp_path))
+
+    def run(source):
+        pulled, closed = [], []
+
+        def stream(request, **kwargs):
+            good = request.metadata["citations"][0]["citation_id"]
+            try:
+                for text in (f"Definição [{good}]", " e [K...] ", "mais [K12ab", "97c6d0504cd8]", " o resto", " nunca."):
+                    pulled.append(text)
+                    yield LLMStreamChunk(text, source, "m", request.task_type)
+            finally:
+                closed.append(True)
+
+        events = list(Agent(SimpleNamespace(stream=stream)).stream_answer(
+            "MTTF?", provider="google", model_alias="flash", library=lib, append_sources=False))
+        return pulled, closed, events
+
+    pulled, closed, events = run("ollama")
+    assert pulled[-1] == "97c6d0504cd8]" and closed == [True]
+    assert [kind for kind, _ in events] == ["texto"] * 4 + ["final"]
+    assert events[-1][1].validation_status == "invalid_citations"
+    pulled, closed, events = run("google")
+    assert pulled[-1] == " nunca." and events[-1][1].validation_status == "invalid_citations"
+
+
 def test_empty_stream_is_a_provider_error():
     from aliado.llm.providers.base import ProviderError
 

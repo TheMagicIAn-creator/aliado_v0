@@ -527,6 +527,42 @@ não dá para separá-los em commits.
   - o roteador na E3.
 - Veja a [validação do lote 39](migracao/validacao-lote-39.md).
 
+## Depois da 0.8.0
+
+| Lote | Entrega | Situação |
+|---|---|---|
+| 45 | Comparação real das 16 perguntas: o modelo local com escalada × o Gemini direto | Executada em 20/10/2026, sem mudança no produto: Gemini direto 80% mais rápido; 4 respostas locais descartadas ([spec 0045](specs/0045-comparacao-real.md), [validação](migracao/validacao-lote-45.md)) |
+| 46 | Correções do relatório de eficiência, conferidas com as medições: citação do local, marca inequívoca, parada cedo, reescrita por partes e cache da Ciência | Validado em 20 e 21/10/2026: 827 testes; o local respondeu 12 das 16 perguntas reais, contra 10; aguarda revisão e commit ([spec 0046](specs/0046-correcoes-do-relatorio.md), [validação](migracao/validacao-lote-46.md)) |
+
+### Decisões e resultado do lote 46 (20 e 21/10/2026)
+
+- **Pedido:** o pesquisador pediu as correções e os testes do relatório de eficiência em PDF, seguindo os lotes 44 e
+  45. O relatório foi conferido afirmação por afirmação; a versão corrigida está em
+  [docs/revisao](revisao/2026-10-20-relatorio-eficiencia-conferido.md).
+  - **O diagnóstico de memória e de prefill não confere:** o cache já é q8_0, o modelo é híbrido e o pico cabe na
+    placa.
+  - **O tempo vai para o raciocínio oculto:** 54% do tempo das respostas locais, medido.
+- **Decisões do pesquisador:** as quatro correções do chat, a chave do cache da Ciência, a medição das 16 perguntas
+  só no local com o Gemini simulado e a configuração do Ollama mantida.
+- **Correções:**
+  - instruções do local sem identificador de exemplo;
+  - marca que aponta um só trecho enviado aceita como ele;
+  - parada do local na primeira marca que não confere;
+  - o plano das perguntas com partes, que nunca chamava o modelo desde a 0.6.0;
+  - o cache dos erros ligado aos pesos.
+- **Resultado:**
+  - 827 testes;
+  - o local respondeu 12 das 16 perguntas, contra 10;
+  - as respostas descartadas por marca caíram de 4 para 2, as duas paradas cedo;
+  - nenhum token pago.
+- **Para o próximo lote, a escolher por ele:**
+  - medir o raciocínio desligado nas páginas e no documento;
+  - aceitar intervalos de páginas nas marcas (a E2);
+  - o roteador na E3 e na P7;
+  - a subida da escada que volta ao local depois da escalada;
+  - a folga da placa depois do erro 500 passageiro da P6;
+  - o arquivo oficial dos erros da rodada.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -555,6 +591,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 43 | [0043](specs/0043-temperatura-local.md) |
 | 44 | [0044](specs/0044-revisao-fechamento.md) |
 | 45 | [0045](specs/0045-comparacao-real.md) |
+| 46 | [0046](specs/0046-correcoes-do-relatorio.md) |
 
 ## Fica para a v1
 

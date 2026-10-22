@@ -1052,11 +1052,12 @@ def test_an_answer_without_citations_climbs_one_rung_inside_the_ceiling(env):
     assert reply["rota"]["rung"] == 1 and reply["aprofundar"]["leitura"] == "paginas"
 
 
-def test_local_answer_that_misses_the_sources_is_redone_once_by_gemini_flash(env):
-    """PRV-02 e PRV-05: a resposta do local sem citar o que a busca trouxe é refeita uma vez pelo Gemini Flash; as
-    duas ficam no registro de uso, e só a do Gemini conta no uso do dia."""
+@pytest.mark.parametrize("first", ["uncited", "invalid_citations"])
+def test_local_answer_that_misses_the_sources_is_redone_once_by_gemini_flash(env, first):
+    """PRV-02 e PRV-05: a resposta do local sem citar o que a busca trouxe, ou com uma marca que não confere (lote 46),
+    é refeita uma vez pelo Gemini Flash; as duas ficam no registro de uso, e só a do Gemini conta no uso do dia."""
     client, calls = env["client"], env["calls"]
-    env["reply"].update(provider="ollama", statuses=["uncited", "citation_ids_verified"], extra={"retrieved": (SOURCE,)})
+    env["reply"].update(provider="ollama", statuses=[first, "citation_ids_verified"], extra={"retrieved": (SOURCE,)})
     _, events = ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="trechos")
     kinds = [event["tipo"] for event in events]
     assert kinds.count("recomeco") == 1 and kinds[-1] == "fim"
