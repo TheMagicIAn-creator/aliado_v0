@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "52",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "committed_locally_awaiting_review",
+  "base_commit": "5d99f04",
+  "decision": "plano aprovado pelo pesquisador em 21/10/2026: o mestrado em pastas com nomes em português",
+  "spec": "docs/specs/0052-mestrado-da-avaliacao-aos-comandos.md",
+  "validation": "docs/migracao/validacao-lote-52.md",
+  "requirements": {
+    "added": [],
+    "changed": []
+  },
+  "commit_split": {
+    "mudanca_de_lugar": "20d4b66",
+    "divisao": "o commit deste manifesto"
+  },
+  "checks": {
+    "pytest": {
+      "grupos": 36,
+      "passed": 837,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 233.15,
+      "treinos": 18
+    },
+    "pytest_mudanca_de_lugar": {
+      "passed": 837,
+      "failed": 0,
+      "seconds": 202.46
+    },
+    "pytest_primeira_divisao": {
+      "passed": 826,
+      "failed": 2,
+      "errors": 9,
+      "causa": "pasta oficial lida pela reanálise; corrigido"
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "caminhos_antigos_fora_dos_registros": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "wheel": {
+      "modulos_esperados": 132,
+      "faltando": 0,
+      "importados_do_wheel": 130
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "merged_copies": {
+    "EVALUATION": [
+      "reanalysis.EVALUATION",
+      "commands (padrão de --avaliacao)"
+    ]
+  },
+  "removed": [
+    "onset.CLASSES (nunca usado)"
+  ],
+  "evidence": {
+    "bateria": "tmp/lote-52/depois/pytest.json",
+    "equivalencia": "tmp/lote-52/equivalencia.log",
+    "verificacao": "tmp/lote-52/verificacao.json"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "24561963240dfcafbc5cea5a53510e7c35a453981e445db085a56a717ba75278",
+    "docs/ciencia/mapa-das-pastas.md": "2fabbc01310d8bbf6aa63fd45b6e91b2eeaf5968ffed00bd618be03876e7c192",
+    "docs/migracao/validacao-lote-52.md": "1f840bdd7688b3ee3dc70478a7e3ebf57cbb06af1464c17b69a6395945e892e6",
+    "docs/roteiro-v0.md": "28e1f1bb14ae7aaf4f41bf404b6412a2828452038dfed4d88cda14f80a6f1ff0",
+    "docs/specs/0052-mestrado-da-avaliacao-aos-comandos.md": "61d65150f74838308cc711baa00a805d77cd3e2849e95c2d8e9004ea9d7ff068",
+    "src/aliado/specializations/mestrado/autoencoders.py": "e02cadb015e2983166f3225dbb5b4126300387b0d71798da79df2f074b3b2676",
+    "src/aliado/specializations/mestrado/avaliacao/artefatos.py": "f3de5e17ca4c03ae5286ab650eee66376eb4c48d05d3605f37a604d06d1f2ef8",
+    "src/aliado/specializations/mestrado/avaliacao/configuracao.py": "0d7f46d99fdf8361faed295c751b435a903270b7d04da3d54bd4b3b737f1bf38",
+    "src/aliado/specializations/mestrado/avaliacao/decisao.py": "a847750ecd23de015ee905133d7da6301146bb4c75db95cfe63c929c66e7287b",
+    "src/aliado/specializations/mestrado/avaliacao/incerteza.py": "d2b7e58ade40ceab8c3a64480cdf79202b274d3ca7f6df5e26df1c3fa60a7554",
+    "src/aliado/specializations/mestrado/avaliacao/oficial.py": "a0eb113fc9824ab358b992f412be7d04bf2f8829dd55efcc41f75dc20ff224c0",
+    "src/aliado/specializations/mestrado/avaliacao/pontuacao.py": "4fac1fc8d6dab9a7cc9795ebdf9801596e3b442ffa172a56b5a24fbd1bef2cb8",
+    "src/aliado/specializations/mestrado/avaliacao/relatorio.py": "e988db4e199f76a20a76e76e8ad9bacd1b3d052beb1c32af30bfda93d3ada07b",
+    "src/aliado/specializations/mestrado/avaliacao/resumo.py": "a51582fcf22def9d0a9ea3f2a54f6f781ecb038a416a2e6604e245b5b6fdf8ba",
+    "src/aliado/specializations/mestrado/avaliacao/treino_congelado.py": "61d8ac4d653f979c2db51cf167294b0f3e1ac74858a918221be804db3586f8a6",
+    "src/aliado/specializations/mestrado/comandos/terminal.py": "ccf763529c0d31052f2603aa04701e588bb2020174cf11d2f211f8645acd8535",
+    "src/aliado/specializations/mestrado/explorer.py": "0111709fdabcf9744f20d0265121d23f03bc72850988f92c1590970d74287c46",
+    "src/aliado/specializations/mestrado/inicio_das_falhas/estimativa.py": "9a96e9197f220d38b0c4e66b88e6d51c781a02aa42ce3d5d8211a963832f0c37",
+    "src/aliado/specializations/mestrado/inicio_das_falhas/pontos_de_mudanca.py": "deb7831ccf29cdc7beea4198b5b2647a110784badfc7464c48f5e3cb16a5c4f4",
+    "src/aliado/specializations/mestrado/reanalise/artefatos.py": "f848b42f6fb3d1ea864a3240c70500079bf5ca076aeab783fbe85a9fbbb56daa",
+    "src/aliado/specializations/mestrado/reanalise/reanalise.py": "a57a07c6731860e0124a218ad3911d3186394390d0902da50af1842629e7bb68",
+    "src/aliado/specializations/mestrado/reanalise/relatorio.py": "c58e9f8b6dd580aa458936cafa735380ffb4bd2e40551cd23cb9fcccb45926d0",
+    "src/aliado/specializations/mestrado/summary.py": "345b65ab325893a2a129c43f4c163060cb72f38441269d07a888360d2fc76f12",
+    "tests/mestrado/conftest.py": "b9d70e3092ebc50e9ec718ae780b045e56e30d48f6b8c8a3d115076e5de93fa7",
+    "tests/mestrado/test_avaliacao.py": "c6266754598973c5ed0fe0602f4f40ed0404c44c6255119781c0e28bec3b68ff",
+    "tests/mestrado/test_exploradores.py": "8177addca34f9f0b55685db1b9962d7bcef0e102b1e79bab50b47c851baaf5f6",
+    "tests/mestrado/test_inicio_das_falhas.py": "13e4b8b910fa8c2337c8ee7c907c091ea48dcadde8c41d7281d6e44a695dfbe1",
+    "tests/mestrado/test_protocolo_fixo.py": "fbb64ec80caec824d4c08bcc1f7cc1e66e54744233be587300794a2108f4427f",
+    "tests/mestrado/test_reanalise.py": "05cbbe7ff1d23783455d6d65d334d880a4fbe1ed54d2801c4f344c685ee2f4a4"
+  }
+}

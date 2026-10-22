@@ -75,16 +75,14 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
     from aliado.specializations.mestrado import summary
-    from aliado.specializations.mestrado.avaliacao.resumo import (
-        EvaluationConfig,
-        export_evaluation,
-        load_training,
-        score_all,
-    )
+    from aliado.specializations.mestrado.avaliacao.artefatos import export_evaluation
+    from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig
+    from aliado.specializations.mestrado.avaliacao.pontuacao import score_all
+    from aliado.specializations.mestrado.avaliacao.treino_congelado import load_training
     from aliado.specializations.mestrado.preparo import artefatos as artefatos_do_preparo
     from aliado.specializations.mestrado.preparo import preparacao
     from aliado.specializations.mestrado.preparo import resumo as resumo_do_preparo
-    from aliado.specializations.mestrado.reanalise import reanalise as reanalysis
+    from aliado.specializations.mestrado.reanalise import reanalise
     from aliado.specializations.mestrado.treino.artefatos import export_training
     from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
     from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
@@ -109,7 +107,7 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     try:
         export_evaluation(score_all(trained, prepared), trained, prepared, EvaluationConfig(), folder / STAGES["avaliacao"])
         progress("Procurando quando cada falha aparece nos sinais…")
-        reanalysis.run(folder / STAGES["avaliacao"], folder / STAGES["modelos"], dataset_dir, folder / STAGES["inicio"],
+        reanalise.run(folder / STAGES["avaliacao"], folder / STAGES["modelos"], dataset_dir, folder / STAGES["inicio"],
                        cache=cache)
     except BaseException:
         registry.finish(results_dir, number, "falhou")

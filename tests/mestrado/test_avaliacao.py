@@ -15,13 +15,13 @@ torch = pytest.importorskip("torch")
 
 from apoio.caminhos import ROOT  # noqa: E402
 
-from aliado.specializations.mestrado.avaliacao.resumo import (  # noqa: E402
-    EvaluationConfig,
+from aliado.specializations.mestrado.avaliacao.artefatos import export_evaluation  # noqa: E402
+from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig  # noqa: E402
+from aliado.specializations.mestrado.avaliacao.decisao import run_metrics  # noqa: E402
+from aliado.specializations.mestrado.avaliacao.pontuacao import score_all  # noqa: E402
+from aliado.specializations.mestrado.avaliacao.treino_congelado import (  # noqa: E402
     TrainedDetectors,
-    export_evaluation,
     load_training,
-    run_metrics,
-    score_all,
 )
 from aliado.specializations.mestrado.base import ensaios  # noqa: E402
 

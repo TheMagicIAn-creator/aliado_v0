@@ -7,19 +7,19 @@ import pytest
 
 from aliado.specializations.mestrado.atributos import extracao
 from aliado.specializations.mestrado.atributos.cache import features_cache
-from aliado.specializations.mestrado.inicio_das_falhas import estimativa as onset
+from aliado.specializations.mestrado.inicio_das_falhas import estimativa, pontos_de_mudanca
 
 
 def test_pelt_finds_a_mean_shift_and_nothing_in_noise():
     rng = np.random.default_rng(7)
     noise = rng.normal(size=(300, 4))
-    assert onset.pelt(noise, onset.penalty(4, 300, 4)) == []
+    assert pontos_de_mudanca.pelt(noise, pontos_de_mudanca.penalty(4, 300, 4)) == []
     shifted = noise.copy()
     shifted[180:] += 2.0
-    assert onset.pelt(shifted, onset.penalty(4, 300, 4)) == [180]
+    assert pontos_de_mudanca.pelt(shifted, pontos_de_mudanca.penalty(4, 300, 4)) == [180]
     two = shifted.copy()
     two[240:] -= 4.0
-    assert onset.pelt(two, onset.penalty(4, 300, 4)) == [180, 240]
+    assert pontos_de_mudanca.pelt(two, pontos_de_mudanca.penalty(4, 300, 4)) == [180, 240]
 
 
 def test_pelt_respects_the_minimum_segment():
@@ -27,43 +27,43 @@ def test_pelt_respects_the_minimum_segment():
     values = rng.normal(scale=0.1, size=(100, 2))
     values[50:53] += 30.0  # um pulso de 3 janelas
     for min_segment in (2, 5, 10):
-        changes = onset.pelt(values, 1.0, min_segment)
+        changes = pontos_de_mudanca.pelt(values, 1.0, min_segment)
         bounds = [0, *changes, len(values)]
         assert changes and all(b - a >= min_segment for a, b in zip(bounds, bounds[1:]))
 
 
 def test_classes_follow_the_grid_from_the_chosen_penalty():
-    assert onset.classify({1.0: 12, 2.0: 10, 4.0: 10, 8.0: 10}, 2.0) == "clara"
-    assert onset.classify({1.0: 10, 2.0: 10, 4.0: None}, 2.0) == "fraca"
-    assert onset.classify({1.0: 10, 2.0: 10, 4.0: 14}, 2.0) == "fraca"
-    assert onset.classify({1.0: 10, 2.0: None, 4.0: None}, 2.0) == "nenhuma"
+    assert estimativa.classify({1.0: 12, 2.0: 10, 4.0: 10, 8.0: 10}, 2.0) == "clara"
+    assert estimativa.classify({1.0: 10, 2.0: 10, 4.0: None}, 2.0) == "fraca"
+    assert estimativa.classify({1.0: 10, 2.0: 10, 4.0: 14}, 2.0) == "fraca"
+    assert estimativa.classify({1.0: 10, 2.0: None, 4.0: None}, 2.0) == "nenhuma"
 
 
 def test_penalty_is_the_smallest_without_changes_in_the_healthy_records():
     rng = np.random.default_rng(9)
-    config = onset.OnsetConfig()
+    config = estimativa.OnsetConfig()
     healthy = {"F0L": rng.normal(size=(400, 3)), "F0M": rng.normal(size=(400, 3))}
-    chosen, control = onset.choose_penalty(healthy, config)
+    chosen, control = estimativa.choose_penalty(healthy, config)
     assert all(counts[str(chosen)] == 0 for counts in control.values())
     assert all(any(counts[str(c)] for counts in control.values()) for c in config.grid if c < chosen)
     shifted = {name: values.copy() for name, values in healthy.items()}
     shifted["F0L"][200:] += 50.0
     with pytest.raises(ValueError, match="Nenhuma penalidade"):
-        onset.choose_penalty(shifted, onset.OnsetConfig(grid=(1.0, 2.0)))
+        estimativa.choose_penalty(shifted, estimativa.OnsetConfig(grid=(1.0, 2.0)))
 
 
 def test_config_is_validated_and_hashed():
-    assert onset.OnsetConfig().digest() == onset.OnsetConfig().digest()
-    assert onset.OnsetConfig(min_segment=6).digest() != onset.OnsetConfig().digest()
+    assert estimativa.OnsetConfig().digest() == estimativa.OnsetConfig().digest()
+    assert estimativa.OnsetConfig(min_segment=6).digest() != estimativa.OnsetConfig().digest()
     for bad in ({"grid": ()}, {"grid": (2.0, 1.0)}, {"grid": (0.0, 1.0)}, {"min_segment": 1}, {"clip": 0},
                 {"healthy_reference": 1.0}):
         with pytest.raises(ValueError):
-            onset.OnsetConfig(**bad)
+            estimativa.OnsetConfig(**bad)
 
 
 def test_synthetic_faults_change_at_the_middle(gpvs_sintetico):
     experiments, _ = extracao.extract_all(gpvs_sintetico)
-    result = onset.estimate(experiments)
+    result = estimativa.estimate(experiments)
     assert result["controle_saudavel"]["F0L"][str(result["penalidade_c"])] == 0
     for name, trial in result["ensaios"].items():
         # A amplitude muda exatamente no meio: o início observado é o nominal.
@@ -75,7 +75,7 @@ def test_synthetic_faults_change_at_the_middle(gpvs_sintetico):
 
 def test_real_onsets_are_the_ones_reported_on_30_09(base_real):
     experiments, _ = extracao.extract_all(base_real, cache=features_cache(base_real))
-    result = onset.estimate(experiments)
+    result = estimativa.estimate(experiments)
     assert result["penalidade_c"] == 4.0
     control = result["controle_saudavel"]
     assert all(counts["4.0"] == 0 for counts in control.values()) and control["F0M"]["3.0"] == 1

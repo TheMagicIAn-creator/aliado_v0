@@ -538,6 +538,7 @@ não dá para separá-los em commits.
 | 49 | Os laços dos testes dos autoencoders: testes em pastas, fixtures de sessão, protocolo fixo (EXP-12), bateria e equivalência versionadas | Feito em 21 e 22/10/2026: treinos por bateria de 28 para 18; ciência de 180 para 124 s; os mesmos 834 testes, mais 2 ([spec 0049](specs/0049-lacos-dos-testes.md), [validação](migracao/validacao-lote-49.md)) |
 | 50 | A ciência geral em pastas: `science/` com `deteccao/` (11 etapas), `confiabilidade/`, `fmeca/`, `componentes/` e `resumo_citavel/`; NUC-04 e o mapa das pastas | Feito em 22/10/2026: equivalência sem diferença; 837 testes ([spec 0050](specs/0050-ciencia-geral-em-pastas.md), [validação](migracao/validacao-lote-50.md)) |
 | 51 | O mestrado do dado ao treino em pastas: `base/`, `atributos/`, `preparo/` e `treino/`; a regra do início nominal, o cache e a pasta da base num lugar só | Feito em 22/10/2026: equivalência sem diferença ([spec 0051](specs/0051-mestrado-do-dado-ao-treino.md), [validação](migracao/validacao-lote-51.md)) |
+| 52 | O mestrado da avaliação aos comandos em pastas: `avaliacao/`, `inicio_das_falhas/`, `reanalise/` e `comandos/`; a pasta oficial num lugar só | Feito em 22/10/2026: equivalência sem diferença ([spec 0052](specs/0052-mestrado-da-avaliacao-aos-comandos.md), [validação](migracao/validacao-lote-52.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -657,6 +658,14 @@ não dá para separá-los em commits.
 - **Resultado:** a equivalência sem nenhuma diferença, e o terminal e o experimento continuam sem carregar numpy nem
   PyTorch ao abrir.
 
+### Decisões e resultado do lote 52 (22/10/2026)
+
+- **O que mudou:**
+  - `evaluation.py`, `onset.py`, `reanalysis.py` e `commands.py` viraram as pastas `avaliacao/`, `inicio_das_falhas/`,
+    `reanalise/` e `comandos/`;
+  - o nome da pasta oficial ficou num lugar só.
+- **Resultado:** a equivalência sem nenhuma diferença, com a avaliação de 27/09 e a reanálise de 30/09 reproduzidas.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -691,6 +700,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 49 | [0049](specs/0049-lacos-dos-testes.md) |
 | 50 | [0050](specs/0050-ciencia-geral-em-pastas.md) |
 | 51 | [0051](specs/0051-mestrado-do-dado-ao-treino.md) |
+| 52 | [0052](specs/0052-mestrado-da-avaliacao-aos-comandos.md) |
 
 ## Fica para a v1
 

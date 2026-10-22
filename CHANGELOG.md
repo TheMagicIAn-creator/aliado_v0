@@ -5,6 +5,18 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 52: o mestrado da avaliação aos comandos em pastas
+
+- **As pastas:**
+  - `avaliacao/`: o treino congelado, a pontuação, a decisão, a incerteza, o resumo, o relatório e os arquivos;
+  - `inicio_das_falhas/`: os pontos de mudança e a estimativa;
+  - `reanalise/`: a reanálise, o relatório e os arquivos;
+  - `comandos/`: os 4 comandos do terminal.
+- **A pasta da avaliação oficial:** o nome dela fica num lugar só, `avaliacao/oficial.py`. A constante `CLASSES`, nunca
+  usada, saiu.
+- **A prova:** a equivalência no GPVS sintético não mostra nenhuma diferença, e a bateria passa com os dados reais.
+- **Estado:** commits locais autorizados pelo pesquisador.
+
 ### Lote 51: o mestrado do dado ao treino em pastas
 
 - **As pastas:** `base/` (os ensaios e a leitura), `atributos/` (as 24 variáveis, a extração e o cache), `preparo/`

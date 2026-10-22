@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 from aliado.specializations.mestrado.atributos.cache import features_cache
+from aliado.specializations.mestrado.avaliacao.oficial import EVALUATION
 from aliado.specializations.mestrado.base.ensaios import DATA_DIR
 
 CACHE = features_cache(DATA_DIR)
@@ -41,7 +42,7 @@ def add_commands(science_commands) -> None:
     evaluation.set_defaults(handler=_evaluate)
     reanalysis = science_commands.add_parser(
         "reanalisar-gpvs", help="Reanalisa os mesmos escores com o início observado das falhas")
-    reanalysis.add_argument("--avaliacao", type=Path, default=Path("data/resultados/gpvs-avaliacao-001"))
+    reanalysis.add_argument("--avaliacao", type=Path, default=Path("data/resultados") / EVALUATION)
     reanalysis.add_argument("--modelos", type=Path, default=Path("data/resultados/gpvs-modelos-002"))
     reanalysis.add_argument("--saida", type=Path, required=True, help="Pasta nova para a reanálise")
     reanalysis.add_argument("--dados", type=Path, default=DATA_DIR)
@@ -93,12 +94,10 @@ def _train(args) -> int:
 
 
 def _evaluate(args) -> int:
-    from aliado.specializations.mestrado.avaliacao.resumo import (
-        EvaluationConfig,
-        export_evaluation,
-        load_training,
-        score_all,
-    )
+    from aliado.specializations.mestrado.avaliacao.artefatos import export_evaluation
+    from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig
+    from aliado.specializations.mestrado.avaliacao.pontuacao import score_all
+    from aliado.specializations.mestrado.avaliacao.treino_congelado import load_training
     from aliado.specializations.mestrado.preparo.preparacao import prepare
 
     _new(args.saida)
@@ -112,7 +111,7 @@ def _evaluate(args) -> int:
 
 def _reanalyze(args) -> int:
     from aliado.science.deteccao.registro import consultas as registry
-    from aliado.specializations.mestrado.reanalise.reanalise import EVALUATION, run
+    from aliado.specializations.mestrado.reanalise.reanalise import run
 
     _new(args.saida)
     paths = run(args.avaliacao, args.modelos, args.dados, args.saida, cache=args.cache)

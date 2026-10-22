@@ -8,7 +8,7 @@ CSV. Nada é gravado.
 
 As métricas por tipo de falha somam as contagens de janelas dos modos L e M e recalculam
 sensibilidade, especificidade, precisão, F1, acurácia balanceada e MCC com as fórmulas de
-`metrics.window_metrics`; AUC e atraso não se somam e entram como a média dos dois modos.
+`window_metrics` (`science/deteccao/metricas/por_janela.py`); AUC e atraso não se somam e entram como a média dos dois modos.
 """
 
 from __future__ import annotations
@@ -124,7 +124,7 @@ def _rows(folder: Path) -> list[dict]:
 
 
 def from_counts(vp: int, fn: int, fp: int, vn: int) -> dict:
-    """As mesmas fórmulas de `metrics.window_metrics`, a partir das contagens de janelas."""
+    """As mesmas fórmulas de `window_metrics`, a partir das contagens de janelas."""
     sensitivity, specificity = vp / (vp + fn), vn / (vn + fp)
     denominator = math.sqrt((vp + fp) * (vp + fn) * (vn + fp) * (vn + fn))
     return {"sensibilidade": sensitivity, "especificidade": specificity,

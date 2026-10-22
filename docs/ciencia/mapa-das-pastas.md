@@ -104,9 +104,13 @@ A pesquisa de detecção de falhas na base GPVS-Faults, na ordem do método. Os 
 | 2. Atributos | `atributos/variaveis.py`, `extracao.py`, `cache.py` | as 24 variáveis de cada janela (mediana e IQR de Ipv, Vpv e Vdc; RMS e THD de cada fase; desequilíbrios; potências), a extração por ensaio e o cache | `test_atributos.py` |
 | 3. Preparo | `preparo/preparacao.py`, `resumo.py`, `artefatos.py`, `inicio_nominal.py` | a divisão 50/15/15/20 com separação de 11 janelas, a normalização pela linha de base do treino (piso de 10% do IQR), o comissionamento pela 1ª metade do pré-falha, o início nominal (o meio do registro) | `test_preparo.py` |
 | 4. Treino | `treino/configuracao.py`, `detectores.py`, `resumo.py`, `relatorio.py`, `artefatos.py` | a configuração congelada com hash, as entradas de cada modelo, o treino em cada repetição e o limiar p99 na calibração | `test_treino.py` |
+| 5. Avaliação | `avaliacao/configuracao.py`, `treino_congelado.py`, `pontuacao.py`, `decisao.py`, `incerteza.py`, `resumo.py`, `relatorio.py`, `artefatos.py`, `oficial.py` | o treino congelado conferido pelos hashes; os escores do teste; o alarme a partir do início nominal, datado pelo fim da janela que o confirma; as métricas por janela; os intervalos em blocos; a comparação pareada; a pasta oficial | `test_avaliacao.py` |
+| 6. Início das falhas | `inicio_das_falhas/pontos_de_mudanca.py`, `estimativa.py` | o PELT com penalidade c · d · ln n, com o menor c sem mudança nos sadios; o início observado e a classe (clara, fraca ou nenhuma) | `test_inicio_das_falhas.py` |
+| 7. Reanálise | `reanalise/reanalise.py`, `relatorio.py`, `artefatos.py` | os escores gravados relidos com o início observado, sem rodar os modelos | `test_reanalise.py` |
+| Comandos | `comandos/terminal.py` | `aliado ciencia preparar-gpvs`, `treinar-gpvs`, `avaliar-gpvs` e `reanalisar-gpvs` | `test_comandos.py` |
 
-As pastas seguintes entram nos lotes 52 e 53: `avaliacao/`, `inicio_das_falhas/`, `reanalise/`, `comandos/`,
-`rodada/`, `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/`.
+As pastas seguintes entram no lote 53: `rodada/`, `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`,
+`roteamento/` e `glossario/`.
 
 ## Do nome antigo para o novo
 
@@ -124,5 +128,9 @@ As pastas seguintes entram nos lotes 52 e 53: `avaliacao/`, `inicio_das_falhas/`
 | `mestrado/gpvs.py` | `base/ensaios.py` e `leitura.py`; `atributos/variaveis.py`, `extracao.py` e `cache.py`; `preparo/preparacao.py`, `resumo.py` e `artefatos.py` (lote 51) | `dataset`, `features` e `preparation` |
 | `mestrado/training.py` | `treino/configuracao.py`, `detectores.py`, `resumo.py`, `relatorio.py` e `artefatos.py` (lote 51) | `training` |
 | `evaluation._onset`, `reanalysis._nominal` e `summary.onset` | `preparo/inicio_nominal.nominal_onset` (lote 51) | `nominal_onset` |
+| `mestrado/evaluation.py` | `avaliacao/` (9 arquivos, lote 52) | `evaluation` |
+| `mestrado/onset.py` | `inicio_das_falhas/pontos_de_mudanca.py` e `estimativa.py` (lote 52) | `fault_onset` |
+| `mestrado/reanalysis.py` | `reanalise/reanalise.py`, `relatorio.py` e `artefatos.py` (lote 52) | `reanalysis` |
+| `mestrado/commands.py` | `comandos/terminal.py` (lote 52) | `commands` |
 
 Os mapas datados de `docs/arquitetura/2026-10-05/` são registros daquele dia e mantêm os caminhos antigos.

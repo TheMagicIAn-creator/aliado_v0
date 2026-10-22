@@ -2,12 +2,12 @@
 
 Reaproveita os escores gravados na avaliação oficial de 27/09 (`gpvs-avaliacao-001`) e os
 limiares do treino, sem rodar os modelos. Os ensaios com mudança clara nos sinais
-(`onset.estimate`) são rotulados de novo, pela decisão do pesquisador de 30/09/2026:
+(`estimativa.estimate`) são rotulados de novo, pela decisão do pesquisador de 30/09/2026:
 - a detecção começa no início nominal, como na avaliação oficial;
 - o trecho entre o início nominal e a mudança fica fora das métricas por janela;
 - as janelas com falha começam na mudança, e o atraso é medido dela, podendo ser negativo.
 Os ensaios sem mudança clara ficam no início nominal. As métricas saem das mesmas funções da
-avaliação oficial (`evaluation.run_metrics` e `evaluation.summarize`), sobre uma cópia rotulada
+avaliação oficial (`avaliacao/decisao.run_metrics` e `avaliacao/resumo.summarize`), sobre uma cópia rotulada
 de novo de `PreparedGPVS`. Exige o extra `ml`, como a avaliação.
 """
 
@@ -15,48 +15,30 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from datetime import date
 from pathlib import Path
 
 import numpy as np
 
 from aliado.science.deteccao.alarmes.taxa import markov_alarm_rate
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold, false_alarm_interval
-from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS
+from aliado.science.deteccao.redes.autoencoders import MODELS
 from aliado.specializations.mestrado.atributos import extracao
-from aliado.specializations.mestrado.avaliacao.resumo import (
-    PAIRED_NAMES,
-    EvaluationConfig,
+from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig
+from aliado.specializations.mestrado.avaliacao.decisao import run_metrics
+from aliado.specializations.mestrado.avaliacao.incerteza import _seed
+from aliado.specializations.mestrado.avaliacao.resumo import _grid_row, summarize
+from aliado.specializations.mestrado.avaliacao.treino_congelado import (
     TrainedDetectors,
-    _csv,
-    _grid_row,
-    _seed,
     load_thresholds,
-    run_metrics,
-    summarize,
 )
 from aliado.specializations.mestrado.base import ensaios
-from aliado.specializations.mestrado.inicio_das_falhas import estimativa as onset
+from aliado.specializations.mestrado.inicio_das_falhas import estimativa
 from aliado.specializations.mestrado.preparo import preparacao
 from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
-from aliado.specializations.mestrado.treino.artefatos import environment
+from aliado.specializations.mestrado.reanalise.artefatos import export_reanalysis
+from aliado.specializations.mestrado.reanalise.relatorio import _notice
 
-EVALUATION = "gpvs-avaliacao-001"
 PERCENTILES = (95.0, 97.5, 99.0)
-NOTICE = ("Reanálise dos mesmos escores da avaliação de 27/09, sem rodar os modelos de novo. A avaliação de "
-          "27/09 continua sendo a oficial.")
-
-
-def _notice(evaluation_dir: Path, executed: str | None) -> str:
-    """Na avaliação oficial, o aviso de 30/09; numa rodada nova, que os escores são os dela."""
-    if evaluation_dir.name == EVALUATION:
-        return NOTICE
-    day = "/".join(reversed(str(executed)[:10].split("-"))) if executed else "desta rodada"
-    return f"Início observado das falhas sobre os escores da avaliação de {day}, sem rodar os modelos de novo."
-
-
-def _day_month(iso: str | None) -> str:
-    return "/".join(reversed(str(iso)[:10].split("-")[1:])) if iso else "—"
 
 
 def evaluation_config(folder: str | Path) -> tuple[EvaluationConfig, dict]:
@@ -70,7 +52,7 @@ def evaluation_config(folder: str | Path) -> tuple[EvaluationConfig, dict]:
 
 
 def load_scores(path: str | Path, trained: TrainedDetectors) -> dict:
-    """Os escores de `escores.npz` no formato de `evaluation.score_all`."""
+    """Os escores de `escores.npz` no formato de `avaliacao/pontuacao.score_all`."""
     scores = {}
     with np.load(path, allow_pickle=False) as stored:
         for kind in MODELS:
@@ -126,7 +108,7 @@ def _nominal_delays(summary: dict, prepared: preparacao.PreparedGPVS, relabeled:
 
 
 def _analysis(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: str | Path, *,
-              cache: str | Path | None, onset_config: onset.OnsetConfig | None) -> tuple[dict, dict]:
+              cache: str | Path | None, onset_config: estimativa.OnsetConfig | None) -> tuple[dict, dict]:
     evaluation_dir, training_dir = Path(evaluation_dir), Path(training_dir)
     trained, training_summary = load_thresholds(training_dir)
     config, frozen = evaluation_config(evaluation_dir)
@@ -136,8 +118,8 @@ def _analysis(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: st
     if hashes != trained.frozen["dados"]["hashes"] or hashes != frozen["dados"]["hashes"]:
         raise ValueError("Os dados do GPVS não são os do treino e da avaliação.")
     prepared = preparacao.prepare(gpvs_dir, cache=cache, purge=trained.config.purge, fractions=trained.config.fractions)
-    onset_config = onset_config or onset.OnsetConfig()
-    onsets = onset.estimate(experiments, onset_config)
+    onset_config = onset_config or estimativa.OnsetConfig()
+    onsets = estimativa.estimate(experiments, onset_config)
     scores = load_scores(evaluation_dir / "escores.npz", trained)
     relabeled = relabel(prepared, onsets["ensaios"])
     summary = summarize(scores, trained, relabeled, config)
@@ -187,7 +169,7 @@ def _brief(summary: dict) -> dict:
 
 
 def reanalyze(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: str | Path, *,
-              cache: str | Path | None = None, onset_config: onset.OnsetConfig | None = None) -> dict:
+              cache: str | Path | None = None, onset_config: estimativa.OnsetConfig | None = None) -> dict:
     """Início observado, métricas com ele (14 ensaios e só os de mudança clara) e as estimativas novas."""
     return _analysis(evaluation_dir, training_dir, gpvs_dir, cache=cache, onset_config=onset_config)[0]
 
@@ -212,133 +194,8 @@ def _percentile_grid(training_dir: Path, scores: dict, trained: TrainedDetectors
     return grid
 
 
-def _number(value, digits: int = 1) -> str:
-    return "—" if value is None else f"{value:.{digits}f}".replace(".", ",")
-
-
-def _markdown(report: dict, official: dict) -> str:
-    trials = report["inicio"]["ensaios"]
-    clear, evaluated = len(report["so_mudanca_clara"]["ensaios"]), _day_month(report["origem"]["avaliacao_executada_em"])
-    lines = [
-        "# Reanálise do GPVS com o início observado das falhas", "",
-        f"{report['aviso']} Origem: `{report['origem']['avaliacao']}` (avaliação de {report['origem']['avaliacao_executada_em']}) "
-        f"e o treino `{report['origem']['treino']}`.", "",
-        "## Quando cada falha aparece nos sinais", "",
-        "O início nominal é o meio do registro, porque os arquivos não marcam o disparo. A mudança observada é a "
-        "primeira mudança na média das 24 variáveis depois do comissionamento, achada pelo PELT (Killick, Fearnhead "
-        f"e Eckley, 2012) com penalidade c · 24 · ln n. O c = {report['inicio']['penalidade_c']:g} é o menor da grade "
-        "sem mudança nenhuma nos dois ensaios saudáveis. Clara: a mesma mudança em todos os c maiores; fraca: some "
-        "com um c maior. Os escores dos detectores não entram.", "",
-        "| Ensaio | Falha | Meio (s) | Mudança (s) | Diferença (s) | Classe |", "|---|---|---:|---:|---:|---|",
-    ]
-    for name, trial in trials.items():
-        observed = trial["observado_s"]
-        lines.append(f"| {name} | {ensaios.FAULTS[int(name[1])][0]} | {_number(trial['nominal_s'], 2)} | "
-                     f"{_number(observed, 2)} | "
-                     f"{'—' if observed is None else _number(observed - trial['nominal_s'], 2)} | {trial['classe']} |")
-    lines += ["", "Nos ensaios de mudança clara, o trecho entre os dois inícios fica fora das métricas por janela; "
-              "a detecção começa no início nominal, e o atraso é medido da mudança. Os demais ficam no meio.", "",
-              "## Indicadores com cada início (treino de referência)", "",
-              f"| Modelo | Indicador | 14 ensaios, meio ({evaluated}) | 14 ensaios, mudança | {clear} de mudança clara, meio | "
-              f"{clear} de mudança clara, mudança |", "|---|---|---:|---:|---:|---:|"]
-    names = {"detectados": ("Ensaios detectados", 0), "atraso_mediano_ms": ("Atraso mediano (ms)", 1),
-             "sensibilidade_media": ("Sensibilidade", 3), "especificidade_media": ("Especificidade", 3),
-             **{f"{metric}_media": (label, 3) for metric, label in (
-                 ("precisao", "Precisão"), ("f1", "F1"), ("mcc", "MCC"), ("auc_roc", "AUC-ROC"), ("auc_pr", "AUC-PR"))}}
-    for kind in MODELS:
-        before = official["modelos"][kind]["referencia"]["resumo"]
-        after = report["modelos"][kind]["referencia"]["resumo"]
-        clear = report["so_mudanca_clara"]["modelos"][kind]["resumo"]
-        clear_before = report["so_mudanca_clara"]["meio"]["modelos"][kind]["resumo"]
-        for key, (label, places) in names.items():
-            lines.append(f"| {MODEL_NAMES[kind]} | {label} | {_number(before[key], places)} | "
-                         f"{_number(after[key], places)} | {_number(clear_before[key], places)} | "
-                         f"{_number(clear[key], places)} |")
-    for kind in MODELS:
-        lines += ["", f"## Por ensaio — {MODEL_NAMES[kind]}", "",
-                  "| Ensaio | Detectado | Atraso desde o meio (ms) | Atraso desde a mudança (ms) | "
-                  "Sensibilidade no meio | Sensibilidade com a mudança |", "|---|---|---:|---:|---:|---:|"]
-        for name, result in report["modelos"][kind]["referencia"]["ensaios"].items():
-            before = official["modelos"][kind]["referencia"]["ensaios"][name]
-            lines.append(f"| {name} | {'sim' if result['detectado'] else 'não'} | "
-                         f"{_number(result['atraso_desde_o_meio_ms'])} | {_number(result['atraso_ms'])} | "
-                         f"{_number(before['sensibilidade'], 3)} | {_number(result['sensibilidade'], 3)} |")
-    lines += ["", "## Comparação por objetivo (Denso − AE-LSTM, com a mudança observada)", "",
-              f"| Objetivo | Métrica | 14 ensaios: diferença [IC 95%] | Leitura | {clear} de mudança clara: diferença [IC 95%] | Leitura |",
-              "|---|---|---|---|---|---|"]
-    for row, clear in zip(report["comparacao"], report["so_mudanca_clara"]["comparacao"]):
-        def cell(item):
-            if item["media"] is None:
-                return "—"
-            return f"{_number(item['media'], 3)} [{_number(item['ic95'][0], 3)}; {_number(item['ic95'][1], 3)}]"
-        lines.append(f"| {row['objetivo']} | {PAIRED_NAMES[row['metrica']]} | {cell(row)} | {row['leitura']} | {cell(clear)} | "
-                     f"{clear['leitura']} |")
-    lines += ["", "## Alarmes falsos por hora, estimados", "",
-              "Cadeia de Markov de dois estados (abaixo e acima do limiar), ajustada às janelas saudáveis: o teste "
-              "saudável e o trecho antes da falha dos 14 ensaios. Abordagem de cadeia de Markov para o tempo até o "
-              "alarme (Brook e Evans, 1972); intervalo de 95% sorteando os trechos.", "",
-              "| Modelo | Janelas | Acima do limiar | Estimados por hora [IC 95%] | Sequências de 2: previstas / vistas | "
-              "Alarmes: previstos / vistos |", "|---|---:|---:|---|---|---|"]
-    for kind, item in report["alarmes_estimados"].items():
-        lines.append(f"| {MODEL_NAMES[kind]} | {item['janelas']} | {item['janelas_acima']} | "
-                     f"{_number(item['alarmes_por_hora'])} [{_number(item['ic95'][0])}; {_number(item['ic95'][1])}] | "
-                     f"{_number(item['previsto']['sequencias_de_2'])} / {item['observado']['sequencias_de_2']} | "
-                     f"{_number(item['previsto']['alarmes'], 2)} / {item['observado']['alarmes']} |")
-    lines += ["", "## Quanto o limiar pode variar", "",
-              "Com o limiar na posição r de n escores de calibração, a chance de uma janela saudável nova passar dele "
-              "segue uma Beta(n + 1 − r, r) (Vovk, 2012).", "",
-              "| Modelo | Posição | Faixa esperada por janela (95%) | Observado no teste saudável | Observado antes da falha |",
-              "|---|---|---|---|---|"]
-    for kind, item in report["limiar_incerteza"].items():
-        seen = item["observado"]
-        lines.append(f"| {MODEL_NAMES[kind]} | {item['posicao']} de {item['n']} | "
-                     f"{_number(100 * item['ic95'][0], 2)}% a {_number(100 * item['ic95'][1], 2)}% | "
-                     f"{_number(100 * seen['teste_saudavel']['fracao'], 2)}% | {_number(100 * seen['pre_falha']['fracao'], 2)}% |")
-    lines += ["", "## Limiar em outros percentis (só relatado)", "",
-              "| Percentil | Modelo | Posição | Alarmes no teste saudável | Alarmes antes da falha | Detectados | "
-              "Atraso mediano (ms) | Sensibilidade |", "|---|---|---|---:|---:|---:|---:|---:|"]
-    for percentile, row in report["sensibilidade"]["percentil"].items():
-        for kind, item in row.items():
-            lines.append(f"| p{percentile.replace('.', ',')} | {MODEL_NAMES[kind]} | {item['posicao']} de {item['n_calibracao']} | "
-                         f"{item['alarmes_teste_saudavel']} | {item['alarmes_pre_falha']} | {item['detectados']} | "
-                         f"{_number(item['atraso_mediano_ms'])} | {_number(item['sensibilidade_media'], 3)} |")
-    lines += ["", "## Limites", "",
-              "- A mudança observada é onde a falha aparece nas variáveis, não o instante do disparo, que os arquivos "
-              "não registram. A resolução é de uma janela (20 ms).",
-              "- A mudança e os detectores olham as mesmas 24 variáveis. Uma sensibilidade alta nos ensaios de mudança "
-              "clara mostra que, quando a falha aparece nas variáveis, os modelos a veem logo; ela não mede a "
-              "capacidade de ver falhas que não mudam as variáveis.",
-              "- F4 não muda as variáveis, e F6 e F7 mudam pouco: para eles, nenhum início é confiável, e a falta de "
-              "detecção é, em boa parte, dos dados e das variáveis.",
-              "- A estimativa de alarmes por hora supõe que as janelas saudáveis se encadeiam como uma cadeia de Markov "
-              "e que 52 s representam a operação normal."]
-    return "\n".join(lines) + "\n"
-
-
-def export_reanalysis(report: dict, evaluation_dir: str | Path, output: str | Path,
-                      runs: dict | None = None) -> dict[str, str]:
-    """Configuração, inícios, relatório e métricas por ensaio numa pasta nova; nunca sobrescreve."""
-    folder = Path(output)
-    folder.mkdir(parents=True, exist_ok=False)
-    paths = {"configuracao": folder / "configuracao.json", "inicio": folder / "inicio.json",
-             "relatorio_json": folder / "relatorio.json", "relatorio_md": folder / "relatorio.md"}
-    frozen = {"inicio": report["inicio"]["configuracao"], "sha256": report["inicio"]["configuracao_sha256"],
-              "executado_em": date.today().isoformat(), "origem": report["origem"], "regras": report["regras"],
-              "ambiente": environment()}
-    paths["configuracao"].write_text(json.dumps(frozen, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    paths["inicio"].write_text(json.dumps(report["inicio"], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    paths["relatorio_json"].write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
-                                       encoding="utf-8")
-    official = json.loads((Path(evaluation_dir) / "relatorio.json").read_text(encoding="utf-8"))
-    paths["relatorio_md"].write_text(_markdown(report, official), encoding="utf-8")
-    if runs is not None:
-        paths["metricas"] = folder / "metricas_por_ensaio.csv"
-        paths["metricas"].write_text(_csv(runs), encoding="utf-8")
-    return {key: str(path) for key, path in paths.items()}
-
-
 def run(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: str | Path, output: str | Path, *,
-        cache: str | Path | None = None, onset_config: onset.OnsetConfig | None = None) -> dict[str, str]:
+        cache: str | Path | None = None, onset_config: estimativa.OnsetConfig | None = None) -> dict[str, str]:
     """Reanálise completa numa pasta nova, com as métricas por ensaio de todos os treinamentos no CSV."""
     if Path(output).exists():
         raise FileExistsError("A pasta de saída já existe; escolha uma pasta nova.")
