@@ -9,7 +9,8 @@ Criada no lote 38 (18/10/2026), pela [spec 0038](../0038-modelo-local.md). O lot
 chaves seguem descritos nas specs 0009 e 0012; o roteador, o teto de 30 mil e o aviso de 300 mil tokens, em
 [roteador.md](roteador.md). O lote 44 amplia os cenários de PRV-02, sem alterar os limites de custo. O lote 46, pela
 [spec 0046](../0046-correcoes-do-relatorio.md), altera PRV-02, PRV-06 e PRV-07; o lote 48, pela
-[spec 0048](../0048-raciocinio-nas-paginas.md), altera o PRV-07.
+[spec 0048](../0048-raciocinio-nas-paginas.md), altera o PRV-07. O lote 57, pela
+[spec 0057](../0057-regras-sem-exemplo.md), altera o PRV-06.
 
 ## Requisitos
 
@@ -64,6 +65,8 @@ original.
   de que os PDFs vieram como texto e, quando o pedido traz fontes citáveis, a regra de citar cada afirmação com o
   identificador copiado letra por letra, sem encurtar, sem acrescentar a página e sem juntar dois. A nota e a regra
   não mostram nenhum identificador de exemplo: no lote 45, o local copiou os exemplos nas 4 respostas descartadas.
+  As regras de citação da biblioteca e da leitura integral, que ele também recebe, só mostram o formato [K...]: no
+  lote 48, ele copiou o [K1] do exemplo delas numa resposta (lote 57).
 - **O Gemini:** segue recebendo o PDF e a lista das páginas, como antes, sem tokens a mais.
 
 *Cenário:* dada uma pergunta sobre uma tabela que pede as páginas inteiras, quando o local responde, então ele

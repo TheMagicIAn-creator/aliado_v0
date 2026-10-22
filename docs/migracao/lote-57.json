@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "57",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado, rumo à 0.9.0)",
+  "status": "validated_without_model_uncommitted",
+  "base_commit": "2155b87",
+  "decision": "pesquisador, 22/10/2026: seguir para o lote 57, o exemplo [K1] da lista 'Depois'; das duas saídas da spec 0048, tirar o exemplo das regras",
+  "spec": "docs/specs/0057-regras-sem-exemplo.md",
+  "validation": "docs/migracao/validacao-lote-57.md",
+  "requirements": {
+    "added": [],
+    "changed": [
+      "PRV-06"
+    ],
+    "tested_again": []
+  },
+  "checks": {
+    "pytest_arquivos_do_chat": {
+      "passed": 123
+    },
+    "pytest_selecao_rapida_do_pedido": {
+      "passed": 44
+    },
+    "pytest_bateria_rapida": {
+      "grupos": 36,
+      "passed": 830,
+      "failed": 0,
+      "skipped": 0,
+      "deselected": 33,
+      "treinos": 0,
+      "seconds": 127.99,
+      "pico_memoria_mib": 559.1
+    },
+    "teste_novo_reprova_o_texto_de_antes": {
+      "LIBRARY_RULES": true,
+      "READING_RULES": true
+    },
+    "ruff": {
+      "exit_code": 0
+    },
+    "modelo_real": "não medido; depende da autorização do pesquisador"
+  },
+  "later_check_of_batch_56": {
+    "commit": "2155b87",
+    "arquivos_iguais_a_lista": 17,
+    "hashes_do_manifesto_conferidos": 16,
+    "pytest_dados_reais": {
+      "passed": 12,
+      "failed": 0,
+      "seconds": 100.52,
+      "treinos": 6,
+      "pico_memoria_mib": 510.3
+    },
+    "arquivos_de_data_modificados": 0,
+    "evidence": "tmp/lote-56/dados-reais/pytest.log"
+  },
+  "evidence": {
+    "bateria_rapida": "tmp/lote-57/bateria-rapida.log",
+    "antes": "tmp/lote-57/antes"
+  },
+  "paid_calls": 0,
+  "local_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "ae9d25b090c5003d3afdf8ba8348a130e324e5c105ece99652cdded4b26f362d",
+    "docs/migracao/validacao-lote-57.md": "7b10e937906c8a6dec4c75a2f1ffa1e76b6a5f79ac1c809221ea9a3131858d04",
+    "docs/roteiro-v0.md": "4cbcbd5f3421ce2fb51d30c7155c79c126e57a2e2cea464857fc76a0e411d7d3",
+    "docs/specs/0057-regras-sem-exemplo.md": "bb83a172034d86d401d99e469b8c05afc29b5cc5c8faa29ea501e6fe5d54fbc6",
+    "docs/specs/capacidades/provedores.md": "e9199b62173874751f8438e7aa2de04481218205665e57625045db0f7622fcbe",
+    "src/aliado/agent.py": "cf23640daeaa0fe13c63359c7087889295e48adbc7b824d9313999c17f83d756",
+    "tests/test_local_provider.py": "8b5978038b8658a231a49cc5e939e315f2aa86330fe3f86ba779c61176160022"
+  }
+}

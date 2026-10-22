@@ -542,7 +542,8 @@ não dá para separá-los em commits.
 | 53 | O mestrado da rodada ao chat em pastas: `rodada/` (com o contrato de 14 atributos), `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/` | Feito em 22/10/2026: equivalência sem diferença ([spec 0053](specs/0053-mestrado-da-rodada-ao-chat.md), [validação](migracao/validacao-lote-53.md)) |
 | 54 | A identidade e o contrato da rodada: `science/identidade/`, `erros.npz` conferido bit a bit, o explorador sem recalcular, as rodadas anteriores marcadas (EXP-13) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0054](specs/0054-identidade-e-contrato-da-rodada.md), [validação](migracao/validacao-lote-54.md)) |
 | 55 | A evidência espectral descritiva: `science/espectro/`, `evidencia_espectral/` no mestrado, o 4º passo do explorador, R9 e R10 sob pedido no chat (EXP-14) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0055](specs/0055-evidencia-espectral.md), [validação](migracao/validacao-lote-55.md)) |
-| 56 | As duplicatas da ciência: `from_counts` na ciência geral, o comissionamento num lugar só e as janelas por hora como argumento | Feito em 22/10/2026, sem commit: equivalência sem diferença ([spec 0056](specs/0056-duplicatas-da-ciencia.md), [validação](migracao/validacao-lote-56.md)) |
+| 56 | As duplicatas da ciência: `from_counts` na ciência geral, o comissionamento num lugar só e as janelas por hora como argumento | Feito em 22/10/2026: equivalência sem diferença; os 12 testes com os dados reais passaram depois; commit 2155b87 ([spec 0056](specs/0056-duplicatas-da-ciencia.md), [validação](migracao/validacao-lote-56.md)) |
+| 57 | As regras de citação sem o exemplo `[K1][K2]`, que o local copiou no lote 48 (PRV-06) | Feito em 22/10/2026, sem commit e sem modelo ([spec 0057](specs/0057-regras-sem-exemplo.md), [validação](migracao/validacao-lote-57.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -741,6 +742,10 @@ não dá para separá-los em commits.
   Os nomes em inglês ficam de fora, salvo decisão contrária.
 - **O lote 56:** as três contas repetidas ficam num lugar só, sem mudar nenhum número. A rodada sintética deu os
   mesmos arquivos da referência.
+  - Depois do commit do pesquisador (2155b87), os 12 testes com os dados reais passaram, com a autorização dele.
+  - O registro fica na validação do lote 57, porque a do 56 já estava no commit.
+- **O lote 57:** sai das regras de citação o exemplo `[K1][K2]`, das duas saídas que a spec 0048 deixou. Tratar o
+  `[K1]` como formato poderia esconder uma marca errada.
 
 ## Specs de cada lote
 
@@ -781,6 +786,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 54 | [0054](specs/0054-identidade-e-contrato-da-rodada.md) |
 | 55 | [0055](specs/0055-evidencia-espectral.md) |
 | 56 | [0056](specs/0056-duplicatas-da-ciencia.md) |
+| 57 | [0057](specs/0057-regras-sem-exemplo.md) |
 
 ## Fica para a v1
 

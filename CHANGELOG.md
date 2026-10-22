@@ -5,6 +5,13 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 57: as regras de citação sem identificador de exemplo
+
+- **Sem o exemplo `[K1][K2]`:** as regras da biblioteca e da leitura integral só mostram o formato `[K...]`, com um
+  identificador por colchete. No lote 48, o modelo local copiou o `[K1]` numa resposta, que foi descartada.
+- **Um teste** impede que um identificador de exemplo volte às regras (PRV-06).
+- **Estado:** sem commit; o commit fica com o pesquisador.
+
 ### Lote 56: as duplicatas da ciência
 
 - **Uma conta só para as métricas de contagem:** `from_counts` foi para a ciência geral, ao lado de `window_metrics`,
@@ -13,8 +20,9 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
   início das falhas.
 - **A ciência geral sem os 50 Hz:** `markov_alarm_rate` recebe as janelas por hora como argumento obrigatório, e o
   mestrado passa 180.000.
-- **Nenhum número muda:** a rodada sintética deu os mesmos arquivos da referência.
-- **Estado:** sem commit; o commit fica com o pesquisador.
+- **Nenhum número muda:** a rodada sintética deu os mesmos arquivos da referência, e os 12 testes com os dados reais
+  passaram depois do commit.
+- **Estado:** commit 2155b87, feito pelo pesquisador.
 
 ### Lote 55: a evidência espectral descritiva
 

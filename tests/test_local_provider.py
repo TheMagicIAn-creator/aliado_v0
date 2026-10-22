@@ -170,6 +170,17 @@ def test_the_local_notes_show_no_identifier_to_copy():
     assert "sem acrescentar a página" in CITE_RULE
 
 
+def test_the_shared_citation_rules_show_no_identifier_to_copy():
+    """PRV-06 (lote 57): no lote 48, o local copiou o [K1] do exemplo [K1][K2] das regras da biblioteca. As regras de
+    citação, que também vão ao local, mostram só o formato [K...], sem nenhum identificador de exemplo."""
+    import re
+
+    from aliado.agent import LIBRARY_RULES, READING_RULES
+
+    for rules in (LIBRARY_RULES, READING_RULES):
+        assert not re.search(r"\[K\w", rules) and "um identificador por" in rules
+
+
 class Response:
     """O fluxo do SDK, que o adapter fecha quando para de ler (lote 46)."""
 
