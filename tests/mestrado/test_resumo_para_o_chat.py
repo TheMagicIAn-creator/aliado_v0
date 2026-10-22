@@ -14,7 +14,7 @@ import pytest
 from apoio.caminhos import REFERENCE, RESULTS, ROOT
 
 from aliado.science.resumo_citavel import formato as core
-from aliado.specializations.mestrado import digest
+from aliado.specializations.mestrado.resumo_para_o_chat import blocos as digest
 
 INTERNAL = re.compile(r"semente|canônic|canonic|\bM\d{2}\b|gpvs-|sha256|commit|\.json|lote \d", re.IGNORECASE)
 SUMMARY = {"detectados": 10, "atraso_mediano_ms": 1000.0, "sensibilidade_media": 0.5, "especificidade_media": 0.5,
@@ -29,8 +29,8 @@ def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = T
     pytest.importorskip("numpy")
     from apoio.avaliacao_sintetica import synthetic
 
-    from aliado.specializations.mestrado import summary
     from aliado.specializations.mestrado.base import ensaios
+    from aliado.specializations.mestrado.resultados import paineis as summary
 
     synthetic(root)
     official = root / summary.EVALUATION / "relatorio.json"
@@ -171,7 +171,7 @@ def test_cache_is_rebuilt_only_when_a_source_file_changes(tmp_path):
 def test_digest_and_interface_open_without_numpy_or_torch():
     code = ("import sys; sys.modules['numpy'] = None; sys.modules['torch'] = None\n"
             "import aliado.interfaces.web.app\n"
-            "from aliado.specializations.mestrado import digest\n"
+            "from aliado.specializations.mestrado.resumo_para_o_chat import blocos as digest\n"
             f"d = digest.build_digest(r'{RESULTS}', r'{REFERENCE}')\n"
             "print([b['citation_id'] for b in d['blocos']], len(d['faltando']))")
     done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=ROOT, timeout=120)

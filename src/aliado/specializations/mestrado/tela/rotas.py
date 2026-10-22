@@ -23,8 +23,8 @@ def science_routes(settings, worker, lock) -> tuple[list[Route], object]:
     def explorer():
         """Criado no primeiro uso da aba (numpy e PyTorch não pesam na abertura do servidor) e de novo
         quando a rodada atual muda: os modelos e os erros são os da rodada que a aba mostra."""
-        from aliado.specializations.mestrado.explorer import Explorer
-        from aliado.specializations.mestrado.summary import current
+        from aliado.specializations.mestrado.exploradores.explorador import Explorer
+        from aliado.specializations.mestrado.resultados.paineis import current
 
         if created.get("explorer") is None or created["explorer"].run != current(settings.results_dir):
             created["explorer"] = Explorer(settings.results_dir, settings.dataset_dir, settings.data_dir / "ciencia")
@@ -70,7 +70,7 @@ def science_routes(settings, worker, lock) -> tuple[list[Route], object]:
     async def view(function: str, *arguments):
         """A rodada atual (lotes 23 e 34): só leitura, sem carregar os modelos."""
         try:
-            from aliado.specializations.mestrado import summary
+            from aliado.specializations.mestrado.resultados import paineis as summary
 
             return JSONResponse(await run_in_threadpool(getattr(summary, function), *arguments))
         except FileNotFoundError as exc:

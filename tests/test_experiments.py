@@ -13,7 +13,7 @@ from apoio.avaliacao_sintetica import SHA, legacy_results
 
 from aliado import experiments
 from aliado.science.deteccao.registro import consultas as registry
-from aliado.specializations.mestrado import autoencoders
+from aliado.specializations.mestrado.rodada import experimento as autoencoders
 
 np = pytest.importorskip("numpy")
 ROOT = Path(__file__).resolve().parents[1]
@@ -286,7 +286,7 @@ def test_real_run_goes_from_zero_to_the_current_run(base_real, tmp_path, capsys)
     """EXP-02, EXP-03, EXP-06 e EXP-08 com a base real: o experimento inteiro, de ponta a ponta (5 épocas)."""
     pytest.importorskip("torch")
     from aliado.cli import main
-    from aliado.specializations.mestrado import summary
+    from aliado.specializations.mestrado.resultados import paineis as summary
 
     results = tmp_path / "resultados"
     args = ["experimento", "rodar", "ae-denso-lstm", "--resultados", str(results), "--base", str(base_real),

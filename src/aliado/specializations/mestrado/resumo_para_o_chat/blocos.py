@@ -14,8 +14,8 @@ import threading
 from pathlib import Path
 
 from aliado.science.resumo_citavel.formato import dec, num, pct, seconds
-from aliado.specializations.mestrado import autoencoders
-from aliado.specializations.mestrado.notes import NOTES
+from aliado.specializations.mestrado.glossario.notas import NOTES
+from aliado.specializations.mestrado.rodada import experimento as autoencoders
 
 MAX_CHARS = 16_000
 HEADER = ("A avaliação oficial é a de 27/09/2026 (treino de referência). A reanálise de 30/09/2026, com o "
@@ -77,7 +77,7 @@ def _spread(values, formatter) -> str:
 
 def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str], dict]:
     """R1 a R6, das funções da aba; o início observado (R5 e R6) só entra se existir."""
-    from aliado.specializations.mestrado import summary  # numpy só aqui
+    from aliado.specializations.mestrado.resultados import paineis as summary  # numpy só aqui
 
     overview = summary.overview(results_dir)
     faults = summary.per_fault(results_dir)

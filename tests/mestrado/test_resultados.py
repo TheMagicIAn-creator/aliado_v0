@@ -11,9 +11,9 @@ from apoio.avaliacao_sintetica import synthetic
 
 np = pytest.importorskip("numpy")
 
-from aliado.specializations.mestrado import summary  # noqa: E402
 from aliado.specializations.mestrado.atributos.cache import features_cache  # noqa: E402
 from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
+from aliado.specializations.mestrado.resultados import paineis as summary  # noqa: E402
 
 INTERNAL = re.compile(r"semente|canônic|canonic|M1[0-9]", re.IGNORECASE)
 def test_counts_give_the_same_metrics_as_the_window_formulas():

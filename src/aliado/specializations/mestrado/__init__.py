@@ -13,11 +13,11 @@ interface web entram dentro das funções.
 
 from pathlib import Path
 
-from aliado.specializations.mestrado import autoencoders
 from aliado.specializations.mestrado.comandos.terminal import add_commands
-from aliado.specializations.mestrado.digest import cached as results_digest
-from aliado.specializations.mestrado.notes import NOTES
-from aliado.specializations.mestrado.routing import ROUTING
+from aliado.specializations.mestrado.glossario.notas import NOTES
+from aliado.specializations.mestrado.resumo_para_o_chat.blocos import cached as results_digest
+from aliado.specializations.mestrado.rodada import experimento as autoencoders
+from aliado.specializations.mestrado.roteamento.frases import ROUTING
 
 EXPERIMENTS = (autoencoders,)
 DEFAULT_SKILL = "pesquisa-inversores"
@@ -31,6 +31,6 @@ __all__ = ["DATASET_DIR", "DEFAULT_SKILL", "EXPERIMENTS", "NOTES", "REFERENCE_DI
 
 def science_routes(settings, worker, lock):
     """As rotas da aba Ciência do mestrado e o estado dos exploradores; só a interface web as pede."""
-    from aliado.specializations.mestrado.web import science_routes as routes
+    from aliado.specializations.mestrado.tela.rotas import science_routes as routes
 
     return routes(settings, worker, lock)

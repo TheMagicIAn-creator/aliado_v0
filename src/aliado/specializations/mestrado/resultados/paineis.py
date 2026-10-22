@@ -25,11 +25,11 @@ import numpy as np
 from aliado import experiments
 from aliado.science.deteccao.alarmes.confirmacao import alarm_starts, first_alarm
 from aliado.science.deteccao.limiar.calibracao import false_alarm_interval
-from aliado.specializations.mestrado import autoencoders
 from aliado.specializations.mestrado.atributos.cache import features_cache
 from aliado.specializations.mestrado.base import ensaios
 from aliado.specializations.mestrado.preparo import preparacao
 from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
+from aliado.specializations.mestrado.rodada import experimento as autoencoders
 
 EVALUATION = autoencoders.LEGACY_EVALUATION
 REANALYSIS_PREFIX = "gpvs-reanalise-"

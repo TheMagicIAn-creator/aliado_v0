@@ -14,8 +14,8 @@ FIELDS = ["modelo", "semente", "ensaio", "detectado", "atraso_ms", "atraso_janel
 
 def synthetic(root: Path) -> Path:
     """Uma avaliação sintética com 2 modelos, 2 treinamentos (sementes 1 e 2) e os 14 ensaios."""
-    from aliado.specializations.mestrado import summary
     from aliado.specializations.mestrado.base import ensaios
+    from aliado.specializations.mestrado.resultados import paineis as summary
 
     folder = root / summary.EVALUATION
     folder.mkdir(parents=True)
@@ -62,7 +62,7 @@ def synthetic(root: Path) -> Path:
 
 def legacy_results(root: Path) -> Path:
     """A avaliação de 27/09 em miniatura: avaliação sintética, treino e os hashes que o resultado cita."""
-    from aliado.specializations.mestrado import autoencoders
+    from aliado.specializations.mestrado.rodada import experimento as autoencoders
 
     results = synthetic(root / "resultados")
     evaluation = results / autoencoders.LEGACY_EVALUATION / "configuracao.json"

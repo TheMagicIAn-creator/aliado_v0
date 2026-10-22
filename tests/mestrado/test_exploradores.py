@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from aliado.specializations.mestrado.explorer import Explorer, plain
+from aliado.specializations.mestrado.exploradores.explorador import Explorer, plain
 
 
 def test_plain_converts_numpy_for_json():

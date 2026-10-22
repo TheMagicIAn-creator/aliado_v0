@@ -74,7 +74,6 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
         progress=print) -> dict:
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado import summary
     from aliado.specializations.mestrado.avaliacao.artefatos import export_evaluation
     from aliado.specializations.mestrado.avaliacao.configuracao import EvaluationConfig
     from aliado.specializations.mestrado.avaliacao.pontuacao import score_all
@@ -83,6 +82,7 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
     from aliado.specializations.mestrado.preparo import preparacao
     from aliado.specializations.mestrado.preparo import resumo as resumo_do_preparo
     from aliado.specializations.mestrado.reanalise import reanalise
+    from aliado.specializations.mestrado.resultados import paineis as summary
     from aliado.specializations.mestrado.treino.artefatos import export_training
     from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
     from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
@@ -121,7 +121,7 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
 
 def legacy(results_dir: str | Path) -> dict | None:
     """A avaliação oficial de 27/09 e a reanálise dela, no formato de uma rodada; None se faltarem."""
-    from aliado.specializations.mestrado import summary
+    from aliado.specializations.mestrado.resultados import paineis as summary
 
     results_dir = Path(results_dir)
     try:
@@ -167,7 +167,7 @@ def command(params: dict) -> str:
 def collect(run_, params: dict, *, executed: str | None, duration: float | None = None) -> dict:
     """O resultado da rodada: identificação, parâmetros, hashes, os indicadores e as visões da aba."""
     from aliado.experiments import FORMAT
-    from aliado.specializations.mestrado import summary
+    from aliado.specializations.mestrado.resultados import paineis as summary
 
     overview, faults = summary.overview(run_), summary.per_fault(run_)
     try:
@@ -199,7 +199,7 @@ def collect(run_, params: dict, *, executed: str | None, duration: float | None 
 def numbers(overview: dict, onsets: dict | None) -> dict:
     """Os indicadores que o Markdown, o PDF e a comparação mostram, com o texto da tela e a nota."""
     from aliado.science.resumo_citavel.formato import dec, num, seconds
-    from aliado.specializations.mestrado.notes import NOTES
+    from aliado.specializations.mestrado.glossario.notas import NOTES
 
     found = {}
 
@@ -232,7 +232,7 @@ def numbers(overview: dict, onsets: dict | None) -> dict:
 def report(result: dict) -> list[dict]:
     """Os blocos do PDF, só a partir do resultado: o PDF de uma rodada antiga sai igual ao de hoje."""
     from aliado.science.resumo_citavel.formato import dec, num, seconds
-    from aliado.specializations.mestrado.notes import NOTES
+    from aliado.specializations.mestrado.glossario.notas import NOTES
 
     detail, protocol = result["detalhe"], result["protocolo"]
     overview, faults, onsets = detail["resumo"], detail["metricas"], detail.get("inicio")

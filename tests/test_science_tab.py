@@ -53,7 +53,7 @@ def test_science_state_and_no_results_listing(client):
     state = client.get("/api/ciencia").json()
     assert state["fmeca"] and state["cenarios"] and not state["exploradores"]["disponivel"]
     assert state["rodada"] == "avaliacao-oficial"
-    from aliado.specializations.mestrado.notes import NOTES
+    from aliado.specializations.mestrado.glossario.notas import NOTES
 
     assert state["notas"] == NOTES  # NUC-02: o glossário da aba vem da especialização
     assert client.get("/api/ciencia/resultados").status_code == 404

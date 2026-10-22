@@ -57,7 +57,7 @@ class Explorer:
     """Estado carregado sob demanda: modelos, dados preparados e erros por variável."""
 
     def __init__(self, results_dir: str | Path, gpvs_dir: str | Path, cache_dir: str | Path):
-        from aliado.specializations.mestrado.summary import current
+        from aliado.specializations.mestrado.resultados.paineis import current
 
         self.results_dir = Path(results_dir)
         self.gpvs_dir = Path(gpvs_dir)
