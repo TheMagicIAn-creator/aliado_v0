@@ -18,7 +18,8 @@ from dataclasses import asdict, dataclass
 import numpy as np
 
 from aliado.science.deteccao.normalizacao.escala_robusta import robust_center_scale
-from aliado.specializations.mestrado.preparo import preparacao as gpvs
+from aliado.specializations.mestrado.base import ensaios
+from aliado.specializations.mestrado.preparo import preparacao
 
 GRID = (1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0)
 CLASSES = ("clara", "fraca", "nenhuma")
@@ -111,9 +112,9 @@ def choose_penalty(healthy: dict[str, np.ndarray], config: OnsetConfig) -> tuple
 
 
 def commissioning_windows(phase: np.ndarray) -> int:
-    """O comissionamento de `gpvs.prepare`: a primeira metade do pré-falha, com o mínimo de janelas."""
+    """O comissionamento de `preparacao.prepare`: a primeira metade do pré-falha, com o mínimo de janelas."""
     pre = int(np.sum(phase == "pre_fault"))
-    return max(gpvs.BASELINE_MIN_WINDOWS, int(np.floor(pre * gpvs.BASELINE_FRACTION)))
+    return max(preparacao.BASELINE_MIN_WINDOWS, int(np.floor(pre * preparacao.BASELINE_FRACTION)))
 
 
 def classify(first: dict[float, int | None], chosen: float) -> str:
@@ -127,12 +128,12 @@ def classify(first: dict[float, int | None], chosen: float) -> str:
 def estimate(experiments: dict, config: OnsetConfig | None = None) -> dict:
     """Início nominal e observado de cada ensaio com falha, com a classe e o controle nos saudáveis.
 
-    `experiments` são os `gpvs.ExperimentFeatures` (variáveis brutas por janela, fases e metadados).
+    `experiments` são os `extracao.ExperimentFeatures` (variáveis brutas por janela, fases e metadados).
     """
     config = config or OnsetConfig()
-    chosen, control = choose_penalty({name: experiments[name].values for name in gpvs.HEALTHY}, config)
+    chosen, control = choose_penalty({name: experiments[name].values for name in ensaios.HEALTHY}, config)
     trials = {}
-    for name in gpvs.FAULTY:
+    for name in ensaios.FAULTY:
         item = experiments[name]
         fs = float(item.metadata["fs_hz"])
         reference = commissioning_windows(item.phase)
@@ -147,7 +148,7 @@ def estimate(experiments: dict, config: OnsetConfig | None = None) -> dict:
             "nominal_janela": nominal,
             "nominal_s": item.metadata["fronteira_falha_amostra"] / fs,
             "observado_janela": observed,
-            "observado_s": None if observed is None else observed * gpvs.WINDOW / fs,
+            "observado_s": None if observed is None else observed * ensaios.WINDOW / fs,
             "comissionamento_janelas": reference,
             "janelas": int(len(item.values)),
             "primeira_mudanca_por_c": {str(c): value for c, value in first.items()},

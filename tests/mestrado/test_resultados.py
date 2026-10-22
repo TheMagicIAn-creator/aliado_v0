@@ -12,7 +12,8 @@ from apoio.avaliacao_sintetica import synthetic
 np = pytest.importorskip("numpy")
 
 from aliado.specializations.mestrado import summary  # noqa: E402
-from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
+from aliado.specializations.mestrado.atributos.cache import features_cache  # noqa: E402
+from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
 
 INTERNAL = re.compile(r"semente|canônic|canonic|M1[0-9]", re.IGNORECASE)
 def test_counts_give_the_same_metrics_as_the_window_formulas():
@@ -86,17 +87,17 @@ def test_real_views_repeat_the_official_evaluation(official_results):
 
 
 def test_real_panels_match_the_scores_and_the_official_alarms(official_results, base_real):
-    from aliado.specializations.mestrado.evaluation import _onset
+    from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
 
     panels = summary.score_panels(official_results, base_real)
     report = json.loads((official_results / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     seed, k = report["semente_referencia"], report["top_k"]
     config = json.loads((official_results / "gpvs-modelos-002" / "configuracao.json").read_text(encoding="utf-8"))["configuracao"]
-    prepared = gpvs.prepare(base_real, cache=base_real / "processado" / "variaveis.npz", purge=config["purge"],
+    prepared = preparacao.prepare(base_real, cache=features_cache(base_real), purge=config["purge"],
                             fractions=tuple(config["fractions"]))
     with np.load(official_results / summary.EVALUATION / "escores.npz") as scores:
         for panel in panels["ensaios"]:
-            assert panel["inicio"] == _onset(prepared.faults[panel["id"]])
+            assert panel["inicio"] == nominal_onset(prepared.faults[panel["id"]])
             for kind, model in panel["modelos"].items():
                 values = scores[f"{kind}_s{seed}_k{k}_{panel['id']}"]
                 assert len(model["razao"]) == len(values) == panel["janelas"]

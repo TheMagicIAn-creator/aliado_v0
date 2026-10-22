@@ -15,6 +15,7 @@ torch = pytest.importorskip("torch")
 
 from apoio.caminhos import ROOT  # noqa: E402
 
+from aliado.specializations.mestrado.base import ensaios  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     EvaluationConfig,
     TrainedDetectors,
@@ -23,7 +24,6 @@ from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     run_metrics,
     score_all,
 )
-from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
 
 QUICK = EvaluationConfig(resamples=200)
 
@@ -68,7 +68,7 @@ def test_evaluation_exports_alarms_detection_comparison_and_grids(rodada_sinteti
     assert alarms["teste_saudavel"]["janelas"] == len(data.split["test"])
     assert alarms["pre_falha"]["janelas"] == sum(len(item["pre_teste"]) for item in data.faults.values())
     assert alarms["combinado"]["duracao_s"] == pytest.approx(
-        (alarms["teste_saudavel"]["janelas"] + alarms["pre_falha"]["janelas"]) / gpvs.GRID_HZ)
+        (alarms["teste_saudavel"]["janelas"] + alarms["pre_falha"]["janelas"]) / ensaios.GRID_HZ)
     assert len(reference["ensaios"]) == 14 and "sensibilidade_ic95" in reference["ensaios"]["F1L"]
     for result in reference["ensaios"].values():
         if result["detectado"]:

@@ -26,7 +26,10 @@ from aliado import experiments
 from aliado.science.deteccao.alarmes.confirmacao import alarm_starts, first_alarm
 from aliado.science.deteccao.limiar.calibracao import false_alarm_interval
 from aliado.specializations.mestrado import autoencoders
-from aliado.specializations.mestrado.preparo import preparacao as gpvs
+from aliado.specializations.mestrado.atributos.cache import features_cache
+from aliado.specializations.mestrado.base import ensaios
+from aliado.specializations.mestrado.preparo import preparacao
+from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
 
 EVALUATION = autoencoders.LEGACY_EVALUATION
 REANALYSIS_PREFIX = "gpvs-reanalise-"
@@ -40,7 +43,7 @@ METRICS = COUNT_METRICS + MEAN_METRICS
 COMPARISON_NAMES = {"alarmes_pre_falha": "Alarmes antes da falha, por ensaio", "especificidade": "Especificidade",
                     "detectado": "Ensaio detectado (1 ou 0)", "sensibilidade": "Sensibilidade",
                     "atraso_ms": "Atraso (ms), nos ensaios detectados pelos dois"}
-WINDOW_S = gpvs.WINDOW / gpvs.SAMPLING_HZ  # uma janela de um ciclo de rede: 20 ms
+WINDOW_S = ensaios.WINDOW / ensaios.SAMPLING_HZ  # uma janela de um ciclo de rede: 20 ms
 _cache: dict = {}
 _lock = threading.Lock()
 
@@ -139,11 +142,11 @@ def _counts(rows) -> dict:
 def trials() -> list[dict]:
     """Os 14 ensaios com o nome curto e o longo da falha, o modo e se a falha é física."""
     items = []
-    for name in gpvs.FAULTY:
+    for name in ensaios.FAULTY:
         fault = int(name[1])
-        description, physical = gpvs.FAULTS[fault]
+        description, physical = ensaios.FAULTS[fault]
         items.append({"id": name, "falha": f"F{fault}", "nome": SHORT_FAULTS[fault], "descricao": description,
-                      "fisica": physical, "modo": name[2], "modo_nome": gpvs.MODES[name[2]]})
+                      "fisica": physical, "modo": name[2], "modo_nome": ensaios.MODES[name[2]]})
     return items
 
 
@@ -212,7 +215,7 @@ def per_fault(results_dir) -> dict:
     for kind in MODELS:
         own = [row for row in rows if row["modelo"] == kind]
         by_trial = {}
-        for name in gpvs.FAULTY:
+        for name in ensaios.FAULTY:
             runs = [row for row in own if row["ensaio"] == name]
             chosen = next(row for row in runs if row["semente"] == reference)
             spread = {key: [min(r[key] for r in runs if r[key] is not None), max(r[key] for r in runs if r[key] is not None)]
@@ -237,17 +240,12 @@ def per_fault(results_dir) -> dict:
                         "gerais": {key: {"valor": overall[f"{key}_media"],
                                          "faixa": model["faixa_sementes"][f"{key}_media"]} for key in METRICS}}
     return {"modelos": result, "ensaios": trials(), "treinamentos": len({row["semente"] for row in rows}),
-            "falhas": [{"id": f"F{f}", "nome": SHORT_FAULTS[f], "descricao": gpvs.FAULTS[f][0],
-                        "fisica": gpvs.FAULTS[f][1]} for f in range(1, 8)]}
+            "falhas": [{"id": f"F{f}", "nome": SHORT_FAULTS[f], "descricao": ensaios.FAULTS[f][0],
+                        "fisica": ensaios.FAULTS[f][1]} for f in range(1, 8)]}
 
 
 def _span(indices) -> list[int] | None:
     return [int(indices[0]), int(indices[-1])] if len(indices) else None
-
-
-def onset(item: dict) -> int:
-    """Primeira janela da transição, ou do pós-falha: a mesma regra de `evaluation._onset`, sem o torch."""
-    return int(item["transicao"][0]) if len(item["transicao"]) else int(item["pos_falha"][0])
 
 
 def _ratio(values, threshold: float) -> list[float]:
@@ -355,7 +353,7 @@ def _panels(folder: Path, gpvs_dir: Path) -> dict:
     report, config = _json(folder / "relatorio.json"), _json(folder / "configuracao.json")
     training = _json(Path(folder.parent) / Path(config["treino"]["pasta"]).name / "configuracao.json")["configuracao"]
     reference, k, confirmations = report["semente_referencia"], report["top_k"], report["confirmacao"]
-    prepared = gpvs.prepare(gpvs_dir, cache=gpvs_dir / "processado" / "variaveis.npz", purge=training["purge"],
+    prepared = preparacao.prepare(gpvs_dir, cache=features_cache(gpvs_dir), purge=training["purge"],
                             fractions=tuple(training["fractions"]))
     rows = {(row["modelo"], row["ensaio"]): row for row in _rows(folder) if row["semente"] == reference}
     thresholds = {kind: report["modelos"][kind]["limiar"] for kind in MODELS}
@@ -364,7 +362,7 @@ def _panels(folder: Path, gpvs_dir: Path) -> dict:
         for item in trials():
             name, data = item["id"], prepared.faults[item["id"]]
             models = {}
-            start, pre = onset(data), data["pre_teste"]
+            start, pre = nominal_onset(data), data["pre_teste"]
             for kind in MODELS:
                 values = scores[f"{kind}_s{reference}_k{k}_{name}"]
                 above = values > thresholds[kind]
@@ -377,19 +375,19 @@ def _panels(folder: Path, gpvs_dir: Path) -> dict:
                                 "alarme_deteccao": None if first is None else start + int(first),
                                 "detectado": row["detectado"], "atraso_ms": row["atraso_ms"],
                                 "alarmes_pre_falha": row["alarmes_pre_falha"]}
-            panels.append(item | {"janelas": len(values), "inicio": onset(data),
+            panels.append(item | {"janelas": len(values), "inicio": nominal_onset(data),
                                   "fases": {phase: _span(data[phase]) for phase in
                                             ("comissionamento", "pre_teste", "transicao", "pos_falha")},
                                   "modelos": models})
         healthy = []
-        for name in gpvs.HEALTHY:
+        for name in ensaios.HEALTHY:
             models = {}
             for kind in MODELS:
                 values = scores[f"{kind}_s{reference}_k{k}_saudavel_{name}"]
                 models[kind] = {"razao": _ratio(values, thresholds[kind]),
                                 "alarmes_antes": [int(i) for i in alarm_starts(values > thresholds[kind], confirmations)],
                                 "alarme_deteccao": None}
-            healthy.append({"id": name, "nome": "Teste saudável", "modo": name[2], "modo_nome": gpvs.MODES[name[2]],
+            healthy.append({"id": name, "nome": "Teste saudável", "modo": name[2], "modo_nome": ensaios.MODES[name[2]],
                             "janelas": len(values), "modelos": models})
     return {"janela_s": WINDOW_S, "confirmacoes": confirmations, "k": k,
             "modelos": {kind: {"nome": name, "limiar": thresholds[kind]} for kind, name in MODELS.items()},

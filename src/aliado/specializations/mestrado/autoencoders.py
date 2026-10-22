@@ -18,11 +18,13 @@ from importlib.util import find_spec
 from pathlib import Path
 
 from aliado.science.deteccao.registro import consultas as registry
+from aliado.specializations.mestrado.atributos.cache import features_cache
+from aliado.specializations.mestrado.base.ensaios import DATA_DIR
 
 KEY = "ae-denso-lstm"
 TITLE = "AE Denso × AE-LSTM"
 DATASET = "GPVS"
-DATASET_DIR = Path("data/gpvs")
+DATASET_DIR = DATA_DIR
 CONFIRMATION = registry.PHRASE
 DESCRIPTION = ("Compara dois detectores de falhas não supervisionados na base GPVS: um autoencoder denso, que olha "
                "cada janela de 20 ms sozinha, e um autoencoder LSTM, que olha sequências de janelas. Os dois seguem o "
@@ -79,24 +81,23 @@ def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_di
         load_training,
         score_all,
     )
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
-    from aliado.specializations.mestrado.treino.detectores import (
-        ExperimentConfig,
-        export_training,
-        train_detectors,
-        training_blocks,
-    )
+    from aliado.specializations.mestrado.preparo import artefatos as artefatos_do_preparo
+    from aliado.specializations.mestrado.preparo import preparacao
+    from aliado.specializations.mestrado.preparo import resumo as resumo_do_preparo
+    from aliado.specializations.mestrado.treino.artefatos import export_training
+    from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
+    from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
 
     started = time.monotonic()
     folder, results_dir, dataset_dir = Path(folder), Path(results_dir), Path(dataset_dir)
     output = folder.resolve().relative_to(results_dir.resolve()).as_posix()
-    cache = dataset_dir / "processado" / "variaveis.npz"
+    cache = features_cache(dataset_dir)
     seeds = tuple(params["sementes"])
     config = ExperimentConfig(purge=params["separacao"], seeds=seeds, reference_seed=42 if 42 in seeds else seeds[0],
                               hyperparameters=Hyperparameters(max_epochs=params["teto_epocas"]))
     progress(f"Preparando a base de dados, com {config.purge} janelas entre os blocos…")
-    prepared = gpvs.prepare(dataset_dir, cache=cache, purge=config.purge, fractions=config.fractions)
-    gpvs.export_preparation(prepared, gpvs.report(prepared), folder / STAGES["preparo"])
+    prepared = preparacao.prepare(dataset_dir, cache=cache, purge=config.purge, fractions=config.fractions)
+    artefatos_do_preparo.export_preparation(prepared, resumo_do_preparo.report(prepared), folder / STAGES["preparo"])
     progress(f"Treinando os dois modelos em {len(seeds)} repetições…")
     runs = train_detectors(prepared.scaled, training_blocks(prepared), config, progress=progress)
     export_training(runs, prepared, config, folder / STAGES["modelos"])

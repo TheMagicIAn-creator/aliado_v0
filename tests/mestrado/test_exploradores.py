@@ -36,7 +36,8 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
 
     from aliado.science.deteccao.inferencia import erros
     from aliado.specializations.mestrado import evaluation
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.atributos import variaveis
+    from aliado.specializations.mestrado.base import ensaios
     from aliado.specializations.mestrado.treino import detectores as training
 
     computed = []
@@ -48,7 +49,7 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
     trained = SimpleNamespace(frozen={"sha256": "c" * 64}, models={("denso", 42): "rede"},
                               config=SimpleNamespace(hyperparameters=SimpleNamespace(sequence=8)))
     prepared = SimpleNamespace(hashes={"F0L.csv": "d" * 64}, scaled=np.zeros((4, 24), np.float32), faults={},
-                               split={"por_ensaio": {name: {"test": slice(2, 4)} for name in gpvs.HEALTHY}})
+                               split={"por_ensaio": {name: {"test": slice(2, 4)} for name in ensaios.HEALTHY}})
     explorer = Explorer(tmp_path / "resultados", tmp_path / "gpvs", tmp_path / "cache")
     first = explorer._errors(trained, prepared, {"denso_s42": "a" * 64})
     again = explorer._errors(trained, prepared, {"denso_s42": "a" * 64})
@@ -61,7 +62,7 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
         with np.load(path) as cached:
             metas.append(json.loads(str(cached["meta"])))
     assert {meta["pesos"]["denso_s42"] for meta in metas} == {"a" * 64, "b" * 64}
-    assert all(meta["variaveis"] == list(gpvs.FEATURES) and meta["treino"] == "c" * 64 for meta in metas)
+    assert all(meta["variaveis"] == list(variaveis.FEATURES) and meta["treino"] == "c" * 64 for meta in metas)
 
 
 def test_explorers_reproduce_the_canonical_evaluation_exactly(tmp_path, official_results, base_real):

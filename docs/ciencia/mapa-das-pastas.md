@@ -95,14 +95,22 @@ Notas:
 
 ## Mestrado: `src/aliado/specializations/mestrado/`
 
-As pastas do mestrado entram nos lotes 51 a 53, na ordem do método: `base/`, `atributos/`, `preparo/`, `treino/`,
-`avaliacao/`, `inicio_das_falhas/`, `reanalise/`, `comandos/`, `rodada/`, `resultados/`, `resumo_para_o_chat/`,
-`exploradores/`, `tela/`, `roteamento/` e `glossario/`. Os testes delas já estão em `tests/mestrado/`, com os mesmos
-nomes.
+A pesquisa de detecção de falhas na base GPVS-Faults, na ordem do método. Os testes de cada pasta ficam em
+`tests/mestrado/test_<pasta>.py`.
+
+| Etapa | Pasta e arquivos | O que tem | Teste |
+|---|---|---|---|
+| 1. Base | `base/ensaios.py`, `base/leitura.py` | os 16 ensaios (F0L e F0M sadios; F1L a F7M com falha), as 14 colunas, as 7 falhas, a amostragem de 10 kHz, a janela de 200 amostras (um ciclo de 50 Hz), a pasta da base; os arquivos, a proveniência pelos hashes, os CSVs | `test_base.py` |
+| 2. Atributos | `atributos/variaveis.py`, `extracao.py`, `cache.py` | as 24 variáveis de cada janela (mediana e IQR de Ipv, Vpv e Vdc; RMS e THD de cada fase; desequilíbrios; potências), a extração por ensaio e o cache | `test_atributos.py` |
+| 3. Preparo | `preparo/preparacao.py`, `resumo.py`, `artefatos.py`, `inicio_nominal.py` | a divisão 50/15/15/20 com separação de 11 janelas, a normalização pela linha de base do treino (piso de 10% do IQR), o comissionamento pela 1ª metade do pré-falha, o início nominal (o meio do registro) | `test_preparo.py` |
+| 4. Treino | `treino/configuracao.py`, `detectores.py`, `resumo.py`, `relatorio.py`, `artefatos.py` | a configuração congelada com hash, as entradas de cada modelo, o treino em cada repetição e o limiar p99 na calibração | `test_treino.py` |
+
+As pastas seguintes entram nos lotes 52 e 53: `avaliacao/`, `inicio_das_falhas/`, `reanalise/`, `comandos/`,
+`rodada/`, `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/`.
 
 ## Do nome antigo para o novo
 
-| Antes (até o lote 49) | Agora (lote 50) | Em inglês (proposta, para depois) |
+| Antes | Agora | Em inglês (proposta, para depois) |
 |---|---|---|
 | `science/detection/models.py` | `deteccao/redes/autoencoders.py`, `deteccao/treino/laco.py`, `deteccao/pesos/arquivos.py`, `deteccao/inferencia/erros.py` e `deteccao/escore/top_k.py` | `detection/networks`, `training`, `weights`, `inference` e `score` |
 | `science/detection/protocol.py` | `deteccao/particao/blocos.py`, `sequencias.py` e `autocorrelacao.py`; `deteccao/normalizacao/escala_robusta.py` | `partition` e `normalization` |
@@ -113,5 +121,8 @@ nomes.
 | `science/fmeca.py` | `fmeca/tabela.py`, `calculo.py`, `relatorio.py` e `artefatos.py` | `fmeca` |
 | `science/components.py` | `componentes/reparos.py` e `disponibilidade.py` | `components` |
 | `science/digest.py` | `resumo_citavel/formato.py` | `citable_digest` |
+| `mestrado/gpvs.py` | `base/ensaios.py` e `leitura.py`; `atributos/variaveis.py`, `extracao.py` e `cache.py`; `preparo/preparacao.py`, `resumo.py` e `artefatos.py` (lote 51) | `dataset`, `features` e `preparation` |
+| `mestrado/training.py` | `treino/configuracao.py`, `detectores.py`, `resumo.py`, `relatorio.py` e `artefatos.py` (lote 51) | `training` |
+| `evaluation._onset`, `reanalysis._nominal` e `summary.onset` | `preparo/inicio_nominal.nominal_onset` (lote 51) | `nominal_onset` |
 
 Os mapas datados de `docs/arquitetura/2026-10-05/` são registros daquele dia e mantêm os caminhos antigos.

@@ -70,7 +70,8 @@ def base_real(tmp_path_factory):
     pelo código de hoje, e nada é gravado em `data/gpvs`."""
     if not BASE_PRESENTE:
         pytest.skip("Sem a base GPVS neste computador.")
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.atributos import extracao
+    from aliado.specializations.mestrado.atributos.cache import features_cache
 
     folder = tmp_path_factory.mktemp("gpvs-real")
     for path in [*sorted(GPVS.glob("*.csv")), GPVS / "proveniencia.json"]:
@@ -78,5 +79,5 @@ def base_real(tmp_path_factory):
             os.link(path, folder / path.name)
         except OSError:
             shutil.copy2(path, folder / path.name)
-    gpvs.extract_all(folder, cache=folder / "processado" / "variaveis.npz")
+    extracao.extract_all(folder, cache=features_cache(folder))
     return folder

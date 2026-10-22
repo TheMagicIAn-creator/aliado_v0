@@ -22,11 +22,11 @@ from aliado.science.deteccao.redes.autoencoders import (  # noqa: E402
     Hyperparameters,
     parameter_count,
 )
-from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
+from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
 from aliado.specializations.mestrado.treino import detectores as training_module  # noqa: E402
+from aliado.specializations.mestrado.treino.artefatos import export_training  # noqa: E402
+from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig  # noqa: E402
 from aliado.specializations.mestrado.treino.detectores import (  # noqa: E402
-    ExperimentConfig,
-    export_training,
     model_inputs,
     train_detectors,
     training_blocks,
@@ -44,7 +44,7 @@ def small_config(**changes) -> ExperimentConfig:
 
 def test_config_is_validated_and_hashed():
     config = ExperimentConfig()
-    assert config.purge == gpvs.PURGE == 11 and config.seeds == (13, 29, 42, 71, 101)
+    assert config.purge == preparacao.PURGE == 11 and config.seeds == (13, 29, 42, 71, 101)
     assert (config.reference_seed, config.top_k, config.sensitivity_k, config.percentile) == (42, 5, (5, 10, 20), 99.0)
     assert (config.hyperparameters.max_epochs, config.hyperparameters.patience) == (2000, 20)
     assert config.digest() == ExperimentConfig().digest() != ExperimentConfig(top_k=10).digest()

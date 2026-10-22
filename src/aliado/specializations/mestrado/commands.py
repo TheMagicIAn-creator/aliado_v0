@@ -10,20 +10,22 @@ import json
 import sys
 from pathlib import Path
 
-DATA = Path("data/gpvs")
-CACHE = DATA / "processado" / "variaveis.npz"
+from aliado.specializations.mestrado.atributos.cache import features_cache
+from aliado.specializations.mestrado.base.ensaios import DATA_DIR
+
+CACHE = features_cache(DATA_DIR)
 
 
 def add_commands(science_commands) -> None:
     """Os comandos do experimento por etapa, no `aliado ciencia` do núcleo."""
     gpvs = science_commands.add_parser("preparar-gpvs", help="Prepara os dados do GPVS: divisão e normalização, sem modelos")
-    gpvs.add_argument("--dados", type=Path, default=DATA)
+    gpvs.add_argument("--dados", type=Path, default=DATA_DIR)
     gpvs.add_argument("--saida", type=Path, required=True, help="Pasta nova para o relatório")
     gpvs.add_argument("--cache", type=Path, default=CACHE)
     gpvs.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: 11)")
     gpvs.set_defaults(handler=_prepare)
     training = science_commands.add_parser("treinar-gpvs", help="Treina os autoencoders e fixa o limiar p99")
-    training.add_argument("--dados", type=Path, default=DATA)
+    training.add_argument("--dados", type=Path, default=DATA_DIR)
     training.add_argument("--saida", type=Path, required=True, help="Pasta nova para modelos e relatório")
     training.add_argument("--cache", type=Path, default=CACHE)
     training.add_argument("--separacao", type=int, help="Janelas entre blocos (padrão: 11)")
@@ -34,7 +36,7 @@ def add_commands(science_commands) -> None:
     evaluation = science_commands.add_parser("avaliar-gpvs", help="Avalia os modelos treinados nos ensaios de teste")
     evaluation.add_argument("--modelos", type=Path, required=True, help="Pasta de uma rodada de treinar-gpvs")
     evaluation.add_argument("--saida", type=Path, required=True, help="Pasta nova para a avaliação")
-    evaluation.add_argument("--dados", type=Path, default=DATA)
+    evaluation.add_argument("--dados", type=Path, default=DATA_DIR)
     evaluation.add_argument("--cache", type=Path, default=CACHE)
     evaluation.set_defaults(handler=_evaluate)
     reanalysis = science_commands.add_parser(
@@ -42,7 +44,7 @@ def add_commands(science_commands) -> None:
     reanalysis.add_argument("--avaliacao", type=Path, default=Path("data/resultados/gpvs-avaliacao-001"))
     reanalysis.add_argument("--modelos", type=Path, default=Path("data/resultados/gpvs-modelos-002"))
     reanalysis.add_argument("--saida", type=Path, required=True, help="Pasta nova para a reanálise")
-    reanalysis.add_argument("--dados", type=Path, default=DATA)
+    reanalysis.add_argument("--dados", type=Path, default=DATA_DIR)
     reanalysis.add_argument("--cache", type=Path, default=CACHE)
     reanalysis.set_defaults(handler=_reanalyze)
 
@@ -57,11 +59,9 @@ def _new(folder: Path) -> None:
 
 
 def _prepare(args) -> int:
-    from aliado.specializations.mestrado.preparo.preparacao import (
-        export_preparation,
-        prepare,
-        report,
-    )
+    from aliado.specializations.mestrado.preparo.artefatos import export_preparation
+    from aliado.specializations.mestrado.preparo.preparacao import prepare
+    from aliado.specializations.mestrado.preparo.resumo import report
 
     _new(args.saida)
     prepared = prepare(args.dados, cache=args.cache, **_purge(args))
@@ -72,12 +72,9 @@ def _prepare(args) -> int:
 def _train(args) -> int:
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
     from aliado.specializations.mestrado.preparo.preparacao import prepare
-    from aliado.specializations.mestrado.treino.detectores import (
-        ExperimentConfig,
-        export_training,
-        train_detectors,
-        training_blocks,
-    )
+    from aliado.specializations.mestrado.treino.artefatos import export_training
+    from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
+    from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
 
     _new(args.saida)
     options = _purge(args)

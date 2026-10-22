@@ -8,9 +8,11 @@ import pytest
 pytest.importorskip("torch")
 
 from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS  # noqa: E402
+from aliado.specializations.mestrado.atributos import variaveis  # noqa: E402
+from aliado.specializations.mestrado.base import ensaios  # noqa: E402
 from aliado.specializations.mestrado.evaluation import EvaluationConfig  # noqa: E402
-from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
-from aliado.specializations.mestrado.treino.detectores import ExperimentConfig  # noqa: E402
+from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
+from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig  # noqa: E402
 
 FEATURES = (
     "Ipv_median", "Ipv_iqr", "Vpv_median", "Vpv_iqr", "Vdc_median", "Vdc_iqr",
@@ -22,9 +24,9 @@ FEATURES = (
 
 def test_the_protocol_values_are_the_ones_decided():
     """EXP-12: os 24 atributos na ordem, a janela de um ciclo, a divisão, o escore, o limiar, o alarme e a sequência."""
-    assert gpvs.FEATURES == FEATURES
-    assert (gpvs.WINDOW, gpvs.SAMPLING_HZ, gpvs.GRID_HZ) == (200, 10_000.0, 50.0)
-    assert gpvs.PURGE == 11 and tuple(DEFAULT_FRACTIONS) == (0.50, 0.15, 0.15, 0.20)
+    assert variaveis.FEATURES == FEATURES
+    assert (ensaios.WINDOW, ensaios.SAMPLING_HZ, ensaios.GRID_HZ) == (200, 10_000.0, 50.0)
+    assert preparacao.PURGE == 11 and tuple(DEFAULT_FRACTIONS) == (0.50, 0.15, 0.15, 0.20)
     config = ExperimentConfig()
     assert (config.top_k, config.percentile, config.purge, tuple(config.fractions)) == (5, 99.0, 11, (0.50, 0.15, 0.15, 0.20))
     assert config.hyperparameters.sequence == 8
@@ -38,4 +40,4 @@ def test_normalization_is_the_robust_one_of_the_training_baseline():
     np = pytest.importorskip("numpy")
     center, scale = robust_center_scale(np.array([[1.0], [2.0], [3.0], [4.0], [100.0]]))
     assert (center.tolist(), scale.tolist()) == ([3.0], [2.0])
-    assert gpvs.IQR_FLOOR_FRACTION == 0.10
+    assert preparacao.IQR_FLOOR_FRACTION == 0.10

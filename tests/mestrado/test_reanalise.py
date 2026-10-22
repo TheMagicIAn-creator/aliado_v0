@@ -12,6 +12,8 @@ torch = pytest.importorskip("torch")
 
 from aliado.science.deteccao.registro import consultas as registry  # noqa: E402
 from aliado.specializations.mestrado import reanalysis, summary  # noqa: E402
+from aliado.specializations.mestrado.atributos.cache import features_cache  # noqa: E402
+from aliado.specializations.mestrado.base import ensaios  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     load_thresholds,
     load_training,
@@ -19,7 +21,7 @@ from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     score_all,
     summarize,
 )
-from aliado.specializations.mestrado.preparo import preparacao as gpvs  # noqa: E402
+from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
 
 
 def test_thresholds_load_without_the_weights(rodada_sintetica):
@@ -38,7 +40,7 @@ def test_stored_scores_are_the_ones_of_the_evaluation(rodada_sintetica):
     fresh = score_all(load_training(results / "gpvs-modelos-002"), data)
     for key, values in fresh.items():
         assert all(np.array_equal(a, b) for a, b in zip(values["saudavel"], stored[key]["saudavel"]))
-        assert all(np.array_equal(values["ensaios"][name], stored[key]["ensaios"][name]) for name in gpvs.FAULTY)
+        assert all(np.array_equal(values["ensaios"][name], stored[key]["ensaios"][name]) for name in ensaios.FAULTY)
 
 
 def test_relabel_moves_the_positives_and_leaves_the_gap_out(rodada_sintetica):
@@ -53,16 +55,16 @@ def test_relabel_moves_the_positives_and_leaves_the_gap_out(rodada_sintetica):
     assert np.array_equal(later["pre_teste"], item["pre_teste"])
     assert later["transicao"].tolist() == list(range(nominal, nominal + 5))
     assert later["pos_falha"][0] == nominal + 5 and later["pos_falha"][-1] == len(item["scaled"]) - 1
-    assert relabeled.extraction["F1L"]["fronteira_falha_amostra"] == (nominal + 5) * gpvs.WINDOW
+    assert relabeled.extraction["F1L"]["fronteira_falha_amostra"] == (nominal + 5) * ensaios.WINDOW
     earlier = relabeled.faults["F2L"]
     assert earlier["pre_teste"].max() < nominal - 3 and len(earlier["transicao"]) == 0
     assert earlier["pos_falha"][0] == nominal - 3
     assert relabeled.faults["F3L"] is data.faults["F3L"]
-    assert data.extraction["F1L"]["fronteira_falha_amostra"] == nominal * gpvs.WINDOW  # o original não muda
+    assert data.extraction["F1L"]["fronteira_falha_amostra"] == nominal * ensaios.WINDOW  # o original não muda
 
     # Alarme que vem antes da mudança: detectado, com atraso negativo; as positivas começam na mudança.
     run = {"saudavel": [np.zeros(len(block)) for block in (data.split["test"],)],
-           "ensaios": {name: np.zeros(len(data.faults[name]["scaled"])) for name in gpvs.FAULTY}}
+           "ensaios": {name: np.zeros(len(data.faults[name]["scaled"])) for name in ensaios.FAULTY}}
     run["ensaios"]["F1L"][nominal:] = 1.0
     result = run_metrics(run, 0.5, relabeled, 3)["ensaios"]["F1L"]
     assert result["detectado"] and result["atraso_ms"] == pytest.approx(-2 * 20.0, abs=0.01)
@@ -85,7 +87,7 @@ def test_reanalysis_exports_registers_and_never_overwrites(rodada_sintetica_copi
     # No sintético a mudança é no meio: a reanálise dá os números da avaliação.
     for kind in ("denso", "lstm"):
         assert report["modelos"][kind]["referencia"]["resumo"] == official["modelos"][kind]["referencia"]["resumo"]
-    assert report["so_mudanca_clara"]["ensaios"] == list(gpvs.FAULTY)
+    assert report["so_mudanca_clara"]["ensaios"] == list(ensaios.FAULTY)
     assert set(report["sensibilidade"]["percentil"]) == {"95", "97.5", "99"}
     assert set(report["alarmes_estimados"]) == {"denso", "lstm"} and "limiar_incerteza" in report
     frozen = json.loads((output / "configuracao.json").read_text(encoding="utf-8"))
@@ -103,7 +105,7 @@ def test_reanalysis_exports_registers_and_never_overwrites(rodada_sintetica_copi
 
     # As visões da aba leem a reanálise: início por ensaio, indicadores e a estimativa no Resumo.
     view = summary.onsets(results)
-    assert [item["id"] for item in view["ensaios"]] == list(gpvs.FAULTY) and view["clara"] == list(gpvs.FAULTY)
+    assert [item["id"] for item in view["ensaios"]] == list(ensaios.FAULTY) and view["clara"] == list(ensaios.FAULTY)
     assert view["controle_saudavel"] == {"F0L": 0, "F0M": 0}
     assert view["modelos"]["denso"]["meio"]["sensibilidade"] == view["modelos"]["denso"]["mudanca"]["sensibilidade"]
     assert not re.search(r"semente|canônic|canonic|M1[0-9]", json.dumps(view, ensure_ascii=False), re.IGNORECASE)
@@ -116,7 +118,7 @@ def test_reanalysis_exports_registers_and_never_overwrites(rodada_sintetica_copi
 def test_real_nominal_onsets_repeat_the_official_report(official_results, base_real):
     trained, _ = load_thresholds(official_results / "gpvs-modelos-002")
     config, _ = reanalysis.evaluation_config(official_results / reanalysis.EVALUATION)
-    data = gpvs.prepare(base_real, cache=base_real / "processado" / "variaveis.npz", purge=trained.config.purge,
+    data = preparacao.prepare(base_real, cache=features_cache(base_real), purge=trained.config.purge,
                         fractions=trained.config.fractions)
     scores = reanalysis.load_scores(official_results / reanalysis.EVALUATION / "escores.npz", trained)
     official = json.loads((official_results / reanalysis.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
@@ -126,7 +128,7 @@ def test_real_nominal_onsets_repeat_the_official_report(official_results, base_r
 
 def test_real_reanalysis_keeps_detection_and_moves_delay_and_sensitivity(official_results, base_real):
     report = reanalysis.reanalyze(official_results / reanalysis.EVALUATION, official_results / "gpvs-modelos-002",
-                                  base_real, cache=base_real / "processado" / "variaveis.npz")
+                                  base_real, cache=features_cache(base_real))
     official = json.loads((official_results / reanalysis.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     clear = report["so_mudanca_clara"]["ensaios"]
     assert len(clear) == 8

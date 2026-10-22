@@ -33,8 +33,11 @@ from aliado.science.deteccao.metricas.por_janela import window_metrics
 from aliado.science.deteccao.particao.sequencias import sequences_from_flow
 from aliado.science.deteccao.pesos.arquivos import load_model
 from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS, Hyperparameters
-from aliado.specializations.mestrado.preparo import preparacao as gpvs
-from aliado.specializations.mestrado.treino.detectores import ExperimentConfig, environment
+from aliado.specializations.mestrado.base import ensaios
+from aliado.specializations.mestrado.preparo import preparacao
+from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
+from aliado.specializations.mestrado.treino.artefatos import environment
+from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
 
 SECONDS_PER_HOUR = 3600
 SECONDARY = ("precisao", "f1", "acuracia_balanceada", "mcc", "auc_roc", "auc_pr")
@@ -134,14 +137,14 @@ def score_segment(kind: str, model, scaled: np.ndarray, sequence: int, ks) -> di
     return {int(k): top_k_scores(errors, k) for k in ks}
 
 
-def score_all(trained: TrainedDetectors, prepared: gpvs.PreparedGPVS) -> dict:
+def score_all(trained: TrainedDetectors, prepared: preparacao.PreparedGPVS) -> dict:
     """Escores do teste saudável (por ensaio) e dos 14 ensaios com falha, para cada modelo, semente e k."""
     config = trained.config
     if prepared.hashes != trained.frozen["dados"]["hashes"]:
         raise ValueError("Os dados preparados não são os do treino.")
     if prepared.purge != config.purge or tuple(prepared.fractions) != tuple(config.fractions):
         raise ValueError("Os dados preparados não seguem a divisão do treino.")
-    tests = [prepared.split["por_ensaio"][name]["test"] for name in gpvs.HEALTHY]
+    tests = [prepared.split["por_ensaio"][name]["test"] for name in ensaios.HEALTHY]
     scores = {}
     for (kind, seed), model in trained.models.items():
         sequence = config.hyperparameters.sequence
@@ -158,17 +161,13 @@ def _false_alarms(segments, confirmations: int) -> dict:
     windows = sum(len(segment) for segment in segments)
     above = sum(int(np.sum(segment)) for segment in segments)
     alarms = sum(len(alarm_starts(segment, confirmations)) for segment in segments)
-    duration = windows / gpvs.GRID_HZ
+    duration = windows / ensaios.GRID_HZ
     return {"janelas": windows, "janelas_acima": above, "fracao_janelas_acima": above / windows,
             "alarmes": alarms, "duracao_s": duration, "alarmes_por_hora": alarms / duration * SECONDS_PER_HOUR,
             "limite_superior_por_hora": poisson_upper(alarms) / duration * SECONDS_PER_HOUR}
 
 
-def _onset(item: dict) -> int:
-    return int(item["transicao"][0]) if len(item["transicao"]) else int(item["pos_falha"][0])
-
-
-def run_metrics(run_scores: dict, threshold: float, prepared: gpvs.PreparedGPVS, confirmations: int) -> dict:
+def run_metrics(run_scores: dict, threshold: float, prepared: preparacao.PreparedGPVS, confirmations: int) -> dict:
     """Falsos alarmes, detecção e métricas por janela de um modelo, numa semente e num k."""
     healthy = [values > threshold for values in run_scores["saudavel"]]
     experiments, pre_segments = {}, []
@@ -177,13 +176,13 @@ def run_metrics(run_scores: dict, threshold: float, prepared: gpvs.PreparedGPVS,
         above = values > threshold
         pre = above[item["pre_teste"]]
         pre_segments.append(pre)
-        onset = _onset(item)
+        onset = nominal_onset(item)
         alarm = first_alarm(above[onset:], confirmations)
         meta = prepared.extraction[name]
         delay = None
         if alarm is not None:
             # Do início nominal da falha ao fim da janela que completa a confirmação.
-            delay = ((onset + alarm + 1) * gpvs.WINDOW - meta["fronteira_falha_amostra"]) / meta["fs_hz"] * 1000
+            delay = ((onset + alarm + 1) * ensaios.WINDOW - meta["fronteira_falha_amostra"]) / meta["fs_hz"] * 1000
         experiments[name] = {
             "detectado": alarm is not None, "atraso_ms": delay, "atraso_janelas": None if alarm is None else alarm + 1,
             "alarmes_pre_falha": int(len(alarm_starts(pre, confirmations))), "janelas_pre_falha": int(len(pre)),
@@ -245,7 +244,7 @@ def _differences(dense: dict, lstm: dict, metric: str) -> list[float | None]:
     return result
 
 
-def summarize(scores: dict, trained: TrainedDetectors, prepared: gpvs.PreparedGPVS, config: EvaluationConfig) -> dict:
+def summarize(scores: dict, trained: TrainedDetectors, prepared: preparacao.PreparedGPVS, config: EvaluationConfig) -> dict:
     experiment = trained.config
     k, reference = experiment.top_k, experiment.reference_seed
     runs = {(kind, seed): run_metrics(scores[(kind, seed, k)], trained.thresholds[(kind, seed, k)], prepared,
@@ -351,7 +350,7 @@ def _markdown(summary: dict, trained: TrainedDetectors, config: EvaluationConfig
                   "Especificidade [IC 95%] | Alarmes no pré-falha |",
                   "|---|---|---|---|---:|---|---|---:|"]
         for name, result in item["referencia"]["ensaios"].items():
-            description, physical = gpvs.FAULTS[int(name[1])]
+            description, physical = ensaios.FAULTS[int(name[1])]
             lines.append(
                 f"| {name} | {description} | {'sim' if physical else 'não'} | {'sim' if result['detectado'] else '**não**'} | "
                 f"{_number(result['atraso_ms'])} | {result['sensibilidade']:.3f} {_interval(result['sensibilidade_ic95'], 3)} | "
@@ -420,7 +419,7 @@ def _csv(runs_by_seed: dict) -> str:
     return stream.getvalue()
 
 
-def export_evaluation(scores: dict, trained: TrainedDetectors, prepared: gpvs.PreparedGPVS,
+def export_evaluation(scores: dict, trained: TrainedDetectors, prepared: preparacao.PreparedGPVS,
                       config: EvaluationConfig, output: str | Path) -> dict[str, str]:
     """Configuração congelada, escores, métricas por ensaio e relatório numa pasta nova."""
     folder = Path(output)
@@ -432,12 +431,12 @@ def export_evaluation(scores: dict, trained: TrainedDetectors, prepared: gpvs.Pr
              "escores": folder / "escores.npz"}
     frozen = {"avaliacao": config.as_dict(), "sha256": config.digest(), "executado_em": run_date,
               "treino": {"pasta": trained.folder.as_posix(), "configuracao_sha256": trained.frozen["sha256"]},
-              "dados": {"conjunto": gpvs.DATASET_NAME, "doi": gpvs.DATASET_DOI, "hashes": prepared.hashes},
+              "dados": {"conjunto": ensaios.DATASET_NAME, "doi": ensaios.DATASET_DOI, "hashes": prepared.hashes},
               "ambiente": environment()}
     paths["configuracao"].write_text(json.dumps(frozen, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     arrays = {}
     for (kind, seed, k), values in scores.items():
-        arrays |= {f"{kind}_s{seed}_k{k}_saudavel_{name}": block for name, block in zip(gpvs.HEALTHY, values["saudavel"])}
+        arrays |= {f"{kind}_s{seed}_k{k}_saudavel_{name}": block for name, block in zip(ensaios.HEALTHY, values["saudavel"])}
         arrays |= {f"{kind}_s{seed}_k{k}_{name}": array for name, array in values["ensaios"].items()}
     np.savez_compressed(paths["escores"], **arrays)
     k = trained.config.top_k

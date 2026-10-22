@@ -30,13 +30,13 @@ def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = T
     from apoio.avaliacao_sintetica import synthetic
 
     from aliado.specializations.mestrado import summary
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.base import ensaios
 
     synthetic(root)
     official = root / summary.EVALUATION / "relatorio.json"
     report = json.loads(official.read_text(encoding="utf-8"))
     trials = {name: {"detectado": True, "atraso_ms": 1000.0, "sensibilidade": 0.5, "especificidade": 0.9}
-              for name in gpvs.FAULTY}
+              for name in ensaios.FAULTY}
     for model in report["modelos"].values():
         model["referencia"]["ensaios"] = trials
     official.write_text(json.dumps(report), encoding="utf-8")
@@ -59,8 +59,8 @@ def synthetic_results(root: Path, *, reanalysis: bool = True, training: bool = T
             "inicio": {"penalidade_c": 4.0, "controle_saudavel": {"F0L": {"4.0": 0}, "F0M": {"4.0": 0}},
                        "ensaios": {name: {"classe": "clara" if name < "F4" else "nenhuma", "nominal_s": 7.2,
                                           "observado_s": 8.66 if name < "F4" else None, "janelas": 720}
-                                   for name in gpvs.FAULTY}},
-            "so_mudanca_clara": {"ensaios": [n for n in gpvs.FAULTY if n < "F4"], **brief, "meio": brief},
+                                   for name in ensaios.FAULTY}},
+            "so_mudanca_clara": {"ensaios": [n for n in ensaios.FAULTY if n < "F4"], **brief, "meio": brief},
             "alarmes_estimados": {"denso": estimate, "lstm": estimate},
         }
         (folder / "relatorio.json").write_text(json.dumps(data), encoding="utf-8")

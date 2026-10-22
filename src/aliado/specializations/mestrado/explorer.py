@@ -21,7 +21,10 @@ from pathlib import Path
 import numpy as np
 
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold
-from aliado.specializations.mestrado.preparo import preparacao as gpvs
+from aliado.specializations.mestrado.atributos import variaveis
+from aliado.specializations.mestrado.atributos.cache import features_cache
+from aliado.specializations.mestrado.base import ensaios
+from aliado.specializations.mestrado.preparo import preparacao
 
 CACHE_VERSION = 2  # lote 46: a chave inclui os hashes dos pesos e a ordem das variáveis
 # Em palavras, sem códigos internos (lote 23): o controle por trás continua sendo o M14.
@@ -104,7 +107,7 @@ class Explorer:
             raise ValueError("A avaliação não é da rodada de treino encontrada.")
         if progress:
             progress("dados", 1, 3)
-        prepared = gpvs.prepare(self.gpvs_dir, cache=self.gpvs_dir / "processado" / "variaveis.npz",
+        prepared = preparacao.prepare(self.gpvs_dir, cache=features_cache(self.gpvs_dir),
                                 purge=trained.config.purge, fractions=trained.config.fractions)
         if prepared.hashes != trained.frozen["dados"]["hashes"]:
             raise ValueError("Os dados do GPVS não são os do treino.")
@@ -128,7 +131,7 @@ class Explorer:
         from aliado.specializations.mestrado.treino.detectores import model_inputs, training_blocks
 
         meta = {"versao": CACHE_VERSION, "treino": trained.frozen["sha256"], "dados": prepared.hashes,
-                "pesos": weights, "variaveis": list(gpvs.FEATURES)}
+                "pesos": weights, "variaveis": list(variaveis.FEATURES)}
         # O nome vem da chave inteira: um treino com a mesma configuração e outros pesos não reaproveita nem
         # sobrescreve os erros de outro (lote 46).
         name = hashlib.sha256(json.dumps(meta, sort_keys=True).encode("utf-8")).hexdigest()[:12]
@@ -143,7 +146,7 @@ class Explorer:
         for (kind, seed), model in trained.models.items():
             key = f"{kind}_s{seed}"
             arrays[f"{key}_calibracao"] = feature_errors(model, model_inputs(kind, prepared.scaled, calibration, sequence))
-            for name in gpvs.HEALTHY:
+            for name in ensaios.HEALTHY:
                 block = prepared.split["por_ensaio"][name]["test"]
                 arrays[f"{key}_saudavel_{name}"] = segment_errors(kind, model, prepared.scaled[block], sequence)
             for name, item in prepared.faults.items():
@@ -187,7 +190,7 @@ class Explorer:
         return plain({
             "modelo": kind, "semente": int(seed), "k": k, "percentil": percentile,
             "escores_ordenados": np.sort(scores), "limiar": calibration.as_dict(),
-            "janela": {"indice": window, "escore": scores[window], "variaveis": list(gpvs.FEATURES),
+            "janela": {"indice": window, "escore": scores[window], "variaveis": list(variaveis.FEATURES),
                        "erros": row, "maiores": largest, "media_todas": float(row.mean()),
                        "media_k": float(row[largest].mean())},
             "canonico": {"k": config.top_k, "percentil": config.percentile,
@@ -200,26 +203,27 @@ class Explorer:
                trial: str | None = None) -> dict:
         from aliado.science.deteccao.alarmes.confirmacao import alarm_starts
         from aliado.science.deteccao.escore.top_k import top_k_scores
-        from aliado.specializations.mestrado.evaluation import _onset, run_metrics
+        from aliado.specializations.mestrado.evaluation import run_metrics
+        from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
 
         state, errors = self._ready(kind, seed)
         k, percentile = _k(k), _range(percentile, PERCENTILES, "percentil")
         confirmations = int(_range(confirmations, CONFIRMATIONS, "confirmações"))
-        if trial is not None and trial not in gpvs.FAULTY:
+        if trial is not None and trial not in ensaios.FAULTY:
             raise ValueError("Ensaio inexistente.")
         calibration = calibrate_threshold(top_k_scores(errors["calibracao"], k), percentile, strict=False)
-        scores = {"saudavel": [top_k_scores(errors[f"saudavel_{name}"], k) for name in gpvs.HEALTHY],
-                  "ensaios": {name: top_k_scores(errors[name], k) for name in gpvs.FAULTY}}
+        scores = {"saudavel": [top_k_scores(errors[f"saudavel_{name}"], k) for name in ensaios.HEALTHY],
+                  "ensaios": {name: top_k_scores(errors[name], k) for name in ensaios.FAULTY}}
         prepared = state["prepared"]
         metrics = run_metrics(scores, calibration.value, prepared, confirmations)
         canonical = {row["ensaio"]: row for row in state["canonical_trials"]
                      if row["modelo"] == kind and int(row["semente"]) == int(seed)}
         trials = []
-        for name in gpvs.FAULTY:
-            fault, physical = gpvs.FAULTS[int(name[1])]
+        for name in ensaios.FAULTY:
+            fault, physical = ensaios.FAULTS[int(name[1])]
             item, reference = metrics["ensaios"][name], canonical.get(name, {})
             trials.append({
-                "ensaio": name, "falha": fault, "fisica": physical, "modo": gpvs.MODES[name[2]],
+                "ensaio": name, "falha": fault, "fisica": physical, "modo": ensaios.MODES[name[2]],
                 "detectado": item["detectado"], "atraso_ms": item["atraso_ms"],
                 "alarmes_pre_falha": item["alarmes_pre_falha"],
                 # Lote 23: métricas por janela e contagens, para a matriz de confusão dos parâmetros explorados.
@@ -234,7 +238,7 @@ class Explorer:
             above = values > calibration.value
             timeline = {"ensaio": trial, "escores": values, "limiar": calibration.value,
                         "alarmes": alarm_starts(above, confirmations),
-                        "inicio_nominal": _onset(item), "comissionamento": _span(item["comissionamento"]),
+                        "inicio_nominal": nominal_onset(item), "comissionamento": _span(item["comissionamento"]),
                         "pre_teste": _span(item["pre_teste"]), "transicao": _span(item["transicao"]),
                         "pos_falha": _span(item["pos_falha"])}
         run = state["report"]["modelos"][kind]["sementes"][str(int(seed))]
@@ -262,13 +266,13 @@ class Explorer:
                 "sementes": list(config.seeds), "semente_referencia": config.reference_seed,
                 "k_canonico": config.top_k, "percentil_canonico": config.percentile,
                 "confirmacoes_canonicas": state["report"]["confirmacao"],
-                "variaveis": len(gpvs.FEATURES), "ensaios": list(gpvs.FAULTY)}
+                "variaveis": len(variaveis.FEATURES), "ensaios": list(ensaios.FAULTY)}
 
 
 def _k(value) -> int:
     k = int(value)
-    if not 1 <= k <= len(gpvs.FEATURES):
-        raise ValueError(f"k deve estar entre 1 e {len(gpvs.FEATURES)}.")
+    if not 1 <= k <= len(variaveis.FEATURES):
+        raise ValueError(f"k deve estar entre 1 e {len(variaveis.FEATURES)}.")
     return k
 
 

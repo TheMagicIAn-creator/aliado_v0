@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 
 from aliado.specializations.mestrado import onset
-from aliado.specializations.mestrado.preparo import preparacao as gpvs
+from aliado.specializations.mestrado.atributos import extracao
+from aliado.specializations.mestrado.atributos.cache import features_cache
 
 
 def test_pelt_finds_a_mean_shift_and_nothing_in_noise():
@@ -61,7 +62,7 @@ def test_config_is_validated_and_hashed():
 
 
 def test_synthetic_faults_change_at_the_middle(gpvs_sintetico):
-    experiments, _ = gpvs.extract_all(gpvs_sintetico)
+    experiments, _ = extracao.extract_all(gpvs_sintetico)
     result = onset.estimate(experiments)
     assert result["controle_saudavel"]["F0L"][str(result["penalidade_c"])] == 0
     for name, trial in result["ensaios"].items():
@@ -73,7 +74,7 @@ def test_synthetic_faults_change_at_the_middle(gpvs_sintetico):
 
 
 def test_real_onsets_are_the_ones_reported_on_30_09(base_real):
-    experiments, _ = gpvs.extract_all(base_real, cache=base_real / "processado" / "variaveis.npz")
+    experiments, _ = extracao.extract_all(base_real, cache=features_cache(base_real))
     result = onset.estimate(experiments)
     assert result["penalidade_c"] == 4.0
     control = result["controle_saudavel"]

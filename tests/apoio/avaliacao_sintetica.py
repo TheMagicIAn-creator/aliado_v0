@@ -15,14 +15,14 @@ FIELDS = ["modelo", "semente", "ensaio", "detectado", "atraso_ms", "atraso_janel
 def synthetic(root: Path) -> Path:
     """Uma avaliação sintética com 2 modelos, 2 treinamentos (sementes 1 e 2) e os 14 ensaios."""
     from aliado.specializations.mestrado import summary
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.base import ensaios
 
     folder = root / summary.EVALUATION
     folder.mkdir(parents=True)
     rows = []
     for kind in ("denso", "lstm"):
         for seed in (1, 2):
-            for index, name in enumerate(gpvs.FAULTY):
+            for index, name in enumerate(ensaios.FAULTY):
                 vp, fn, fp, vn = 100 + index + seed, 50 - index, index % 3 + seed, 150 + seed
                 metrics = summary.from_counts(vp, fn, fp, vn)
                 detected = index % 4 != 0

@@ -5,6 +5,18 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 51: o mestrado do dado ao treino em pastas
+
+- **As pastas:** `base/` (os ensaios e a leitura), `atributos/` (as 24 variáveis, a extração e o cache), `preparo/`
+  (a divisão, a normalização, o comissionamento e o início nominal) e `treino/` (a configuração, os detectores, o
+  resumo, o relatório e os arquivos). `gpvs.py` e `training.py` foram repartidos, e as funções têm os nomes de antes.
+- **Cópias que viraram uma:**
+  - a regra do início nominal da falha, que estava em 3 lugares;
+  - o caminho do cache dos atributos, em 4;
+  - a pasta da base, em 2.
+- **A prova:** a equivalência no GPVS sintético não mostra nenhuma diferença, e a bateria passa com os dados reais.
+- **Estado:** commits locais autorizados pelo pesquisador.
+
 ### Lote 50: a ciência geral em pastas
 
 - **As pastas:** `src/aliado/science/` mantém o nome e ganha uma pasta por etapa, cada uma só com aquilo:

@@ -21,9 +21,9 @@ def gpvs_sintetico(tmp_path_factory):
 @pytest.fixture(scope="session")
 def preparado_sintetico(gpvs_sintetico):
     """O GPVS sintético preparado com a separação da origem (2 janelas), sem cache."""
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
+    from aliado.specializations.mestrado.preparo import preparacao
 
-    return gpvs.prepare(gpvs_sintetico, purge=SHORT_PURGE)
+    return preparacao.prepare(gpvs_sintetico, purge=SHORT_PURGE)
 
 
 @pytest.fixture(scope="session")
@@ -39,12 +39,9 @@ def rodada_sintetica(gpvs_sintetico, preparado_sintetico, tmp_path_factory):
         load_training,
         score_all,
     )
-    from aliado.specializations.mestrado.treino.detectores import (
-        ExperimentConfig,
-        export_training,
-        train_detectors,
-        training_blocks,
-    )
+    from aliado.specializations.mestrado.treino.artefatos import export_training
+    from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
+    from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
 
     data = preparado_sintetico
     # 20 janelas de calibração sintéticas não sustentam p99; p90 exige só 11.
@@ -74,13 +71,11 @@ def origin_gpvs_runs(base_real):
     """Semente 42 com a separação e o teto de épocas da origem, treinada uma vez para as conferências reais."""
     pytest.importorskip("torch")
     from aliado.science.deteccao.redes.autoencoders import Hyperparameters
-    from aliado.specializations.mestrado.preparo import preparacao as gpvs
-    from aliado.specializations.mestrado.treino.detectores import (
-        ExperimentConfig,
-        train_detectors,
-        training_blocks,
-    )
+    from aliado.specializations.mestrado.atributos.cache import features_cache
+    from aliado.specializations.mestrado.preparo import preparacao
+    from aliado.specializations.mestrado.treino.configuracao import ExperimentConfig
+    from aliado.specializations.mestrado.treino.detectores import train_detectors, training_blocks
 
     config = ExperimentConfig(purge=2, seeds=(42,), hyperparameters=Hyperparameters(max_epochs=150))
-    data = gpvs.prepare(base_real, cache=base_real / "processado" / "variaveis.npz", purge=config.purge)
+    data = preparacao.prepare(base_real, cache=features_cache(base_real), purge=config.purge)
     return config, data, train_detectors(data.scaled, training_blocks(data), config)

@@ -24,6 +24,8 @@ from aliado.science.deteccao.alarmes.taxa import markov_alarm_rate
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold, false_alarm_interval
 from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS
 from aliado.specializations.mestrado import onset
+from aliado.specializations.mestrado.atributos import extracao
+from aliado.specializations.mestrado.base import ensaios
 from aliado.specializations.mestrado.evaluation import (
     PAIRED_NAMES,
     EvaluationConfig,
@@ -35,8 +37,9 @@ from aliado.specializations.mestrado.evaluation import (
     run_metrics,
     summarize,
 )
-from aliado.specializations.mestrado.preparo import preparacao as gpvs
-from aliado.specializations.mestrado.treino.detectores import environment
+from aliado.specializations.mestrado.preparo import preparacao
+from aliado.specializations.mestrado.preparo.inicio_nominal import nominal_onset
+from aliado.specializations.mestrado.treino.artefatos import environment
 
 EVALUATION = "gpvs-avaliacao-001"
 PERCENTILES = (95.0, 97.5, 99.0)
@@ -75,16 +78,12 @@ def load_scores(path: str | Path, trained: TrainedDetectors) -> dict:
                 for k in trained.config.sensitivity_k:
                     prefix = f"{kind}_s{seed}_k{k}_"
                     scores[(kind, seed, int(k))] = {
-                        "saudavel": [stored[f"{prefix}saudavel_{name}"] for name in gpvs.HEALTHY],
-                        "ensaios": {name: stored[prefix + name] for name in gpvs.FAULTY}}
+                        "saudavel": [stored[f"{prefix}saudavel_{name}"] for name in ensaios.HEALTHY],
+                        "ensaios": {name: stored[prefix + name] for name in ensaios.FAULTY}}
     return scores
 
 
-def _nominal(item: dict) -> int:
-    return int(item["transicao"][0]) if len(item["transicao"]) else int(item["pos_falha"][0])
-
-
-def relabel(prepared: gpvs.PreparedGPVS, trials: dict) -> gpvs.PreparedGPVS:
+def relabel(prepared: preparacao.PreparedGPVS, trials: dict) -> preparacao.PreparedGPVS:
     """Cópia com os ensaios de mudança clara rotulados pela mudança; os outros ficam como estão.
 
     O trecho entre os dois inícios vai para `transicao`, que fica fora das métricas por janela, e a
@@ -96,27 +95,27 @@ def relabel(prepared: gpvs.PreparedGPVS, trials: dict) -> gpvs.PreparedGPVS:
             continue
         item, observed = prepared.faults[name], int(trial["observado_janela"])
         windows = len(item["scaled"])
-        start = min(_nominal(item), observed)
+        start = min(nominal_onset(item), observed)
         pre = item["pre_teste"][item["pre_teste"] < start]
         if not len(pre) or observed >= windows:
             continue
         faults[name] = item | {"pre_teste": pre, "transicao": np.arange(start, observed),
                                "pos_falha": np.arange(observed, windows)}
-        extraction[name]["fronteira_falha_amostra"] = observed * gpvs.WINDOW
+        extraction[name]["fronteira_falha_amostra"] = observed * ensaios.WINDOW
     return dataclasses.replace(prepared, faults=faults, extraction=extraction)
 
 
-def _only(prepared: gpvs.PreparedGPVS, names) -> gpvs.PreparedGPVS:
+def _only(prepared: preparacao.PreparedGPVS, names) -> preparacao.PreparedGPVS:
     return dataclasses.replace(prepared, faults={name: prepared.faults[name] for name in names})
 
 
-def healthy_flags(run_scores: dict, threshold: float, prepared: gpvs.PreparedGPVS) -> list[np.ndarray]:
+def healthy_flags(run_scores: dict, threshold: float, prepared: preparacao.PreparedGPVS) -> list[np.ndarray]:
     """Janelas acima do limiar nos trechos saudáveis: o teste saudável e o pré-teste de cada ensaio."""
     return ([values > threshold for values in run_scores["saudavel"]]
             + [run_scores["ensaios"][name][item["pre_teste"]] > threshold for name, item in prepared.faults.items()])
 
 
-def _nominal_delays(summary: dict, prepared: gpvs.PreparedGPVS, relabeled: gpvs.PreparedGPVS) -> None:
+def _nominal_delays(summary: dict, prepared: preparacao.PreparedGPVS, relabeled: preparacao.PreparedGPVS) -> None:
     """Acrescenta a cada ensaio o atraso desde o início nominal, ao lado do atraso desde a mudança."""
     for item in summary["modelos"].values():
         for name, result in item["referencia"]["ensaios"].items():
@@ -133,10 +132,10 @@ def _analysis(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: st
     config, frozen = evaluation_config(evaluation_dir)
     if frozen["treino"]["configuracao_sha256"] != trained.frozen["sha256"]:
         raise ValueError("A avaliação de origem não é deste treino.")
-    experiments, hashes = gpvs.extract_all(gpvs_dir, cache=cache)
+    experiments, hashes = extracao.extract_all(gpvs_dir, cache=cache)
     if hashes != trained.frozen["dados"]["hashes"] or hashes != frozen["dados"]["hashes"]:
         raise ValueError("Os dados do GPVS não são os do treino e da avaliação.")
-    prepared = gpvs.prepare(gpvs_dir, cache=cache, purge=trained.config.purge, fractions=trained.config.fractions)
+    prepared = preparacao.prepare(gpvs_dir, cache=cache, purge=trained.config.purge, fractions=trained.config.fractions)
     onset_config = onset_config or onset.OnsetConfig()
     onsets = onset.estimate(experiments, onset_config)
     scores = load_scores(evaluation_dir / "escores.npz", trained)
@@ -194,7 +193,7 @@ def reanalyze(evaluation_dir: str | Path, training_dir: str | Path, gpvs_dir: st
 
 
 def _percentile_grid(training_dir: Path, scores: dict, trained: TrainedDetectors,
-                     prepared: gpvs.PreparedGPVS, config: EvaluationConfig) -> dict:
+                     prepared: preparacao.PreparedGPVS, config: EvaluationConfig) -> dict:
     """Detecção e alarmes com limiares p95, p97,5 e p99 dos mesmos escores de calibração (só relatada)."""
     k, reference = trained.config.top_k, trained.config.reference_seed
     grid = {}
@@ -234,7 +233,7 @@ def _markdown(report: dict, official: dict) -> str:
     ]
     for name, trial in trials.items():
         observed = trial["observado_s"]
-        lines.append(f"| {name} | {gpvs.FAULTS[int(name[1])][0]} | {_number(trial['nominal_s'], 2)} | "
+        lines.append(f"| {name} | {ensaios.FAULTS[int(name[1])][0]} | {_number(trial['nominal_s'], 2)} | "
                      f"{_number(observed, 2)} | "
                      f"{'—' if observed is None else _number(observed - trial['nominal_s'], 2)} | {trial['classe']} |")
     lines += ["", "Nos ensaios de mudança clara, o trecho entre os dois inícios fica fora das métricas por janela; "
