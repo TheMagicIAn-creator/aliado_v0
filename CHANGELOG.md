@@ -3,6 +3,126 @@
 Formato inspirado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). As versões
 seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [0.8.0] — em fechamento local (20/10/2026)
+
+Lotes 37 a 44: o modelo local (Ollama, `qwen3.5:9b`) como principal, com o Gemini Flash só no limite dele, e a leitura
+das páginas da biblioteca sem pendências falsas. Entram também as correções feitas depois da 0.7.0.
+
+### Lote 44: revisão e fechamento
+
+- Anexo e primeira pergunta compartilham a criação da conversa; navegar não muda o destino do anexo nem deixa
+  respostas atrasadas substituírem a conversa escolhida.
+- A escalada usa o Gemini Flash inclusive com o modelo menor escolhido. Ao refazer uma resposta local completa
+  reprovada na conferência do chat, a falta ou falha do Flash mantém essa resposta com o motivo na rota, sem nova tentativa automática.
+- Registros 35/36 preservados; validação final e pacote a partir de fontes limpos no lote 44.
+- Estado: validado localmente; aguardando revisão e commit do pesquisador.
+
+### Lote 43: temperatura 0,6 no modelo local
+
+O `aliado-local` passa a responder com temperatura 0,6; o `qwen3.5` vem com 1. Não há código novo.
+- **Estabilidade:** em duas rodadas das 16 perguntas reais, sem custo, 13 tiveram o mesmo desfecho nas duas, contra 7
+  com 1.
+- **Respostas:** o local respondeu 13 e 11 (antes, 9 e 10) e citou o documento esperado em 8 (antes, 7).
+- **Gemini e tempo:** as chamadas ao Gemini caíram para 4 e 5, e o tempo médio para 90 e 96 s.
+
+Detalhes na [spec 0043](docs/specs/0043-temperatura-local.md) e na
+[validação do lote 43](docs/migracao/validacao-lote-43.md).
+
+### Lote 42: o modelo local quase todo na VRAM
+
+O `aliado-local` passa a usar toda a VRAM: 32 das 33 camadas na placa (pico de 5,64 GB dos 6 GB), no lugar do limite
+de 4 GB. A escrita foi de 15 para 25 tokens/s, e de 9 para 23 com o contexto quase cheio. O tempo médio nas 16
+perguntas caiu de 158 para 102 s. A RAM não foi poupada, porque no Windows o que vai para a placa também conta na
+memória reservada. Não há código novo. Detalhes na [spec 0042](docs/specs/0042-local-na-vram.md) e na
+[validação do lote 42](docs/migracao/validacao-lote-42.md).
+
+### Lote 41: o local mais rápido; OCR por página conferido
+
+- **A reescrita da busca sai sem raciocínio:** antes, o local gastava 2 minutos nela e falhava em silêncio, e a busca
+  seguia com a pergunta original. Agora sai em segundos, e o tempo médio por pergunta caiu de 265 para 158 s.
+- **Os trechos sem raciocínio foram experimentados e desfeitos,** pela trava de qualidade combinada.
+- **OCR página por página,** do documento "Por que o Aliado local está lento": já existia desde a 0.1.0. Ganhou o
+  requisito BIB-04 e os testes do PDF todo digital e do todo escaneado. A calibração na biblioteca real manteve o
+  limite de 20 caracteres.
+- Detalhes na [spec 0041](docs/specs/0041-local-mais-rapido.md) e na
+  [validação do lote 41](docs/migracao/validacao-lote-41.md).
+
+### Lote 40: contexto de 32 mil tokens no modelo local
+
+O `aliado-local` passa a ter 32 mil tokens de contexto, com 20 camadas na placa (pico de 3,999 GB, abaixo dos 4 GB), e
+o `.env` ganha `AL_IADO_LOCAL_CONTEXT=32768`. Não há código novo. Nas 16 perguntas reais, sem custo, o local respondeu
+14, contra 6 no lote 39; 10 citaram o documento esperado, nenhuma foi refeita e só 2 foram ao Gemini. Em troca, as
+respostas do local levam 5 minutos na mediana. Detalhes na [spec 0040](docs/specs/0040-contexto-32k.md) e na
+[validação do lote 40](docs/migracao/validacao-lote-40.md).
+
+### Lote 39: o modelo local lê as páginas pelo texto guardado
+
+Detalhes na [spec 0039](docs/specs/0039-local-le-texto.md) e na
+[validação do lote 39](docs/migracao/validacao-lote-39.md).
+
+- **Páginas como texto:** na leitura das páginas inteiras, do documento citado ou de uma trilha, o modelo local recebe
+  o texto guardado de cada página, com o identificador de citação. Recebe também a descrição automática das figuras
+  e tabelas, marcada para conferir no original. Não há mais o limite de 4 páginas; vale o contexto dele. O Gemini
+  segue recebendo o PDF, sem tokens a mais.
+- **Notas para o local:** uma diz que os PDFs vieram como texto; outra, com fontes no pedido, que cada afirmação se
+  cita com o `[K…]`.
+- **Medido nas 16 perguntas reais, sem custo:**
+  - o local respondeu 6, contra 3 no lote 38;
+  - 3 citaram o documento esperado, contra 1;
+  - 7 foram direto ao Gemini, agora pelo contexto de 16 mil tokens, e não pelas páginas;
+  - com 32 mil, 6 delas caberiam.
+
+### Lote 38: o modelo local como principal (Etapas 2 e 3)
+
+Detalhes na [spec 0038](docs/specs/0038-modelo-local.md) e na
+[validação do lote 38](docs/migracao/validacao-lote-38.md). O modelo local fica desligado até entrar no `.env`.
+
+- **Modelo local primeiro:** com `AL_IADO_LOCAL_MODEL` no `.env`, um modelo aberto no Ollama responde primeiro a
+  tudo: a conversa, a reescrita da busca, o revisor de memória, as fichas e a descrição das figuras. Imagens e páginas
+  de PDF vão como imagem. Sem a variável, nada muda.
+- **Gemini Flash só no limite:** ele entra quando o local pede ajuda ("[ESCALAR]"), erra o formato pedido ou não
+  responde nada; na conversa, também quando a resposta do local não cita o que a busca trouxe ou erra números. A
+  pergunta é refeita uma vez, com o aviso "O modelo local não chegou lá", e a rota diz o motivo. A resposta cortada
+  no teto de tamanho não escala.
+- **Direto ao Gemini:** a busca na web e os pedidos maiores que o contexto local ou com mais de 4 páginas de PDF.
+- **Ollama fechado:** a tela e o terminal dizem o que conferir, e nada vai ao Gemini.
+- **Uso do dia:** os tokens do local ficam no registro, mas não contam no "hoje", no teto de 30 mil nem no aviso de
+  300 mil; sob a resposta, aparecem como "tokens locais".
+- O README ganhou a seção "Modelo local": a instalação, a quantização em 4 bits, o contexto, a placa até 4 GB e o
+  SSD como reserva.
+- **Etapa 3, neste computador:**
+  - **Instalação:** o Ollama 0.40.6 e o `qwen3.5:9b` em 4 bits, criado como `aliado-local`, com 22 camadas na placa
+    (3,9 GB).
+  - **`use_mmap`:** os pesos fora da placa são lidos do arquivo no SSD. Sem ele, no Windows, o Ollama os copia e
+    reserva 8,6 GB em vez de 6,6 GB.
+  - **Velocidade:** entrada de 700 tokens/s e saída de 15 a 16 tokens/s.
+  - **Escalada nas 16 perguntas reais da biblioteca, sem custo:**
+    - 3 respondidas pelo local;
+    - 8 direto ao Gemini, porque o documento ou as páginas inteiras passam de 4 páginas de PDF;
+    - 3 refeitas pelo Gemini, porque o local citou por extenso, sem as marcas de citação.
+- **Corrigido:** o pedido de ajuda que o modelo escrevia depois de um rótulo ("Resposta ao usuário: [ESCALAR]")
+  aparecia na tela. Agora ele passa a vez ao Gemini.
+
+### Lote 37: páginas sem pendência falsa
+
+Detalhes na [spec 0037](docs/specs/0037-paginas-sem-leitura.md) e na
+[validação do lote 37](docs/migracao/validacao-lote-37.md).
+
+- **Página em branco:** é reconhecida pela imagem (a 100 dpi, menos de 0,1% de pontos no miolo) e não deixa o
+  documento "parcial".
+- **Página já descrita pelo modelo:** com OCR fraco ou sem texto, deixa de ser pendência, porque o conteúdo dela está
+  na busca como descrição automática.
+- **OCR fraco:** a página com confiança média abaixo de 50 entra na lista da descrição de figuras e tabelas, que
+  continua só por pedido.
+
+### Correções depois da 0.7.0
+
+- **Anexos sempre fixados:** o documento anexado na conversa fica fixado nela pelo servidor, mesmo que a página mude
+  de conversa ou seja recarregada antes de terminar a leitura. Na tela de apresentação, anexar já cria a conversa. O
+  painel Documentos mostra primeiro os mais novos.
+- **Testes com dados reais:** passam a ler uma cópia da avaliação de 27/09, e não a rodada atual da pasta de
+  resultados, que muda quando o pesquisador roda um experimento.
+
 ## [0.7.0] — 2026-10-18
 
 Lotes 34 a 36: a fundação revista, pela [revisão da modularização e das specs](docs/revisao/2026-10-modularizacao-e-specs.md).

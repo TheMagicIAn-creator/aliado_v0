@@ -2,7 +2,7 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.3.0**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
+especialização. Versão **0.8.0**, validada localmente; aguarda revisão e commit do pesquisador. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
 
@@ -62,6 +62,90 @@ Copie `.env.example` para `.env`, que fica fora do Git, e preencha só o provedo
 Os campos de modelo recebem identificadores, nunca chaves. O AL-IAdo só lê o `.env` que você
 indicar, e variáveis do sistema têm precedência sobre ele.
 
+## Modelo local (lote 38)
+
+Com `AL_IADO_LOCAL_MODEL` no `.env`, um modelo aberto servido pelo [Ollama](https://ollama.com), neste computador,
+responde primeiro, sem custo por uso. O Gemini Flash só entra quando o local não dá conta do raciocínio: ele pede
+ajuda, erra o formato pedido ou, na conversa, não cita o que a busca trouxe ou erra números. O que o local não alcança
+vai direto ao Gemini: a busca na web ou um pedido maior que o contexto dele. As páginas de PDF da leitura vão ao local
+como o texto guardado, com a descrição automática das figuras e tabelas, e o Gemini segue recebendo o PDF (lote 39).
+A linha sob a resposta diz quem respondeu e por quê. Com o Ollama fechado, o erro diz o que conferir, e nada vai ao
+Gemini. Os tokens do local não entram no uso do dia.
+
+A configuração abaixo foi feita e medida neste computador em 18 e 19/10/2026, com o Ollama 0.40.6. O modelo local só passa
+a responder depois do passo 5.
+
+1. Instale o Ollama para Windows e baixe o modelo quantizado em 4 bits (Q4_K_M), que lê texto e imagem:
+   `ollama pull qwen3.5:9b` (6,6 GB).
+2. Crie o modelo do AL-IAdo com um `Modelfile`:
+
+   ```text
+   FROM qwen3.5:9b
+   PARAMETER num_ctx 32768
+   PARAMETER num_gpu 32
+   PARAMETER use_mmap true
+   PARAMETER temperature 0.6
+   ```
+
+   e rode `ollama create aliado-local -f Modelfile`.
+   - **`num_ctx`:** o Ollama corta em silêncio o que passa do contexto. O AL-IAdo confere o tamanho antes e manda
+     ao Gemini o que não cabe; `AL_IADO_LOCAL_CONTEXT` precisa ter o mesmo número (lote 40: 32.768; antes, 16.384).
+   - **`num_gpu`:** o número de camadas na placa de vídeo, das 33. Desde o lote 42, o modelo usa toda a VRAM. Com 32
+     camadas, a placa fica em 5,6 GB, com pico de 5,64 GB numa entrada de 27 mil tokens, dos 6,0 GB livres. As 33 não
+     cabem: com o texto todo na placa, o Ollama põe também o leitor de imagens (0,9 GB). Cada camada soma cerca de
+     0,14 GB.
+   - **`temperature`:** 0,6 desde o lote 43; o `qwen3.5` vem com 1. Com 0,6, 13 das 16 perguntas reais tiveram o
+     mesmo desfecho em duas rodadas, contra 7 com 1. Vale só para as respostas do local: a reescrita, as fichas e as
+     figuras já usam 0.
+   - **`use_mmap`:** no Windows com placa NVIDIA, o Ollama copia os pesos para a memória e reserva 8,6 GB. Ligado,
+     os pesos que não cabem na placa são lidos do arquivo do modelo, no SSD. Com 20 camadas na placa, a reserva medida
+     caiu para 6,4 GB, com a mesma
+     velocidade.
+3. Nas variáveis de ambiente do usuário, para o serviço do Ollama:
+   - `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q8_0`: o contexto ocupa metade da memória;
+   - `OLLAMA_NUM_PARALLEL=1` e `OLLAMA_MAX_LOADED_MODELS=1`;
+   - `OLLAMA_KEEP_ALIVE=10m`: o modelo sai da memória depois de 10 minutos parado.
+4. Antes de usar, feche os programas pesados (navegador, VS Code, Obsidian, WSL ou Docker) e abra o Ollama pelo
+   menu Iniciar. O `ollama ps` mostra o modelo carregado e a divisão entre placa e processador.
+5. Para ligar: no `.env`, `AL_IADO_LOCAL_MODEL=aliado-local` e `AL_IADO_LOCAL_CONTEXT=32768`, o mesmo número do
+   Modelfile, e reinicie o AL-IAdo. O endereço padrão é `http://localhost:11434/v1` (`AL_IADO_LOCAL_BASE_URL`).
+
+**Memória: placa, RAM e SSD (medida).**
+- **Só a placa dá velocidade.** A placa calcula o que está na própria VRAM; o resto é calculado pelo processador, a
+  partir da RAM. Com 20 camadas (59% na placa), a escrita ia a 15 tokens/s; com 32 (85%), vai a 25.
+- **A memória virtual no SSD é reserva, não velocidade:** evita travar quando falta RAM e deixa os pesos serem lidos
+  do arquivo do modelo (`use_mmap`). Por isso, desde o lote 42, toda a VRAM vai para o modelo, no lugar do limite de
+  4 GB.
+- **Placa:** 5,6 GB com 32 camadas e 32 mil de contexto; pico de 5,64 GB numa entrada de 27 mil tokens.
+- **RAM:** carregado, o modelo ainda reserva cerca de 8 GB de memória. No Windows, o que um programa reserva na placa
+  também conta na memória reservada do sistema, então pôr mais na placa não poupou RAM. O leitor de imagens (0,9 GB)
+  fica na RAM.
+- **O limite deste computador é a memória reservada:** 35,2 GB, que somam os 16 GB de RAM e cerca de 19,5 GB de
+  paginação no SSD. Com os programas do dia abertos, o modelo não carregou; fechando-os, carregou. A paginação é
+  configuração do sistema e fica com você.
+- **Modelos maiores, lidos do SSD:** ficam em 1 a 3 tokens por segundo e não compensam, porque o caso que o 9B não
+  alcança vai ao Gemini Flash.
+
+**Velocidade (medida, com 32 camadas).**
+- **Carga:** de 10 a 13 s com o arquivo em cache. A primeira, lendo o SSD, chega a 41 s.
+- **Leitura da entrada:** cerca de 1.090 tokens por segundo. Uma entrada de 27 mil tokens leva 25 s.
+- **Escrita:** 25 tokens por segundo com pouco contexto, e 23 com o contexto quase cheio.
+- **Com raciocínio:** uma resposta da biblioteca leva de 1 a 4 minutos, com mediana de pouco mais de 2.
+
+**O que foi medido (lote 43, duas rodadas).** Nas 16 perguntas reais da avaliação da busca, com o modelo local
+real e o Gemini simulado, sem chamadas pagas; os encaminhamentos abaixo indicam quando o Gemini seria chamado:
+- **O local respondeu 13 e 11 delas,** e cita o documento esperado em 8. Com temperatura 1, eram 9 a 10 e 7.
+- **De 2 a 3 seriam refeitas pelo Gemini,** pela conferência das citações e dos números. Outras 2 iriam direto, por
+  passarem de 32 mil tokens: são de 4 a 5 encaminhamentos ao Gemini simulado em 16 perguntas.
+- **O tempo médio por pergunta caiu de 265 s (lote 40) para 90 a 96 s.**
+  - No lote 41, a reescrita da busca passou a sair sem raciocínio. Antes, gastava 2 minutos e falhava em silêncio.
+  - No lote 42, o modelo passou a usar toda a VRAM.
+  - No lote 43, a temperatura passou a 0,6.
+
+Detalhes nas validações dos lotes [43](docs/migracao/validacao-lote-43.md), [42](docs/migracao/validacao-lote-42.md),
+[41](docs/migracao/validacao-lote-41.md), [40](docs/migracao/validacao-lote-40.md),
+[39](docs/migracao/validacao-lote-39.md) e [38](docs/migracao/validacao-lote-38.md).
+
 ## Uso no dia a dia: a interface
 
 ```powershell
@@ -79,7 +163,7 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
   - O link no fim da resposta abre uma janela com as fontes e a memória usada, que fecha com Esc.
 - **Documentos:**
   - Arraste um PDF, Markdown ou JSON para a conversa, ou use o clipe. O arquivo entra na biblioteca `data/bibliotecas/principal`, com progresso por página, e fica **fixado** naquela conversa: vai inteiro ao modelo em todas as perguntas dela. As etiquetas acima da caixa de mensagem mostram os fixados, com o × para soltar.
-  - O botão **Documentos**, ao lado do clipe, abre o painel com a lista da biblioteca. Por documento: fixar na conversa, abrir o original, a ficha, as figuras e apagar. A aba Biblioteca não existe mais.
+  - O botão **Documentos**, ao lado do clipe, abre o painel com a lista da biblioteca, os mais novos primeiro. Por documento: fixar na conversa, abrir o original, a ficha, as figuras e apagar. A aba Biblioteca não existe mais.
   - Um aviso no canto inferior direito, visível em todas as abas, mostra o avanço dos envios. No chat, ele fica logo acima da caixa de mensagem, e a tela reserva a faixa dele para não cobrir nenhum botão.
     - Com um documento: o nome, a etapa (leitura das páginas, reconhecimento de texto, indexação e fichas) e a barra.
     - Com vários: quantos já estão prontos, a barra geral e o documento atual, que muda quando a indexação dele termina.
@@ -263,12 +347,21 @@ uma avaliação independente (M14).
 ## Pacote
 
 ```powershell
-.\.venv\Scripts\python.exe -m build --wheel --outdir dist/v0.7.0
+$raizPacote = (Get-Location).Path
+$fontesPacote = Join-Path $raizPacote ("tmp/pacote-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $fontesPacote | Out-Null
+Copy-Item -LiteralPath 'pyproject.toml','README.md' -Destination $fontesPacote
+Copy-Item -LiteralPath 'src' -Destination $fontesPacote -Recurse
+.\.venv\Scripts\python.exe -m build --wheel --no-isolation --outdir "$raizPacote/dist/v0.8.0-fechamento" $fontesPacote
 ```
 
 O wheel inclui a interface, com o KaTeX e o D3 v7 (licença ISC, copiada junto), e as skills do AL-IAdo, inclusive as da especialização do mestrado (`src/aliado/specializations/mestrado/skills/`). Documentação, cenários e dados
 ficam no repositório. As skills de `.agents/` e `.claude/` orientam os assistentes de
 desenvolvimento e não entram no pacote.
+
+O fechamento do lote 44 monta o wheel numa cópia limpa dos fontes, sem reutilizar o cache `build/` da pasta de
+trabalho. O [relatório do lote 44](docs/migracao/validacao-lote-44.md) registra a conferência e o hash do pacote.
+Para os testes de concorrência da interface, use Node instalado; eles entram no pytest, sem pacotes JavaScript extras.
 
 ## Documentação
 
@@ -279,7 +372,7 @@ desenvolvimento e não entram no pacote.
 
 ## Pendências conhecidas
 
-- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura. A 0.6.0 (lotes 32 e 33) trouxe a busca em memória, a reordenação local das páginas, o revisor de memória seletivo, a reescrita seletiva, o plano por partes e o aprendizado com o uso. A 0.7.0 (lotes 34 a 36) trouxe o experimento rodado do zero pela aba Ciência, com o PDF por pedido, o chat sem seletores, com os pedidos escritos, e o código do mestrado fora do núcleo.
+- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura. A 0.6.0 (lotes 32 e 33) trouxe a busca em memória, a reordenação local das páginas, o revisor de memória seletivo, a reescrita seletiva, o plano por partes e o aprendizado com o uso. A 0.7.0 (lotes 34 a 36) trouxe o experimento rodado do zero pela aba Ciência, com o PDF por pedido, o chat sem seletores, com os pedidos escritos, e o código do mestrado fora do núcleo. A 0.8.0 (lotes 37 a 44) trouxe o modelo local no Ollama como principal, com o Gemini Flash só no limite dele, a leitura das páginas como texto e com as descrições das figuras, o contexto de 32 mil tokens, o modelo quase todo na placa de vídeo e as páginas sem pendência falsa.
 - O roteador erra: quando ele escolhe uma leitura menor do que a pergunta pedia, a resposta sai sem o que precisava. Os remédios são **Ler mais fundo** e pedir a leitura por escrito. Uma pergunta sobre os resultados da pesquisa sem as palavras que ele conhece ("GPVS", "nossos resultados", "ensaios") vai sem eles. Veja a [validação do lote 31](docs/migracao/validacao-lote-31.md).
 - A leitura por páginas inteiras lê 10 páginas. Se a resposta estiver em outras, ela diz quais leu, e **Ler mais fundo** lê o documento.
 - Uma pergunta já respondida parte das páginas que a resposta anterior citou: se aquela resposta ficou incompleta, a nova também fica. Refazer a pergunta em seguida, na mesma conversa, ou **Ler mais fundo** fazem uma leitura nova.

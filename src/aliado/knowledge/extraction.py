@@ -17,6 +17,11 @@ from pathlib import Path
 # O PDFium não aceita chamadas simultâneas de threads diferentes: os envios, o reconhecimento de texto e a
 # descrição das figuras passam todos por esta trava.
 PDFIUM = threading.RLock()
+# Abaixo desta confiança média, o OCR da página pede conferência, e a página entra na descrição pelo modelo.
+LOW_CONFIDENCE = 50
+# Página em branco (lote 37): a 100 dpi, menos de 0,1% de pontos visíveis no miolo. Nas páginas reais, as em
+# branco ficaram abaixo de 0,002%, e a mais vazia das que tinham conteúdo, em 2,8%.
+BLANK_DPI, BLANK_MARKS = 100, 0.001
 
 
 @dataclass
@@ -106,6 +111,22 @@ class TesseractOCR:
                 for words in lines.values()]
 
 
+def blank_page(path: Path, number: int) -> bool:
+    """A página não tem nada impresso (lote 37). Conta só o miolo: nas margens, a digitalização deixa a dobra do
+    livro e a borda do vidro."""
+    import pypdfium2 as pdfium
+
+    with PDFIUM, pdfium.PdfDocument(str(path)) as document:
+        page = document[number - 1]
+        bitmap = page.render(scale=BLANK_DPI / 72)
+        image = bitmap.to_pil().convert("L")
+        bitmap.close()
+        page.close()
+    width, height = image.size
+    core = image.crop((width // 10, height // 12, width - width // 10, height - height // 12))
+    return sum(core.histogram()[:200]) <= BLANK_MARKS * core.width * core.height
+
+
 def extract_document(path: Path, *, ocr=None, force_ocr: bool = False, progress=None) -> Extraction:
     """`progress(etapa, atual, total)` recebe o andamento por página; opcional."""
     result = Extraction()
@@ -139,7 +160,7 @@ def extract_document(path: Path, *, ocr=None, force_ocr: bool = False, progress=
                 if not text.strip():
                     result.issues.append(f"Página {number}: sem texto utilizável; conferir original.")
                     continue
-                if confidence is not None and confidence < 50:
+                if confidence is not None and confidence < LOW_CONFIDENCE:
                     result.issues.append(f"Página {number}: OCR com baixa confiança; requer conferência.")
                 result.sections.append(Section(text.strip(), f"página PDF {number}", number, method, confidence))
             except (PyPdfError, ValueError, OSError, RuntimeError, subprocess.TimeoutExpired) as exc:

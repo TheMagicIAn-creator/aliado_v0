@@ -51,11 +51,11 @@ def test_reliability_explorer_matches_the_saved_igbt_scenario():
 
 
 @pytest.mark.skipif(not REAL, reason="Sem os resultados canônicos e os dados do GPVS neste computador.")
-def test_explorers_reproduce_the_canonical_evaluation_exactly(tmp_path):
-    explorer = Explorer(RESULTS, GPVS, tmp_path / "cache")
+def test_explorers_reproduce_the_canonical_evaluation_exactly(tmp_path, official_results):
+    explorer = Explorer(official_results, GPVS, tmp_path / "cache")
     explorer.prepare()
-    report = json.loads((RESULTS / "gpvs-avaliacao-001" / "relatorio.json").read_text(encoding="utf-8"))
-    with (RESULTS / "gpvs-avaliacao-001" / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
+    report = json.loads((official_results / "gpvs-avaliacao-001" / "relatorio.json").read_text(encoding="utf-8"))
+    with (official_results / "gpvs-avaliacao-001" / "metricas_por_ensaio.csv").open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     for kind in ("denso", "lstm"):
         for seed in (13, 29, 42, 71, 101):
@@ -86,7 +86,7 @@ def test_explorers_reproduce_the_canonical_evaluation_exactly(tmp_path):
                 assert got["falsos_alarmes"]["teste_saudavel"]["alarmes"] == expected["alarmes_teste_saudavel"]
                 assert got["falsos_alarmes"]["pre_falha"]["alarmes"] == expected["alarmes_pre_falha"]
     # O cache é reaproveitado e outro k muda o limiar sem tocar nos resultados congelados.
-    again = Explorer(RESULTS, GPVS, tmp_path / "cache")
+    again = Explorer(official_results, GPVS, tmp_path / "cache")
     again.prepare()
     other = again.threshold("denso", 42, 10, 99.0)
     assert other["limiar"]["limiar"] != other["canonico"]["limiar"]

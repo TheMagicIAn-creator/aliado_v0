@@ -247,7 +247,7 @@ def _assemble(chosen: list[dict], candidates: list[dict], groups: list[list[list
                       "version": record["version"], "sha256": record["sha256"], "original": str(record["original"]),
                       "locator": unit["locator"], "page": unit["page"], "method": unit["method"],
                       "status": record["status"], "text": unit["text"], "referencia": record["referencia"],
-                      "leitura": "pagina"}
+                      "leitura": "pagina", "descricao": unit.get("descricao", "")}
             entry["units"].append(source)
             pages.append(source)
         documents.append(entry)
@@ -301,6 +301,19 @@ def pick(library, wanted, *, budget: int, limit: int = TOP_PAGES, fixed=(), reco
 
 _METHOD_NOTES = {"ocr": " (texto por reconhecimento ótico: pode ter letras trocadas)",
                  "imagem": " (sem texto extraído: leia a página no PDF)"}
+DESCRIPTION_NOTE = "Descrição automática da figura ou tabela desta página, a conferir no original: "
+
+
+def _page_lines(units: list[dict], *, described: bool = False) -> str:
+    """O texto guardado de cada página, com o identificador a citar. Com `described`, vem também a descrição
+    automática das figuras e tabelas da página: é o que o modelo local lê no lugar do PDF (lote 39)."""
+    lines = []
+    for source in units:
+        line = f"=== [{source['citation_id']}] {source['locator']}{_METHOD_NOTES.get(source['method'], '')} ===\n{source['text']}"
+        if described and source.get("descricao"):
+            line += f"\n{DESCRIPTION_NOTE}{source['descricao']}"
+        lines.append(line)
+    return "\n\n".join(lines)
 
 
 def _opening(text: str) -> str:
@@ -340,15 +353,19 @@ def messages(reading: dict) -> list[dict]:
                      "Depois vem a lista das páginas, na mesma ordem do PDF: o identificador [K...] de cada uma, "
                      "a usar na citação, e as primeiras palavras dela.")
             parts.append({"type": "text", "text": f"{head}\n{order} {after}"})
-            parts.extend({key: item[key] for key in ("type", "mime_type", "key", "data")} for item in files)
+            # Lote 39: cada PDF leva o texto guardado das suas páginas, que o modelo local lê no lugar da imagem; o
+            # Gemini usa só o PDF. Com o texto inteiro logo depois, a parte não precisa repeti-lo.
+            by_page = {source["page"]: source for source in document["units"]}
+            parts.extend({key: item[key] for key in ("type", "mime_type", "key", "data")}
+                         | {"text": "" if whole_text else _page_lines([by_page[number] for number in item["pages"]],
+                                                                       described=True)}
+                         for item in files)
         else:
             missing = " O PDF destas páginas não pôde ser anexado: segue só o texto guardado." if document["pdf"] else ""
             parts.append({"type": "text", "text": f"{head}{missing}\nA seguir, o texto guardado, com o identificador "
                                                   "[K...] a usar na citação."})
         if whole_text:
-            lines = [f"=== [{source['citation_id']}] {source['locator']}{_METHOD_NOTES.get(source['method'], '')} ===\n"
-                     f"{source['text']}" for source in document["units"]]
-            parts.append({"type": "text", "text": "\n\n".join(lines)})
+            parts.append({"type": "text", "text": _page_lines(document["units"])})
         else:
             lines = [f"[{source['citation_id']}] {source['locator']} — "
                      + (f"começa com: {_opening(source['text'])}" if source["text"].strip() else "sem texto extraído")

@@ -99,6 +99,8 @@ def rewrite_query(execute: Callable[[LLMRequest], LLMResult], *, question: str,
                   {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         structured_output=PLAN_SCHEMA if plan else QUERY_SCHEMA,
         max_output_tokens=2048 if plan else 512, temperature=0.0,
+        # Lote 41: tarefa mecânica; com raciocínio, o modelo local levava cerca de 2 minutos para reescrever.
+        reasoning_level="low",
     )
     result = execute(request)
     query = " ".join(str((result.structured_data or {}).get("consulta", "")).split())

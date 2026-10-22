@@ -34,6 +34,7 @@ def test_rewrite_uses_recent_conversation_and_returns_the_query():
     request = calls[0]
     payload = json.loads(request.messages[1]["content"])
     assert request.task_type == "biblioteca-consulta" and request.structured_output["required"] == ["consulta"]
+    assert request.reasoning_level == "low"  # PRV-07: a reescrita é mecânica e vai sem raciocínio
     assert payload["mensagem"] == QUESTION and len(payload["conversa"]) == 4
     assert payload["conversa"][-2]["texto"].startswith("Traga o conceito de MCC")
     assert len(payload["conversa"][-1]["texto"]) == 700  # respostas longas entram cortadas

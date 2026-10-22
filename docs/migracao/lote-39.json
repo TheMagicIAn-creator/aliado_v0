@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-18",
+  "batch": "39",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0039-local-le-texto.md",
+  "living_specs": ["docs/specs/capacidades/provedores.md"],
+  "requirements": {"changed": ["PRV-01", "PRV-03"], "new": ["PRV-06"]},
+  "validation": "docs/migracao/validacao-lote-39.md",
+  "base_commit": "77fb76d",
+  "decisions": {
+    "date": "2026-10-18",
+    "env_file": "o pesquisador ligou o modelo local no .env (AL_IADO_LOCAL_MODEL=aliado-local)",
+    "next_batch": "o local lê as páginas pelo texto guardado, a alavanca medida no lote 38"
+  },
+  "changes": {
+    "core": ["src/aliado/knowledge/library.py", "src/aliado/knowledge/reading.py", "src/aliado/llm/providers/local.py"],
+    "tests": ["tests/test_local_provider.py", "tests/test_reading.py", "tests/test_figures.py"],
+    "docs": ["docs/specs/0039-local-le-texto.md", "docs/specs/capacidades/provedores.md", "docs/migracao/validacao-lote-39.md",
+             "docs/migracao/lote-39.json", "README.md", "AGENTS.md", "CHANGELOG.md", "docs/roteiro-v0.md"],
+    "what": {
+      "library.pages": "cada página de PDF ganha descricao, o texto da descrição automática guardada; o text não muda",
+      "reading.messages": "cada parte em PDF leva text: o texto guardado das suas páginas, com os [K...] e a descrição",
+      "local_provider": "a parte em PDF com text vai como texto (sem abrir o PDF, sem limite de páginas); TEXT_NOTE quando houve conversão; CITE_RULE quando há fontes citáveis",
+      "gemini": "sem mudança: usa só type, mime_type, key e data da parte"
+    }
+  },
+  "checks": {
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest <arquivo> -q, um processo por arquivo",
+               "files": 45, "passed": 806, "failed": 0, "seconds": 239},
+    "ruff": {"command": ".venv/Scripts/python.exe -m ruff check .", "exit_code": 0},
+    "diff_check": {"command": "git diff --check", "exit_code": 0},
+    "library_sizes": {"documents": 31, "pages": 2245, "page_chars_median": 1831, "described_pages": 1276,
+                      "description_chars_median": 1132, "whole_documents_fit_16k": 13, "whole_documents_fit_32k": 22},
+    "escalation": {
+      "questions": "data/avaliacao-busca/perguntas.json", "count": 16, "gemini": "falso, sem rede",
+      "library": "cópia em tmp/lote-39/medicao/biblioteca", "model": "aliado-local (num_ctx 16384, num_gpu 22, use_mmap)",
+      "first_outcome": {"local": ["P5", "P6", "P7", "P8", "E3", "E7"], "direct_to_gemini_context": ["P1", "P2", "P3", "E1", "E2", "E5", "E8"],
+                        "redone_by_gemini_uncited": ["P4", "E4", "E6"]},
+      "cited_expected": ["P5", "P6", "E7"], "gemini_calls": 12, "mean_seconds": 130.0,
+      "batch_38": {"local": 3, "direct": 8, "redone": 3, "help_midway": 1, "no_answer": 1, "cited_expected": 1, "gemini_calls": 13, "mean_seconds": 105.5},
+      "real_input_tokens": {"no_library": [6647, 6929], "passages": [6914, 9713], "whole_pages_e6": 11392},
+      "estimated_tokens_out_of_reach": [19068, 56616], "fit_with_32k": 6
+    }
+  },
+  "next_batch_options": ["contexto de 32 mil tokens, com num_gpu 20 para a placa ficar abaixo de 4 GB (6 das 7 perguntas de fora caberiam)",
+                         "aceitar o identificador entre crases na conferência das citações (P4)",
+                         "desligar o raciocínio do local na reescrita da busca (2 minutos na E1, E2 e E5)",
+                         "o roteador na E3"],
+  "paid_calls": 0,
+  "downloads": 0
+}

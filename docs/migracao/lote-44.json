@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-20",
+  "batch": "44",
+  "version": "0.8.0",
+  "status": "validated_locally_awaiting_review",
+  "base_commit": "77fb76d",
+  "included_batches": [
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44
+  ],
+  "spec": "docs/specs/0044-revisao-fechamento.md",
+  "living_specs": [
+    "docs/specs/capacidades/interface.md",
+    "docs/specs/capacidades/provedores.md"
+  ],
+  "validation": "docs/migracao/validacao-lote-44.md",
+  "requirements": {
+    "added": [
+      "INT-01"
+    ],
+    "changed": [
+      "PRV-02"
+    ],
+    "integration_checked": [
+      "BIB-01",
+      "BIB-02"
+    ]
+  },
+  "checks": {
+    "pytest": {
+      "command": ".venv/Scripts/python.exe -B tmp/lote-44/validar.py",
+      "files": 46,
+      "passed": 814,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 242.59,
+      "evidence": "tmp/lote-44/pytest.json"
+    },
+    "ruff": {
+      "exit_code": 0,
+      "command": [
+        "C:\\Users\\RODOLFO TORRES\\Documents\\aliado_v0\\.venv\\Scripts\\python.exe",
+        "-B",
+        "-m",
+        "ruff",
+        "check",
+        ".",
+        "--no-cache"
+      ],
+      "log": "tmp/lote-44/ruff.log"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/RODOLFO TORRES/Documents/aliado_v0",
+        "diff",
+        "--check"
+      ],
+      "log": "tmp/lote-44/diff_check.log"
+    },
+    "javascript_syntax": {
+      "exit_code": 0,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.EXE",
+        "--check",
+        "src/aliado/interfaces/web/static/app.js"
+      ],
+      "log": "tmp/lote-44/javascript_syntax.log"
+    },
+    "javascript_cases": {
+      "exit_code": 0,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.EXE",
+        "tests/js/conversation_start.cjs"
+      ],
+      "log": "tmp/lote-44/javascript_cases.log",
+      "passed": 13
+    },
+    "wheel": {
+      "path": "dist/v0.8.0-fechamento/aliado-0.8.0-py3-none-any.whl",
+      "sha256": "47d1076c09868f9fdaeb1463a225c0d27b3ce3f888947cebe49bb7223c922b20",
+      "bytes": 839421,
+      "files": 112,
+      "package_files": 107,
+      "matches_source": true,
+      "clean_source": "tmp/lote-44/build-881e968b",
+      "smoke_exit_code": 0,
+      "smoke_log": "tmp/lote-44/wheel-smoke.log",
+      "downloads": 0
+    },
+    "preserved_records": [
+      "docs/specs/0035-chat-tela-minima.md",
+      "docs/migracao/validacao-lote-35.md",
+      "docs/migracao/validacao-lote-36.md",
+      "docs/migracao/lote-36.json"
+    ],
+    "red_regressions": {
+      "pytest_failed_before_fix": 5,
+      "javascript_failed_before_fix": 7
+    },
+    "prior_wheel_preserved": {
+      "path": "dist/v0.8.0/aliado-0.8.0-py3-none-any.whl",
+      "sha256": "5c548dd35421fd25871b997f0bcf5854652f944d9a36d15bcd164a7d08cad821"
+    }
+  },
+  "paid_calls": 0,
+  "real_model_calls": 0,
+  "downloads": 0,
+  "limitations": [
+    "Sem nova sessao visual no navegador ou chamadas a modelos de linguagem reais.",
+    "Teste JavaScript exige Node; nesta validacao estava presente e os 13 cenarios passaram.",
+    "Aviso de descontinuacao do Starlette/AnyIO nos testes existentes."
+  ],
+  "release_files": [
+    ".env.example",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "README.md",
+    "docs/migracao/lote-38.json",
+    "docs/migracao/lote-39.json",
+    "docs/migracao/lote-40.json",
+    "docs/migracao/lote-41.json",
+    "docs/migracao/lote-42.json",
+    "docs/migracao/lote-43.json",
+    "docs/migracao/lote-44.json",
+    "docs/migracao/validacao-lote-37.md",
+    "docs/migracao/validacao-lote-38.md",
+    "docs/migracao/validacao-lote-39.md",
+    "docs/migracao/validacao-lote-40.md",
+    "docs/migracao/validacao-lote-41.md",
+    "docs/migracao/validacao-lote-42.md",
+    "docs/migracao/validacao-lote-43.md",
+    "docs/migracao/validacao-lote-44.md",
+    "docs/revisao/2026-10-20-diagnostico-arquitetura-complementado.md",
+    "docs/revisao/2026-10-20-diagnostico-arquitetura-complementado.txt",
+    "docs/roteiro-v0.md",
+    "docs/specs/0037-paginas-sem-leitura.md",
+    "docs/specs/0038-modelo-local.md",
+    "docs/specs/0039-local-le-texto.md",
+    "docs/specs/0040-contexto-32k.md",
+    "docs/specs/0041-local-mais-rapido.md",
+    "docs/specs/0042-local-na-vram.md",
+    "docs/specs/0043-temperatura-local.md",
+    "docs/specs/0044-revisao-fechamento.md",
+    "docs/specs/capacidades/biblioteca.md",
+    "docs/specs/capacidades/interface.md",
+    "docs/specs/capacidades/provedores.md",
+    "pyproject.toml",
+    "src/aliado/agent.py",
+    "src/aliado/cli.py",
+    "src/aliado/interfaces/web/app.py",
+    "src/aliado/interfaces/web/conversations.py",
+    "src/aliado/interfaces/web/static/app.js",
+    "src/aliado/interfaces/web/static/index.html",
+    "src/aliado/knowledge/extraction.py",
+    "src/aliado/knowledge/figures.py",
+    "src/aliado/knowledge/library.py",
+    "src/aliado/knowledge/reading.py",
+    "src/aliado/knowledge/rewrite.py",
+    "src/aliado/llm/providers/base.py",
+    "src/aliado/llm/providers/gateway.py",
+    "src/aliado/llm/providers/gemini.py",
+    "src/aliado/llm/providers/local.py",
+    "tests/conftest.py",
+    "tests/js/conversation_start.cjs",
+    "tests/test_figures.py",
+    "tests/test_frontend.py",
+    "tests/test_knowledge.py",
+    "tests/test_local_provider.py",
+    "tests/test_query_rewrite.py",
+    "tests/test_reading.py",
+    "tests/test_results_chat.py",
+    "tests/test_results_digest.py",
+    "tests/test_science_tab.py",
+    "tests/test_science_views.py",
+    "tests/test_web.py"
+  ],
+  "excluded_local_files": [
+    ".claude/launch.json",
+    ".claude/settings.local.json",
+    ".smart-env/"
+  ]
+}

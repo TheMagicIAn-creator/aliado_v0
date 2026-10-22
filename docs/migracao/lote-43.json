@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-19",
+  "batch": "43",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0043-temperatura-local.md",
+  "living_specs": [],
+  "validation": "docs/migracao/validacao-lote-43.md",
+  "base_commit": "77fb76d",
+  "decisions": {"date": "2026-10-19", "temperature": 0.6, "runs": 2,
+                "gate": "fica se mais perguntas repetirem o desfecho sem piorar respostas e citações; senão volta a 1"},
+  "changes": {"code": [], "model": {"modelfile": "tmp/lote-38/Modelfile", "temperature": 0.6, "num_ctx": 32768, "num_gpu": 32, "use_mmap": true},
+              "docs": ["README.md", "docs/specs/0043-temperatura-local.md", "docs/migracao/validacao-lote-43.md",
+                       "docs/migracao/lote-43.json", "CHANGELOG.md", "docs/roteiro-v0.md"]},
+  "checks": {
+    "runs": {
+      "t1_batch41_final": {"local": 9, "cited_expected": 7, "redone": 5, "gemini_calls": 7, "mean_seconds": 158.4, "local_median_seconds": 130.6},
+      "t1_batch42": {"local": 10, "cited_expected": 7, "redone": 6, "gemini_calls": 8, "mean_seconds": 102.3, "local_median_seconds": 136.3},
+      "t06_round1": {"local": 13, "cited_expected": 8, "redone": 2, "gemini_calls": 4, "mean_seconds": 90.2, "local_median_seconds": 98.1},
+      "t06_round2": {"local": 11, "cited_expected": 8, "redone": 3, "gemini_calls": 5, "mean_seconds": 96.2, "local_median_seconds": 77.5}
+    },
+    "same_outcome_between_runs": {"temperature_1": 7, "temperature_06": 13, "of": 16, "changed_at_06": ["P2", "E2", "E8"]},
+    "gate": "aprovada: a temperatura 0,6 fica",
+    "pytest": {"command": "pytest tests/test_specs.py", "passed": 2}, "ruff": {"exit_code": 0}, "diff_check": {"exit_code": 0}
+  },
+  "paid_calls": 0,
+  "downloads": 0
+}

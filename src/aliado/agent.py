@@ -644,6 +644,7 @@ class Agent:
         ceiling: int | None = None,
         confirmed: str | None = None,
         salt: str = "",
+        local: bool = True,
         **route,
     ):
         """Gera ("texto", pedaço) enquanto o modelo escreve e, por fim, ("final", LLMResult).
@@ -654,6 +655,7 @@ class Agent:
         ("confirmar", estimativa), para a interface perguntar antes de gastar; `confirmed` é a chave de uma
         leitura já confirmada, e `salt` muda a chave (depois do aviso diário, a confirmação anterior não vale).
         Com `ceiling`, o pedido que segue ao modelo é anunciado antes por ("inicio", estimativa).
+        `local=False` (lote 38) pula o modelo local: a conversa refaz assim a resposta que ele não acertou.
         `route` são as opções da rota aceitas por `prepare_request`.
         """
         request = prepare_request(question, skill_name=skill_name,
@@ -672,9 +674,12 @@ class Agent:
             yield "inicio", {"tokens": estimate, "leitura": request.metadata.get("reading")}
         hits = request.metadata["citations"]
         parts, usage, model, web, truncated = [], None, model_alias, {}, False
+        source, marks = provider, {}  # quem respondeu de fato e, se o local foi pulado, o porquê (lote 38)
         started = perf_counter()
-        for chunk in self.gateway.stream(request, provider=provider, model_alias=model_alias):
-            model, usage = chunk.model, chunk.usage or usage
+        for chunk in self.gateway.stream(request, provider=provider, model_alias=model_alias, local=local):
+            model, usage, source = chunk.model, chunk.usage or usage, chunk.provider
+            if chunk.route_reason:
+                marks = {"escalation_used": chunk.fallback_used, "route_reason": chunk.route_reason}
             truncated = truncated or bool(getattr(chunk, "truncated", False))
             if chunk.web_sources or chunk.web_queries:
                 web = {"web_sources": chunk.web_sources, "web_queries": chunk.web_queries,
@@ -692,8 +697,8 @@ class Agent:
                        "Restrinja a pergunta ou troque de modelo.")
         if web.get("web_supports"):
             content = _mark_web(content, web["web_supports"])
-        result = LLMResult(content, provider, model, request.task_type, usage=usage, truncated=truncated,
-                           latency_ms=(perf_counter() - started) * 1000.0, **web)
+        result = LLMResult(content, source, model, request.task_type, usage=usage, truncated=truncated,
+                           latency_ms=(perf_counter() - started) * 1000.0, **web, **marks)
         yield "final", _covered(replace(_check_all(result, hits, library, append_sources, web_search, results,
                                           found=request.metadata.get("found")),
                                reading=request.metadata.get("reading")), request)

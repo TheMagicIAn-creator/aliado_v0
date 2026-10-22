@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 const WELCOME = $("welcome");
 // pendingPins: documentos fixados antes de a conversa existir (tela de apresentação); seguem na primeira pergunta.
 const state = { conversation: null, models: [], busy: false, sourcesOf: null, infoAnchor: null, reading: null,
-  pendingPins: [], confirmed: {} };
+  pendingPins: [], confirmed: {}, conversationVersion: 0, creatingConversation: null };
 // O rótulo sai do nome da skill: "engenharia" → "Engenharia"; sem skill, "Sem especialização".
 const skillLabel = (name) => name && name !== "nenhuma"
   ? name[0].toUpperCase() + name.slice(1).replace(/-/g, " · ") : "Sem especialização";
@@ -185,12 +185,13 @@ function pins() { return state.conversation ? (state.conversation.fixados || [])
 
 async function setPins(list) {
   if (!state.conversation) {
-    state.pendingPins = list;
+    state.pendingPins.splice(0, state.pendingPins.length, ...list);
   } else {
     try {
-      const data = await api(`/api/conversas/${state.conversation.id}`,
+      const conversation = state.conversation;
+      const data = await api(`/api/conversas/${conversation.id}`,
         { method: "PATCH", json: { fixados: list.map((doc) => doc.id) } });
-      state.conversation.fixados = data.fixados;
+      if (state.conversation === conversation) conversation.fixados = data.fixados;
     } catch (error) { toast(error.message); }
   }
   renderPins();
@@ -202,6 +203,65 @@ function pinDocument(doc) {
 }
 
 function unpinDocument(id) { return setPins(pins().filter((item) => item.id !== id)); }
+
+// A conversa nasce na primeira pergunta ou no primeiro anexo (lote 35); os documentos fixados antes passam para ela.
+function resetConversation() {
+  state.conversationVersion += 1;
+  state.creatingConversation = null;
+  state.conversation = null;
+  state.pendingPins = [];
+  state.controller?.abort();
+  state.controller = null;
+  state.token = null;
+  setBusy(false);
+}
+
+async function startConversation() {
+  if (state.creatingConversation) return state.creatingConversation;
+  if (state.conversation) return state.conversation;
+  const version = state.conversationVersion;
+  const pinned = state.pendingPins;
+  const pending = (async () => {
+    const conversation = await api("/api/conversas", { method: "POST" });
+    conversation.messages = [];
+    // A lista continua recebendo escolhas enquanto o PATCH espera, mesmo se outra conversa for aberta.
+    let applied = false;
+    for (;;) {
+      const ids = pinned.map((doc) => doc.id);
+      if (ids.length || applied) {
+        const data = await api(`/api/conversas/${conversation.id}`,
+          { method: "PATCH", json: { fixados: ids } });
+        conversation.fixados = data.fixados;
+      }
+      applied = true;
+      if (ids.join(",") === pinned.map((doc) => doc.id).join(",")) break;
+    }
+    if (version === state.conversationVersion) {
+      state.conversation = conversation;
+      state.pendingPins = [];
+      renderPins();
+    }
+    return conversation;
+  })();
+  state.creatingConversation = pending;
+  try { return await pending; }
+  finally {
+    if (state.creatingConversation === pending) state.creatingConversation = null;
+  }
+}
+
+// As etiquetas dos fixados como o servidor as guardou: ele fixa os anexos da conversa (lote 35).
+async function refreshPins() {
+  const id = state.conversation?.id;
+  if (!id) return;
+  try {
+    const data = await api(`/api/conversas/${id}`);
+    if (state.conversation?.id === id) {
+      state.conversation.fixados = data.fixados;
+      renderPins();
+    }
+  } catch { /* as etiquetas se acertam ao reabrir a conversa */ }
+}
 
 // A ficha do documento chega depois de ele ser fixado: a etiqueta troca o nome do arquivo pela referência.
 function refreshPin(doc) {
@@ -262,7 +322,7 @@ async function deleteConversation(item) {
   try {
     await api(`/api/conversas/${item.id}`, { method: "DELETE" });
     if (state.conversation?.id === item.id) {
-      state.conversation = null;
+      resetConversation();
       renderPins();
       showChat();
       showWelcome();
@@ -282,13 +342,21 @@ async function renameConversation(item) {
 }
 
 async function openConversation(id) {
-  state.pendingPins = [];
+  resetConversation();
+  const version = state.conversationVersion;
+  const pending = api(`/api/conversas/${id}`);
+  state.creatingConversation = pending;
   try {
-    state.conversation = await api(`/api/conversas/${id}`);
+    const conversation = await pending;
+    if (version !== state.conversationVersion) return;
+    state.conversation = conversation;
   } catch {
+    if (version !== state.conversationVersion) return;
     state.conversation = null;
     renderPins();
     return showWelcome();
+  } finally {
+    if (state.creatingConversation === pending) state.creatingConversation = null;
   }
   renderPins();
   showChat();
@@ -309,8 +377,7 @@ function showWelcome() {
 }
 
 $("new-chat").addEventListener("click", () => {
-  state.conversation = null;
-  state.pendingPins = [];
+  resetConversation();
   renderPins();
   showChat();
   showWelcome();
@@ -417,7 +484,11 @@ function renderMessage(message) {
         text: "repetiu uma escolha sua" }));
     }
   } else if (message.model && message.provider !== "local") meta.append(el("span", { text: message.model }));
-  if (usage.total_tokens) meta.append(el("span", { text: `${formatTokens(usage.total_tokens)} tokens` }));
+  // Lote 38: o modelo local roda neste computador; os tokens dele não são pagos nem entram no uso do dia.
+  const free = message.provider === "ollama";
+  if (usage.total_tokens) meta.append(el("span", { text: `${formatTokens(usage.total_tokens)} tokens${free ? " locais" : ""}`,
+    title: free ? "Tokens do modelo local, neste computador: sem custo e fora do uso do dia."
+      : "Tokens desta resposta, pagos ao provedor e somados ao uso do dia." }));
   if (usage.reasoning_tokens) meta.append(el("span", { text: `${formatTokens(usage.reasoning_tokens)} de raciocínio` }));
   const info = (event) => openInfo(message, event.currentTarget);
   if (message.cobertura?.unidades) {
@@ -1023,19 +1094,15 @@ async function submitQuestion(text, extra = {}) {
   if (state.busy) return;
   if (!state.models.length) return toast("Nenhum modelo configurado. Confira o .env e reinicie.");
   setBusy(true);
-  state.controller = new AbortController();
+  const controller = new AbortController();
+  state.controller = controller;
   const token = Symbol("pedido");
+  const version = state.conversationVersion;
   state.token = token;
   try {
-    if (!state.conversation) {
-      state.conversation = await api("/api/conversas", { method: "POST" });
-      state.conversation.messages = [];
-      $("messages").replaceChildren();
-      // Os documentos fixados antes da primeira pergunta passam para a conversa que acaba de nascer.
-      const waiting = state.pendingPins;
-      state.pendingPins = [];
-      if (waiting.length) await setPins(waiting);
-    }
+    const conversation = await startConversation();
+    const active = () => version === state.conversationVersion && state.conversation?.id === conversation.id;
+    if (!active() || controller.signal.aborted) return;
     const messages = $("messages");
     if (WELCOME.isConnected) WELCOME.remove();
     messages.append(renderMessage({ role: "user", content: text }));
@@ -1053,11 +1120,12 @@ async function submitQuestion(text, extra = {}) {
     let written = "";
     let shown = false;
     try {
-      const remembered = state.confirmed[state.conversation.id];
-      await streamMessage(state.conversation.id, {
+      const remembered = state.confirmed[conversation.id];
+      await streamMessage(conversation.id, {
         texto: text, ...(remembered ? { confirmado: remembered } : {}), ...extra,
       }, {
         onRestart(event) {
+          if (!active()) return;
           // A primeira leitura não achou a resposta: o texto parcial sai, e o aviso diz que a leitura subiu.
           written = "";
           live.textContent = "";
@@ -1065,6 +1133,7 @@ async function submitQuestion(text, extra = {}) {
           if (liveNode.isConnected) liveNode.replaceWith(thinking);
         },
         onConfirm(event) {
+          if (!active()) return;
           shown = true;
           if (state.token === token) { setBusy(false); state.controller = null; }
           thinking.remove();
@@ -1072,6 +1141,7 @@ async function submitQuestion(text, extra = {}) {
           confirmReading(event, text, extra, userBubble);
         },
         onText(piece) {
+          if (!active()) return;
           const follow = nearBottom(messages);
           if (thinking.isConnected) thinking.replaceWith(liveNode);
           written += piece;
@@ -1080,6 +1150,7 @@ async function submitQuestion(text, extra = {}) {
           if (follow) messages.scrollTop = messages.scrollHeight;
         },
         onFinal(data) {
+          if (!active()) return;
           shown = true;
           // A resposta está salva; o revisor de memória segue em segundo plano sem travar o envio.
           if (state.token === token) { setBusy(false); state.controller = null; }
@@ -1087,12 +1158,13 @@ async function submitQuestion(text, extra = {}) {
           liveNode.remove();
           userBubble.remove();
           for (const message of data.mensagens) messages.append(renderMessage(message));
-          state.conversation.messages.push(...data.mensagens);
+          conversation.messages.push(...data.mensagens);
           messages.scrollTop = messages.scrollHeight;
           loadConversations();
           api("/api/estado").then((s) => showUsage(s.uso)).catch(() => {});
         },
         onMemory(event) {
+          if (!active()) return;
           const message = state.conversation?.messages.find((m) => m.id === event.mensagem);
           if (message) {
             message.memorias_criadas = event.criadas;
@@ -1108,9 +1180,9 @@ async function submitQuestion(text, extra = {}) {
             refreshMemoryBadge();
           }
         },
-      }, state.controller.signal);
+      }, controller.signal);
     } catch (error) {
-      if (shown) return; // a resposta já foi salva; só o aviso de memória se perdeu
+      if (!active() || shown) return; // a resposta já foi salva; só o aviso de memória se perdeu
       thinking.remove();
       liveNode.remove();
       userBubble.remove();
@@ -1217,7 +1289,7 @@ function cardNotes(result) {
 function uploadSummary(item) {
   const result = item.job?.resultado || {};
   // Lote 30: o arquivo solto na conversa fica fixado nela e vai inteiro ao modelo a cada pergunta.
-  const next = item.pinned ? "Fixado nesta conversa: é lido inteiro a cada pergunta." : "Ligue “Usar biblioteca” para citá-lo.";
+  const next = item.pinned ? "Fixado nesta conversa: é lido inteiro a cada pergunta." : "Está na biblioteca: o AL-IAdo o consulta quando a pergunta pede.";
   if (result.duplicate) return `Este documento já estava na biblioteca.${item.pinned ? ` ${next}` : ""}`;
   const version = result.version > 1 ? ` (versão ${result.version})` : "";
   return [`Pronto · ${pieces(result.trechos)}${version}. ${next}`, ...cardNotes(result)].join(" ");
@@ -1275,7 +1347,8 @@ function renderUploads() {
   else if (!ready) now = "";
   else {
     const noCards = items.filter(cardWarning).length;
-    now = `${failed ? "Envio terminado" : "Tudo pronto"}. Ligue “Usar biblioteca” para citar os documentos${failed ? " prontos" : ""}.`
+    now = `${failed ? "Envio terminado" : "Tudo pronto"}: os documentos${failed ? " prontos" : ""} já estão na biblioteca`
+      + `${items.every((item) => item.pinned) ? " e fixados nesta conversa" : ""}.`
       + (noCards ? ` As fichas de ${noCards === 1 ? "1 documento" : `${noCards} documentos`} não puderam ser criadas agora.` : "");
   }
   $("upload-now").textContent = now;
@@ -1354,12 +1427,12 @@ async function applyUploadJobs(data) {
     }
     if (job) item.job = job;
     const after = uploadStatus(item);
-    // O arquivo solto na conversa fica fixado nela assim que pode ser lido, se ela continua aberta (lote 30).
+    // O servidor fixa o anexo na conversa do envio assim que ele pode ser lido (lotes 30 e 35), mesmo que a
+    // página tenha mudado de conversa ou sido recarregada; a tela só refaz as etiquetas da conversa aberta.
     const sent = job?.resultado;
-    if (item.pin && !item.pinned && sent?.id && ["pronto", "parcial"].includes(after)
-        && (state.conversation?.id || null) === item.conversation) {
+    if (item.pin && !item.pinned && job?.fixado) {
       item.pinned = true;
-      pinDocument({ id: sent.id, title: sent.title, referencia: sent.referencia });
+      if (item.conversation === state.conversation?.id) refreshPins();
     }
     if (after !== before && ["pronto", "parcial", "falha"].includes(after)) {
       changed = true;
@@ -1427,6 +1500,11 @@ async function uploadFiles(files, pin = true) {
     return ok;
   });
   if (!accepted.length) return;
+  // A criacao e compartilhada com a primeira pergunta; o destino do envio nao muda com a navegacao (lote 44).
+  let conversation = null;
+  if (pin) {
+    try { conversation = await startConversation(); } catch (error) { toast(error.message); return; }
+  }
   // Arquivos escolhidos enquanto um lote ainda corre entram no mesmo lote; senão, começa outro, e os avisos
   // do lote anterior que não foram fechados continuam à vista.
   if (!uploads.items.some((item) => !uploadDone(item))) {
@@ -1439,9 +1517,9 @@ async function uploadFiles(files, pin = true) {
   uploads.hidden = false;
   // A ficha de leitura herda a skill da conversa, para a memória separar pesquisa de engenharia.
   const skill = conversationSkill();
-  const conversation = state.conversation?.id || null;
+  const conversationId = conversation?.id || null;
   const added = accepted.map((file) => ({ name: file.name, file, id: null, job: null, error: null, sending: false,
-    dismissed: false, pin, pinned: false, conversation }));
+    dismissed: false, pin, pinned: false, conversation: conversationId }));
   uploads.items.push(...added);
   renderUploads();
   pollUploads();
@@ -1453,6 +1531,7 @@ async function uploadFiles(files, pin = true) {
       form.append("arquivo", item.file);
       form.append("lote", uploads.lote);
       if (skill) form.append("skill", skill);
+      if (item.pin && item.conversation) form.append("conversa", item.conversation);
       const job = await api("/api/biblioteca", { method: "POST", body: form });
       item.id = job.tarefa;
       item.job = { estado: "na fila" };
@@ -1479,7 +1558,8 @@ async function restoreUploads() {
     if (!data.tarefas.some((job) => job.estado === "na fila" || job.estado === "processando")) return;
     uploads.lote = data.lote;
     uploads.items = data.tarefas.map((job) => ({ name: job.arquivo, file: null, id: job.id, job, error: null,
-      sending: false, dismissed: false }));
+      sending: false, dismissed: false, pin: Boolean(job.conversa), pinned: Boolean(job.fixado),
+      conversation: job.conversa || null }));
     uploads.hidden = false;
     renderUploads();
     pollUploads();
@@ -1522,7 +1602,7 @@ document.addEventListener("drop", (event) => {
 });
 
 /* Abas: conversa, ciência e memória. A biblioteca deixou de ser uma aba (lote 30): os documentos ficam num
-   painel aberto pelo botão "Documentos", ao lado de "Usar biblioteca". */
+   painel aberto pelo botão "Documentos", ao lado do clipe. */
 function showView(name) {
   const app = $("app");
   app.classList.toggle("library-mode", name !== "chat");
@@ -1635,7 +1715,8 @@ async function loadLibrary(selectId) {
       text: "A biblioteca está vazia. Adicione um PDF aqui ou solte o arquivo na conversa." }));
     return;
   }
-  list.replaceChildren(...documents.map((doc) => {
+  const newest = [...documents].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  list.replaceChildren(...newest.map((doc) => {
     const [label, badge] = STATUS[doc.status] || [doc.status, ""];
     return el("li", {}, el("button", { class: "doc-item", type: "button", "data-doc": doc.id,
       onclick: () => showDocument(doc) },
@@ -1846,7 +1927,7 @@ function showDocument(doc) {
   const pin = el("button", { class: fixed ? "secondary" : "primary", type: "button",
     text: fixed ? "Soltar desta conversa" : "Fixar nesta conversa",
     title: fixed ? "O documento deixa de ir inteiro ao modelo nesta conversa."
-      : "O documento vai inteiro ao modelo nas perguntas desta conversa que consultam os documentos, com a biblioteca ligada ou não.",
+      : "O documento vai inteiro ao modelo nas perguntas desta conversa que consultam os documentos.",
     onclick: async () => {
       await (fixed ? unpinDocument(doc.id) : pinDocument(doc));
       if (!viewer.hidden && viewer.dataset.doc === doc.id) showDocument(doc);

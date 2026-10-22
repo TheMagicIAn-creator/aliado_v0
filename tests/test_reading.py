@@ -179,9 +179,12 @@ def test_the_model_gets_whole_documents_with_one_mark_per_page(shelf):
     assert pdf["type"] == "document" and pdf["mime_type"] == "application/pdf"
     # O conteúdo só é lido se for preciso; inteiro e pequeno, é o próprio original.
     assert callable(pdf["data"]) and pdf["data"]() == (shelf.root / "livro.pdf").read_bytes()
-    assert pdf["key"] == f"{shelf.book['sha256']}:1-12" and set(pdf) == {"type", "mime_type", "key", "data"}
+    assert pdf["key"] == f"{shelf.book['sha256']}:1-12" and set(pdf) == {"type", "mime_type", "key", "data", "text"}
     assert "Depois vem a lista das páginas, na mesma ordem do PDF" in head["text"]
     mark = f"K{shelf.book['sha256'][:8]}p7"
+    # PRV-06: o PDF leva o texto guardado das suas páginas, que o modelo local lê no lugar da imagem.
+    assert f"=== [{mark}] página PDF 7 ===\nCapitulo jaca sobre manutencao. O alfa aparece aqui." in pdf["text"]
+    assert pdf["text"].count("=== [K") == 12
     lines = pages["text"].splitlines()
     # A lista segue a ordem do PDF: o identificador de cada página e as primeiras palavras dela.
     assert lines[6] == f"[{mark}] página PDF 7 — começa com: Capitulo jaca sobre manutencao. O alfa aparece aqui."

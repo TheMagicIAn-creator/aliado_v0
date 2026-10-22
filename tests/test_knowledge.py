@@ -198,6 +198,33 @@ def test_pdf_mixed_native_and_ocr_pages_keep_page_numbers_and_failures(tmp_path)
     assert "Página 2" in partial["issues"][0]
 
 
+def test_ocr_runs_only_on_pages_without_a_text_layer(tmp_path):
+    """BIB-04: o PDF todo digital não passa por OCR; o todo escaneado passa inteiro; o misto, só nas páginas sem
+    texto (o misto está em `test_pdf_mixed_native_and_ocr_pages_keep_page_numbers_and_failures`)."""
+    pytest.importorskip("pypdf")
+    from pypdf import PdfReader, PdfWriter
+
+    mixed = tmp_path / "misto.pdf"
+    make_pdf(mixed)  # página 1 com texto, página 2 sem
+    page_with_text, blank = PdfReader(mixed).pages
+    for name, pages in (("digital.pdf", [page_with_text, page_with_text]), ("escaneado.pdf", [blank, blank])):
+        writer = PdfWriter()
+        for page in pages:
+            writer.add_page(page)
+        writer.write(tmp_path / name)
+    calls = []
+
+    def ocr(path, page):
+        calls.append((path.name, page))
+        return "Texto reconhecido por OCR.", 95.0
+
+    digital = extract_document(tmp_path / "digital.pdf", ocr=SimpleNamespace(extract=ocr))
+    assert calls == [] and [(s.page, s.method) for s in digital.sections] == [(1, "native"), (2, "native")]
+    scanned = extract_document(tmp_path / "escaneado.pdf", ocr=SimpleNamespace(extract=ocr))
+    assert calls == [("escaneado.pdf", 1), ("escaneado.pdf", 2)]
+    assert [(s.page, s.method) for s in scanned.sections] == [(1, "ocr"), (2, "ocr")]
+
+
 def test_low_confidence_ocr_is_explicit_and_corrupt_pdf_is_preserved(tmp_path):
     pytest.importorskip("pypdf")
     path = tmp_path / "mixed.pdf"

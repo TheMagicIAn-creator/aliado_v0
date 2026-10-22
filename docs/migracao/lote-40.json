@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-18",
+  "batch": "40",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0040-contexto-32k.md",
+  "living_specs": [],
+  "validation": "docs/migracao/validacao-lote-40.md",
+  "base_commit": "77fb76d",
+  "decisions": {"date": "2026-10-18", "context": "32 mil tokens no modelo local, com a placa abaixo de 4 GB",
+                "env_file": "AL_IADO_LOCAL_CONTEXT=32768 acrescentado no .env com a autorização dele"},
+  "changes": {"code": [], "model": {"modelfile": "tmp/lote-38/Modelfile", "num_ctx": 32768, "num_gpu": 20, "use_mmap": true},
+              "docs": ["README.md", ".env.example", "docs/specs/0040-contexto-32k.md", "docs/migracao/validacao-lote-40.md",
+                       "docs/migracao/lote-40.json", "CHANGELOG.md", "docs/roteiro-v0.md"]},
+  "checks": {
+    "gpu": {"num_gpu_21": {"loaded_mib": 4113, "peak_mib": 4133, "under_4gb": false},
+            "num_gpu_20": {"loaded_mib": 3973, "peak_mib": 3999, "under_4gb": true}, "long_input_tokens": 26779},
+    "speed_num_gpu_20": {"input_tokens_per_second": 769.1, "output_short_context": 14.8, "output_full_context": 8.7},
+    "ram": {"committed_gb": [20.0, 26.4], "free_gb_loaded": 0.45},
+    "escalation": {"questions": 16, "local": 14, "cited_expected": 10, "direct_to_gemini": ["P1", "E1"], "redone": 0,
+                   "gemini_calls": 2, "truncated": 0, "mean_seconds": 264.6, "local_seconds": {"min": 38.0, "median": 301.4, "max": 729.6},
+                   "local_input_tokens": [6914, 20679], "batch_39": {"local": 6, "cited_expected": 3, "gemini_calls": 12, "mean_seconds": 130.0}},
+    "pytest": {"command": "pytest tests/test_specs.py tests/test_local_provider.py", "passed": 16},
+    "ruff": {"exit_code": 0}, "diff_check": {"exit_code": 0}
+  },
+  "paid_calls": 0,
+  "downloads": 0
+}

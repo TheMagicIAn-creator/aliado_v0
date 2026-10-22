@@ -1,6 +1,7 @@
 """A bateria não usa rede nem credenciais do ambiente do pesquisador."""
 
 import os
+import shutil
 import socket
 from pathlib import Path
 
@@ -28,6 +29,20 @@ def isolated_environment(monkeypatch):
     monkeypatch.setattr(socket.socket, "connect", loopback_only)
     monkeypatch.setattr(socket.socket, "connect_ex", blocked)
     monkeypatch.setattr(socket, "create_connection", blocked)
+
+
+@pytest.fixture(scope="session")
+def official_results(tmp_path_factory):
+    """A avaliação oficial de 27/09 numa cópia, com o treino e a reanálise dela (lote 36).
+
+    Uma rodada feita depois pela aba Ciência vira a rodada atual em `data/resultados`; os testes com os dados
+    reais conferem os números de 27/09, que não mudam."""
+    source = Path(__file__).resolve().parents[1] / "data" / "resultados"
+    copy = tmp_path_factory.mktemp("resultados-oficiais")
+    for name in ("gpvs-avaliacao-001", "gpvs-modelos-002", "gpvs-reanalise-001"):
+        if (source / name).is_dir():
+            shutil.copytree(source / name, copy / name)
+    return copy
 
 
 @pytest.fixture(scope="session")

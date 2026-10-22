@@ -96,6 +96,25 @@ class ConversationStore:
             self._write(data)
         return data
 
+    def add_pin(self, conversation_id: str, document_id: str) -> bool:
+        """Fixa mais um documento no fim da lista: o anexo enviado na conversa, pelo servidor (lote 35).
+
+        False se a conversa não existe mais ou já tem o máximo de fixados; o documento fica na biblioteca."""
+        if not isinstance(document_id, str) or not _ID.fullmatch(document_id):
+            return False
+        with self._lock:
+            try:
+                data = self.get(conversation_id)
+            except ValueError:
+                return False
+            pinned = [item for item in data.get("fixados") or () if isinstance(item, str)]
+            if document_id not in pinned:
+                if len(pinned) >= MAX_PINNED:
+                    return False
+                data["fixados"] = pinned + [document_id]
+                self._write(data)
+        return True
+
     def delete(self, conversation_id: str) -> None:
         """Tira a conversa da lista, movendo-a para a lixeira local (recuperável à mão).
 

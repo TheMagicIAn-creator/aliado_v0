@@ -45,6 +45,10 @@ Comece pela [spec 0001](docs/specs/0001-fundacao.md) e pela
 - A reescrita da pergunta só é chamada quando a mensagem depende da conversa ou traz sigla, e o plano por partes
   só quando o pedido tem partes. A segunda chamada para as partes sem citação é automática só dentro dos 30 mil
   tokens e antes do aviso diário.
+- Com `AL_IADO_LOCAL_MODEL` no .env, o modelo local (Ollama) responde primeiro; o Gemini Flash só entra no limite
+  do raciocínio dele ou no que ele não alcança (web ou contexto maior). As páginas de PDF vão ao local como o texto
+  guardado, com a descrição das figuras. Com o Ollama fora do ar, o erro é claro e nada vai ao Gemini. Instalar o
+  Ollama e baixar modelos pedem a autorização dele.
 - Testes com o modelo real pedem a autorização dele, com o número de chamadas e de tokens combinado. A leitura
   ampla deixa os PDFs no serviço de arquivos do Google por até 48 horas; o que um teste enviar para lá é apagado
   no fim.

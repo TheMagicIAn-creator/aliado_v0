@@ -162,9 +162,9 @@ def test_page_loads_d3_and_the_charts_before_the_science_tab():
 
 
 @pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
-def test_real_views_repeat_the_official_evaluation():
-    report = json.loads((RESULTS / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
-    overview = summary.overview(RESULTS)
+def test_real_views_repeat_the_official_evaluation(official_results):
+    report = json.loads((official_results / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
+    overview = summary.overview(official_results)
     for kind in summary.MODELS:
         reference = report["modelos"][kind]["referencia"]
         assert overview["modelos"][kind]["detectados"] == reference["resumo"]["detectados"]
@@ -178,16 +178,16 @@ def test_real_views_repeat_the_official_evaluation():
 
 
 @pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e os dados do GPVS neste computador.")
-def test_real_panels_match_the_scores_and_the_official_alarms():
+def test_real_panels_match_the_scores_and_the_official_alarms(official_results):
     from aliado.specializations.mestrado.evaluation import _onset
 
-    panels = summary.score_panels(RESULTS, GPVS)
-    report = json.loads((RESULTS / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
+    panels = summary.score_panels(official_results, GPVS)
+    report = json.loads((official_results / summary.EVALUATION / "relatorio.json").read_text(encoding="utf-8"))
     seed, k = report["semente_referencia"], report["top_k"]
-    config = json.loads((RESULTS / "gpvs-modelos-002" / "configuracao.json").read_text(encoding="utf-8"))["configuracao"]
+    config = json.loads((official_results / "gpvs-modelos-002" / "configuracao.json").read_text(encoding="utf-8"))["configuracao"]
     prepared = gpvs.prepare(GPVS, cache=GPVS / "processado" / "variaveis.npz", purge=config["purge"],
                             fractions=tuple(config["fractions"]))
-    with np.load(RESULTS / summary.EVALUATION / "escores.npz") as scores:
+    with np.load(official_results / summary.EVALUATION / "escores.npz") as scores:
         for panel in panels["ensaios"]:
             assert panel["inicio"] == _onset(prepared.faults[panel["id"]])
             for kind, model in panel["modelos"].items():

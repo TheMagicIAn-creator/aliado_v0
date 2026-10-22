@@ -138,9 +138,36 @@ def test_page_signals_find_images_drawings_captions_and_scanned_pages(tmp_path):
     scanned = [{"page": 1, "method": "ocr", "text": "Texto reconhecido, sem legenda."},
                {"page": 5, "method": "ocr", "text": "Outra pagina digitalizada, sem legenda."}]
     assert sorted(figures.page_signals(path, scanned)) == [4]  # sobra só o desenho vetorial
+    # BIB-03: com o OCR fraco, a página entra mesmo sem a legenda lida (costuma ser figura ou tabela girada).
+    scanned[1]["confidence"] = 41.0
+    assert sorted(figures.page_signals(path, scanned)) == [4, 5]
+    scanned[1]["confidence"] = 80.0
+    assert sorted(figures.page_signals(path, scanned)) == [4]
     scanned[0]["text"] = "Figura 2. Agora com legenda."
     again = figures.page_signals(path, scanned)
     assert again[1]["imagens"] == [] and again[1]["digitalizada"] and again[1]["legendas"] == ["fig 2"]
+
+
+def test_blank_and_described_pages_are_not_reading_issues(tmp_path):
+    """BIB-01 e BIB-02: a página em branco e a página já descrita pelo modelo deixam de ser pendência de leitura."""
+    from pypdf import PdfReader, PdfWriter
+
+    from aliado.knowledge.library import settled
+
+    source, path = tmp_path / "figuras.pdf", tmp_path / "com-branca.pdf"
+    build_pdf(source)
+    writer = PdfWriter()
+    for page in PdfReader(source).pages:
+        writer.add_page(page)
+    writer.add_blank_page(612, 792)
+    writer.write(path)
+    blank = "Página 6: sem texto utilizável; conferir original."
+    drawing = "Página 4: sem texto utilizável; conferir original."  # sem texto, mas com o desenho vetorial
+    weak = "Página 5: OCR com baixa confiança; requer conferência."
+    assert settled(blank, set(), path) and not settled(drawing, set(), path)
+    assert settled(weak, {5}, path) and not settled(weak, set(), path)
+    assert not settled("Página 3: extração falhou (OSError); conferir original/OCR.", {3}, path)
+    assert not settled(blank, set(), tmp_path / "sumiu.pdf")  # sem o original, a pendência fica
 
 
 def test_figure_text_keeps_only_what_the_page_does_not_have():
@@ -359,6 +386,21 @@ def test_describe_can_be_stopped_limited_and_redone(tmp_path):
         figures.describe(library, "inexistente", execute)
 
 
+def test_described_pages_reach_the_local_model_as_text(tmp_path):
+    """PRV-06: a descrição automática da página segue na parte em PDF, para o modelo local, que lê o texto."""
+    from aliado.knowledge import reading
+
+    library, result = library_with(tmp_path)
+    execute, _ = reader_by_page(library, result["id"])
+    figures.describe(library, result["id"], execute, workers=1)
+    units = {unit["number"]: unit for unit in library.pages(result["id"])["units"]}
+    assert "inversor central liga o barramento" in units[1]["descricao"] and units[2]["descricao"] == ""
+    assert "Inversor central" not in units[1]["text"]  # o texto da página segue sem a descrição, para o Gemini
+    read = reading.plan(library, [], {}, budget=400_000, fixed=(result["id"],), whole=False)
+    pdf = next(part for message in reading.messages(read) for part in message["content"] if part["type"] == "document")
+    assert reading.DESCRIPTION_NOTE + units[1]["descricao"] in pdf["text"]
+
+
 def test_deleting_the_document_removes_what_was_read_from_its_figures(tmp_path):
     library, result = library_with(tmp_path)
     execute, _ = reader_by_page(library, result["id"])
@@ -550,3 +592,44 @@ def test_descriptions_do_not_compete_by_words(tmp_path):
         module.SEARCH_SETTINGS["descricoes_por_palavras"] = False
     assert boosted[0]["method"] == "descricao" and "gama" in boosted[0]["text"]
     assert library.search_settings["descricoes_por_palavras"] is False and len(plain) == 1
+
+
+def test_reindex_resolves_blank_and_described_pages_but_keeps_a_real_issue(tmp_path):
+    """BIB-01 e BIB-02: a reindexacao atualiza o estado e mantem a descricao na busca, sem modelo real."""
+    from pypdf import PdfReader, PdfWriter
+
+    class WeakReader(Reader):
+        def extract(self, path, page):
+            return ("Diagrama digitalizado sem legenda reconhecida.", 20.0) if page == 5 else ("", 0.0)
+
+    source, path = tmp_path / "source.pdf", tmp_path / "synthetic.pdf"
+    build_pdf(source)
+    writer = PdfWriter()
+    for page in PdfReader(source).pages:
+        writer.add_page(page)
+    writer.add_blank_page(612, 792)
+    writer.write(path)
+    library = DocumentLibrary(tmp_path / "library", encoder=Sentences(), ocr=WeakReader())
+    added = library.add(path)
+    assert added["status"] == "partial" and len(added["issues"]) == 1
+    assert "5" in added["issues"][0]  # a pagina 6 em branco nao e pendencia
+    before = library.reindex(added["id"])
+    assert before["status"] == "partial" and before["issues"] == added["issues"]
+    calls = []
+    target = library.figure_pages(added["id"])
+    page_five = figures.page_image(target["original"], 5)
+
+    def execute(request):
+        calls.append(request)
+        image = request.messages[1]["content"][1]["data"]
+        description = ("Conexao alfa entre barramento e transformador." if image == page_five
+                       else "Outra figura com componentes distintos.")
+        return answer([{"tipo": "figura", "descricao": description}])
+
+    figures.describe(library, added["id"], execute, workers=1)
+    assert calls
+    after = library.reindex(added["id"])
+    assert after["status"] == "ready" and after["issues"] == []
+    hits = library.search("barramento transformador", limit=20)
+    assert any(hit["method"] == "descricao" and hit["page"] == 5 for hit in hits)
+    assert library.verify()["ok"]

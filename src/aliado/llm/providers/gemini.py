@@ -19,8 +19,11 @@ from typing import Any
 
 from aliado.llm.contracts import LLMRequest, LLMResult, LLMStreamChunk, LLMUsage
 from aliado.llm.providers.base import (
+    IMAGE_TYPES,
     ProviderNotConfiguredError,
     classify_provider_exception,
+    document_bytes,
+    is_document,
     normalized_messages,
 )
 
@@ -72,8 +75,6 @@ def _grounding(response) -> dict:
     return {"web_sources": tuple(sources), "web_queries": queries, "web_supports": tuple(supports)}
 
 
-IMAGE_TYPES = {"image/png", "image/jpeg"}
-DOCUMENT_TYPES = {"application/pdf"}
 MEDIA_RESOLUTIONS = {"low": "MEDIA_RESOLUTION_LOW", "medium": "MEDIA_RESOLUTION_MEDIUM", "high": "MEDIA_RESOLUTION_HIGH"}
 # Documentos em PDF (lote 30). Havendo registro de envios, todo PDF sobe pelo serviço de arquivos: cada um
 # sobe uma vez e serve às perguntas seguintes enquanto durar, e as leituras do piloto de 03/10/2026 tinham de
@@ -85,26 +86,6 @@ FILE_MARGIN = timedelta(hours=1)
 FILE_LIFE = timedelta(hours=47)
 FILE_WAIT = 60.0  # segundos à espera de o serviço terminar de receber um arquivo
 UPLOAD_WORKERS = 4  # envios ao serviço de arquivos ao mesmo tempo
-
-
-def _is_document(item) -> bool:
-    """Documento em PDF: o conteúdo ou uma função que o lê só se for preciso."""
-    if not isinstance(item, dict) or item.get("type") != "document" or item.get("mime_type") not in DOCUMENT_TYPES:
-        return False
-    data = item.get("data")
-    return callable(data) or (isinstance(data, bytes) and bool(data))
-
-
-def _document_bytes(item: dict) -> bytes:
-    data = item["data"]
-    if callable(data):
-        try:
-            data = data()
-        except Exception as exc:  # leitura ou recorte do arquivo local: não é falha do provedor
-            raise ValueError("Não foi possível ler um documento do pedido.") from exc
-    if not isinstance(data, bytes) or not data:
-        raise ValueError("Documento do pedido sem conteúdo.")
-    return data
 
 
 def _state(file) -> str:
@@ -128,9 +109,9 @@ def _parts(content, role: str, multimodal: bool, documents: dict | None = None) 
             parts.append({"text": item["text"]})
         elif kind == "image" and isinstance(item.get("data"), bytes) and item.get("mime_type") in IMAGE_TYPES:
             parts.append({"inline_data": {"mime_type": item["mime_type"], "data": item["data"]}})
-        elif _is_document(item):
+        elif is_document(item):
             parts.append((documents or {}).get(item.get("key"))
-                         or {"inline_data": {"mime_type": item["mime_type"], "data": _document_bytes(item)}})
+                         or {"inline_data": {"mime_type": item["mime_type"], "data": document_bytes(item)}})
         else:
             raise ValueError("Parte de mensagem não suportada: use texto, imagem PNG ou JPEG ou documento PDF.")
     return parts
@@ -225,7 +206,7 @@ class GeminiProvider:
         for message in request.messages:
             content = message.get("content") if isinstance(message, dict) else None
             for item in content if isinstance(content, list) else ():
-                if _is_document(item) and isinstance(item.get("key"), str):
+                if is_document(item) and isinstance(item.get("key"), str):
                     items.setdefault(item["key"], item)
         placed, waiting = {}, []
         for key, item in items.items():
@@ -233,7 +214,7 @@ class GeminiProvider:
             if entry is not None:
                 placed[key] = {"file_data": {"file_uri": entry["endereco"], "mime_type": item["mime_type"]}}
             else:
-                waiting.append((key, item["mime_type"], _document_bytes(item)))
+                waiting.append((key, item["mime_type"], document_bytes(item)))
         if self.files is not None:
             uploads = waiting
         elif sum(len(data) for _, _, data in waiting) > INLINE_BYTES:

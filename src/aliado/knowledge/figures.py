@@ -14,7 +14,7 @@ import re
 import statistics
 from pathlib import Path
 
-from aliado.knowledge.extraction import PDFIUM
+from aliado.knowledge.extraction import LOW_CONFIDENCE, PDFIUM
 from aliado.knowledge.stopwords import plain
 
 TEXT_METHODS = ("native", "ocr")  # seções com o texto da página
@@ -84,8 +84,11 @@ def page_signals(path: Path, sections: list[dict]) -> dict[int, dict]:
         # Página lida por reconhecimento de texto: a imagem dela é a própria página, com ou sem margem. Não
         # há como saber, pelo arquivo, onde ficam as figuras: ela só entra pela legenda.
         scanned = page["digitalizada"] or (section or {}).get("method") == "ocr"
+        # Lote 37: o OCR fraco costuma ser de figura, desenho ou tabela girada, cuja legenda ele também não leu.
+        confidence = (section or {}).get("confidence")
+        unclear = scanned and confidence is not None and confidence < LOW_CONFIDENCE
         images = [] if scanned else page["imagens"]
-        if images or drawing or labels:
+        if images or drawing or labels or unclear:
             signals[number] = page | {"imagens": images, "desenho": drawing, "legendas": labels, "digitalizada": scanned}
     return signals
 

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-18",
+  "batch": "41",
+  "status": "implemented_locally",
+  "spec": "docs/specs/0041-local-mais-rapido.md",
+  "living_specs": ["docs/specs/capacidades/provedores.md", "docs/specs/capacidades/biblioteca.md"],
+  "requirements": {"new": ["PRV-07", "BIB-04"]},
+  "validation": "docs/migracao/validacao-lote-41.md",
+  "base_commit": "77fb76d",
+  "decisions": {
+    "date": "2026-10-18",
+    "request": "desligar o raciocínio do local na reescrita da busca e nos trechos, com a segurança de resposta",
+    "document": "Por que o Aliado local está lento (do pesquisador): OCR decidido página por página; se já existir, relatar e não reimplementar",
+    "quality_gate": "desfazer os trechos sem raciocínio se caíssem as respostas ou as citações certas"
+  },
+  "changes": {
+    "code": {"src/aliado/knowledge/rewrite.py": "reasoning_level=\"low\" na reescrita",
+             "src/aliado/llm/providers/local.py": "trechos sem raciocínio experimentados e desfeitos; comentário com o motivo"},
+    "tests": ["tests/test_local_provider.py::test_only_the_light_route_goes_without_reasoning",
+              "tests/test_query_rewrite.py (raciocínio baixo na reescrita)",
+              "tests/test_knowledge.py::test_ocr_runs_only_on_pages_without_a_text_layer"],
+    "ocr": "nada reimplementado: a regra por página existe desde a 0.1.0 (eac1a36)"
+  },
+  "checks": {
+    "ocr_calibration": {"pages": 2245, "seconds": 99, "zero_chars": {"ocr": 368, "blank": 2}, "chars_1_49": 0,
+                        "chars_50_99_native": 2, "chars_100_199_native": 58, "chars_200_plus": {"native": 1814, "ocr_corrupted": 1},
+                        "threshold": 20, "decision": "mantido; qualquer valor entre 1 e 50 decide igual"},
+    "escalation_runs": {
+      "batch_40": {"rewrites": 0, "local": 14, "cited_expected": 10, "redone": 0, "gemini_calls": 2, "mean_seconds": 264.6},
+      "batch_41_first": {"changes": "reescrita e trechos sem raciocínio", "rewrites": 7, "local": 9, "cited_expected": 5,
+                         "redone": 6, "gemini_calls": 8, "mean_seconds": 236.1},
+      "batch_41_final": {"changes": "só a reescrita sem raciocínio", "rewrites": 7, "local": 9, "cited_expected": 7,
+                         "redone": 5, "gemini_calls": 7, "mean_seconds": 158.4, "local_median_seconds": 130.6},
+      "libraries_identical": true,
+      "noise": "4 das 9 perguntas de caminho inalterado trocaram de desfecho (P2, P5, P7, P8); temperatura 1"
+    },
+    "pytest": {"command": ".venv/Scripts/python.exe -m pytest <arquivo> -q, um processo por arquivo",
+               "files": 45, "passed": 808, "failed": 0, "seconds": 270},
+    "ruff": {"exit_code": 0}, "diff_check": {"exit_code": 0}
+  },
+  "next_batch_options": ["temperatura menor no Modelfile do local, medida em duas rodadas",
+                         "raciocínio nas páginas inteiras e no documento", "o roteador na E3"],
+  "paid_calls": 0,
+  "downloads": 0
+}

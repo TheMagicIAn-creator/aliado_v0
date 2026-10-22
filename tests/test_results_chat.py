@@ -34,7 +34,7 @@ def agent(content: str) -> Agent:
     def execute(request, provider, model_alias):
         return LLMResult(content, provider, "modelo", request.task_type)
 
-    def stream(request, provider, model_alias):
+    def stream(request, provider, model_alias, **_):
         yield LLMStreamChunk(content, provider, "modelo", request.task_type)
 
     return Agent(SimpleNamespace(execute=execute, stream=stream))

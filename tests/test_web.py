@@ -17,6 +17,7 @@ from aliado import routing  # noqa: E402
 from aliado.interfaces.web.app import WebSettings, create_app  # noqa: E402
 from aliado.interfaces.web.conversations import ConversationStore  # noqa: E402
 from aliado.interfaces.web.rendering import render_markdown  # noqa: E402
+from aliado.knowledge.stopwords import plain  # noqa: E402
 from aliado.llm.contracts import LLMResult, LLMUsage  # noqa: E402
 from aliado.llm.providers.base import ProviderError  # noqa: E402
 from aliado.memory.store import MemoryStore  # noqa: E402
@@ -83,7 +84,8 @@ def env(tmp_path):
         content = reply["content"] or "".join(reply["pieces"])
         web = {"web_sources": ({"uri": "https://exemplo.org/a", "title": "Exemplo", "domain": "exemplo.org"},),
                "web_queries": ("taxa IGBT",)} if kwargs.get("web_search") else {}
-        yield "final", LLMResult(content, reply["provider"], "gemini-teste", "critical_reasoning",
+        provider = reply["provider"] if kwargs.get("local", True) else "google"  # lote 38: local=False pula o local
+        yield "final", LLMResult(content, provider, "gemini-teste", "critical_reasoning",
                                  usage=LLMUsage(100, 20, 320, 200), sources=reply["sources"],
                                  validation_status=reply["status"], **web, **reply.get("extra", {}))
 
@@ -253,6 +255,19 @@ def test_provider_errors_do_not_leak_details_or_store_messages(env):
     assert client.get(f"/api/conversas/{cid}").json()["messages"] == []
 
 
+def test_local_model_down_shows_what_to_check_and_calls_nothing_else(env):
+    """PRV-04: com o Ollama fechado, a tela diz o que conferir, e a pergunta não é refeita por outro modelo."""
+    from aliado.llm.providers.local import LocalUnavailable
+
+    client, calls = env["client"], env["calls"]
+    message = "O modelo local não respondeu em http://localhost:11434/v1: abra o Ollama."
+    env["reply"]["error"] = LocalUnavailable(message, unavailable=True)
+    cid = new_conversation(client)
+    _, events = ask(client, cid)
+    assert events == [{"tipo": "erro", "erro": message}] and len(calls) == 1
+    assert client.get(f"/api/conversas/{cid}").json()["messages"] == []
+
+
 def test_deleted_conversation_goes_to_local_trash(env):
     client = env["client"]
     cid = new_conversation(client)
@@ -290,6 +305,32 @@ def test_upload_reports_progress_and_removes_temporary_copy(env):
     refused = client.post("/api/biblioteca", headers=HEADERS, files={"arquivo": ("script.exe", b"MZ", "application/octet-stream")})
     assert refused.status_code == 400
     assert client.post("/api/biblioteca", files={"arquivo": ("a.pdf", b"x", "application/pdf")}).status_code == 403
+
+
+def test_a_file_attached_in_a_conversation_is_pinned_by_the_server(env):
+    """INT-01: o servidor fixa o anexo no destino original, uma vez, mesmo depois de a pagina mudar."""
+    client, library = env["client"], env["library"]
+    listed, added, doc = library.documents(), library.add, "a" * 32  # o id de um documento real
+    library.add = lambda *args, **kwargs: added(*args, **kwargs) | {"id": doc}
+    library.documents = lambda: listed + [{"id": doc, "title": "Sarquis 2020.pdf", "version": 1, "status": "ready",
+                                           "issues": [], "created_at": "2026-10-18T00:00:00+00:00"}]
+    cid = new_conversation(client)
+
+    def attach(conversation):
+        job = client.post("/api/biblioteca", headers=HEADERS, data={"conversa": conversation},
+                          files={"arquivo": ("Sarquis 2020.pdf", b"%PDF-1.4 conteudo", "application/pdf")}).json()["tarefa"]
+        return wait_job(client, job)
+
+    status = attach(cid)
+    assert (status["conversa"], status["fixado"]) == (cid, True)
+    assert [item["id"] for item in client.get(f"/api/conversas/{cid}").json()["fixados"]] == [doc]
+    assert attach(cid)["fixado"] is True  # de novo: continua fixado uma vez só
+    assert [item["id"] for item in client.get(f"/api/conversas/{cid}").json()["fixados"]] == [doc]
+    gone = new_conversation(client)
+    client.delete(f"/api/conversas/{gone}", headers=HEADERS)
+    assert attach(gone)["fixado"] is False  # a conversa saiu: o documento fica só na biblioteca
+    loose = upload(client, "Sarquis 2020.pdf")  # pelo painel, sem conversa
+    assert loose["conversa"] is None and "fixado" not in loose
 
 
 def test_memory_is_used_learned_and_survives_conversation_deletion(env):
@@ -694,7 +735,7 @@ def test_page_starts_on_the_welcome_screen_and_has_the_upload_popup(env):
     assert script.count("innerHTML") == 2  # só HTML gerado no servidor: a resposta e a tabela do resultado
     # O reenvio de um documento que já estava na biblioteca, indexado em parte, diz isso em vez da contagem.
     assert "já estava na biblioteca, indexado só em parte" in script and "message.cortada" in script
-    # Uma trava por correção da tela (a suíte não roda o JavaScript): se alguma sair, o teste acusa.
+    # As demais travas textuais da tela complementam a regressao JavaScript de test_frontend.py.
     for pinned in (
         "const UPLOAD_PARALLEL = 3;",
         "uploads.hidden = false;\n  uploads.minimized = false;",
@@ -875,12 +916,12 @@ def test_library_tab_gave_place_to_the_documents_panel(env):
                    'id="library-cards"'):
         assert wanted in page, wanted
     assert "openLibrary" not in script and "nav-library" not in script and "/markdown" not in script
-    # Uma trava por comportamento da tela (a suíte não roda o JavaScript).
+    # Os casos de concorrencia rodam em test_frontend.py; as demais travas conferem os textos e controles.
     for pinned in (
-        "if (waiting.length) await setPins(waiting);",
         'json: { fixados: list.map((doc) => doc.id) }',
-        "pinDocument({ id: sent.id, title: sent.title, referencia: sent.referencia });",
-        "(state.conversation?.id || null) === item.conversation",
+        'if (item.pin && item.conversation) form.append("conversa", item.conversation);',
+        'if (item.pin && !item.pinned && job?.fixado) {',
+        "if (item.conversation === state.conversation?.id) refreshPins();",
         'uploadFiles([...$("file").files], attachToConversation)',
         'uploadFiles([...event.dataTransfer.files], !$("chat-view").hidden)',
         '{ kind: "reading" }',
@@ -1009,6 +1050,79 @@ def test_an_answer_without_citations_climbs_one_rung_inside_the_ceiling(env):
     env["reply"].update(statuses=["uncited"], confirm=31_000)
     reply = fim(ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="auto")[1])["mensagens"][1]
     assert reply["rota"]["rung"] == 1 and reply["aprofundar"]["leitura"] == "paginas"
+
+
+def test_local_answer_that_misses_the_sources_is_redone_once_by_gemini_flash(env):
+    """PRV-02 e PRV-05: a resposta do local sem citar o que a busca trouxe é refeita uma vez pelo Gemini Flash; as
+    duas ficam no registro de uso, e só a do Gemini conta no uso do dia."""
+    client, calls = env["client"], env["calls"]
+    env["reply"].update(provider="ollama", statuses=["uncited", "citation_ids_verified"], extra={"retrieved": (SOURCE,)})
+    _, events = ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="trechos")
+    kinds = [event["tipo"] for event in events]
+    assert kinds.count("recomeco") == 1 and kinds[-1] == "fim"
+    assert "local" not in calls[-2] and (calls[-1]["local"], calls[-1]["model_alias"]) == (False, "flash")
+    reply = fim(events)["mensagens"][1]
+    assert reply["provider"] == "google" and "o Gemini Flash refez a resposta" in reply["rota"]["reasons"][-1]
+    log = [json.loads(line)["provider"] for line in env["settings"].usage_log.read_text(encoding="utf-8").splitlines()]
+    assert log == ["ollama", "google"]
+    assert client.get("/api/estado").json()["uso"] == {"hoje": 320, "total": 320, "chamadas": 1}
+    # A resposta do local que cita as fontes fica como veio, sem segunda chamada.
+    before = len(calls)
+    env["reply"].update(statuses=["citation_ids_verified"])
+    reply = fim(ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="trechos")[1])["mensagens"][1]
+    assert len(calls) == before + 1 and reply["provider"] == "ollama"
+
+
+@pytest.mark.parametrize("choice", ["flash_lite", "written"])
+def test_local_escalation_uses_flash_even_when_the_smaller_model_was_requested(env, choice):
+    """PRV-02: a escolha do menor nao muda o destino da escalada, que e o Flash."""
+    client = two_models(env)
+    env["reply"].update(provider="ollama", statuses=["uncited", "citation_ids_verified"], extra={"retrieved": (SOURCE,)})
+    question = LIBRARY_QUESTION if choice != "written" else "Use o modelo menor. " + LIBRARY_QUESTION
+    options = {"leitura": "trechos", "modelo": "flash_lite"} if choice != "written" else {"leitura": "trechos"}
+    _, events = say(client, new_conversation(client), question, **options)
+    assert [(call["model_alias"], call.get("local", True)) for call in env["calls"]] == [
+        ("flash_lite", True), ("flash", False)]
+    assert sum(event["tipo"] == "recomeco" for event in events) == 1
+    assert fim(events)["mensagens"][1]["rota"]["model"] == "flash"
+
+
+@pytest.mark.parametrize("unavailable", ["not_configured", "error"])
+def test_a_failed_flash_escalation_keeps_the_local_answer_and_explains_why(env, unavailable):
+    """PRV-02 e PRV-05: sem Flash ou na falha dele, nada troca pelo menor nem tenta de novo."""
+    env["reply"].update(provider="ollama", status="uncited", extra={"retrieved": (SOURCE,)})
+    settings, calls = env["settings"], env["calls"]
+    if unavailable == "not_configured":
+        settings.models = [{"alias": "flash_lite", "model_id": "small"}]
+    else:
+        original = settings.stream
+
+        def stream(question, **options):
+            if options.get("local") is False:
+                calls.append({"question": question, **options})
+                raise ProviderError("secret SDK error")
+            yield from original(question, **options)
+
+        settings.stream = stream
+    client = TestClient(create_app(settings), base_url=BASE)
+    _, events = say(client, new_conversation(client), LIBRARY_QUESTION)
+    reply = fim(events)["mensagens"][1]
+    assert reply["provider"] == "ollama" and reply["validation_status"] == "uncited"
+    assert len(calls) == (1 if unavailable == "not_configured" else 2)
+    reason = "nao esta configurado" if unavailable == "not_configured" else "nao respondeu"
+    assert reason in plain(" ".join(reply["rota"]["reasons"]))
+    assert "secret SDK error" not in json.dumps(events)
+    assert client.get("/api/estado").json()["uso"]["total"] == 0
+    assert [json.loads(line)["provider"] for line in settings.usage_log.read_text(encoding="utf-8").splitlines()] == ["ollama"]
+
+
+def test_local_answer_that_asks_for_help_midway_is_redone_by_gemini_flash(env):
+    """PRV-02: o [ESCALAR] depois do começo, que o fluxo já mostrou, também faz o Gemini Flash refazer a resposta."""
+    client, calls = env["client"], env["calls"]
+    env["reply"].update(provider="ollama", pieces=["A taxa é 8,9e-6/h [Kabc]. ", "O resto não sei dizer. [ESCALAR]"])
+    _, events = ask(client, new_conversation(client), LIBRARY_QUESTION, leitura="trechos")
+    assert [event["tipo"] for event in events].count("recomeco") == 1 and calls[-1]["local"] is False
+    assert fim(events)["mensagens"][1]["provider"] == "google"
 
 
 def test_an_answered_question_leaves_a_trail_that_a_similar_one_follows(env):

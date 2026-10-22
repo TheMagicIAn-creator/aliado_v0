@@ -191,9 +191,9 @@ def test_digest_and_interface_open_without_numpy_or_torch():
 
 
 @pytest.mark.skipif(not REAL, reason="Sem a avaliação oficial e a reanálise neste computador.")
-def test_real_digest_has_the_numbers_of_the_science_tab():
+def test_real_digest_has_the_numbers_of_the_science_tab(official_results):
     pytest.importorskip("numpy")
-    result = digest.build_digest(RESULTS, REFERENCE)
+    result = digest.build_digest(official_results, REFERENCE)
     assert ids(result) == [f"R{n}" for n in range(1, 9)] and result["faltando"] == []
     by_id = {block["citation_id"]: block["texto"] for block in result["blocos"]}
     assert "| Ensaios detectados, de 14 | 10 (faixa: 9 a 10) | 8 (faixa: 8 a 9) |" in by_id["R1"]

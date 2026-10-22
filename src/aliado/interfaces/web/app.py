@@ -40,6 +40,7 @@ from aliado.knowledge.metadata import reference
 from aliado.knowledge.rewrite import rewrite_kind
 from aliado.knowledge.stopwords import plain
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
+from aliado.llm.providers.local import ESCALATE, LocalProvider, LocalUnavailable
 from aliado.llm.usage_log import record_usage
 from aliado.memory.reviewer import needs_review
 from aliado.memory.store import TRAIL_QUESTION, TRAIL_STRONG, trail_pages
@@ -50,6 +51,7 @@ MAX_QUESTION_CHARS = 20_000
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 UPLOAD_SUFFIXES = {".pdf", ".md", ".json"}
 UPLOAD_BATCH = re.compile(r"[0-9a-f]{8,32}")  # identificador do lote de envios, gerado pela página
+CONVERSATION_ID = re.compile(r"[0-9a-f]{32}")
 # Respostas locais que não devem voltar ao modelo como histórico.
 OUT_OF_CONTEXT = {"insufficient_evidence", "invalid_citations", "invalid_result_refs"}
 # Resposta com número que não está no resultado citado (lote 26): aparece com aviso e fica fora do histórico.
@@ -233,6 +235,8 @@ def _usage_totals(path: Path) -> dict:
             entry = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if entry.get("provider") == LocalProvider.name:
+            continue  # o modelo local não é pago (lote 38): fica no registro, fora do uso do dia e do aviso
         tokens = entry.get("total_tokens") or 0
         totals["total"] += tokens
         totals["chamadas"] += 1
@@ -279,6 +283,16 @@ def _mentions(library_, terms: list[str], cards: dict, named, total: int) -> dic
 
 def _passage_tokens(hits) -> int:
     return sum(len(hit.get("passagem") or hit.get("text") or "") for hit in hits) // reading.CHARS_PER_TOKEN
+
+
+def _local_missed(result) -> bool:
+    """A resposta do modelo local não usou bem o material (lote 38): não citou o que a busca trouxe, citou o que
+    não foi enviado, trouxe números que não conferem ou pediu ajuda depois do começo, que o fluxo já mostrou.
+    Resposta cortada não conta: é limite de tamanho."""
+    return result.provider == LocalProvider.name and not result.truncated and (
+        (result.validation_status == "uncited" and bool(result.retrieved))
+        or result.validation_status in {"invalid_citations", "invalid_result_refs"}
+        or result.results_status == UNVERIFIED_RESULTS or ESCALATE in result.content)
 
 
 def _deeper(rung: int, result, library_) -> dict | None:
@@ -659,7 +673,7 @@ def create_app(settings: WebSettings) -> Starlette:
             call = options(rung, first, alias_=model, limit=limit) | ({"trail": trail} if trail and trail[
                 "conversation_id"] != cid else {})
             attempts, result = [], None
-            recorded = False
+            recorded, escalation_failed = False, False
             try:
                 kind, result = yield from run(call)
                 if kind == "confirmar":
@@ -669,19 +683,47 @@ def create_app(settings: WebSettings) -> Starlette:
                                 "aviso_diario": settings.daily_warning, "lembrar": not over and rung != routing.WIDE,
                                 "modo": MODE_OF.get(rung, "trechos"), "leitura": result.get("leitura")})
                     return
+                stronger = model if alias != "auto" else routing.STRONG if routing.STRONG in aliases else model
+                if result is not None and _local_missed(result):
+                    # Lote 38: o modelo local não usou bem o que a busca trouxe; o Gemini refaz a resposta, uma vez.
+                    try:
+                        record_usage(result, settings.usage_log)
+                        recorded = True
+                    except OSError:
+                        pass
+                    # A escalada e sempre para o Flash; a escolha do menor so vale antes dela (lote 44).
+                    if routing.STRONG not in aliases:
+                        escalation_failed = True
+                        reasons.append("o Gemini Flash não está configurado: a resposta local foi mantida com os avisos")
+                    else:
+                        restart = line({"tipo": "recomeco", "texto": "O modelo local não chegou lá: o Gemini Flash vai responder…"})
+                        try:
+                            kind, better = yield from run(call | {"model_alias": routing.STRONG, "local": False}, before=restart)
+                        except (ProviderError, ValueError, OSError):
+                            kind, better = "falhou", None
+                        if kind == "final" and better is not None:
+                            cause = "pediu ajuda" if ESCALATE in result.content else (
+                                "não citou o que a busca trouxe ou não conferiu os números")
+                            result, model, recorded = replace(better, escalation_used=True), routing.STRONG, False
+                            reasons.append(f"o modelo local {cause}: o Gemini Flash refez a resposta")
+                        else:
+                            escalation_failed = True
+                            reason = "exige confirmação" if kind == "confirmar" else "não respondeu"
+                            reasons.append(f"o Gemini Flash {reason}: a resposta local foi mantida com os avisos")
                 # Lote 33: a segunda chamada só vale se houver o que ler de novo: partes sem citação com material
                 # que a busca achou e não enviou, ou, saindo dos trechos, as páginas inteiras do que foi enviado.
                 gaps = [unit for unit in ((result.coverage or {}).get("unidades") or ()) if not unit["citados"]
                         and (unit["estado"] == "nao_enviado" or (unit["estado"] == "sem_citacao" and rung == routing.PASSAGES))]
                 partial = bool(result is not None and result.coverage and not result.coverage["completa"] and gaps)
-                climbs = (result is not None and mode == "auto" and not use_web and not result.truncated
+                climbs = (result is not None and not escalation_failed and mode == "auto" and not use_web and not result.truncated
                           and result.validation_status not in OUT_OF_CONTEXT and found.intent in LIBRARY_INTENTS
                           and (partial or (not search_plan and not over and result.validation_status == "uncited"
                                            and (rung == routing.PASSAGES or strong))))
                 if climbs:
                     # A resposta não citou nenhum documento, ou deixou partes sem citação: sobe um degrau, se couber.
-                    spent = (result.usage.total_tokens if result.usage else 0) or 0
-                    stronger = model if alias != "auto" else routing.STRONG if routing.STRONG in aliases else model
+                    # Os tokens do modelo local não são pagos (lote 38): não contam no teto nem no aviso do dia.
+                    spent = 0 if result.provider == LocalProvider.name else (
+                        (result.usage.total_tokens if result.usage else 0) or 0)
                     daily = _usage_totals(settings.usage_log)["hoje"] + spent >= settings.daily_warning
                     second = options(routing.PAGES, reading_of(routing.PAGES), alias_=stronger,
                                      limit=0 if daily else max(settings.ceiling - spent - rewrite_tokens, 0))
@@ -707,7 +749,7 @@ def create_app(settings: WebSettings) -> Starlette:
                             "complemento": "confirmacao_necessaria", "tokens_complemento": better["tokens"]})
                     if kind == "final" and better is not None:
                         first_read = "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung]
-                        if result.provider != "local":
+                        if result.provider != "local" and not recorded:
                             try:
                                 record_usage(result, settings.usage_log)
                                 recorded = True
@@ -738,6 +780,10 @@ def create_app(settings: WebSettings) -> Starlette:
             except ProviderNotConfiguredError:
                 yield line({"tipo": "erro", "erro": "Configure a chave do Gemini no .env e reinicie."})
                 return
+            except LocalUnavailable as exc:
+                # A mensagem é nossa, sem texto do SDK: diz o que conferir no Ollama. Nada foi ao Gemini.
+                yield line({"tipo": "erro", "erro": str(exc)})
+                return
             except ProviderError:
                 # Mensagens de SDK podem conter URLs ou credenciais; não são repassadas.
                 yield line({"tipo": "erro", "erro": "O Gemini não respondeu. Tente de novo em instantes."})
@@ -759,6 +805,8 @@ def create_app(settings: WebSettings) -> Starlette:
             user = {"role": "user", "content": typed, "in_context": in_context,
                     "skill": chosen, "apoio": support, "biblioteca": use_library, "web": use_web,
                     "resultados": use_results, "leitura": mode, "teto": budget}
+            if result.route_reason:
+                reasons.append(result.route_reason)  # o modelo local passou a vez ao Gemini (lote 38)
             # A rota (lote 31): o que o roteador decidiu, o que foi escolha sua e o que foi lido de fato.
             route_view = found.view() | {
                 "rung": rung, "leitura": "páginas de uma resposta anterior" if strong else routing.RUNG_NAMES[rung],
@@ -1007,6 +1055,10 @@ def create_app(settings: WebSettings) -> Starlette:
         # A página manda o mesmo lote para os arquivos escolhidos juntos; o pop-up soma por lote.
         batch = form.get("lote")
         batch = batch if isinstance(batch, str) and UPLOAD_BATCH.fullmatch(batch) else uuid.uuid4().hex
+        # Lote 35: o anexo da conversa fica fixado nela pelo servidor, mesmo se a página mudar de conversa ou fechar.
+        conversation_id = form.get("conversa")
+        conversation_id = conversation_id if isinstance(conversation_id, str) and CONVERSATION_ID.fullmatch(
+            conversation_id) else None
         name = Path(upload.filename).name
         if Path(name).suffix.lower() not in UPLOAD_SUFFIXES:
             return _error("Formato não aceito. Envie PDF, Markdown ou JSON.")
@@ -1024,7 +1076,7 @@ def create_app(settings: WebSettings) -> Starlette:
                     return _error("Arquivo acima de 100 MB.", 413)
                 handle.write(chunk)
         with lock:
-            settings.jobs[job] = {"estado": "na fila", "arquivo": name, "lote": batch}
+            settings.jobs[job] = {"estado": "na fila", "arquivo": name, "lote": batch, "conversa": conversation_id}
             library_jobs.add(job)
             upload_order.append(job)
 
@@ -1058,6 +1110,8 @@ def create_app(settings: WebSettings) -> Starlette:
             finally:
                 # A biblioteca guarda a própria cópia do original; o arquivo temporário sai.
                 shutil.rmtree(folder, ignore_errors=True)
+            if conversation_id and outcome.get("indexado"):
+                outcome["fixado"] = store.add_pin(conversation_id, outcome["resultado"]["id"])
             if not outcome.get("indexado") or result.get("duplicate"):
                 with lock:
                     settings.jobs[job].update({"estado": "concluido"} | outcome)
@@ -1477,6 +1531,10 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
     # Descrição das figuras (lote 29): o modelo escolhido no piloto, ou o de AL_IADO_FIGURE_MODEL.
     wanted = os.getenv("AL_IADO_FIGURE_MODEL", FIGURE_ALIAS)
     figure_alias = wanted if wanted in aliases else (helper_alias if aliases else None)
+    figure_name = MODEL_NAMES.get(figure_alias, figure_alias)
+    # Lote 38: com o modelo local ligado, é ele que descreve; o Gemini só entra no limite dele.
+    local_model = (os.getenv("AL_IADO_LOCAL_MODEL") or "").strip()
+    figure_name = f"local {local_model} (o {figure_name} só no limite dele)" if local_model else figure_name
 
     def read_figures(request):
         return gateway.execute(request, provider="google", model_alias=figure_alias)
@@ -1496,6 +1554,6 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        if make_digest else None,
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
                        figure_reader=read_figures if figure_alias else None,
-                       figure_model=MODEL_NAMES.get(figure_alias, figure_alias),
+                       figure_model=figure_name,
                        uploaded_files=google.uploaded, forget_files=google.forget_uploads)
     return settings

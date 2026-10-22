@@ -75,6 +75,30 @@ def normalized_messages(request: LLMRequest) -> list[dict[str, Any]]:
     return messages
 
 
+IMAGE_TYPES = {"image/png", "image/jpeg"}
+DOCUMENT_TYPES = {"application/pdf"}
+
+
+def is_document(item) -> bool:
+    """Documento em PDF: o conteúdo ou uma função que o lê só se for preciso."""
+    if not isinstance(item, dict) or item.get("type") != "document" or item.get("mime_type") not in DOCUMENT_TYPES:
+        return False
+    data = item.get("data")
+    return callable(data) or (isinstance(data, bytes) and bool(data))
+
+
+def document_bytes(item: dict) -> bytes:
+    data = item["data"]
+    if callable(data):
+        try:
+            data = data()
+        except Exception as exc:  # leitura ou recorte do arquivo local: não é falha do provedor
+            raise ValueError("Não foi possível ler um documento do pedido.") from exc
+    if not isinstance(data, bytes) or not data:
+        raise ValueError("Documento do pedido sem conteúdo.")
+    return data
+
+
 def classify_provider_exception(exc: Exception, provider: str) -> ProviderError:
     status = getattr(exc, "status_code", None)
     text = str(exc).lower()
@@ -106,10 +130,14 @@ def classify_provider_exception(exc: Exception, provider: str) -> ProviderError:
 
 
 __all__ = [
+    "DOCUMENT_TYPES",
+    "IMAGE_TYPES",
     "LLMProvider",
     "ProviderError",
     "ProviderNotConfiguredError",
     "classify_provider_exception",
+    "document_bytes",
+    "is_document",
     "message_content",
     "message_role",
     "normalized_messages",

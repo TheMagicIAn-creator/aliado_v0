@@ -13,6 +13,7 @@ from aliado import specializations
 from aliado.agent import Agent, prepare_request
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.providers.gateway import build_default_gateway
+from aliado.llm.providers.local import LocalUnavailable
 from aliado.llm.usage_log import DEFAULT_USAGE_LOG, record_usage, usage_line
 from aliado.skills.library import list_skills
 
@@ -231,6 +232,8 @@ def main(argv: list[str] | None = None) -> int:
             print("\nAviso: a resposta foi interrompida pelo limite de tamanho e pode estar incompleta. "
                   "Peça de novo ou restrinja a pergunta.", file=sys.stderr)
         print(f"\nProvedor: {result.provider} | Modelo: {result.model}", file=sys.stderr)
+        if result.route_reason:
+            print(f"Rota: {result.route_reason}", file=sys.stderr)  # o modelo local passou a vez (lote 38)
         print(usage_line(result), file=sys.stderr)
         try:
             record_usage(result, args.registro_uso)
@@ -240,6 +243,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     except ProviderNotConfiguredError:
         print("Configure a chave do provedor e instale o extra 'llm'.", file=sys.stderr)
+        return 2
+    except LocalUnavailable as exc:
+        print(str(exc), file=sys.stderr)  # a mensagem é nossa, sem texto do SDK; nada foi ao Gemini
         return 2
     except ProviderError:
         # Exceções de SDK podem incluir cabeçalhos, URLs ou credenciais.

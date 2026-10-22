@@ -18,7 +18,7 @@ from pathlib import Path
 
 from aliado.knowledge import chunking, figures
 from aliado.knowledge.embeddings import ENCODE_BATCH, LocalEncoder
-from aliado.knowledge.extraction import TesseractOCR, extract_document
+from aliado.knowledge.extraction import TesseractOCR, blank_page, extract_document
 from aliado.knowledge.metadata import MAX_CHARS, clean_card, named_documents, reference
 from aliado.knowledge.stopwords import STOPWORDS, plain
 
@@ -51,6 +51,23 @@ RANKED_PAGES = 20
 POOL_SIZE = 60
 # Como as seções de figuras aparecem no Markdown da extração; as de texto seguem como "native" e "ocr".
 METHOD_NAMES = {figures.FIGURE_TEXT: "texto reconhecido na figura", figures.DESCRIPTION: "descrição automática"}
+
+
+_PAGE_ISSUE = re.compile(r"Página (\d+): (OCR com baixa confiança|sem texto utilizável)")
+
+
+def settled(issue: str, described: set[int], original: Path) -> bool:
+    """A pendência de leitura que não pede mais conferência (lote 37): a página foi descrita pelo modelo, ou está
+    sem texto porque está em branco."""
+    match = _PAGE_ISSUE.match(issue)
+    if not match:
+        return False
+    if int(match.group(1)) in described:
+        return True
+    try:
+        return match.group(2).startswith("sem texto") and blank_page(original, int(match.group(1)))
+    except (ImportError, OSError, ValueError, RuntimeError, IndexError):
+        return False  # sem pdfium, ou página que ele não abre: a pendência fica
 
 
 def _hash(data: bytes) -> str:
@@ -276,7 +293,8 @@ class DocumentLibrary:
 
         Num PDF, toda página entra, mesmo a que ficou sem texto (uma figura de página inteira): o modelo a
         lê pela imagem. Nos outros formatos, cada seção do texto é uma unidade. O texto de figura e a
-        descrição automática ficam de fora: a página vai como ela é."""
+        descrição automática ficam fora do `text`: a página vai como ela é. A descrição segue à parte
+        (`descricao`), para o modelo local, que lê o texto e não a imagem (lote 39)."""
         if not (self.root / "catalog.sqlite3").exists():
             raise ValueError("Documento não encontrado na biblioteca.")
         with self._connect() as db:
@@ -292,9 +310,12 @@ class DocumentLibrary:
         pdf = original.suffix.lower() == ".pdf"
         if pdf:
             by_page = {section["page"]: section for section in sections if section.get("page")}
+            described = {page: "\n".join(filter(None, (item.get("texto") for item in (saved["reading"] or {}).get("itens") or ())))
+                         for page, saved in self._figure_rows(row["sha256"]).items()}
             units = [{"number": number, "locator": f"página PDF {number}", "page": number,
                       "method": by_page[number]["method"] if number in by_page else "imagem",
-                      "text": by_page[number]["text"] if number in by_page else ""}
+                      "text": by_page[number]["text"] if number in by_page else "",
+                      "descricao": described.get(number, "")}
                      for number in range(1, max(extraction.get("pages") or 0, max(by_page, default=0)) + 1)]
         else:
             units = [{"number": number, "locator": section["locator"], "page": None, "method": section["method"],
@@ -594,6 +615,8 @@ class DocumentLibrary:
         """Grava a extração (JSON e Markdown), os trechos e o índice por palavras, e a torna a ativa."""
         # Vetores incompletos nunca entram na busca. O original e a extração ficam preservados.
         indexed = [c for c in chunks if "vector" in c]
+        described = {section["page"] for section in sections if section["method"] == figures.DESCRIPTION}
+        issues = [issue for issue in issues if not settled(issue, described, self._path(original))]
         if not indexed and not issues:
             issues.append("Documento sem trechos indexáveis; confira o original.")
         status = "failed" if not indexed else ("partial" if issues else "ready")

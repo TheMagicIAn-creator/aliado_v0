@@ -440,6 +440,93 @@ seguintes. Eles saem juntos como 0.7.0, com um commit por lote, feito pelo pesqu
   Ciência e os resultados do chat; o núcleo os lê só quando precisa. Para quem usa, nada muda.
 - Veja a [validação do lote 36](migracao/validacao-lote-36.md).
 
+## Depois da 0.7.0: o modelo local (0.8.0)
+
+Os lotes 37 a 44 saem juntos como 0.8.0, num commit só feito pelo pesquisador. Os lotes mexem nos mesmos arquivos e
+não dá para separá-los em commits.
+
+| Lote | Entrega | Situação |
+|---|---|---|
+| 37 | Leitura das páginas: página em branco sem aviso, página descrita pelo modelo sem pendência, OCR fraco na lista da descrição | Concluído em 18/10/2026 ([spec 0037](specs/0037-paginas-sem-leitura.md), [validação](migracao/validacao-lote-37.md)); a reindexação da biblioteca real fica com o pesquisador, pela tela |
+| 38 | Modelo local (Ollama) como principal, com o Gemini Flash na escalada | Etapas 2 e 3 concluídas localmente em 18/10/2026: código com testes simulados; Ollama e `qwen3.5:9b` instalados e medidos. Depois, ele ligou o local no `.env` |
+| 39 | O modelo local lê as páginas pelo texto guardado, com as descrições das figuras | Concluído e medido localmente em 18/10/2026 |
+| 40 | Contexto de 32 mil tokens no local, com 20 camadas na placa, abaixo de 4 GB | Aplicado e medido em 18/10/2026: o local respondeu 14 das 16 perguntas reais, contra 6; 5 min de mediana por resposta ([spec 0040](specs/0040-contexto-32k.md), [validação](migracao/validacao-lote-40.md)) |
+| 41 | Reescrita da busca sem raciocínio no local; trechos sem raciocínio experimentados e desfeitos; OCR por página conferido (já existia) | Concluído e medido em 18/10/2026: tempo médio de 265 para 158 s; a reescrita volta a funcionar ([spec 0041](specs/0041-local-mais-rapido.md), [validação](migracao/validacao-lote-41.md)) |
+| 42 | O modelo local quase todo na VRAM: 32 das 33 camadas na placa, no lugar do limite de 4 GB | Aplicado e medido em 19/10/2026: escrita de 15 para 25 tokens/s; tempo médio de 158 para 102 s ([spec 0042](specs/0042-local-na-vram.md), [validação](migracao/validacao-lote-42.md)) |
+| 43 | Temperatura 0,6 no modelo local, medida em duas rodadas | Aplicado e medido em 19/10/2026: o mesmo desfecho nas duas rodadas em 13 de 16 perguntas, contra 7; o local respondeu 13 e 11; 4 a 5 chamadas ao Gemini ([spec 0043](specs/0043-temperatura-local.md), [validação](migracao/validacao-lote-43.md)) |
+| 44 | Revisão e fechamento da 0.8.0: anexos, navegação, escalada explícita ao Flash, registros e pacote | Validado localmente em 20/10/2026: 814 testes e Ruff; aguarda revisão e commit |
+
+### Decisões e resultado do lote 44 (20/10/2026)
+
+- **Decisões do pesquisador:** revisar toda a 0.8.0, registrar as correções num lote novo e preparar os arquivos
+  para um único commit dele. Escopo na [spec 0044](specs/0044-revisao-fechamento.md).
+- **Correções:** criação compartilhada da conversa para anexo e pergunta, navegação protegida e destino explícito
+  no Flash quando a resposta local não passa na conferência. Os registros originais dos lotes 35/36 são preservados.
+- **Estado:** validado localmente: 814 testes, 13 cenários JavaScript, Ruff e wheel conferido; aguarda revisão
+  e commit. As medições com modelo local dos lotes 38 a 43
+  continuam sendo as de 18 e 19/10, com o Gemini simulado. A revisão atual não repete essas chamadas.
+- Veja a [validação do lote 44](migracao/validacao-lote-44.md).
+
+### Decisões e resultado do lote 38, Etapa 2 (18/10/2026)
+
+- **Decisões do pesquisador:**
+  - os modelos locais e quantizados são os principais; o Gemini Flash entra no limite do raciocínio deles, e não no
+    de tokens, sem um caminho de troca entre provedores;
+  - com o Ollama fora do ar, erro claro, sem gastar;
+  - placa até 4 GB e o SSD como complemento (a conferência da ordem está no README);
+  - só testes simulados, sem baixar nada, e parar para a revisão dele antes da Etapa 3.
+
+  Escopo na [spec 0038](specs/0038-modelo-local.md); requisitos vivos em
+  [capacidades/provedores.md](specs/capacidades/provedores.md).
+- **Resultado:**
+  - o adapter `ollama`, a cascata no gateway e a escalada da conversa, com 14 testes novos e nenhuma chamada paga;
+  - sem o Ollama instalado, o terminal termina com a mensagem do que conferir, e o registro de uso não ganha linha.
+- Veja a [validação do lote 38](migracao/validacao-lote-38.md).
+
+### Decisões e resultado do lote 38, Etapa 3 (18/10/2026)
+
+- **Decisões do pesquisador:**
+  - autorizou instalar o Ollama, baixar o `qwen3.5:9b` quantizado, criar o `aliado-local` e medir memória,
+    velocidade e escalada;
+  - com a linha lenta, deixou baixando;
+  - fechou os programas pesados para o modelo carregar.
+- **Resultado:**
+  - **Instalação:** o Ollama 0.40.6 e o modelo, conferidos.
+  - **Memória:** 22 camadas na placa (3,9 GB). Com `use_mmap`, os pesos fora da placa vêm do SSD, e a reserva fica
+    em 6,6 GB, em vez de 8,6 GB.
+  - **Velocidade:** saída de 15 a 16 tokens/s; com raciocínio, uma resposta da biblioteca leva de 1 a 4 minutos.
+  - **Escalada nas 16 perguntas reais da biblioteca, sem custo:**
+    - 3 respondidas pelo local;
+    - 8 direto ao Gemini, porque o documento ou as páginas inteiras passam de 4 páginas de PDF;
+    - 3 refeitas pelo Gemini, porque o local citou sem as marcas;
+    - 1 com o pedido de ajuda no meio do texto, que apareceu na tela e foi corrigido.
+- **Para o próximo lote, a escolher por ele:**
+  - ler o documento e as páginas como texto no local;
+  - as marcas de citação no local;
+  - o raciocínio nos trechos;
+  - o roteador na E3.
+
+### Decisões e resultado do lote 39 (18/10/2026)
+
+- **Decisões do pesquisador:**
+  - ligou o modelo local no `.env`;
+  - escolheu como próximo lote a leitura das páginas como texto no local.
+
+  Escopo na [spec 0039](specs/0039-local-le-texto.md); requisitos vivos em
+  [capacidades/provedores.md](specs/capacidades/provedores.md): PRV-01 e PRV-03 alterados e PRV-06, novo.
+- **Resultado nas 16 perguntas reais, sem custo:**
+  - o local respondeu 6, contra 3;
+  - 3 citaram o documento esperado, contra 1;
+  - 7 foram direto ao Gemini, agora pelo contexto de 16 mil tokens: só as regras e a skill somam cerca de 7 mil;
+  - 3 foram refeitas por citação;
+  - 806 testes passam.
+- **Para o próximo lote, a escolher por ele:**
+  - o contexto de 32 mil tokens, com 20 camadas na placa: 6 das 7 caberiam;
+  - o identificador entre crases na conferência;
+  - o raciocínio desligado na reescrita da busca, que levou 2 minutos;
+  - o roteador na E3.
+- Veja a [validação do lote 39](migracao/validacao-lote-39.md).
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -459,6 +546,15 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 34 | [0034](specs/0034-experimentos.md) |
 | 35 | [0035](specs/0035-chat-tela-minima.md) |
 | 36 | [0036](specs/0036-mestrado-fora-do-nucleo.md) |
+| 37 | [0037](specs/0037-paginas-sem-leitura.md) |
+| 38 | [0038](specs/0038-modelo-local.md) |
+| 39 | [0039](specs/0039-local-le-texto.md) |
+| 40 | [0040](specs/0040-contexto-32k.md) |
+| 41 | [0041](specs/0041-local-mais-rapido.md) |
+| 42 | [0042](specs/0042-local-na-vram.md) |
+| 43 | [0043](specs/0043-temperatura-local.md) |
+| 44 | [0044](specs/0044-revisao-fechamento.md) |
+| 45 | [0045](specs/0045-comparacao-real.md) |
 
 ## Fica para a v1
 
