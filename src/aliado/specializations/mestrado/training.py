@@ -16,6 +16,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from aliado.science.deteccao.escore.top_k import top_k_scores
+from aliado.science.deteccao.inferencia.erros import feature_errors
 from aliado.science.deteccao.limiar.calibracao import (
     DegenerateThresholdError,
     ThresholdCalibration,
@@ -23,18 +25,16 @@ from aliado.science.deteccao.limiar.calibracao import (
     effective_sample_size,
     minimum_n_for_percentile,
 )
-from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS, ROLES, sequences_for_blocks
+from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS, ROLES
+from aliado.science.deteccao.particao.sequencias import sequences_for_blocks
+from aliado.science.deteccao.pesos.arquivos import save_model
 from aliado.science.deteccao.redes.autoencoders import (
     MODEL_NAMES,
     MODELS,
     Hyperparameters,
-    TrainingHistory,
-    feature_errors,
-    fit,
     parameter_count,
-    save_model,
-    top_k_scores,
 )
+from aliado.science.deteccao.treino.laco import TrainingHistory, fit
 from aliado.specializations.mestrado import gpvs
 
 TRAINING_ROLES = ("train", "validation", "calibration")

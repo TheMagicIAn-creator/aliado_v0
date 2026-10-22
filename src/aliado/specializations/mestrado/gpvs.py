@@ -17,14 +17,9 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.science.deteccao.particao.blocos import (
-    DEFAULT_FRACTIONS,
-    ROLES,
-    RobustScaler,
-    decorrelation_report,
-    robust_center_scale,
-    temporal_split,
-)
+from aliado.science.deteccao.normalizacao.escala_robusta import RobustScaler, robust_center_scale
+from aliado.science.deteccao.particao.autocorrelacao import decorrelation_report
+from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS, ROLES, temporal_split
 
 DATASET_NAME = "GPVS-Faults"
 DATASET_DOI = "10.17632/n76t439f65.1"

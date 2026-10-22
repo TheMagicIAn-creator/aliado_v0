@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("torch")
 
-from aliado.science.deteccao.redes.autoencoders import top_k_scores  # noqa: E402
+from aliado.science.deteccao.escore.top_k import top_k_scores  # noqa: E402
 
 
 def test_top_k_score_is_the_mean_of_the_largest_errors():

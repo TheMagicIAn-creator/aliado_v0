@@ -23,8 +23,8 @@ from pathlib import Path
 import numpy as np
 
 from aliado import experiments
+from aliado.science.deteccao.alarmes.confirmacao import alarm_starts, first_alarm
 from aliado.science.deteccao.limiar.calibracao import false_alarm_interval
-from aliado.science.deteccao.metricas.por_janela import alarm_starts, first_alarm
 from aliado.specializations.mestrado import autoencoders, gpvs
 
 EVALUATION = autoencoders.LEGACY_EVALUATION

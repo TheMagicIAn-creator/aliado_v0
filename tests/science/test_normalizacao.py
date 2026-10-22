@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from aliado.science.deteccao.particao.blocos import RobustScaler, robust_center_scale
+from aliado.science.deteccao.normalizacao.escala_robusta import RobustScaler, robust_center_scale
 
 
 def test_robust_scaling_matches_median_iqr_and_handles_zero_spread():

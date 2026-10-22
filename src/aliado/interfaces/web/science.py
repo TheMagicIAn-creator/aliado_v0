@@ -111,11 +111,8 @@ def science_routes(settings, worker, lock) -> list[Route]:
         return await compute(request, evaluate_scenario, "cenario")
 
     async def save_scenario(request: Request):
-        from aliado.science.confiabilidade.cenarios import (
-            EXPLORATION_SOURCE,
-            evaluate_scenario,
-            export_result,
-        )
+        from aliado.science.confiabilidade.artefatos import export_result
+        from aliado.science.confiabilidade.cenarios import EXPLORATION_SOURCE, evaluate_scenario
 
         try:
             scenario = (await read_body(request)).get("cenario")
@@ -136,7 +133,9 @@ def science_routes(settings, worker, lock) -> list[Route]:
         return JSONResponse(saved, 201)
 
     async def fmeca(request: Request):
-        from aliado.science.fmeca.calculo import evaluate_fmeca, export_fmeca, load_table
+        from aliado.science.fmeca.artefatos import export_fmeca
+        from aliado.science.fmeca.calculo import evaluate_fmeca
+        from aliado.science.fmeca.tabela import load_table
 
         if not fmeca_table.is_file():
             return error("Tabela da FMECA não encontrada.", 404)
@@ -154,8 +153,9 @@ def science_routes(settings, worker, lock) -> list[Route]:
 
     async def components(request: Request):
         """Confiabilidade e disponibilidade de cada grupo da FMECA (lote 25); não grava nada."""
-        from aliado.science.componentes.disponibilidade import component_view, load_repairs
-        from aliado.science.fmeca.calculo import load_table
+        from aliado.science.componentes.disponibilidade import component_view
+        from aliado.science.componentes.reparos import load_repairs
+        from aliado.science.fmeca.tabela import load_table
 
         repairs = settings.reference_dir / "reparos.json"
         if not fmeca_table.is_file() or not repairs.is_file():

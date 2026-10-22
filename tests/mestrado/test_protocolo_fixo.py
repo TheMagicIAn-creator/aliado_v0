@@ -33,7 +33,7 @@ def test_the_protocol_values_are_the_ones_decided():
 
 def test_normalization_is_the_robust_one_of_the_training_baseline():
     """EXP-12: a escala é a mediana e o IQR da linha de base do treino, com piso de 10% do IQR."""
-    from aliado.science.deteccao.particao.blocos import robust_center_scale
+    from aliado.science.deteccao.normalizacao.escala_robusta import robust_center_scale
 
     np = pytest.importorskip("numpy")
     center, scale = robust_center_scale(np.array([[1.0], [2.0], [3.0], [4.0], [100.0]]))

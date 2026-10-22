@@ -34,11 +34,11 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
     pytest.importorskip("torch")
     from types import SimpleNamespace
 
-    from aliado.science.deteccao.redes import autoencoders as models
+    from aliado.science.deteccao.inferencia import erros
     from aliado.specializations.mestrado import evaluation, gpvs, training
 
     computed = []
-    monkeypatch.setattr(models, "feature_errors",
+    monkeypatch.setattr(erros, "feature_errors",
                         lambda model, inputs: computed.append(model) or np.zeros((2, 24), np.float32))
     monkeypatch.setattr(evaluation, "segment_errors", lambda kind, model, scaled, sequence: np.ones((3, 24), np.float32))
     monkeypatch.setattr(training, "training_blocks", lambda prepared: {"calibration": None})

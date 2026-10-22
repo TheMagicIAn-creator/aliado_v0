@@ -1,7 +1,9 @@
-"""NUC-01 (lotes 34 a 36): nenhum arquivo do núcleo menciona o domínio de uma especialização."""
+"""NUC-01 (lotes 34 a 36): nenhum arquivo do núcleo menciona o domínio de uma especialização. NUC-04 (lote 50): as
+pastas com código são pacotes, e as da ciência e do mestrado só se explicam no `__init__.py`."""
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -59,3 +61,15 @@ def test_nuc_01_specialization_discovery_has_no_names():
     assert "specializations/__init__.py" not in mentions()
     assert "experiments/__init__.py" not in mentions() and "experiments/pdf.py" not in mentions()
     assert "interfaces/web/experiments.py" not in mentions()
+
+
+def test_nuc_04_code_folders_are_packages_and_science_folders_only_explain():
+    """NUC-04: toda pasta com código tem `__init__.py`; nas da ciência e do mestrado, ele só tem a explicação."""
+    folders = {path.parent for path in CORE.rglob("*.py") if "__pycache__" not in path.parts}
+    assert sorted(str(folder) for folder in folders if not (folder / "__init__.py").is_file()) == []
+    mestrado = CORE / "specializations" / "mestrado"
+    for init in [*(CORE / "science").rglob("__init__.py"), *mestrado.rglob("__init__.py")]:
+        if init == mestrado / "__init__.py":
+            continue  # o contrato com o núcleo (NUC-02)
+        body = ast.parse(init.read_text(encoding="utf-8")).body
+        assert len(body) == 1 and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant)             and isinstance(body[0].value.value, str), init

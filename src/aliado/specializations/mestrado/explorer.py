@@ -123,7 +123,7 @@ class Explorer:
                 "canonical_trials": canonical_trials, "models": MODELS}
 
     def _errors(self, trained, prepared, weights: dict) -> dict:
-        from aliado.science.deteccao.redes.autoencoders import feature_errors
+        from aliado.science.deteccao.inferencia.erros import feature_errors
         from aliado.specializations.mestrado.evaluation import segment_errors
         from aliado.specializations.mestrado.training import model_inputs, training_blocks
 
@@ -171,7 +171,7 @@ class Explorer:
     # Explorador do limiar (só calibração)
 
     def threshold(self, kind: str, seed: int, k: int, percentile: float, window: int | None = None) -> dict:
-        from aliado.science.deteccao.redes.autoencoders import top_k_scores
+        from aliado.science.deteccao.escore.top_k import top_k_scores
 
         state, errors = self._ready(kind, seed)
         k, percentile = _k(k), _range(percentile, PERCENTILES, "percentil")
@@ -198,8 +198,8 @@ class Explorer:
 
     def alarms(self, kind: str, seed: int, k: int, percentile: float, confirmations: int,
                trial: str | None = None) -> dict:
-        from aliado.science.deteccao.metricas.por_janela import alarm_starts
-        from aliado.science.deteccao.redes.autoencoders import top_k_scores
+        from aliado.science.deteccao.alarmes.confirmacao import alarm_starts
+        from aliado.science.deteccao.escore.top_k import top_k_scores
         from aliado.specializations.mestrado.evaluation import _onset, run_metrics
 
         state, errors = self._ready(kind, seed)

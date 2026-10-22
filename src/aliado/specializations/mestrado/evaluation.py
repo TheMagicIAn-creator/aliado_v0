@@ -18,27 +18,21 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.science.deteccao.metricas.por_janela import (
+from aliado.science.deteccao.alarmes.confirmacao import CONFIRMATIONS, alarm_starts, first_alarm
+from aliado.science.deteccao.escore.top_k import top_k_scores
+from aliado.science.deteccao.inferencia.erros import feature_errors
+from aliado.science.deteccao.metricas.incerteza import (
     BLOCK,
-    CONFIRMATIONS,
     RESAMPLES,
-    alarm_starts,
-    first_alarm,
     paired_interval,
     poisson_upper,
     proportion_interval,
     verdict,
-    window_metrics,
 )
-from aliado.science.deteccao.particao.blocos import sequences_from_flow
-from aliado.science.deteccao.redes.autoencoders import (
-    MODEL_NAMES,
-    MODELS,
-    Hyperparameters,
-    feature_errors,
-    load_model,
-    top_k_scores,
-)
+from aliado.science.deteccao.metricas.por_janela import window_metrics
+from aliado.science.deteccao.particao.sequencias import sequences_from_flow
+from aliado.science.deteccao.pesos.arquivos import load_model
+from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS, Hyperparameters
 from aliado.specializations.mestrado import gpvs
 from aliado.specializations.mestrado.training import ExperimentConfig, environment
 

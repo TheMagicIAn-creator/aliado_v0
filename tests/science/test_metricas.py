@@ -7,16 +7,14 @@ import math
 import numpy as np
 import pytest
 
-from aliado.science.deteccao.metricas.por_janela import (
-    auc_pr,
-    auc_roc,
+from aliado.science.deteccao.metricas.incerteza import (
     block_bootstrap_indices,
     paired_interval,
     poisson_upper,
     proportion_interval,
     verdict,
-    window_metrics,
 )
+from aliado.science.deteccao.metricas.por_janela import auc_pr, auc_roc, window_metrics
 
 
 def test_window_metrics_match_hand_calculation():

@@ -536,6 +536,7 @@ não dá para separá-los em commits.
 | 47 | Roteador na P7 e na E3 e intervalo de páginas nas marcas | Validado sem modelo em 21/10/2026: só a P7 e a E3 mudaram de rota, e as duas agora vão à biblioteca; commit 450a95a ([spec 0047](specs/0047-roteador-e-intervalos.md), [validação](migracao/validacao-lote-47.md)) |
 | 48 | Sem raciocínio no local na leitura de páginas e do documento, medido com critério fixado antes | Adotado em 21/10/2026: chamada mediana de 133 para 71 s; 1 descarte em 12; documento esperado citado em 10 de 12; commit c2768f1 ([spec 0048](specs/0048-raciocinio-nas-paginas.md), [validação](migracao/validacao-lote-48.md)) |
 | 49 | Os laços dos testes dos autoencoders: testes em pastas, fixtures de sessão, protocolo fixo (EXP-12), bateria e equivalência versionadas | Feito em 21 e 22/10/2026: treinos por bateria de 28 para 18; ciência de 180 para 124 s; os mesmos 834 testes, mais 2 ([spec 0049](specs/0049-lacos-dos-testes.md), [validação](migracao/validacao-lote-49.md)) |
+| 50 | A ciência geral em pastas: `science/` com `deteccao/` (11 etapas), `confiabilidade/`, `fmeca/`, `componentes/` e `resumo_citavel/`; NUC-04 e o mapa das pastas | Feito em 22/10/2026: equivalência sem diferença; 837 testes ([spec 0050](specs/0050-ciencia-geral-em-pastas.md), [validação](migracao/validacao-lote-50.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -635,6 +636,17 @@ não dá para separá-los em commits.
   - a ciência de 180 para 124 s, e a bateria inteira de 280 para 217 s.
   - O produto não mudou.
 
+### Decisões e resultado do lote 50 (22/10/2026)
+
+- **O que mudou:**
+  - a ciência geral foi para pastas com nomes em português, uma por etapa, com o `__init__.py` só explicando;
+  - `science/` manteve o nome, e as funções, os nomes de antes;
+  - foram dois commits, um de mudança de lugar e um de divisão.
+- **Resultado:**
+  - a equivalência no GPVS sintético sem nenhuma diferença, depois de cada commit;
+  - 837 testes, com o NUC-04 novo;
+  - o mapa das pastas em [docs/ciencia](ciencia/mapa-das-pastas.md).
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -667,6 +679,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 47 | [0047](specs/0047-roteador-e-intervalos.md) |
 | 48 | [0048](specs/0048-raciocinio-nas-paginas.md) |
 | 49 | [0049](specs/0049-lacos-dos-testes.md) |
+| 50 | [0050](specs/0050-ciencia-geral-em-pastas.md) |
 
 ## Fica para a v1
 

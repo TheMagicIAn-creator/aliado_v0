@@ -8,7 +8,7 @@ metadata:
 # Confiabilidade, mantenabilidade e disponibilidade
 
 Use esta skill para organizar entradas e interpretar resultados do serviço
-`aliado.science`. Ela não fornece taxas físicas nem ajusta distribuições a dados.
+`aliado.science.confiabilidade`. Ela não fornece taxas físicas nem ajusta distribuições a dados.
 O chat prepara o cenário; a execução exige o comando explícito `aliado ciencia calcular`.
 Nunca apresente um cenário proposto como cálculo já executado.
 

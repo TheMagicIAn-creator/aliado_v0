@@ -5,6 +5,19 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 50: a ciência geral em pastas
+
+- **As pastas:** `src/aliado/science/` mantém o nome e ganha uma pasta por etapa, cada uma só com aquilo:
+  - `deteccao/`, com partição, normalização, redes, treino, pesos, inferência, escore, limiar, alarmes, métricas e
+    registro;
+  - `confiabilidade/`, `fmeca/`, `componentes/` e `resumo_citavel/`.
+  - As funções e as classes têm os nomes de antes; só o lugar mudou.
+- **O mapa:** `docs/ciencia/mapa-das-pastas.md` liga cada etapa à equação, à pasta, às funções e ao teste, e traz a
+  tabela do nome antigo para o novo.
+- **NUC-04:** toda pasta com código é um pacote, e o `__init__.py` das pastas da ciência só explica o que ela tem.
+- **A prova:** a equivalência no GPVS sintético não mostra nenhuma diferença, e a bateria passa com os dados reais.
+- **Estado:** commits locais autorizados pelo pesquisador.
+
 ### Lote 49: os laços dos testes dos autoencoders
 
 - **Os treinos:** cada treino de rede dos testes é feito uma vez por bateria. Eram 28, agora são 18, e o treino com os

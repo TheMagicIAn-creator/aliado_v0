@@ -7,41 +7,10 @@ nenhuma nota é derivada de taxa e nenhuma taxa de nota. Sem dependências exter
 
 from __future__ import annotations
 
-import csv
-import io
-import json
 import math
-from pathlib import Path
 
 from aliado.science.confiabilidade.cenarios import evaluate_scenario
-
-NOTES = ("S", "O", "D")
-TABLE_FIELDS = {"nome", "decidida_em", "criterio", "fonte_notas", "horizontes_anos", "itens", "ressalvas"}
-ITEM_FIELDS = {"id", "nome", "item_na_fonte", "S", "O", "D", "cenarios", "ressalvas"}
-BASIS_NAMES = {"operation": "operação", "calendar": "calendário"}
-
-
-def _check_fields(value, expected: set[str], label: str) -> None:
-    if not isinstance(value, dict) or set(value) != expected:
-        raise ValueError(f"{label}: campos esperados {', '.join(sorted(expected))}.")
-
-
-def _note(value, label: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 10:
-        raise ValueError(f"{label}: nota inteira de 1 a 10.")
-    return value
-
-
-def load_table(path: str | Path) -> tuple[dict, dict[str, dict]]:
-    """Tabela da FMECA e os cenários citados, com caminhos relativos ao arquivo da tabela."""
-    path = Path(path)
-    table = json.loads(path.read_text(encoding="utf-8-sig"))
-    _check_fields(table, TABLE_FIELDS, "tabela")
-    scenarios = {}
-    for item in table["itens"]:
-        for name in item.get("cenarios", []):
-            scenarios[name] = json.loads((path.parent / name).read_text(encoding="utf-8-sig"))
-    return table, scenarios
+from aliado.science.fmeca.tabela import ITEM_FIELDS, NOTES, TABLE_FIELDS, _check_fields, _note
 
 
 def _rate_reading(scenario: dict, horizons: list[float]) -> dict:
@@ -115,88 +84,3 @@ def evaluate_fmeca(table: dict, scenarios: dict[str, dict]) -> dict:
             "IEEE 493-2007 e de Baschel et al. (2018) (decisão de 30/09/2026).",
         ],
     }
-
-
-def _percent(probability: float) -> str:
-    return "> 99.9%" if probability > 0.999 else f"{100 * probability:.1f}%"
-
-
-def _name(items: list[dict], item_id: str) -> str:
-    return next(item["nome"] for item in items if item["id"] == item_id)
-
-
-def _markdown(result: dict) -> str:
-    items = result["itens"]
-    lines = [
-        f"# {result['nome']}", "",
-        f"Decidida em {result['decidida_em']}. {result['criterio']} Notas: {result['fonte_notas']}", "",
-        "## 1. Criticidade pelas notas (NPR)", "",
-        "| Prioridade | Grupo | Item na fonte | S | O | D | NPR |", "|---:|---|---|---:|---:|---:|---:|",
-        *[f"| {item['posicoes']['npr']} | {item['nome']} | {item['item_na_fonte']} | {item['S']} | {item['O']} | "
-          f"{item['D']} | {item['npr']} |" for item in items],
-        "", "## 2. Leitura pelas taxas de falha (separada; não altera as notas)", "",
-    ]
-    horizons = [str(t) for t in result["horizontes_anos"]]
-    header = " | ".join(f"Chance de falhar em {t} ano(s) | Falhas esperadas em {t} ano(s)" for t in horizons)
-    lines += [f"| Ordem | Grupo | λ (1/h) | Base | MTBF (h) | MTBF (anos) | {header} |",
-              "|---:|---|---:|---|---:|---:|" + "---:|" * (2 * len(horizons))]
-    for item in sorted((i for i in items if i["posicoes"]["taxa"]), key=lambda i: i["posicoes"]["taxa"]):
-        for reading in item["leitura_pelas_taxas"]:
-            values = " | ".join(f"{_percent(reading['horizontes'][t]['chance_de_falhar'])} | "
-                                f"{reading['horizontes'][t]['falhas_esperadas']:.2f}" for t in horizons)
-            lines.append(f"| {item['posicoes']['taxa']} | {item['nome']} | {reading['taxa_por_hora']:.3g} | "
-                         f"{BASIS_NAMES[reading['base']]} ({reading['horas_por_ano']:g} h/ano) | "
-                         f"{reading['mtbf_horas']:.0f} | {reading['mtbf_anos']:.1f} | {values} |")
-    lines += ["", "## 3. As duas leituras lado a lado", "",
-              "| Grupo | Posição pelo NPR | Posição pela ocorrência O | Posição pela taxa λ |", "|---|---:|---:|---:|",
-              *[f"| {item['nome']} | {item['posicoes']['npr']} | {item['posicoes']['ocorrencia']} | "
-                f"{item['posicoes']['taxa'] or '—'} |" for item in items], ""]
-    if result["pares_discordantes_O_taxa"]:
-        lines.append("Pares em que a ocorrência e a taxa apontam em sentidos opostos:")
-        lines += [f"- {_name(items, pair['maior_O'])} tem O maior que {_name(items, pair['menor_O'])} "
-                  f"({pair['O'][0]} > {pair['O'][1]}), mas taxa menor ({pair['taxas'][0]:.3g} < {pair['taxas'][1]:.3g} por hora)."
-                  for pair in result["pares_discordantes_O_taxa"]]
-        lines.append("")
-    lines += ["As notas vêm de um levantamento de campo e as taxas, de outras fontes e populações. As duas "
-              "leituras não são fundidas numa nota única.", "", "## 4. Ressalvas e limites", "",
-              *[f"- {text}" for text in result["ressalvas"]],
-              *[f"- {item['nome']}: {text}" for item in items for text in item["ressalvas"]],
-              *[f"- {text}" for text in result["limites"]], "", "## Fontes das taxas", ""]
-    for item in items:
-        sources = {source for reading in item["leitura_pelas_taxas"] for source in reading["fontes"]}
-        lines += [f"- {item['nome']}: " + " ".join(sorted(sources))]
-    return "\n".join(lines) + "\n"
-
-
-def _csv(result: dict) -> str:
-    stream = io.StringIO()
-    horizons = [str(t) for t in result["horizontes_anos"]]
-    fields = ["id", "nome", "item_na_fonte", "S", "O", "D", "npr", "posicao_npr", "posicao_ocorrencia", "posicao_taxa",
-              "base", "taxa_por_hora", "mtbf_horas", "mtbf_anos",
-              *[f"{key}_{t}_anos" for t in horizons for key in ("chance_de_falhar", "falhas_esperadas")]]
-    writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
-    writer.writeheader()
-    for item in result["itens"]:
-        base = {key: item[key] for key in ("id", "nome", "item_na_fonte", "S", "O", "D", "npr")} | {
-            "posicao_npr": item["posicoes"]["npr"], "posicao_ocorrencia": item["posicoes"]["ocorrencia"],
-            "posicao_taxa": item["posicoes"]["taxa"]}
-        for reading in item["leitura_pelas_taxas"] or [{}]:
-            row = dict(base)
-            if reading:
-                row |= {key: reading[key] for key in ("base", "taxa_por_hora", "mtbf_horas", "mtbf_anos")}
-                for t in horizons:
-                    row[f"chance_de_falhar_{t}_anos"] = reading["horizontes"][t]["chance_de_falhar"]
-                    row[f"falhas_esperadas_{t}_anos"] = reading["horizontes"][t]["falhas_esperadas"]
-            writer.writerow(row)
-    return stream.getvalue()
-
-
-def export_fmeca(result: dict, output: str | Path) -> dict[str, str]:
-    """JSON, CSV e Markdown numa pasta nova; nunca sobrescreve."""
-    folder = Path(output)
-    folder.mkdir(parents=True, exist_ok=False)
-    paths = {"json": folder / "fmeca.json", "csv": folder / "fmeca.csv", "markdown": folder / "fmeca.md"}
-    paths["json"].write_text(json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    paths["csv"].write_text(_csv(result), encoding="utf-8")
-    paths["markdown"].write_text(_markdown(result), encoding="utf-8")
-    return {key: str(path) for key, path in paths.items()}

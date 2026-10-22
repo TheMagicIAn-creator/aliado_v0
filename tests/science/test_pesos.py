@@ -7,13 +7,10 @@ import pytest
 
 pytest.importorskip("torch")
 
-from aliado.science.deteccao.redes.autoencoders import (  # noqa: E402
-    Hyperparameters,
-    feature_errors,
-    fit,
-    load_model,
-    save_model,
-)
+from aliado.science.deteccao.inferencia.erros import feature_errors  # noqa: E402
+from aliado.science.deteccao.pesos.arquivos import load_model, save_model  # noqa: E402
+from aliado.science.deteccao.redes.autoencoders import Hyperparameters  # noqa: E402
+from aliado.science.deteccao.treino.laco import fit  # noqa: E402
 
 
 @pytest.mark.treina

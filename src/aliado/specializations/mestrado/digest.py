@@ -209,7 +209,8 @@ def _rate(per_hour: float | None) -> str:
 
 
 def _fmeca_block(reference_dir: Path) -> dict:
-    from aliado.science.fmeca.calculo import evaluate_fmeca, load_table
+    from aliado.science.fmeca.calculo import evaluate_fmeca
+    from aliado.science.fmeca.tabela import load_table
 
     data = evaluate_fmeca(*load_table(reference_dir / "fmeca.json"))
     names = {item["id"]: item["nome"] for item in data["itens"]}
@@ -229,8 +230,9 @@ def _fmeca_block(reference_dir: Path) -> dict:
 
 
 def _components_block(reference_dir: Path) -> dict:
-    from aliado.science.componentes.disponibilidade import component_view, load_repairs
-    from aliado.science.fmeca.calculo import load_table
+    from aliado.science.componentes.disponibilidade import component_view
+    from aliado.science.componentes.reparos import load_repairs
+    from aliado.science.fmeca.tabela import load_table
 
     repairs = load_repairs(reference_dir / "reparos.json")
     view = component_view(*load_table(reference_dir / "fmeca.json"), repairs, points=3)

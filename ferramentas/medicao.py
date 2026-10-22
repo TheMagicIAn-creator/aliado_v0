@@ -12,8 +12,8 @@ import os
 import sys
 from pathlib import Path
 
-# Onde o laço de treino é definido, do mais novo ao mais antigo.
-FIT_MODULES = ("aliado.science.deteccao.treino.laco", "aliado.science.detection.models")
+# Onde o laço de treino é definido (lote 50).
+FIT_MODULES = ("aliado.science.deteccao.treino.laco",)
 
 _output = os.environ.get("ALIADO_MEDICAO")
 _counted = {"treinos": 0}

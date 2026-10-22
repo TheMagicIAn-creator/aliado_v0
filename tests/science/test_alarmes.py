@@ -5,12 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.science.deteccao.metricas.por_janela import (
-    WINDOWS_PER_HOUR,
-    alarm_starts,
-    first_alarm,
-    markov_alarm_rate,
-)
+from aliado.science.deteccao.alarmes.confirmacao import alarm_starts, first_alarm
+from aliado.science.deteccao.alarmes.taxa import WINDOWS_PER_HOUR, markov_alarm_rate
 
 
 def test_alarm_rule_on_the_eight_cycle_example():

@@ -36,3 +36,10 @@ aparecem com as do núcleo (`aliado skills`); com o mesmo nome, vale a do núcle
 skill quando ninguém escolhe outra é declarada no SKILL.md dela (`metadata.apoio`), não no código.
 *Cenário:* dada a skill da pesquisa com `apoio: "confiabilidade"`, quando o chat a usa, então as instruções de
 confiabilidade vão junto; a de engenharia vai sozinha.
+
+**NUC-04. Pastas que dizem o que têm.** Toda pasta de `src/aliado` com código é um pacote (tem `__init__.py`), para
+não sumir do pacote instalado. Nas pastas de `science/` e nas do mestrado, o `__init__.py` só explica o que a pasta
+tem e em que etapa entra, sem importar nada; a exceção é o `__init__.py` do próprio mestrado, o contrato com o núcleo
+(NUC-02). O mapa das pastas fica em `docs/ciencia/mapa-das-pastas.md`.
+*Cenário:* dada uma pasta nova em `science/` sem `__init__.py`, ou com um `__init__.py` que importa algo, então
+`tests/test_isolation.py` falha.

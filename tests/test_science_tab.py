@@ -8,12 +8,11 @@ from pathlib import Path
 
 import pytest
 
-from aliado.science.confiabilidade.cenarios import (
-    EXPLORATION_SOURCE,
-    evaluate_scenario,
-    export_result,
-)
-from aliado.science.fmeca.calculo import evaluate_fmeca, export_fmeca, load_table
+from aliado.science.confiabilidade.artefatos import export_result
+from aliado.science.confiabilidade.cenarios import EXPLORATION_SOURCE, evaluate_scenario
+from aliado.science.fmeca.artefatos import export_fmeca
+from aliado.science.fmeca.calculo import evaluate_fmeca
+from aliado.science.fmeca.tabela import load_table
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / "docs" / "pesquisa-inversores"

@@ -20,8 +20,8 @@ from pathlib import Path
 
 import numpy as np
 
+from aliado.science.deteccao.alarmes.taxa import markov_alarm_rate
 from aliado.science.deteccao.limiar.calibracao import calibrate_threshold, false_alarm_interval
-from aliado.science.deteccao.metricas.por_janela import markov_alarm_rate
 from aliado.science.deteccao.redes.autoencoders import MODEL_NAMES, MODELS
 from aliado.specializations.mestrado import gpvs, onset
 from aliado.specializations.mestrado.evaluation import (

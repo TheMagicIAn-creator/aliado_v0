@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "50",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "committed_locally_awaiting_review",
+  "base_commit": "ad1d204",
+  "decision": "plano aprovado pelo pesquisador em 21/10/2026: science/ mantém o nome, com as pastas técnicas em português",
+  "spec": "docs/specs/0050-ciencia-geral-em-pastas.md",
+  "validation": "docs/migracao/validacao-lote-50.md",
+  "requirements": {
+    "added": [
+      "NUC-04"
+    ],
+    "changed": []
+  },
+  "commit_split": {
+    "mudanca_de_lugar": "e4e59ab",
+    "divisao": "o commit deste manifesto"
+  },
+  "checks": {
+    "pytest": {
+      "grupos": 36,
+      "passed": 837,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 200.99,
+      "treinos": 18
+    },
+    "pytest_mudanca_de_lugar": {
+      "passed": 836,
+      "failed": 0,
+      "seconds": 210.72
+    },
+    "equivalencia": {
+      "mudanca_de_lugar": {
+        "iguais": 28,
+        "diferentes": 0
+      },
+      "divisao": {
+        "iguais": 28,
+        "diferentes": 0
+      }
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "caminhos_antigos_fora_dos_registros": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "wheel": {
+      "modulos_esperados": 101,
+      "faltando": 0,
+      "importados_do_wheel": 99
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "evidence": {
+    "bateria": "tmp/lote-50/depois/pytest.json",
+    "equivalencia": "tmp/lote-50/equivalencia.log",
+    "verificacao": "tmp/lote-50/verificacao.json"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "e1ab269dd04bf5e51fd647f3bb6b49dabd6cd3e0966c489eec8d9ced1aac1a9e",
+    "docs/arquitetura/modulos.md": "9223e51fbd78846d62d9453f63d6c12b26ab137d994045e8c54bab3658394783",
+    "docs/ciencia/mapa-das-pastas.md": "bdedba8f069d191b4dc9eace3baaf6d97ffe9368366ece055eba184a6222163f",
+    "docs/migracao/validacao-lote-50.md": "b5e39fe8565b2da0c8551f8f872a2bb0a735578a41d5727410f6b15e235324df",
+    "docs/roteiro-v0.md": "f5ee56396a47699c4e7ff85ee8a3d10f678aa106d1b731728aa74b2b0ee6031f",
+    "docs/specs/0050-ciencia-geral-em-pastas.md": "bccfab58f6f78a12330932b310e7a596e692a707a0e7c3d0bc1b6bf49f746d61",
+    "docs/specs/capacidades/nucleo.md": "4cb59486d85366b33fec5ae578d1ce972cc72e4731200a9da60da7dec7af6cf8",
+    "ferramentas/medicao.py": "0d179003169e5f85e9636852df8515dcaf8796a593393c35a6845600b532601c",
+    "src/aliado/cli.py": "60fed08887214a8245a724ae53a3d461d1079b52ddd6814f3b804155e75e5ebc",
+    "src/aliado/interfaces/web/science.py": "d6481041295a9453c6c208b15e05151559fa5f77ec3eee953d10cd206e586e6c",
+    "src/aliado/science/componentes/disponibilidade.py": "d77078c3998b4e180cc66c86a8c01a86950b8cf778979c9f125be8753aae96d1",
+    "src/aliado/science/componentes/reparos.py": "5b271c6fc337abc8fb0db926153effae744f668c6e788581a88c67642108cdbe",
+    "src/aliado/science/confiabilidade/artefatos.py": "bf7a0d9f4ba15026b7786c65489345eef9bddcf3a5c7e1e3d34ecfabe32419f5",
+    "src/aliado/science/confiabilidade/cenarios.py": "f7fedb8bce9094d265ba7a398ded2d8c91856c0f64c22ba3020f0001e62e7815",
+    "src/aliado/science/deteccao/alarmes/__init__.py": "ba11ed749708bcf9454dec5c5aa7b37600e474d6f892f303d9e4a7c84829764d",
+    "src/aliado/science/deteccao/alarmes/confirmacao.py": "aa9d719008ae251c865d6ce66c2afc5b8767a22783dc38d49a65e0407afa2e23",
+    "src/aliado/science/deteccao/alarmes/taxa.py": "225da1636063d173088545ae3af6369aa1558331b3cee8880297e2a7f0886e53",
+    "src/aliado/science/deteccao/escore/__init__.py": "fbce818666c39ae743f23da189e3134ff0a60a669ecddc726f7dd5216e0857e9",
+    "src/aliado/science/deteccao/escore/top_k.py": "652aa6d49ac6dbb84cfad5072a7f809dacf0a3ac62df4843164743c5457aa567",
+    "src/aliado/science/deteccao/inferencia/__init__.py": "02d31931125d34d55920f9da25de8fab11a71a55f2c7e76e757ebf0b29c18efb",
+    "src/aliado/science/deteccao/inferencia/erros.py": "bfa48a0d31cbfe42b71a0f982b21938f3463f3749e294e4064089e38bb48b544",
+    "src/aliado/science/deteccao/limiar/calibracao.py": "d90b258dc165f1f7277360530e1ac7ac1bb713197469e0d40c8274d83812969c",
+    "src/aliado/science/deteccao/metricas/incerteza.py": "f403ab27292cd643764addf43d23fda09eebcc29914ca8fb9ddff2f1284bdada",
+    "src/aliado/science/deteccao/metricas/por_janela.py": "fe601fbb3e877b0cb0fffba62f328b2bdba35e5e3c05665e1f21c409582c7b0c",
+    "src/aliado/science/deteccao/normalizacao/__init__.py": "d5d4165b8c86149627f85a72787495521e75df4c778f2c392ad01f648cda7098",
+    "src/aliado/science/deteccao/normalizacao/escala_robusta.py": "6e6e2def8eefe897bba0c480bf79573c9df03f30e7b964a9d26dae9688504d52",
+    "src/aliado/science/deteccao/particao/autocorrelacao.py": "ec91f085d1d71aad369801f755bbf3c4912457506df1c47df8aa613589f5b891",
+    "src/aliado/science/deteccao/particao/blocos.py": "769552c2c3ef747c15e5312c7ca4212c66bf1fedd687aaa7f7a99bd4c5c63805",
+    "src/aliado/science/deteccao/particao/sequencias.py": "4e5d585ee6d1d7192df1ff23406103addab8a6519422384555d70d26e761983d",
+    "src/aliado/science/deteccao/pesos/__init__.py": "e649d8726892c752b9302d4e8e285320ef44c89ed695f29e3dfdcd4c12b5ac38",
+    "src/aliado/science/deteccao/pesos/arquivos.py": "e445eeb5da236f713fb9078589556472cb0512a193d0fc24c3a990e4ebf50a35",
+    "src/aliado/science/deteccao/redes/autoencoders.py": "27bf9135a4d452a41edb08049b175ad37750e972bb26a8473f5bac4e9acb1907",
+    "src/aliado/science/deteccao/treino/__init__.py": "0e134cc7ad5d67bb6cde890fa26142c532e80d1dc5585b12c625e9edc0dabb6e",
+    "src/aliado/science/deteccao/treino/laco.py": "9403c0ff4cf6baee217b69833ea2bf0614c093cd54c655ee9fd9b3f5823ee918",
+    "src/aliado/science/fmeca/artefatos.py": "77c6ac14e1d81c1b249bb475916eac8e564f7beec33edfe4181b47a9bafdbc67",
+    "src/aliado/science/fmeca/calculo.py": "7bbdab233795c28e2b7d6b0aaf6841f5511f0d2d5963406df5183706e47877bf",
+    "src/aliado/science/fmeca/relatorio.py": "6c9dde479176dafda5c751b347bf34553f41ea9b30d2172e5fd5efdea706aab8",
+    "src/aliado/science/fmeca/tabela.py": "532ef531f4c55ec3e267a8a8d798e2224f76b899bd5f9f7ce5cc03587734f4bf",
+    "src/aliado/skills/builtin/confiabilidade/SKILL.md": "4852759e8687d7e86c44bb1aa728e2b34bdec58e46806f9063d60f235b28ed81",
+    "src/aliado/specializations/mestrado/digest.py": "641c009edf9074bd4edfab2ba0a11a3a00287f5218afe3ca769f2fc43b6711f0",
+    "src/aliado/specializations/mestrado/evaluation.py": "a1b4d7ce5108ff3edd6707768755963a94014d1e1381430f411c80222362c11d",
+    "src/aliado/specializations/mestrado/explorer.py": "4edcf20143161b8ff529f967b695b8f1e3ef89a680ec9e69b73bea67bb78c2c3",
+    "src/aliado/specializations/mestrado/gpvs.py": "7c64bf2c25039d67d70dfd2865102b0e515458115dfb23829e6c918d13e24417",
+    "src/aliado/specializations/mestrado/onset.py": "9cd6eb072fe7614fe72f37918b1a63cd4d88d7a48825745d4501f21735636cdd",
+    "src/aliado/specializations/mestrado/reanalysis.py": "fb5d0933130946407a516ddd215b613cfddc296d9478a53f01bb2d588caa83e8",
+    "src/aliado/specializations/mestrado/summary.py": "79b6805abc98c7d228b1146452731ffeedb40d2e29a7e4528c874ef096484663",
+    "src/aliado/specializations/mestrado/training.py": "3f35a8bb116f163dff28bd926f0e9f4309a84dd48c7ba2c34dbde2f7303f8009",
+    "tests/mestrado/test_exploradores.py": "5319f285eb4a6b9b404e45f1ccd3957f56d85a38b3f5bf31f00039624dc012e4",
+    "tests/mestrado/test_protocolo_fixo.py": "b179563e395404b7b2f70d5f584d2990278597d2eba15d013fdf16847a068485",
+    "tests/mestrado/test_treino.py": "cf6bfe9077faf56dc5fe653b04e8ff1461ccd1538eeb2a6f2d02c0b5768483a2",
+    "tests/science/test_alarmes.py": "85204044ff0e84bd21b167fee68b01060c3e605251b5e482692a7b8fbef59f11",
+    "tests/science/test_componentes.py": "f760f3640ffd7e2ebf382e7aa4196de2629b46851207715dfbda155e183064a0",
+    "tests/science/test_confiabilidade.py": "0ef5cc51c25076c4fe711c9833b8314ebe4842f22971c39c20923e11627c1aef",
+    "tests/science/test_escore.py": "c93c4a0e4081d18eb2d65dd73fbbd288eea207061a5b5fd92bef087015b9e245",
+    "tests/science/test_fmeca.py": "020dc4d9bb063e0a2d0c49e5f59bd17c363682dea493c571004b97dbf510257e",
+    "tests/science/test_inferencia.py": "1041a666d778cb62873ec5912e1de0af59b9a1cce3af34f4bde9a373e71960da",
+    "tests/science/test_metricas.py": "c9d03a13700f92bc9a5e213e1343f94583d3026491b2f1634cd6ac68975c5fcd",
+    "tests/science/test_normalizacao.py": "bb0156d9f0c0b5a059e399c9d6ecb75cc4e485e4a22aa69bcf296e611b38678c",
+    "tests/science/test_particao.py": "102bdc1a1560a65c971f6f04470fe8ce1d7b561cee5db17e9df1dfc7f334a37b",
+    "tests/science/test_pesos.py": "99738b131deb897b37bd67d645eef52a482784b43b85d517a67eaadc7d580faa",
+    "tests/science/test_treino.py": "9b7740ff1de2f56ace4914cf946c4d68d344ac18fff1fa95e078b98d2447668a",
+    "tests/test_isolation.py": "e3c172bb47ff8d372d6fea7a35dfc0ecfe7b4dbb4c69554aaa5bc2501ccba581",
+    "tests/test_science_tab.py": "6b660afed44d19dba71a6d37d30e4724d3b2e1b60d443cddfc0b4c04a805a039"
+  }
+}

@@ -5,13 +5,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.science.deteccao.particao.blocos import (
-    autocorrelation,
-    decorrelation_report,
-    sequences_for_blocks,
-    sequences_from_flow,
-    temporal_split,
-)
+from aliado.science.deteccao.particao.autocorrelacao import autocorrelation, decorrelation_report
+from aliado.science.deteccao.particao.blocos import temporal_split
+from aliado.science.deteccao.particao.sequencias import sequences_for_blocks, sequences_from_flow
 
 
 @pytest.mark.parametrize("n,expected", [(718, (359, 105, 106, 142)), (705, (352, 104, 104, 139))])
