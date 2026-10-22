@@ -23,7 +23,7 @@ from aliado.specializations.mestrado.avaliacao.treino_congelado import (  # noqa
 from aliado.specializations.mestrado.base import ensaios  # noqa: E402
 from aliado.specializations.mestrado.preparo import preparacao  # noqa: E402
 from aliado.specializations.mestrado.reanalise import reanalise  # noqa: E402
-from aliado.specializations.mestrado.resultados import paineis as summary  # noqa: E402
+from aliado.specializations.mestrado.resultados import paineis, rodada_atual  # noqa: E402
 
 
 def test_thresholds_load_without_the_weights(rodada_sintetica):
@@ -106,15 +106,15 @@ def test_reanalysis_exports_registers_and_never_overwrites(rodada_sintetica_copi
     assert len(registry.events(results)) == 2
 
     # As visões da aba leem a reanálise: início por ensaio, indicadores e a estimativa no Resumo.
-    view = summary.onsets(results)
+    view = paineis.onsets(results)
     assert [item["id"] for item in view["ensaios"]] == list(ensaios.FAULTY) and view["clara"] == list(ensaios.FAULTY)
     assert view["controle_saudavel"] == {"F0L": 0, "F0M": 0}
     assert view["modelos"]["denso"]["meio"]["sensibilidade"] == view["modelos"]["denso"]["mudanca"]["sensibilidade"]
     assert not re.search(r"semente|canônic|canonic|M1[0-9]", json.dumps(view, ensure_ascii=False), re.IGNORECASE)
-    denso = summary.overview(results)["modelos"]["denso"]
+    denso = paineis.overview(results)["modelos"]["denso"]
     assert denso["alarmes_estimados"]["alarmes_por_hora"] == report["alarmes_estimados"]["denso"]["alarmes_por_hora"]
     assert denso["limiar_faixa"]["ic95"] == report["limiar_incerteza"]["denso"]["ic95"]
-    assert summary.current(results).reanalysis == output and view["rodada"]["oficial"]
+    assert rodada_atual.current(results).reanalysis == output and view["rodada"]["oficial"]
 
 
 def test_real_nominal_onsets_repeat_the_official_report(official_results, base_real):

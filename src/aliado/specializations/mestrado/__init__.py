@@ -3,7 +3,7 @@
 O núcleo lê só os atributos deste pacote (lotes 34 e 36). No topo, só a biblioteca padrão: numpy, PyTorch e a
 interface web entram dentro das funções.
 
-- `EXPERIMENTS`: o experimento AE Denso × AE-LSTM (`autoencoders`).
+- `EXPERIMENTS`: o experimento AE Denso × AE-LSTM (`rodada/experimento.py`).
 - `DEFAULT_SKILL`, `DATASET_DIR` e `REFERENCE_DIR`: a skill da pesquisa (em `skills/`), a base GPVS e a pasta
   com a FMECA, os cenários e os tempos de reparo.
 - `ROUTING`, `REWRITE_SUBJECT` e `NOTES`: o que o roteador, a reescrita da busca e a aba Ciência leem daqui.
@@ -16,12 +16,12 @@ from pathlib import Path
 from aliado.specializations.mestrado.comandos.terminal import add_commands
 from aliado.specializations.mestrado.glossario.notas import NOTES
 from aliado.specializations.mestrado.resumo_para_o_chat.blocos import cached as results_digest
-from aliado.specializations.mestrado.rodada import experimento as autoencoders
+from aliado.specializations.mestrado.rodada import experimento
 from aliado.specializations.mestrado.roteamento.frases import ROUTING
 
-EXPERIMENTS = (autoencoders,)
+EXPERIMENTS = (experimento,)
 DEFAULT_SKILL = "pesquisa-inversores"
-DATASET_DIR = autoencoders.DATASET_DIR
+DATASET_DIR = experimento.DATASET_DIR
 REFERENCE_DIR = Path("docs/pesquisa-inversores")
 REWRITE_SUBJECT = "confiabilidade, manutenção, sistemas fotovoltaicos e aprendizado de máquina"
 

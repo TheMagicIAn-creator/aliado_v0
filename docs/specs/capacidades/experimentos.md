@@ -81,4 +81,6 @@ spec própria.
 
 - Núcleo: `src/aliado/experiments/` (rodadas, resultado, PDF, comparação), `src/aliado/interfaces/web/experiments.py`
   (rotas `/api/experimentos/*` e o executor) e o comando `aliado experimento listar|rodar|pdf`.
-- Especialização: `src/aliado/specializations/mestrado/autoencoders.py` (o experimento AE Denso × AE-LSTM).
+- Especialização: `src/aliado/specializations/mestrado/rodada/` (o experimento AE Denso × AE-LSTM): `experimento.py`
+  reúne os 14 atributos do contrato; `declaracao.py`, `execucao.py`, `consolidacao.py` e `apresentacao.py` os
+  definem.

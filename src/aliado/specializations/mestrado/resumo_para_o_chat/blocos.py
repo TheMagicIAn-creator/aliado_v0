@@ -1,11 +1,11 @@
 """Resumo dos resultados do mestrado para o chat (lotes 26, 34 e 36): blocos [R1]…[R8] gerados por código.
 
-Os números saem das mesmas funções da aba Ciência (`summary`, `fmeca` e `components`), nunca dos
+Os números saem das mesmas funções da aba Ciência (`resultados/paineis`, `fmeca` e `componentes`), nunca dos
 relatórios em markdown, e vão no formato da tela. São os da rodada que a aba mostra. Cada bloco diz
 a fonte, a data e o estatuto: a avaliação de 27/09/2026 é a oficial, uma rodada feita depois é
 exploração, e o início observado das falhas é secundário. O que não puder ser montado (sem numpy,
 sem a avaliação ou sem o início das falhas) fica de fora, com o motivo em palavras. O módulo abre
-sem numpy: `summary` só é importado dentro da função que o usa.
+sem numpy: `resultados/paineis` só é importado dentro da função que o usa.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from pathlib import Path
 
 from aliado.science.resumo_citavel.formato import dec, num, pct, seconds
 from aliado.specializations.mestrado.glossario.notas import NOTES
-from aliado.specializations.mestrado.rodada import experimento as autoencoders
+from aliado.specializations.mestrado.rodada import experimento
 
 MAX_CHARS = 16_000
 HEADER = ("A avaliação oficial é a de 27/09/2026 (treino de referência). A reanálise de 30/09/2026, com o "
@@ -77,10 +77,10 @@ def _spread(values, formatter) -> str:
 
 def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str], dict]:
     """R1 a R6, das funções da aba; o início observado (R5 e R6) só entra se existir."""
-    from aliado.specializations.mestrado.resultados import paineis as summary  # numpy só aqui
+    from aliado.specializations.mestrado.resultados import paineis  # numpy só aqui
 
-    overview = summary.overview(results_dir)
-    faults = summary.per_fault(results_dir)
+    overview = paineis.overview(results_dir)
+    faults = paineis.per_fault(results_dir)
     day, run = overview["data"], overview["rodada"]
     status = OFFICIAL if run["oficial"] else EXPLORATION
     title = "Avaliação oficial" if run["oficial"] else "Rodada atual"
@@ -142,7 +142,7 @@ def _gpvs_blocks(results_dir: Path) -> tuple[list[dict], list[str], dict]:
         ("detectados", "sensibilidade", "especificidade", "mcc", "atraso")))
 
     try:
-        blocks += _reanalysis_blocks(summary.onsets(results_dir), models, day, run)
+        blocks += _reanalysis_blocks(paineis.onsets(results_dir), models, day, run)
     except Exception:  # o início observado é secundário: ausente ou incompleto, os blocos da avaliação ficam
         return blocks, ["a reanálise com o início observado das falhas"], run
     return blocks, [], run
@@ -293,7 +293,7 @@ def _signature(results_dir: Path, reference_dir: Path) -> tuple:
     files = [reference_dir / "fmeca.json", reference_dir / "reparos.json", *sorted((reference_dir / "cenarios").glob("*.json"))]
     for folder in sorted(results_dir.glob("gpvs-*")) if results_dir.is_dir() else []:
         files += [folder / name for name in ("relatorio.json", "configuracao.json", "metricas_por_ensaio.csv")]
-    files += sorted((results_dir / autoencoders.KEY).glob("rodada-*/resultado.json"))  # uma rodada nova muda tudo
+    files += sorted((results_dir / experimento.KEY).glob("rodada-*/resultado.json"))  # uma rodada nova muda tudo
     marks = []
     for path in files:
         try:

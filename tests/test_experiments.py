@@ -13,7 +13,7 @@ from apoio.avaliacao_sintetica import SHA, legacy_results
 
 from aliado import experiments
 from aliado.science.deteccao.registro import consultas as registry
-from aliado.specializations.mestrado.rodada import experimento as autoencoders
+from aliado.specializations.mestrado.rodada import declaracao, experimento
 
 np = pytest.importorskip("numpy")
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,7 +23,7 @@ HEADERS = {"x-aliado": "1"}
 def test_core_finds_the_experiment_and_checks_parameters():
     """EXP-01 e EXP-05: o núcleo acha o experimento sem o nome dele e confere os parâmetros pela declaração."""
     experiment = experiments.find("ae-denso-lstm")
-    assert experiment is autoencoders and experiment in experiments.available()
+    assert experiment is experimento and experiment in experiments.available()
     assert experiments.normalize(experiment, {}) == {"separacao": 11, "sementes": [13, 29, 42, 71, 101], "teto_epocas": 2000}
     assert experiments.normalize(experiment, {"sementes": "101, 42,13", "separacao": "2"})["sementes"] == [13, 42, 101]
     for bad in ({"sementes": "1,1"}, {"separacao": "2.5"}, {"teto_epocas": 0}, {"nada": 1}, {"separacao": True}):
@@ -35,6 +35,14 @@ def test_core_finds_the_experiment_and_checks_parameters():
     assert not experiments.same_parameters(experiment, {}, None)
     with pytest.raises(ValueError):
         experiments.find("nada")
+
+
+def test_the_experiment_module_carries_the_fourteen_attributes_of_the_contract():
+    """EXP-01: o módulo do experimento traz os 14 atributos que o núcleo lê, reunidos dos arquivos de `rodada/`."""
+    names = ("KEY", "TITLE", "DATASET", "DATASET_DIR", "DESCRIPTION", "DURATION", "PARAMETERS", "CONFIRMATION",
+             "missing", "consultations", "interrupted", "run", "legacy", "report")
+    assert sorted(experimento.__all__) == sorted(names) and all(hasattr(experimento, name) for name in names)
+    assert all(callable(getattr(experimento, name)) for name in names if name.islower())
 
 
 def test_runs_are_numbered_and_only_complete_ones_count(tmp_path):
@@ -63,25 +71,25 @@ def test_runs_are_numbered_and_only_complete_ones_count(tmp_path):
 def test_without_new_runs_the_current_run_is_the_official_one(tmp_path):
     """EXP-04 e EXP-11: sem rodada nova vale a avaliação de 27/09, chamada de oficial só ela."""
     results = legacy_results(tmp_path)
-    result = experiments.current(results, autoencoders)
+    result = experiments.current(results, experimento)
     assert result["oficial"] and result["rodada"] == "avaliacao-oficial" and result["consulta"] == 1
     assert result["rotulo"] == "Avaliação oficial de 27/09/2026"
     assert result["parametros"] == {"separacao": 11, "sementes": [1, 2], "teto_epocas": 2000}
     assert result["numeros"]["denso.detectados"]["texto"] == "10 de 14" and result["detalhe"]["inicio"] is None
-    assert experiments.current(tmp_path / "vazio", autoencoders) is None
+    assert experiments.current(tmp_path / "vazio", experimento) is None
 
 
 def test_registry_seeds_the_official_consultation_and_closes_open_ones(tmp_path):
     """EXP-06: a frase é exigida, a consulta oficial abre o registro, e uma consulta aberta é fechada."""
     results = legacy_results(tmp_path)
-    canonical = autoencoders.LEGACY_EVALUATION
+    canonical = declaracao.LEGACY_EVALUATION
     assert [(c["numero"], c["canonica"]) for c in registry.consultations(results, canonical)] == [(1, True)]
     assert not (results / registry.REGISTRY).exists()  # ler não grava
     with pytest.raises(ValueError, match="consultar o teste"):
         registry.start(results, training="t", training_sha=SHA, output="x", phrase="sim", canonical=canonical)
     number = registry.start(results, training="t", training_sha=SHA, output="ae-denso-lstm/rodada-001",
                             phrase=" Consultar o teste ", canonical=canonical)
-    assert number == 2 and autoencoders.consultations(results) == 2
+    assert number == 2 and experimento.consultations(results) == 2
     assert registry.close_open(results, "ae-denso-lstm/rodada-001", "cancelada") == [2]
     assert registry.close_open(results, "ae-denso-lstm/rodada-001", "cancelada") == []
     assert [(c["numero"], c["estado"]) for c in registry.consultations(results)] == [(1, "concluida"), (2, "cancelada")]
@@ -164,16 +172,16 @@ class FakeCommand:
         on_line("Treinando os dois modelos…")
         output = folder.relative_to(self.results).as_posix()
         number = registry.start(self.results, training=f"{output}/modelos", training_sha=SHA, output=output,
-                                phrase=args[args.index("--frase") + 1], canonical=autoencoders.LEGACY_EVALUATION)
+                                phrase=args[args.index("--frase") + 1], canonical=declaracao.LEGACY_EVALUATION)
         if self.hold:
             on_process(type("Process", (), {"terminate": lambda _self: self.release.set()})())
             self.release.wait(5)
             on_process(None)
             return -15, ""
         registry.finish(self.results, number, "concluida")
-        params = experiments.normalize(autoencoders, dict(args[i + 1].split("=", 1) for i, item in enumerate(args)
+        params = experiments.normalize(experimento, dict(args[i + 1].split("=", 1) for i, item in enumerate(args)
                                                           if item == "--parametro"))
-        legacy = autoencoders.legacy(self.results)
+        legacy = experimento.legacy(self.results)
         experiments.write_result(folder, legacy | {"rodada": folder.name, "oficial": False, "consulta": number,
                                                    "parametros": params, "rotulo": f"Rodada de hoje · {number}ª vez"})
         return 0, "{}"
@@ -286,7 +294,7 @@ def test_real_run_goes_from_zero_to_the_current_run(base_real, tmp_path, capsys)
     """EXP-02, EXP-03, EXP-06 e EXP-08 com a base real: o experimento inteiro, de ponta a ponta (5 épocas)."""
     pytest.importorskip("torch")
     from aliado.cli import main
-    from aliado.specializations.mestrado.resultados import paineis as summary
+    from aliado.specializations.mestrado.resultados import rodada_atual
 
     results = tmp_path / "resultados"
     args = ["experimento", "rodar", "ae-denso-lstm", "--resultados", str(results), "--base", str(base_real),
@@ -299,6 +307,6 @@ def test_real_run_goes_from_zero_to_the_current_run(base_real, tmp_path, capsys)
     assert result["parametros"] == {"separacao": 11, "sementes": [13, 42], "teto_epocas": 5}
     assert result["consulta"] == 1 and not result["oficial"] and result["detalhe"]["inicio"]
     assert {path.name for path in folder.iterdir()} >= {"preparo", "modelos", "avaliacao", "inicio", "resultado.md"}
-    assert summary.current(results).evaluation == folder / "avaliacao"
+    assert rodada_atual.current(results).evaluation == folder / "avaliacao"
     assert [(c["numero"], c["estado"]) for c in registry.consultations(results)] == [(1, "concluida")]
     assert result["rotulo"].endswith("1ª vez que os dados de teste foram usados")

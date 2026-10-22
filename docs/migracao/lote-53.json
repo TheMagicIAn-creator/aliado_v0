@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "53",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado)",
+  "status": "committed_locally_awaiting_review",
+  "base_commit": "8871602",
+  "decision": "plano aprovado pelo pesquisador em 21/10/2026: o mestrado em pastas com nomes em português",
+  "spec": "docs/specs/0053-mestrado-da-rodada-ao-chat.md",
+  "validation": "docs/migracao/validacao-lote-53.md",
+  "requirements": {
+    "added": [],
+    "changed": [],
+    "tested_again": [
+      "EXP-01"
+    ]
+  },
+  "commit_split": {
+    "mudanca_de_lugar": "ff65950",
+    "divisao": "o commit deste manifesto"
+  },
+  "checks": {
+    "pytest": {
+      "grupos": 36,
+      "passed": 838,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 196.02,
+      "treinos": 18
+    },
+    "pytest_mudanca_de_lugar": {
+      "passed": 837,
+      "failed": 0,
+      "seconds": 198.32
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "caminhos_antigos_fora_dos_registros": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "wheel": {
+      "modulos_esperados": 144,
+      "faltando": 0,
+      "importados_do_wheel": 142
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "merged_copies": {
+    "EVALUATION": [
+      "rodada.declaracao.LEGACY_EVALUATION",
+      "resultados.rodada_atual.EVALUATION"
+    ]
+  },
+  "evidence": {
+    "bateria": "tmp/lote-53/depois/pytest.json",
+    "equivalencia": "tmp/lote-53/equivalencia.log",
+    "verificacao": "tmp/lote-53/verificacao.json"
+  },
+  "paid_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "c838ef0d10fc5821cd1f30e82ac36f3e1cd65b3093f6c6edfd711ecfd44f51e7",
+    "docs/ciencia/mapa-das-pastas.md": "a6376af47913cc07dee338aedf064ec3e3cffc3db08577e6757c5aa21562bead",
+    "docs/migracao/validacao-lote-53.md": "a07da79d2e13131cd2c9edbc8bd54838f797d7a3d5cece8b4414552d8ea669e5",
+    "docs/roteiro-v0.md": "ab336104ebc26242fee80b6f86b6ef989f3154e08241851f11aae597e12fadf2",
+    "docs/specs/0053-mestrado-da-rodada-ao-chat.md": "6719cf2db821fd22f13aced6ab0b27e352a35836ae1a90c454debee22153a78a",
+    "docs/specs/capacidades/experimentos.md": "a193184d2f8f7a5a68bd49fb6bdf01604050e1837b14b652ac77955fbcc3c337",
+    "src/aliado/specializations/mestrado/__init__.py": "7a4c7f1ef9ccea834b06f5612352cd69d7ef4300b8add9224b13b6d93d78a66d",
+    "src/aliado/specializations/mestrado/exploradores/explorador.py": "1aa8af73dbee14dcd9ded5f021e7a9bf2587f1fc7bbf661deb5053e3156e5504",
+    "src/aliado/specializations/mestrado/resultados/paineis.py": "9070f0857c0194d18fde2d0ae3c24fba606ebf77b549474d1cb9205df16379f8",
+    "src/aliado/specializations/mestrado/resultados/rodada_atual.py": "d3dbcf5e17c41737e6bbec90cb3ceaefd8bb1ce0a7b084c4107117d39b95a8f6",
+    "src/aliado/specializations/mestrado/resumo_para_o_chat/blocos.py": "c9498d0b2897a6df5639f6ca78b56d1a5aafab0f1d78f574cb69be2de0a2c689",
+    "src/aliado/specializations/mestrado/rodada/apresentacao.py": "84ec4921b3246866238689f0e882b453de96cfe0754f911af4229dfa2b074226",
+    "src/aliado/specializations/mestrado/rodada/consolidacao.py": "d924068ae53dfd0601613eeb3f46f396eefc22c6fdec4d0a27770cf5a8e4f15a",
+    "src/aliado/specializations/mestrado/rodada/declaracao.py": "b126e0cafb4596296bf6a8f9faa50fd3bb0308aa6811ad2c3c378d16bb94533b",
+    "src/aliado/specializations/mestrado/rodada/execucao.py": "ee22eac3414031933489676506671042f87d0c68417d787e9f41ba1a666fd502",
+    "src/aliado/specializations/mestrado/rodada/experimento.py": "601da06377f2cc171b6d64b39b3ab9b704086dcac41fdfcb734f46f9f4474d3e",
+    "src/aliado/specializations/mestrado/tela/rotas.py": "0661bbaff7ad6fb74dea111245d77d32710f3187217751095a6a2ab89d831a6b",
+    "tests/apoio/avaliacao_sintetica.py": "bcc8fdc5e4dcfc09334c8780e7b2e23bbfb09e38773723b9d44bafc0ae95b6c2",
+    "tests/mestrado/test_reanalise.py": "8ba6a343af8c9a8521ea53711d9c43e862fd6a2b05b7329e55ee1ccaf1a04b0a",
+    "tests/mestrado/test_resultados.py": "7f86a7f7042ad799a7817e4a4dbfaab1abf8966466da4fc6e4d06316ddf0f97e",
+    "tests/mestrado/test_resumo_para_o_chat.py": "b79b986607df7c7b35791e19d76efe4fae3a907c81e4a0433e177b523f5c5b62",
+    "tests/test_experiments.py": "860aa9f49542b2d2e7388935895add67adf3275cde5063ad286ff6f3bd65390f"
+  }
+}

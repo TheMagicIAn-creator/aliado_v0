@@ -108,9 +108,15 @@ A pesquisa de detecção de falhas na base GPVS-Faults, na ordem do método. Os 
 | 6. Início das falhas | `inicio_das_falhas/pontos_de_mudanca.py`, `estimativa.py` | o PELT com penalidade c · d · ln n, com o menor c sem mudança nos sadios; o início observado e a classe (clara, fraca ou nenhuma) | `test_inicio_das_falhas.py` |
 | 7. Reanálise | `reanalise/reanalise.py`, `relatorio.py`, `artefatos.py` | os escores gravados relidos com o início observado, sem rodar os modelos | `test_reanalise.py` |
 | Comandos | `comandos/terminal.py` | `aliado ciencia preparar-gpvs`, `treinar-gpvs`, `avaliar-gpvs` e `reanalisar-gpvs` | `test_comandos.py` |
+| Rodada | `rodada/declaracao.py`, `execucao.py`, `consolidacao.py`, `apresentacao.py`, `experimento.py` | o experimento inteiro num processo só (preparo, treino, avaliação, início das falhas e resumo), o resultado em JSON e os blocos do PDF; `experimento.py` reúne os 14 atributos que o núcleo lê | `tests/test_experiments.py` |
+| Resultados | `resultados/rodada_atual.py`, `paineis.py` | qual rodada a aba e o chat mostram; o resumo, as métricas por falha, os escores e o início das falhas na aba Ciência | `test_resultados.py` |
+| Resumo para o chat | `resumo_para_o_chat/blocos.py` | os blocos citáveis [R1]…[R8] | `test_resumo_para_o_chat.py` |
+| Exploradores | `exploradores/explorador.py` | o limiar e os alarmes com outros k, percentis e confirmações (exploração pós-teste) | `test_exploradores.py` |
+| Tela | `tela/rotas.py` | as rotas da aba Ciência do mestrado | `test_tela.py` |
+| Roteamento | `roteamento/frases.py` | as frases de exemplo do roteador | `tests/test_routing.py` |
+| Glossário | `glossario/notas.py` | a nota de cada indicador | `test_resumo_para_o_chat.py` |
 
-As pastas seguintes entram no lote 53: `rodada/`, `resultados/`, `resumo_para_o_chat/`, `exploradores/`, `tela/`,
-`roteamento/` e `glossario/`.
+Nenhum arquivo de código fica solto na raiz do mestrado: só o `__init__.py`, o contrato com o núcleo (NUC-02).
 
 ## Do nome antigo para o novo
 
@@ -132,5 +138,12 @@ As pastas seguintes entram no lote 53: `rodada/`, `resultados/`, `resumo_para_o_
 | `mestrado/onset.py` | `inicio_das_falhas/pontos_de_mudanca.py` e `estimativa.py` (lote 52) | `fault_onset` |
 | `mestrado/reanalysis.py` | `reanalise/reanalise.py`, `relatorio.py` e `artefatos.py` (lote 52) | `reanalysis` |
 | `mestrado/commands.py` | `comandos/terminal.py` (lote 52) | `commands` |
+| `mestrado/autoencoders.py` | `rodada/declaracao.py`, `execucao.py`, `consolidacao.py`, `apresentacao.py` e `experimento.py` (lote 53) | `run` |
+| `mestrado/summary.py` | `resultados/rodada_atual.py` e `paineis.py` (lote 53) | `results` |
+| `mestrado/digest.py` | `resumo_para_o_chat/blocos.py` (lote 53) | `chat_digest` |
+| `mestrado/explorer.py` | `exploradores/explorador.py` (lote 53) | `explorers` |
+| `mestrado/web.py` | `tela/rotas.py` (lote 53) | `screen` |
+| `mestrado/routing.py` | `roteamento/frases.py` (lote 53) | `routing` |
+| `mestrado/notes.py` | `glossario/notas.py` (lote 53) | `glossary` |
 
 Os mapas datados de `docs/arquitetura/2026-10-05/` são registros daquele dia e mantêm os caminhos antigos.

@@ -1,4 +1,4 @@
-"""Exploradores da aba Ciência (lote 20): limiar, alarme e detecção, e confiabilidade.
+"""Exploradores da aba Ciência (lote 20): o do limiar e o dos alarmes e da detecção.
 
 Os do GPVS reaproveitam as funções da avaliação canônica (`segment_errors`, `top_k_scores`,
 `calibrate_threshold` e `run_metrics`) com os modelos congelados. O erro por variável de cada
@@ -7,7 +7,7 @@ m = 3, os números são os da avaliação de 27/09/2026.
 
 O explorador do limiar usa só a calibração. O de alarme e detecção usa o teste saudável e os
 ensaios com falha, já consultados: é exploração pós-teste, não canônica (M14), e não substitui
-os resultados congelados. O de confiabilidade chama o serviço RAM; o navegador não refaz contas.
+os resultados congelados. O de confiabilidade fica no núcleo (`science/confiabilidade` e a rota da aba).
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ class Explorer:
     """Estado carregado sob demanda: modelos, dados preparados e erros por variável."""
 
     def __init__(self, results_dir: str | Path, gpvs_dir: str | Path, cache_dir: str | Path):
-        from aliado.specializations.mestrado.resultados.paineis import current
+        from aliado.specializations.mestrado.resultados.rodada_atual import current
 
         self.results_dir = Path(results_dir)
         self.gpvs_dir = Path(gpvs_dir)

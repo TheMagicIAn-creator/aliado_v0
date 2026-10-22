@@ -5,6 +5,17 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 53: o mestrado da rodada ao chat em pastas
+
+- **As pastas:**
+  - `rodada/`: a declaração, a execução, a consolidação, a apresentação e o contrato de 14 atributos;
+  - `resultados/`: a rodada atual e os painéis;
+  - `resumo_para_o_chat/`, `exploradores/`, `tela/`, `roteamento/` e `glossario/`.
+  - Nenhum arquivo de código fica solto na raiz do mestrado.
+- **A pasta oficial:** o experimento e os resultados leem o nome dela do único lugar onde está escrito.
+- **A prova:** a equivalência no GPVS sintético não mostra nenhuma diferença, e a bateria passa com os dados reais.
+- **Estado:** commits locais autorizados pelo pesquisador.
+
 ### Lote 52: o mestrado da avaliação aos comandos em pastas
 
 - **As pastas:**
