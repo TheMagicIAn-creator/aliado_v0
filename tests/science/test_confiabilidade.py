@@ -11,8 +11,7 @@ import math
 import pytest
 from apoio.caminhos import REFERENCE
 
-from aliado.science import evaluate_scenario, export_result
-from aliado.science.ram import reliability
+from aliado.science.confiabilidade.cenarios import evaluate_scenario, export_result, reliability
 from aliado.skills.library import load_skill
 
 

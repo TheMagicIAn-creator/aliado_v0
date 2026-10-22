@@ -34,7 +34,7 @@ def test_the_error_cache_is_tied_to_the_weights_and_the_variable_order(tmp_path,
     pytest.importorskip("torch")
     from types import SimpleNamespace
 
-    from aliado.science.detection import models
+    from aliado.science.deteccao.redes import autoencoders as models
     from aliado.specializations.mestrado import evaluation, gpvs, training
 
     computed = []

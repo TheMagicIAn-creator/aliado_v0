@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from apoio.caminhos import REFERENCE, RESULTS, ROOT
 
-from aliado.science import digest as core
+from aliado.science.resumo_citavel import formato as core
 from aliado.specializations.mestrado import digest
 
 INTERNAL = re.compile(r"semente|canônic|canonic|\bM\d{2}\b|gpvs-|sha256|commit|\.json|lote \d", re.IGNORECASE)

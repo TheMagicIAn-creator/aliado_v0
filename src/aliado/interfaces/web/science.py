@@ -92,7 +92,7 @@ def science_routes(settings, worker, lock) -> list[Route]:
         return JSONResponse(data)
 
     async def reliability(request: Request):
-        from aliado.science.ram import reliability as curve
+        from aliado.science.confiabilidade.cenarios import reliability as curve
 
         return await compute(request, curve, "taxa", "horas_por_ano", "base", "horizonte")
 
@@ -106,13 +106,16 @@ def science_routes(settings, worker, lock) -> list[Route]:
         return JSONResponse(await run_in_threadpool(load))
 
     async def run_scenario(request: Request):
-        from aliado.science import evaluate_scenario
+        from aliado.science.confiabilidade.cenarios import evaluate_scenario
 
         return await compute(request, evaluate_scenario, "cenario")
 
     async def save_scenario(request: Request):
-        from aliado.science import evaluate_scenario, export_result
-        from aliado.science.ram import EXPLORATION_SOURCE
+        from aliado.science.confiabilidade.cenarios import (
+            EXPLORATION_SOURCE,
+            evaluate_scenario,
+            export_result,
+        )
 
         try:
             scenario = (await read_body(request)).get("cenario")
@@ -133,7 +136,7 @@ def science_routes(settings, worker, lock) -> list[Route]:
         return JSONResponse(saved, 201)
 
     async def fmeca(request: Request):
-        from aliado.science.fmeca import evaluate_fmeca, export_fmeca, load_table
+        from aliado.science.fmeca.calculo import evaluate_fmeca, export_fmeca, load_table
 
         if not fmeca_table.is_file():
             return error("Tabela da FMECA não encontrada.", 404)
@@ -151,8 +154,8 @@ def science_routes(settings, worker, lock) -> list[Route]:
 
     async def components(request: Request):
         """Confiabilidade e disponibilidade de cada grupo da FMECA (lote 25); não grava nada."""
-        from aliado.science.components import component_view, load_repairs
-        from aliado.science.fmeca import load_table
+        from aliado.science.componentes.disponibilidade import component_view, load_repairs
+        from aliado.science.fmeca.calculo import load_table
 
         repairs = settings.reference_dir / "reparos.json"
         if not fmeca_table.is_file() or not repairs.is_file():

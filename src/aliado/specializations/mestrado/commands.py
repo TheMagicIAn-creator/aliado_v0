@@ -66,7 +66,7 @@ def _prepare(args) -> int:
 
 
 def _train(args) -> int:
-    from aliado.science.detection.models import Hyperparameters
+    from aliado.science.deteccao.redes.autoencoders import Hyperparameters
     from aliado.specializations.mestrado.gpvs import prepare
     from aliado.specializations.mestrado.training import (
         ExperimentConfig,
@@ -110,7 +110,7 @@ def _evaluate(args) -> int:
 
 
 def _reanalyze(args) -> int:
-    from aliado.science.detection import registry
+    from aliado.science.deteccao.registro import consultas as registry
     from aliado.specializations.mestrado.reanalysis import EVALUATION, run
 
     _new(args.saida)

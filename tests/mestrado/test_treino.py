@@ -15,7 +15,7 @@ torch = pytest.importorskip("torch")
 from apoio.caminhos import ROOT  # noqa: E402
 from apoio.gpvs_sintetico import SHORT_PURGE  # noqa: E402
 
-from aliado.science.detection.models import (  # noqa: E402
+from aliado.science.deteccao.redes.autoencoders import (  # noqa: E402
     Hyperparameters,
     feature_errors,
     load_model,

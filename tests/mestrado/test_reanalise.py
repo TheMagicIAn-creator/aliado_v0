@@ -10,7 +10,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from aliado.science.detection import registry  # noqa: E402
+from aliado.science.deteccao.registro import consultas as registry  # noqa: E402
 from aliado.specializations.mestrado import gpvs, reanalysis, summary  # noqa: E402
 from aliado.specializations.mestrado.evaluation import (  # noqa: E402
     load_thresholds,

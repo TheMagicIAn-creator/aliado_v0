@@ -12,7 +12,7 @@ import pytest
 from apoio.avaliacao_sintetica import SHA, legacy_results
 
 from aliado import experiments
-from aliado.science.detection import registry
+from aliado.science.deteccao.registro import consultas as registry
 from aliado.specializations.mestrado import autoencoders
 
 np = pytest.importorskip("numpy")

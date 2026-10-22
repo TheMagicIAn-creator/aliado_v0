@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from aliado.science import digest as core
+from aliado.science.resumo_citavel import formato as core
 
 
 def test_formatters_write_numbers_as_the_science_tab_does():

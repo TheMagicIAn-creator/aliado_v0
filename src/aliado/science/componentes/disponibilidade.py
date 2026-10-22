@@ -13,7 +13,7 @@ import json
 import math
 from pathlib import Path
 
-from aliado.science.ram import evaluate_scenario
+from aliado.science.confiabilidade.cenarios import evaluate_scenario
 
 CALENDAR_HOURS = 8760.0
 REPAIR_FIELDS = {"nome", "decidida_em", "criterio", "grupos", "cenarios", "ressalvas"}

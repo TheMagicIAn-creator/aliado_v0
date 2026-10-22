@@ -10,9 +10,13 @@ from pathlib import Path
 
 import pytest
 
-from aliado.science.components import component_view, load_repairs, validate_repairs
-from aliado.science.fmeca import evaluate_fmeca, load_table
-from aliado.science.ram import evaluate_scenario
+from aliado.science.componentes.disponibilidade import (
+    component_view,
+    load_repairs,
+    validate_repairs,
+)
+from aliado.science.confiabilidade.cenarios import evaluate_scenario
+from aliado.science.fmeca.calculo import evaluate_fmeca, load_table
 
 ROOT = Path(__file__).resolve().parents[2]
 REFERENCE = ROOT / "docs" / "pesquisa-inversores"

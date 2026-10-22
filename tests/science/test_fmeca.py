@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from aliado.science import evaluate_scenario
-from aliado.science.fmeca import evaluate_fmeca, export_fmeca, load_table
+from aliado.science.confiabilidade.cenarios import evaluate_scenario
+from aliado.science.fmeca.calculo import evaluate_fmeca, export_fmeca, load_table
 
 ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / "docs" / "pesquisa-inversores" / "fmeca.json"

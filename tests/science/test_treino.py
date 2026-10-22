@@ -7,7 +7,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from aliado.science.detection.models import Hyperparameters, fit  # noqa: E402
+from aliado.science.deteccao.redes.autoencoders import Hyperparameters, fit  # noqa: E402
 
 
 @pytest.mark.treina

@@ -174,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             return 0
         if args.command == "ciencia" and args.operation == "fmeca":
-            from aliado.science.fmeca import evaluate_fmeca, export_fmeca, load_table
+            from aliado.science.fmeca.calculo import evaluate_fmeca, export_fmeca, load_table
 
             if args.saida.exists():
                 raise ValueError("A pasta de saída já existe; escolha uma pasta nova.")
@@ -188,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         if getattr(args, "handler", None) is not None:  # um comando de especialização
             return args.handler(args)
         if args.command == "ciencia":
-            from aliado.science import evaluate_scenario, export_result
+            from aliado.science.confiabilidade.cenarios import evaluate_scenario, export_result
 
             scenario = json.loads(args.cenario.read_text(encoding="utf-8-sig"))
             result = evaluate_scenario(scenario)

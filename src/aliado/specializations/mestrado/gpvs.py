@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.science.detection.protocol import (
+from aliado.science.deteccao.particao.blocos import (
     DEFAULT_FRACTIONS,
     ROLES,
     RobustScaler,

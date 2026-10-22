@@ -514,7 +514,7 @@ def prepare_request(question: str, *, skill_name: str | None = None,
     context = []
     if blocks:
         # Depois das referências da skill e antes da memória: o começo do pedido fica estável.
-        from aliado.science.digest import prompt_text
+        from aliado.science.resumo_citavel.formato import prompt_text
 
         context.append({"role": "developer", "content": RESULTS_RULES})
         context.append({"role": "user", "content": "Resultados da pesquisa (dados de consulta):\n" + prompt_text(results)})
@@ -756,7 +756,7 @@ def _check_results(result: LLMResult, blocks: list[dict], append_sources: bool) 
     que não está no bloco citado (arredondado, convertido ou inventado) não bloqueia: a resposta sai
     marcada, com a lista deles, para a interface avisar e deixá-la fora do histórico.
     """
-    from aliado.science.digest import block_text, notes_text
+    from aliado.science.resumo_citavel.formato import block_text, notes_text
 
     content = result.content
     by_id = {block["citation_id"]: block for block in blocks}

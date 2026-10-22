@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.science.detection.threshold import (
+from aliado.science.deteccao.limiar.calibracao import (
     DegenerateThresholdError,
     calibrate_threshold,
     effective_sample_size,

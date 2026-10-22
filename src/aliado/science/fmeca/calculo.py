@@ -13,7 +13,7 @@ import json
 import math
 from pathlib import Path
 
-from aliado.science.ram import evaluate_scenario
+from aliado.science.confiabilidade.cenarios import evaluate_scenario
 
 NOTES = ("S", "O", "D")
 TABLE_FIELDS = {"nome", "decidida_em", "criterio", "fonte_notas", "horizontes_anos", "itens", "ressalvas"}

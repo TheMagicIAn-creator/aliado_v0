@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.science.detection.protocol import (
+from aliado.science.deteccao.particao.blocos import (
     autocorrelation,
     decorrelation_report,
     sequences_for_blocks,

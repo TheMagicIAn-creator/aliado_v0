@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pytest
 
-from aliado.science.detection.metrics import (
+from aliado.science.deteccao.metricas.por_janela import (
     auc_pr,
     auc_roc,
     block_bootstrap_indices,

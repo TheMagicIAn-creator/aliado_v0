@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from aliado.science.detection.metrics import (
+from aliado.science.deteccao.metricas.por_janela import (
     WINDOWS_PER_HOUR,
     alarm_starts,
     first_alarm,

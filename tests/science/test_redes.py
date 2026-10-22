@@ -6,7 +6,11 @@ import pytest
 
 pytest.importorskip("torch")
 
-from aliado.science.detection.models import Hyperparameters, build, parameter_count  # noqa: E402
+from aliado.science.deteccao.redes.autoencoders import (  # noqa: E402
+    Hyperparameters,
+    build,
+    parameter_count,
+)
 
 
 def test_architectures_match_the_reference_parameter_counts():

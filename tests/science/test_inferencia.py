@@ -7,7 +7,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from aliado.science.detection.models import feature_errors  # noqa: E402
+from aliado.science.deteccao.redes.autoencoders import feature_errors  # noqa: E402
 
 
 class Zero(torch.nn.Module):

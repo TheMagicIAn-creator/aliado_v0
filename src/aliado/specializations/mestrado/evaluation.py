@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from aliado.science.detection.metrics import (
+from aliado.science.deteccao.metricas.por_janela import (
     BLOCK,
     CONFIRMATIONS,
     RESAMPLES,
@@ -30,7 +30,8 @@ from aliado.science.detection.metrics import (
     verdict,
     window_metrics,
 )
-from aliado.science.detection.models import (
+from aliado.science.deteccao.particao.blocos import sequences_from_flow
+from aliado.science.deteccao.redes.autoencoders import (
     MODEL_NAMES,
     MODELS,
     Hyperparameters,
@@ -38,7 +39,6 @@ from aliado.science.detection.models import (
     load_model,
     top_k_scores,
 )
-from aliado.science.detection.protocol import sequences_from_flow
 from aliado.specializations.mestrado import gpvs
 from aliado.specializations.mestrado.training import ExperimentConfig, environment
 

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from aliado.science.detection.protocol import autocorrelation
+from aliado.science.deteccao.particao.blocos import autocorrelation
 
 PERCENTILE = 99.0
 

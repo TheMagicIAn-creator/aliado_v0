@@ -17,7 +17,7 @@ from datetime import datetime
 from importlib.util import find_spec
 from pathlib import Path
 
-from aliado.science.detection import registry
+from aliado.science.deteccao.registro import consultas as registry
 
 KEY = "ae-denso-lstm"
 TITLE = "AE Denso × AE-LSTM"
@@ -71,7 +71,7 @@ def interrupted(results_dir: str | Path, folder: str | Path, state: str) -> None
 def run(params: dict, folder: str | Path, *, results_dir: str | Path, dataset_dir: str | Path, phrase: str,
         progress=print) -> dict:
     """O experimento inteiro, numa pasta nova, com os parâmetros já conferidos; devolve o resultado."""
-    from aliado.science.detection.models import Hyperparameters
+    from aliado.science.deteccao.redes.autoencoders import Hyperparameters
     from aliado.specializations.mestrado import gpvs, reanalysis, summary
     from aliado.specializations.mestrado.evaluation import (
         EvaluationConfig,
@@ -148,7 +148,7 @@ def _version() -> str:
 
 
 def parameter_texts(params: dict) -> list[dict]:
-    from aliado.science.digest import num
+    from aliado.science.resumo_citavel.formato import num
 
     texts = {"separacao": f"{params['separacao']} janelas", "sementes": ", ".join(str(s) for s in params["sementes"]),
              "teto_epocas": num(params["teto_epocas"], 6)}
@@ -197,7 +197,7 @@ def collect(run_, params: dict, *, executed: str | None, duration: float | None 
 
 def numbers(overview: dict, onsets: dict | None) -> dict:
     """Os indicadores que o Markdown, o PDF e a comparação mostram, com o texto da tela e a nota."""
-    from aliado.science.digest import dec, num, seconds
+    from aliado.science.resumo_citavel.formato import dec, num, seconds
     from aliado.specializations.mestrado.notes import NOTES
 
     found = {}
@@ -230,7 +230,7 @@ def numbers(overview: dict, onsets: dict | None) -> dict:
 
 def report(result: dict) -> list[dict]:
     """Os blocos do PDF, só a partir do resultado: o PDF de uma rodada antiga sai igual ao de hoje."""
-    from aliado.science.digest import dec, num, seconds
+    from aliado.science.resumo_citavel.formato import dec, num, seconds
     from aliado.specializations.mestrado.notes import NOTES
 
     detail, protocol = result["detalhe"], result["protocolo"]

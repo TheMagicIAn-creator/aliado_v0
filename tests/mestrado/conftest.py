@@ -31,7 +31,7 @@ def rodada_sintetica(gpvs_sintetico, preparado_sintetico, tmp_path_factory):
     """Os 4 detectores sintéticos (denso e AE-LSTM, sementes 3 e 4, 3 épocas, p90), treinados e exportados uma vez,
     com a avaliação, nas pastas com os nomes reais (`gpvs-modelos-002` e `gpvs-avaliacao-001`)."""
     pytest.importorskip("torch")
-    from aliado.science.detection.models import Hyperparameters
+    from aliado.science.deteccao.redes.autoencoders import Hyperparameters
     from aliado.specializations.mestrado import reanalysis
     from aliado.specializations.mestrado.evaluation import (
         EvaluationConfig,
@@ -73,7 +73,7 @@ def rodada_sintetica_copia(rodada_sintetica, tmp_path):
 def origin_gpvs_runs(base_real):
     """Semente 42 com a separação e o teto de épocas da origem, treinada uma vez para as conferências reais."""
     pytest.importorskip("torch")
-    from aliado.science.detection.models import Hyperparameters
+    from aliado.science.deteccao.redes.autoencoders import Hyperparameters
     from aliado.specializations.mestrado import gpvs
     from aliado.specializations.mestrado.training import (
         ExperimentConfig,

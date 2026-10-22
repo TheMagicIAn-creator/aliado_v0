@@ -13,7 +13,7 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
-from aliado.science.digest import dec, num, pct, seconds
+from aliado.science.resumo_citavel.formato import dec, num, pct, seconds
 from aliado.specializations.mestrado import autoencoders
 from aliado.specializations.mestrado.notes import NOTES
 
@@ -209,7 +209,7 @@ def _rate(per_hour: float | None) -> str:
 
 
 def _fmeca_block(reference_dir: Path) -> dict:
-    from aliado.science.fmeca import evaluate_fmeca, load_table
+    from aliado.science.fmeca.calculo import evaluate_fmeca, load_table
 
     data = evaluate_fmeca(*load_table(reference_dir / "fmeca.json"))
     names = {item["id"]: item["nome"] for item in data["itens"]}
@@ -229,8 +229,8 @@ def _fmeca_block(reference_dir: Path) -> dict:
 
 
 def _components_block(reference_dir: Path) -> dict:
-    from aliado.science.components import component_view, load_repairs
-    from aliado.science.fmeca import load_table
+    from aliado.science.componentes.disponibilidade import component_view, load_repairs
+    from aliado.science.fmeca.calculo import load_table
 
     repairs = load_repairs(reference_dir / "reparos.json")
     view = component_view(*load_table(reference_dir / "fmeca.json"), repairs, points=3)

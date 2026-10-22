@@ -16,7 +16,15 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from aliado.science.detection.models import (
+from aliado.science.deteccao.limiar.calibracao import (
+    DegenerateThresholdError,
+    ThresholdCalibration,
+    calibrate_threshold,
+    effective_sample_size,
+    minimum_n_for_percentile,
+)
+from aliado.science.deteccao.particao.blocos import DEFAULT_FRACTIONS, ROLES, sequences_for_blocks
+from aliado.science.deteccao.redes.autoencoders import (
     MODEL_NAMES,
     MODELS,
     Hyperparameters,
@@ -26,14 +34,6 @@ from aliado.science.detection.models import (
     parameter_count,
     save_model,
     top_k_scores,
-)
-from aliado.science.detection.protocol import DEFAULT_FRACTIONS, ROLES, sequences_for_blocks
-from aliado.science.detection.threshold import (
-    DegenerateThresholdError,
-    ThresholdCalibration,
-    calibrate_threshold,
-    effective_sample_size,
-    minimum_n_for_percentile,
 )
 from aliado.specializations.mestrado import gpvs
 

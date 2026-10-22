@@ -15,7 +15,7 @@ from aliado.specializations.mestrado import gpvs, summary  # noqa: E402
 
 INTERNAL = re.compile(r"semente|canônic|canonic|M1[0-9]", re.IGNORECASE)
 def test_counts_give_the_same_metrics_as_the_window_formulas():
-    from aliado.science.detection.metrics import window_metrics
+    from aliado.science.deteccao.metricas.por_janela import window_metrics
 
     negatives, positives = np.array([0.1, 0.2, 0.9, 0.3]), np.array([0.8, 0.95, 0.4, 1.2, 2.0])
     reference = window_metrics(negatives, positives, 0.5)
