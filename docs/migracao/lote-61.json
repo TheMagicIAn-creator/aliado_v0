@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "batch": "61",
+  "version": "0.9.0 (entrada em Não lançado)",
+  "status": "validated_without_model_uncommitted",
+  "base_commit": "eab99cb",
+  "decision": "pesquisador, 23/10/2026: \"Faça o ajuste do formato\" — aceitar o intervalo de páginas abreviado ([K…p1–8]) que o local escreveu na P2 de 22/10",
+  "spec": "docs/specs/0061-intervalo-abreviado.md",
+  "validation": "docs/migracao/validacao-lote-61.md",
+  "requirements": {
+    "added": [],
+    "changed": [
+      "BIB-05"
+    ],
+    "tested_again": []
+  },
+  "checks": {
+    "teste_bib05_antes": {
+      "falharam": 2,
+      "passaram": 9
+    },
+    "teste_bib05_depois": {
+      "passaram": 11
+    },
+    "pytest_chat": {
+      "passed": 133
+    },
+    "pytest_bateria_rapida": {
+      "grupos": 36,
+      "passed": 835,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 112.63
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "release_v0_9_0": {
+    "url": "https://github.com/TheMagicIAn-creator/aliado_v0/releases/tag/v0.9.0",
+    "wheel_sha256": "ab2025b1eb978dad2c8a46c4c480408a09b9479d01c431df7bfea214aabcee2d"
+  },
+  "evidence": {
+    "bateria_rapida": "tmp/lote-61/bateria-rapida.log",
+    "antes": "tmp/lote-61/antes"
+  },
+  "paid_calls": 0,
+  "local_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "ad18522921e1fc92bc2edcc0ec6a338e109305046429d4bc09fe56d15dd8c436",
+    "docs/migracao/validacao-lote-61.md": "2e1d40f2f4b072e5ac5b81302d4541a79faa1f9c1ce7a97e988bb985b4905e03",
+    "docs/roteiro-v0.md": "53c92c4532ee5f46aac79538ad87418f967da60d0cdba4864d39a24200e1dc08",
+    "docs/specs/0061-intervalo-abreviado.md": "6e51449f2313202e2441835b1edae8cf8ed75d2b4beaee2d5bf1dd72e7e27ac8",
+    "docs/specs/capacidades/biblioteca.md": "736ccedfeea49b606a11c5eacb5ac251b9f3a20d30626adcb988280118ebce86",
+    "src/aliado/agent.py": "7f21a216b72733b5ed081cfee20c74110057de75fd9b55c3fe7b39e608c4dbea",
+    "tests/test_knowledge.py": "0f809fa2efc6912bcb088d36472ede46457b0c7df2ff00780121e8fb3c619ee2"
+  }
+}

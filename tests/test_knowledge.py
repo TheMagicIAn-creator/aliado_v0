@@ -412,10 +412,17 @@ PAGES = [{"citation_id": f"K0cad7c48p{page}", "document_id": "colli", "page": pa
     ("Escala [K0cad7c48p11–K0cad7c48p14].", None),  # a 13 e a 14 não foram enviadas
     ("Escala [K0cad7c48p1–K2d575284p6].", None),  # documentos diferentes
     ("Escala [K0cad7c48p6–K0cad7c48p1].", None),  # de trás para a frente
+    # Lote 61: o fim abreviado, só com o número da página, como na P2 da medição de 22/10 ([Kf74ae8ecp1–8]).
+    ("Escala [K0cad7c48p1–6].", "Escala " + "".join(f"[K0cad7c48p{page}]" for page in range(1, 7)) + "."),
+    ("Escala [K0cad7c48p2-3].", "Escala [K0cad7c48p2][K0cad7c48p3]."),
+    ("Escala [K0cad7c48p1–11].", None),  # 11 páginas: largo demais
+    ("Escala [K0cad7c48p11–14].", None),  # a 13 e a 14 não foram enviadas
+    ("Escala [K0cad7c48p6–1].", None),  # de trás para a frente
 ])
 def test_a_page_range_counts_when_every_page_in_it_was_sent(content, expected):
     """BIB-05: o intervalo de páginas de um documento, como o da E2 do lote 46, vale pelas páginas dele quando todas
-    foram enviadas, em ordem e até 10; fora disso, continua reprovando. A parada cedo aceita o mesmo."""
+    foram enviadas, em ordem e até 10; fora disso, continua reprovando. A parada cedo aceita o mesmo. Desde o lote 61,
+    o fim do intervalo pode vir só com o número da página."""
     from aliado.agent import _check_citations, _stray
 
     allowed = {hit["citation_id"]: hit for hit in PAGES}

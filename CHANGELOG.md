@@ -5,6 +5,13 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 61: o intervalo de páginas abreviado nas citações
+
+- **A forma nova:** o intervalo de páginas numa marca só pode terminar só com o número da página (`[K…p1–8]`), como o
+  modelo local escreveu na P2 da medição de 22/10.
+- **As condições:** as mesmas da forma inteira: o mesmo documento, em ordem, até 10 páginas, todas enviadas (BIB-05).
+- **Estado:** sem commit.
+
 ## [0.9.0] — 2026-10-23
 
 Lotes 45 a 60:
@@ -24,7 +31,7 @@ Lotes 45 a 60:
   - a bateria completa, com os testes com os dados reais;
   - a equivalência da ciência;
   - as conferências extras do pacote.
-- **Estado:** sem commit; o commit, a tag `v0.9.0` e o push ficam com o pesquisador.
+- **Estado:** commit 385ab5d e tag `v0.9.0`, publicados no GitHub com a release, as notas e o wheel.
 
 ### Lote 59: a limpeza do disco
 

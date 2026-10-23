@@ -148,8 +148,9 @@ _MARK = re.compile(r"\[(K[^\]\s]*)\]")
 # Lote 46: o formato das regras ([K...]) escrito como se fosse uma citação, como na E8 do lote 45; sai do texto.
 _PLACEHOLDER = re.compile(r"\s*\[K(?:\.\.\.|…)?\]")
 _PAGE_MARK = re.compile(r"(K[0-9a-f]{8,})p(\d+)")
-# Lote 47: um intervalo de páginas numa marca só, como o da E2 do lote 46 ([Kdocp1–Kdocp6]).
-_RANGE = re.compile(r"\[(K[0-9a-f]{8,})p(\d+)\s*[–-]\s*(K[0-9a-f]{8,})p(\d+)\]")
+# Lote 47: um intervalo de páginas numa marca só, como o da E2 do lote 46 ([Kdocp1–Kdocp6]). Lote 61: o fim pode vir
+# só com o número da página, como na P2 da medição de 22/10 ([Kdocp1–8]).
+_RANGE = re.compile(r"\[(K[0-9a-f]{8,})p(\d+)\s*[–-]\s*(?:(K[0-9a-f]{8,})p)?(\d+)\]")
 MAX_RANGE = 10
 WEB_RULES = """Busca na web habilitada neste pedido. Use-a para conferir fatos externos ou
 atuais; busque fontes primárias, técnicas e acadêmicas (normas, fabricantes, artigos) e
@@ -797,11 +798,11 @@ def _ungroup(text: str) -> str:
 
 
 def _ranges(text: str, allowed: dict) -> str:
-    """[Kdocp1–Kdocp6] vira [Kdocp1]…[Kdocp6] quando é do mesmo documento, em ordem, até `MAX_RANGE` páginas, todas
-    enviadas (lote 47, BIB-05); fora disso, fica como está e reprova."""
+    """[Kdocp1–Kdocp6] e [Kdocp1–6] viram [Kdocp1]…[Kdocp6] quando é do mesmo documento, em ordem, até `MAX_RANGE`
+    páginas, todas enviadas (lotes 47 e 61, BIB-05); fora disso, fica como está e reprova."""
     def expand(match):
         pages = [f"{match[1]}p{page}" for page in range(int(match[2]), int(match[4]) + 1)]
-        if match[3] != match[1] or not 1 < len(pages) <= MAX_RANGE or not all(page in allowed for page in pages):
+        if (match[3] or match[1]) != match[1] or not 1 < len(pages) <= MAX_RANGE or not all(page in allowed for page in pages):
             return match[0]
         return "".join(f"[{page}]" for page in pages)
 

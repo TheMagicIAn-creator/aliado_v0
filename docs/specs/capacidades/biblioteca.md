@@ -7,7 +7,8 @@ requisitos que acrescenta, altera ou retira. Cada requisito é citado por pelo m
 Criada no lote 37 (18/10/2026), pela [spec 0037](../0037-paginas-sem-leitura.md), só com os requisitos da leitura
 das páginas. A indexação, a busca e as fichas seguem descritas nas specs 0004, 0019, 0029, 0030 e 0032. O lote 46,
 pela [spec 0046](../0046-correcoes-do-relatorio.md), acrescentou o BIB-05. O lote 47, pela
-[spec 0047](../0047-roteador-e-intervalos.md), alterou o BIB-05.
+[spec 0047](../0047-roteador-e-intervalos.md), alterou o BIB-05. O lote 61, pela
+[spec 0061](../0061-intervalo-abreviado.md), alterou o BIB-05 de novo.
 
 ## Requisitos
 
@@ -43,7 +44,8 @@ marca que não é um identificador enviado, mas aponta sem ambiguidade um trecho
 - o documento e a página, no formato das páginas, quando um único trecho enviado é daquele documento e daquela
   página;
 - um intervalo de páginas do mesmo documento (`[K…p1–K…p6]`), em ordem, de até 10 páginas, todas enviadas: vale
-  como cada uma delas (lote 47).
+  como cada uma delas (lote 47). O fim pode vir só com o número da página (`[K…p1–6]`), com as mesmas condições
+  (lote 61).
 
 O formato das regras escrito como citação (`[K...]`, `[K…]` ou `[K]`) sai do texto. Qualquer outra marca fora do
 que foi enviado continua reprovando a resposta (identificador truncado, copiado de um exemplo, página que não é a
