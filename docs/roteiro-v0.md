@@ -792,6 +792,11 @@ não dá para separá-los em commits.
 
 - **Depois da 0.9.0 (23/10):** a release `v0.9.0` foi publicada no GitHub, com as notas e o wheel. O lote 61
   aceita o intervalo de páginas abreviado que o local escreveu na P2 de 22/10, a pedido do pesquisador.
+- **A release `v0.8.0`, que faltava:** foi publicada no mesmo dia, com o pesquisador autorizando.
+  - **O wheel:** o do fechamento do lote 44 (SHA-256 `47d1076c…`). Sem contar o fim de linha, o conteúdo dele é o
+    mesmo de um wheel montado da tag.
+  - **As notas:** ganharam o lote 44.
+  - **A ordem:** a `v0.9.0` continua sendo a mais recente.
 
 ## Specs de cada lote
 
