@@ -91,7 +91,8 @@ a responder depois do passo 5.
    - **`num_ctx`:** o Ollama corta em silêncio o que passa do contexto. O AL-IAdo confere o tamanho antes e manda
      ao Gemini o que não cabe; `AL_IADO_LOCAL_CONTEXT` precisa ter o mesmo número (lote 40: 32.768; antes, 16.384).
    - **`num_gpu`:** o número de camadas na placa de vídeo, das 33. Desde o lote 42, o modelo usa toda a VRAM. Com 32
-     camadas, a placa fica em 5,6 GB, com pico de 5,64 GB numa entrada de 27 mil tokens, dos 6,0 GB livres. As 33 não
+     camadas, a placa fica em 5,4 GB com o cache em q4_0 (lote 58; com o q8_0, 5,6 GB, com pico de 5,64 GB numa
+     entrada de 27 mil tokens), dos 6,0 GB livres. As 33 não
      cabem: com o texto todo na placa, o Ollama põe também o leitor de imagens (0,9 GB). Cada camada soma cerca de
      0,14 GB.
    - **`temperature`:** 0,6 desde o lote 43; o `qwen3.5` vem com 1. Com 0,6, 13 das 16 perguntas reais tiveram o
@@ -102,7 +103,9 @@ a responder depois do passo 5.
      caiu para 6,4 GB, com a mesma
      velocidade.
 3. Nas variáveis de ambiente do usuário, para o serviço do Ollama:
-   - `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q8_0`: o contexto ocupa metade da memória;
+   - `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q4_0`: o contexto de 32 mil tokens ocupa 288 MiB, contra
+     544 MiB em q8_0 e cerca de 1 GiB sem quantizar. No lote 58, o q4_0 deu 248 MiB a mais de folga na placa, sem
+     piorar as respostas nas 16 perguntas de teste;
    - `OLLAMA_NUM_PARALLEL=1` e `OLLAMA_MAX_LOADED_MODELS=1`;
    - `OLLAMA_KEEP_ALIVE=10m`: o modelo sai da memória depois de 10 minutos parado.
 4. Antes de usar, feche os programas pesados (navegador, VS Code, Obsidian, WSL ou Docker) e abra o Ollama pelo

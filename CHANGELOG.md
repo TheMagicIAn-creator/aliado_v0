@@ -13,9 +13,11 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 - **A qualidade:** não piorou. O local deu 13 respostas finais, contra 11 com o q8_0, e citou o documento esperado
   12 vezes, contra 9. A diferença está dentro da variação entre rodadas iguais.
 - **O tempo:** a leitura de páginas ficou com mediana de 68,4 s por chamada, contra 62,5 s.
-- **O Ollama voltou para o q8_0,** a pedido do pesquisador. Ficar com o q4_0 é decisão dele.
+- **O Ollama voltou para o q8_0,** a pedido do pesquisador. Depois do commit, ele decidiu ficar com o q4_0: a
+  variável foi trocada, o Ollama reiniciou às 23:52 de 22/10 (o log confirma o q4_0), e o README passou a recomendá-lo.
 - **O log do Ollama:** guarda a configuração de cada início, mas não o carregamento do modelo nem os erros 500.
-- **Estado:** o produto não muda; sem commit; o commit fica com o pesquisador.
+- **Estado:** o produto não muda; commit a662c66, feito pelo pesquisador. A adoção do q4_0 no README veio depois,
+  sem commit.
 
 ### Lote 57: as regras de citação sem identificador de exemplo
 

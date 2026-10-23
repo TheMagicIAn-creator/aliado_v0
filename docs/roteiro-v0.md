@@ -544,7 +544,7 @@ não dá para separá-los em commits.
 | 55 | A evidência espectral descritiva: `science/espectro/`, `evidencia_espectral/` no mestrado, o 4º passo do explorador, R9 e R10 sob pedido no chat (EXP-14) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0055](specs/0055-evidencia-espectral.md), [validação](migracao/validacao-lote-55.md)) |
 | 56 | As duplicatas da ciência: `from_counts` na ciência geral, o comissionamento num lugar só e as janelas por hora como argumento | Feito em 22/10/2026: equivalência sem diferença; os 12 testes com os dados reais passaram depois; commit 2155b87 ([spec 0056](specs/0056-duplicatas-da-ciencia.md), [validação](migracao/validacao-lote-56.md)) |
 | 57 | As regras de citação sem o exemplo `[K1][K2]`, que o local copiou no lote 48 (PRV-06) | Feito em 22/10/2026; commit d8a4c48; medido depois com o local real: nenhuma cópia de exemplo nas 16 perguntas ([spec 0057](specs/0057-regras-sem-exemplo.md), [validação](migracao/validacao-lote-57.md)) |
-| 58 | O cache q4_0 do Ollama medido nas 16 perguntas, com critério fixado antes, contra o q8_0 | Medido em 22/10/2026, sem commit: passou nos cinco itens; 248 MiB a mais de folga na placa; o Ollama voltou para o q8_0, e a adoção fica com o pesquisador ([spec 0058](specs/0058-cache-q4-medido.md), [validação](migracao/validacao-lote-58.md)) |
+| 58 | O cache q4_0 do Ollama medido nas 16 perguntas, com critério fixado antes, contra o q8_0 | Medido em 22/10/2026: passou nos cinco itens; 248 MiB a mais de folga na placa; commit a662c66; depois, o pesquisador adotou o q4_0 ([spec 0058](specs/0058-cache-q4-medido.md), [validação](migracao/validacao-lote-58.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
