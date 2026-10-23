@@ -2,7 +2,7 @@
 
 Agente modular para pesquisa e engenharia, de uso **local e individual**. A pesquisa de
 mestrado sobre detecção de falhas em inversores fotovoltaicos é sua primeira
-especialização. Versão **0.9.0**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
+especialização. Versão **0.9.1**. As mudanças estão em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que ele faz
 
@@ -355,7 +355,7 @@ $fontesPacote = Join-Path $raizPacote ("tmp/pacote-" + [guid]::NewGuid().ToStrin
 New-Item -ItemType Directory -Path $fontesPacote | Out-Null
 Copy-Item -LiteralPath 'pyproject.toml','README.md' -Destination $fontesPacote
 Copy-Item -LiteralPath 'src' -Destination $fontesPacote -Recurse
-.\.venv\Scripts\python.exe -m build --wheel --no-isolation --outdir "$raizPacote/dist/v0.9.0" $fontesPacote
+.\.venv\Scripts\python.exe -m build --wheel --no-isolation --outdir "$raizPacote/dist/v0.9.1" $fontesPacote
 ```
 
 O wheel inclui a interface, com o KaTeX e o D3 v7 (licença ISC, copiada junto), e as skills do AL-IAdo, inclusive as da especialização do mestrado (`src/aliado/specializations/mestrado/skills/`). Documentação, cenários e dados
@@ -363,8 +363,8 @@ ficam no repositório. As skills de `.agents/` e `.claude/` orientam os assisten
 desenvolvimento e não entram no pacote.
 
 O fechamento de cada versão monta o wheel numa cópia limpa dos fontes, sem reutilizar o cache `build/` da pasta de
-trabalho. A [validação do lote 60](docs/migracao/validacao-lote-60.md) registra a conferência e o hash do pacote da
-0.9.0.
+trabalho. A [validação do lote 62](docs/migracao/validacao-lote-62.md) registra a conferência e o hash do pacote da
+0.9.1.
 Para os testes de concorrência da interface, use Node instalado; eles entram no pytest, sem pacotes JavaScript extras.
 
 ## Documentação
@@ -376,7 +376,7 @@ Para os testes de concorrência da interface, use Node instalado; eles entram no
 
 ## Pendências conhecidas
 
-- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura. A 0.6.0 (lotes 32 e 33) trouxe a busca em memória, a reordenação local das páginas, o revisor de memória seletivo, a reescrita seletiva, o plano por partes e o aprendizado com o uso. A 0.7.0 (lotes 34 a 36) trouxe o experimento rodado do zero pela aba Ciência, com o PDF por pedido, o chat sem seletores, com os pedidos escritos, e o código do mestrado fora do núcleo. A 0.8.0 (lotes 37 a 44) trouxe o modelo local no Ollama como principal, com o Gemini Flash só no limite dele, a leitura das páginas como texto e com as descrições das figuras, o contexto de 32 mil tokens, o modelo quase todo na placa de vídeo e as páginas sem pendência falsa. A 0.9.0 (lotes 45 a 60) trouxe as citações mais certeiras do modelo local, o raciocínio desligado na leitura de páginas, o cache q4_0 no Ollama, a ciência e o mestrado em pastas com nomes em português, o contrato da rodada com a matriz de erros, a evidência espectral descritiva e a limpeza do disco.
+- A 0.3.0 (lotes 22 a 26, no [roteiro](docs/roteiro-v0.md)) trouxe a aba Ciência nova, o início das falhas no GPVS, a confiabilidade por componente com disponibilidade e os resultados no chat. A 0.4.0 (lotes 27 a 29) trouxe a tela de envios, o espelho para o Obsidian e a indexação com figuras, tabelas e trechos por frase. A 0.5.0 (lotes 30 e 31) trouxe a leitura de páginas e documentos inteiros, tirou a aba Biblioteca e pôs a escolha automática do modelo, da skill e da leitura. A 0.6.0 (lotes 32 e 33) trouxe a busca em memória, a reordenação local das páginas, o revisor de memória seletivo, a reescrita seletiva, o plano por partes e o aprendizado com o uso. A 0.7.0 (lotes 34 a 36) trouxe o experimento rodado do zero pela aba Ciência, com o PDF por pedido, o chat sem seletores, com os pedidos escritos, e o código do mestrado fora do núcleo. A 0.8.0 (lotes 37 a 44) trouxe o modelo local no Ollama como principal, com o Gemini Flash só no limite dele, a leitura das páginas como texto e com as descrições das figuras, o contexto de 32 mil tokens, o modelo quase todo na placa de vídeo e as páginas sem pendência falsa. A 0.9.0 (lotes 45 a 60) trouxe as citações mais certeiras do modelo local, o raciocínio desligado na leitura de páginas, o cache q4_0 no Ollama, a ciência e o mestrado em pastas com nomes em português, o contrato da rodada com a matriz de erros, a evidência espectral descritiva e a limpeza do disco. A 0.9.1 (lotes 61 e 62) aceita o intervalo de páginas abreviado nas citações.
 - O roteador erra: quando ele escolhe uma leitura menor do que a pergunta pedia, a resposta sai sem o que precisava. Os remédios são **Ler mais fundo** e pedir a leitura por escrito. Uma pergunta sobre os resultados da pesquisa sem as palavras que ele conhece ("GPVS", "nossos resultados", "ensaios") vai sem eles. Veja a [validação do lote 31](docs/migracao/validacao-lote-31.md).
 - A leitura por páginas inteiras lê 10 páginas. Se a resposta estiver em outras, ela diz quais leu, e **Ler mais fundo** lê o documento.
 - Uma pergunta já respondida parte das páginas que a resposta anterior citou: se aquela resposta ficou incompleta, a nova também fica. Refazer a pergunta em seguida, na mesma conversa, ou **Ler mais fundo** fazem uma leitura nova.

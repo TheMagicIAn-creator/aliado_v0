@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "batch": "62",
+  "version": "0.9.1",
+  "status": "release",
+  "base_commit": "c3a45de",
+  "decision": "pesquisador, 23/10/2026: \"Faça. Não deixe nada pendente.\" — lançar a 0.9.1 com o lote 61, com o commit, a tag, o push e a release autorizados por ele",
+  "spec": "docs/specs/0062-lancamento-0-9-1.md",
+  "validation": "docs/migracao/validacao-lote-62.md",
+  "requirements": {
+    "added": [],
+    "changed": [],
+    "tested_again": []
+  },
+  "batches_in_release": "61 e 62",
+  "checks": {
+    "versao_instalada": "0.9.1",
+    "pytest_bateria_completa": {
+      "grupos": 36,
+      "passed": 868,
+      "failed": 0,
+      "skipped": 0,
+      "treinos": 18,
+      "seconds": 223.53,
+      "pico_memoria_mib": 559.1
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0,
+      "faltando": 0,
+      "arquivos_novos": [
+        "avaliacao/erros.npz",
+        "evidencia_espectral/evidencia.json"
+      ]
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "wheel": {
+      "arquivo": "dist/v0.9.1/aliado-0.9.1-py3-none-any.whl",
+      "bytes": 899427,
+      "sha256": "3d546b1fb17905f0c73ee9579f5b39764b8144a845b29df56b9528a460bd0485",
+      "arquivos": 197,
+      "modulos_py": 156,
+      "importados_do_wheel": 154,
+      "faltando": 0
+    },
+    "pytest_selecao_rapida_do_pedido": {
+      "passed": 44
+    },
+    "ruff": {
+      "exit_code": 0
+    }
+  },
+  "evidence": {
+    "bateria": "tmp/lote-62/bateria/pytest.json",
+    "equivalencia": "tmp/lote-62/equivalencia.log",
+    "verificacao": "tmp/lote-62/verificacao.json",
+    "notas": "tmp/releases/v0.9.1.md"
+  },
+  "paid_calls": 0,
+  "local_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "b797d19d792182dd3cb31b77db99ad8206cc3dea1d7600ac09b7e81e0ab2164d",
+    "README.md": "e8b346a69930fc8c29cac0d9658487f0fc0e29456347d3cc025ba07bb396fb2a",
+    "docs/migracao/validacao-lote-62.md": "be973356fdf691ecc859db2ab681037a529ff101cbdd3b6796f9967212ad9280",
+    "docs/roteiro-v0.md": "b1cc6f78f75959717d818ee0e2763aa0d26509aa40a521daaa28128f6a77c358",
+    "docs/specs/0062-lancamento-0-9-1.md": "115b8bceb6c95f8e1f0dfa17ebca546cef09b54fd924dcad3fee00c258da82df",
+    "pyproject.toml": "50bd38ab4961638d3a3565b4dd3a53a2287079e09f7925854149a377e20d3b0f"
+  }
+}

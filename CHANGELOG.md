@@ -5,12 +5,23 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.9.1] — 2026-10-23
+
+Lotes 61 e 62: a forma abreviada do intervalo de páginas nas citações (BIB-05) e o lançamento da versão.
+
+### Lote 62: o lançamento da 0.9.1
+
+- **A versão:** passa a 0.9.1, com o CHANGELOG, o README e o roteiro atualizados.
+- **As conferências:** a bateria completa, com os testes com os dados reais, a equivalência da ciência e o wheel de uma
+  cópia limpa.
+- **A publicação:** o commit, a tag `v0.9.1`, o push e a release no GitHub, com a autorização do pesquisador.
+
 ### Lote 61: o intervalo de páginas abreviado nas citações
 
 - **A forma nova:** o intervalo de páginas numa marca só pode terminar só com o número da página (`[K…p1–8]`), como o
   modelo local escreveu na P2 da medição de 22/10.
 - **As condições:** as mesmas da forma inteira: o mesmo documento, em ordem, até 10 páginas, todas enviadas (BIB-05).
-- **Estado:** sem commit.
+- **Estado:** commit 6cc1001.
 
 ## [0.9.0] — 2026-10-23
 

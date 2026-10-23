@@ -547,7 +547,8 @@ não dá para separá-los em commits.
 | 58 | O cache q4_0 do Ollama medido nas 16 perguntas, com critério fixado antes, contra o q8_0 | Medido em 22/10/2026: passou nos cinco itens; 248 MiB a mais de folga na placa; commit a662c66; depois, o pesquisador adotou o q4_0 ([spec 0058](specs/0058-cache-q4-medido.md), [validação](migracao/validacao-lote-58.md)) |
 | 59 | A limpeza do disco: 22 itens (12,8 GiB) para a Lixeira do Windows, a cópia `.txt` repetida fora do Git e duas pastas de ferramentas no `.gitignore` | Feito em 23/10/2026; commit 29a5b43: o espaço volta quando o pesquisador esvaziar a Lixeira ([spec 0059](specs/0059-limpeza.md), [validação](migracao/validacao-lote-59.md)) |
 | 60 | O fechamento da 0.9.0: versão, CHANGELOG, README, wheel de uma cópia limpa e notas da versão | Feito em 23/10/2026; commit 385ab5d, tag `v0.9.0` e release publicados no GitHub ([spec 0060](specs/0060-fechamento-0-9-0.md), [validação](migracao/validacao-lote-60.md)) |
-| 61 | O intervalo de páginas abreviado nas citações (`[K…p1–8]`), com as mesmas condições da forma inteira (BIB-05) | Feito em 23/10/2026, sem commit e sem modelo ([spec 0061](specs/0061-intervalo-abreviado.md), [validação](migracao/validacao-lote-61.md)) |
+| 61 | O intervalo de páginas abreviado nas citações (`[K…p1–8]`), com as mesmas condições da forma inteira (BIB-05) | Feito em 23/10/2026, sem modelo; commit 6cc1001; lançado na 0.9.1 ([spec 0061](specs/0061-intervalo-abreviado.md), [validação](migracao/validacao-lote-61.md)) |
+| 62 | O lançamento da 0.9.1: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 23/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0062](specs/0062-lancamento-0-9-1.md), [validação](migracao/validacao-lote-62.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -798,6 +799,9 @@ não dá para separá-los em commits.
   - **As notas:** ganharam o lote 44.
   - **A ordem:** a `v0.9.0` continua sendo a mais recente.
 
+- **O lote 62:** o pesquisador pediu "Faça. Não deixe nada pendente." O lote 61, a única mudança fora de uma versão,
+  sai na 0.9.1, com a mesma conferência da 0.9.0, a tag, o push e a release, todos autorizados por ele.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -842,6 +846,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 59 | [0059](specs/0059-limpeza.md) |
 | 60 | [0060](specs/0060-fechamento-0-9-0.md) |
 | 61 | [0061](specs/0061-intervalo-abreviado.md) |
+| 62 | [0062](specs/0062-lancamento-0-9-1.md) |
 
 ## Fica para a v1
 
