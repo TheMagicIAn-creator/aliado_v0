@@ -543,7 +543,8 @@ não dá para separá-los em commits.
 | 54 | A identidade e o contrato da rodada: `science/identidade/`, `erros.npz` conferido bit a bit, o explorador sem recalcular, as rodadas anteriores marcadas (EXP-13) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0054](specs/0054-identidade-e-contrato-da-rodada.md), [validação](migracao/validacao-lote-54.md)) |
 | 55 | A evidência espectral descritiva: `science/espectro/`, `evidencia_espectral/` no mestrado, o 4º passo do explorador, R9 e R10 sob pedido no chat (EXP-14) | Feito em 22/10/2026: equivalência sem diferença nos arquivos de antes ([spec 0055](specs/0055-evidencia-espectral.md), [validação](migracao/validacao-lote-55.md)) |
 | 56 | As duplicatas da ciência: `from_counts` na ciência geral, o comissionamento num lugar só e as janelas por hora como argumento | Feito em 22/10/2026: equivalência sem diferença; os 12 testes com os dados reais passaram depois; commit 2155b87 ([spec 0056](specs/0056-duplicatas-da-ciencia.md), [validação](migracao/validacao-lote-56.md)) |
-| 57 | As regras de citação sem o exemplo `[K1][K2]`, que o local copiou no lote 48 (PRV-06) | Feito em 22/10/2026, sem commit e sem modelo ([spec 0057](specs/0057-regras-sem-exemplo.md), [validação](migracao/validacao-lote-57.md)) |
+| 57 | As regras de citação sem o exemplo `[K1][K2]`, que o local copiou no lote 48 (PRV-06) | Feito em 22/10/2026; commit d8a4c48; medido depois com o local real: nenhuma cópia de exemplo nas 16 perguntas ([spec 0057](specs/0057-regras-sem-exemplo.md), [validação](migracao/validacao-lote-57.md)) |
+| 58 | O cache q4_0 do Ollama medido nas 16 perguntas, com critério fixado antes, contra o q8_0 | Medido em 22/10/2026, sem commit: passou nos cinco itens; 248 MiB a mais de folga na placa; o Ollama voltou para o q8_0, e a adoção fica com o pesquisador ([spec 0058](specs/0058-cache-q4-medido.md), [validação](migracao/validacao-lote-58.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -746,6 +747,36 @@ não dá para separá-los em commits.
   - O registro fica na validação do lote 57, porque a do 56 já estava no commit.
 - **O lote 57:** sai das regras de citação o exemplo `[K1][K2]`, das duas saídas que a spec 0048 deixou. Tratar o
   `[K1]` como formato poderia esconder uma marca errada.
+  - **A medição:** feita depois do commit do pesquisador (d8a4c48), com a autorização dele. Foram as 16 perguntas,
+    com o modelo local real, o Gemini simulado e as cópias da biblioteca e dos resultados do lote 46.
+  - **Consumo:** 24 chamadas locais (teto de 30), 7 ao Gemini simulado e nenhuma paga.
+  - **O resultado:**
+    - nenhuma cópia de identificador de exemplo;
+    - o local deu a resposta final em 11 de 16 (no lote 46, 12) e citou o documento esperado em 9 (no lote 46, 8);
+    - a chamada mediana do local nas leituras de páginas e do documento foi de 62,5 s (no lote 48, 71,3 s).
+  - **O que foi ao Gemini simulado:**
+    - P1 e E1: fora do alcance do local, como sempre;
+    - P2: uma marca nova, o intervalo de páginas abreviado `[Kf74ae8ecp1–8]`, que a conferência ainda não aceita; o
+      local parou cedo;
+    - P5: a resposta veio sem nenhuma marca;
+    - E8: o local pediu ajuda.
+    - Em E4 e E7, a 1ª resposta veio sem marcas. Depois do Gemini simulado, a leitura subiu um degrau, e o local
+      respondeu de novo, citando certo.
+  - **Um incidente da medição:** o processo dela ficou sem memória na 16ª pergunta (E8), antes de chamar o modelo.
+    Ele levava os 16 servidores seguidos, e o Ollama ocupava 8,4 GB da memória do Windows. A E8 rodou de novo
+    sozinha, num processo novo, como a P6 no lote 46.
+  - **Os registros:** ficam em `tmp/lote-57/`, fora do Git, e a tabela completa vai para a validação do lote 58,
+    onde esta rodada é a base com o cache q8_0.
+- **O lote 58:** com a autorização do pesquisador, o cache do Ollama passou para q4_0, foi medido nas 16 perguntas
+  e voltou para q8_0.
+  - **O critério, fixado antes:** a placa com o modelo carregado até 5.425 MiB, ao menos 9 respostas finais do local
+    e 7 citações do documento esperado, a chamada mediana nas leituras até 75 s e nenhum erro do Ollama.
+  - **O resultado:** 5.377 MiB (248 MiB a menos), 13 respostas, 12 citações, 68,4 s e nenhum erro. Passou nos cinco
+    itens.
+  - **A decisão:** ficar com o q4_0 é do pesquisador; até lá, vale a de 20/10 (q8_0).
+  - **A primeira conferência recusou a medição sem gastar nenhuma chamada:** o Ollama em execução não tinha sido
+    reiniciado depois da troca. A conferência passou a confirmar o cache também pelo registro do Windows e pelo
+    tamanho do modelo carregado.
 
 ## Specs de cada lote
 
@@ -787,6 +818,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 55 | [0055](specs/0055-evidencia-espectral.md) |
 | 56 | [0056](specs/0056-duplicatas-da-ciencia.md) |
 | 57 | [0057](specs/0057-regras-sem-exemplo.md) |
+| 58 | [0058](specs/0058-cache-q4-medido.md) |
 
 ## Fica para a v1
 

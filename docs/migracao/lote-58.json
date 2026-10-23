@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "batch": "58",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado, rumo à 0.9.0)",
+  "status": "measured_uncommitted_ollama_back_to_q8_0",
+  "base_commit": "d8a4c48",
+  "decision": "pesquisador, 22/10/2026: trocar a variável do Ollama para q4_0, reiniciar, medir as 16 perguntas (até 30 chamadas locais, Gemini simulado, nenhuma paga) e voltar para q8_0; adotar o q4_0 fica com ele",
+  "spec": "docs/specs/0058-cache-q4-medido.md",
+  "validation": "docs/migracao/validacao-lote-58.md",
+  "requirements": {
+    "added": [],
+    "changed": [],
+    "tested_again": []
+  },
+  "product_changed": false,
+  "checks": {
+    "criterio_fixado_antes": {
+      "placa_carregada_ate_mib": 5425,
+      "respondidas_pelo_local_ao_menos": 9,
+      "esperado_citado_ao_menos": 7,
+      "leituras_mediana_ate_s": 75.0,
+      "erros_do_ollama": 0
+    },
+    "q8_0_base_22_10": {
+      "placa_carregada_mib": 5625,
+      "ollama_total_gib": 6.38,
+      "ollama_na_placa_gib": 5.4,
+      "respondidas_pelo_local": 11,
+      "esperado_citado_no_local": 9,
+      "leituras_chamada_mediana_s": 62.5,
+      "chamadas_locais": 24,
+      "chamadas_gemini_simulado": 7,
+      "copias_de_exemplo": 0,
+      "marcas_invalidas": [
+        "P2: Kf74ae8ecp1–8"
+      ]
+    },
+    "q4_0": {
+      "placa_carregada_mib": 5377,
+      "placa_pico_mib": 5385,
+      "placa_amostras": 2451,
+      "ollama_total_gib": 6.13,
+      "ollama_na_placa_gib": 5.15,
+      "respondidas_pelo_local": 13,
+      "esperado_citado_no_local": 12,
+      "leituras_chamada_mediana_s": 68.4,
+      "segundos_medio": 75.7,
+      "segundos_mediana": 73.8,
+      "chamadas_locais": 24,
+      "chamadas_gemini_simulado": 5,
+      "copias_de_exemplo": 0,
+      "marcas_invalidas": [],
+      "erros_do_ollama": 0
+    },
+    "passou": {
+      "placa": true,
+      "respondidas": true,
+      "esperado": true,
+      "leituras": true,
+      "sem_erro_do_ollama": true
+    },
+    "ollama_de_volta": {
+      "variavel_do_usuario": "q8_0",
+      "servidor_reiniciado": "2026-10-22T21:59:20-03:00",
+      "log": "OLLAMA_KV_CACHE_TYPE:q8_0"
+    }
+  },
+  "evidence": {
+    "q8_0": "tmp/lote-57/medicao, tmp/lote-57/medicao-e8, tmp/lote-57/comparacao.json",
+    "q4_0": "tmp/lote-58/medicao/resultado.json",
+    "placa": "tmp/lote-58/medicao/placa.csv"
+  },
+  "paid_calls": 0,
+  "local_calls": 48,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "6357b119196f9a2ab70b6aa05fa7d45cd977dbe841ea2145fdccb97278506ca0",
+    "docs/migracao/validacao-lote-58.md": "73d5e3946cde140711f1c86173c5f834ec56eab2acb374decd1d028ae8ef486e",
+    "docs/roteiro-v0.md": "cffccf572c9df094d65e2acf7856aa8d2abe19b6941516dd7ee34c075a44b319",
+    "docs/specs/0058-cache-q4-medido.md": "576497e51dc7149426b4006aabc3d78a4a3305cc36b018a37e1cc58926517b1d"
+  }
+}

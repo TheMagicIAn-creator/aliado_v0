@@ -5,12 +5,26 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 58: o cache q4_0 medido no modelo local
+
+- **A medição:** as 16 perguntas com o cache do Ollama em q4_0, comparadas com a rodada em q8_0 de 22/10. O critério
+  foi fixado antes de medir, e o q4_0 passou nos cinco itens.
+- **A placa:** o modelo carregado ocupa 5.377 MiB, contra 5.625 MiB com o q8_0. São 248 MiB a mais de folga.
+- **A qualidade:** não piorou. O local deu 13 respostas finais, contra 11 com o q8_0, e citou o documento esperado
+  12 vezes, contra 9. A diferença está dentro da variação entre rodadas iguais.
+- **O tempo:** a leitura de páginas ficou com mediana de 68,4 s por chamada, contra 62,5 s.
+- **O Ollama voltou para o q8_0,** a pedido do pesquisador. Ficar com o q4_0 é decisão dele.
+- **O log do Ollama:** guarda a configuração de cada início, mas não o carregamento do modelo nem os erros 500.
+- **Estado:** o produto não muda; sem commit; o commit fica com o pesquisador.
+
 ### Lote 57: as regras de citação sem identificador de exemplo
 
 - **Sem o exemplo `[K1][K2]`:** as regras da biblioteca e da leitura integral só mostram o formato `[K...]`, com um
   identificador por colchete. No lote 48, o modelo local copiou o `[K1]` numa resposta, que foi descartada.
 - **Um teste** impede que um identificador de exemplo volte às regras (PRV-06).
-- **Estado:** sem commit; o commit fica com o pesquisador.
+- **Medido depois, com o modelo local real:** nas 16 perguntas, nenhuma cópia de identificador de exemplo. No lote
+  48, houve uma em 12 respostas. O local deu a resposta final em 11.
+- **Estado:** commit d8a4c48, feito pelo pesquisador.
 
 ### Lote 56: as duplicatas da ciência
 
