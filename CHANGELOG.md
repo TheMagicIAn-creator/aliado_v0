@@ -5,6 +5,27 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.9.0] — 2026-10-23
+
+Lotes 45 a 60:
+- **As correções do relatório de eficiência e o modelo local mais certeiro:** as citações, a parada cedo, o roteador,
+  o raciocínio desligado na leitura de páginas, as regras sem identificador de exemplo e o cache q4_0 no Ollama.
+- **A ciência e o mestrado em pastas com nomes em português**, uma por etapa do método.
+- **O contrato da rodada:** a identidade e a matriz de erros.
+- **A evidência espectral descritiva,** por série de Fourier.
+- **As duplicatas da ciência num lugar só.**
+- **A limpeza do disco.**
+
+### Lote 60: o fechamento da 0.9.0
+
+- **A versão:** passa a 0.9.0, com o CHANGELOG, o README e o roteiro atualizados.
+- **O pacote:** o wheel é montado numa cópia limpa dos arquivos versionados, e as notas da versão saem junto.
+- **As conferências:**
+  - a bateria completa, com os testes com os dados reais;
+  - a equivalência da ciência;
+  - as conferências extras do pacote.
+- **Estado:** sem commit; o commit, a tag `v0.9.0` e o push ficam com o pesquisador.
+
 ### Lote 59: a limpeza do disco
 
 - **12,8 GiB para a Lixeira do Windows**, com a autorização do pesquisador:
@@ -17,7 +38,7 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 - **Fica:** a cópia fixa das medições (`tmp/lote-46/medicao`) e os registros de cada medição.
 - **No repositório:** sai a cópia `.txt` do diagnóstico de 20/10, e `.smart-env/` e `.codex-remote-attachments/`
   entram no `.gitignore`.
-- **Estado:** sem commit; o commit fica com o pesquisador.
+- **Estado:** commit 29a5b43, feito pelo pesquisador.
 
 ### Lote 58: o cache q4_0 medido no modelo local
 
@@ -30,8 +51,8 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 - **O Ollama voltou para o q8_0,** a pedido do pesquisador. Depois do commit, ele decidiu ficar com o q4_0: a
   variável foi trocada, o Ollama reiniciou às 23:52 de 22/10 (o log confirma o q4_0), e o README passou a recomendá-lo.
 - **O log do Ollama:** guarda a configuração de cada início, mas não o carregamento do modelo nem os erros 500.
-- **Estado:** o produto não muda; commit a662c66, feito pelo pesquisador. A adoção do q4_0 no README veio depois,
-  sem commit.
+- **Estado:** o produto não muda; commit a662c66, feito pelo pesquisador. A adoção do q4_0 no README veio no commit
+  296c9c8.
 
 ### Lote 57: as regras de citação sem identificador de exemplo
 
@@ -176,7 +197,7 @@ O relatório de eficiência do modelo local foi conferido com as medições; a v
   marca caíram de 4 para 2.
 - **Estado:** validado localmente, com 827 testes; commit 71afeed, com o lote 45.
 
-## [0.8.0] — em fechamento local (20/10/2026)
+## [0.8.0] — 2026-10-21
 
 Lotes 37 a 44: o modelo local (Ollama, `qwen3.5:9b`) como principal, com o Gemini Flash só no limite dele, e a leitura
 das páginas da biblioteca sem pendências falsas. Entram também as correções feitas depois da 0.7.0.

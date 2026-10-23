@@ -545,7 +545,8 @@ não dá para separá-los em commits.
 | 56 | As duplicatas da ciência: `from_counts` na ciência geral, o comissionamento num lugar só e as janelas por hora como argumento | Feito em 22/10/2026: equivalência sem diferença; os 12 testes com os dados reais passaram depois; commit 2155b87 ([spec 0056](specs/0056-duplicatas-da-ciencia.md), [validação](migracao/validacao-lote-56.md)) |
 | 57 | As regras de citação sem o exemplo `[K1][K2]`, que o local copiou no lote 48 (PRV-06) | Feito em 22/10/2026; commit d8a4c48; medido depois com o local real: nenhuma cópia de exemplo nas 16 perguntas ([spec 0057](specs/0057-regras-sem-exemplo.md), [validação](migracao/validacao-lote-57.md)) |
 | 58 | O cache q4_0 do Ollama medido nas 16 perguntas, com critério fixado antes, contra o q8_0 | Medido em 22/10/2026: passou nos cinco itens; 248 MiB a mais de folga na placa; commit a662c66; depois, o pesquisador adotou o q4_0 ([spec 0058](specs/0058-cache-q4-medido.md), [validação](migracao/validacao-lote-58.md)) |
-| 59 | A limpeza do disco: 22 itens (12,8 GiB) para a Lixeira do Windows, a cópia `.txt` repetida fora do Git e duas pastas de ferramentas no `.gitignore` | Feito em 23/10/2026, sem commit: o espaço volta quando o pesquisador esvaziar a Lixeira ([spec 0059](specs/0059-limpeza.md), [validação](migracao/validacao-lote-59.md)) |
+| 59 | A limpeza do disco: 22 itens (12,8 GiB) para a Lixeira do Windows, a cópia `.txt` repetida fora do Git e duas pastas de ferramentas no `.gitignore` | Feito em 23/10/2026; commit 29a5b43: o espaço volta quando o pesquisador esvaziar a Lixeira ([spec 0059](specs/0059-limpeza.md), [validação](migracao/validacao-lote-59.md)) |
+| 60 | O fechamento da 0.9.0: versão, CHANGELOG, README, wheel de uma cópia limpa e notas da versão | Feito em 23/10/2026, sem commit; a tag `v0.9.0` e o push ficam com o pesquisador ([spec 0060](specs/0060-fechamento-0-9-0.md), [validação](migracao/validacao-lote-60.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -785,6 +786,9 @@ não dá para separá-los em commits.
   - O reordenador segue na pasta padrão: `reranker-bge` nunca funcionaria (hash diferente), e `reranker-mmarco` era
     cópia exata dela.
 
+- **O lote 60:** o pesquisador pediu "Finaliza". A 0.9.0 fecha os lotes 45 a 60, com a bateria completa, a
+  equivalência e o wheel de uma cópia limpa. O commit, a tag e o push ficam com ele.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -827,6 +831,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 57 | [0057](specs/0057-regras-sem-exemplo.md) |
 | 58 | [0058](specs/0058-cache-q4-medido.md) |
 | 59 | [0059](specs/0059-limpeza.md) |
+| 60 | [0060](specs/0060-fechamento-0-9-0.md) |
 
 ## Fica para a v1
 

@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "batch": "60",
+  "version": "0.9.0",
+  "status": "release_closed_locally_uncommitted",
+  "base_commit": "29a5b43",
+  "decision": "pesquisador, 23/10/2026: \"Finaliza\" e a aprovação do plano do fechamento, valendo como o OK para a bateria com os dados reais; o commit, a tag v0.9.0 e o push ficam com ele",
+  "spec": "docs/specs/0060-fechamento-0-9-0.md",
+  "validation": "docs/migracao/validacao-lote-60.md",
+  "requirements": {
+    "added": [],
+    "changed": [],
+    "tested_again": []
+  },
+  "batches_in_release": "45 a 60",
+  "checks": {
+    "versao_instalada": "0.9.0",
+    "pytest_bateria_completa": {
+      "grupos": 36,
+      "passed": 863,
+      "failed": 0,
+      "skipped": 0,
+      "treinos": 18,
+      "seconds": 226.16,
+      "pico_memoria_mib": 559.3
+    },
+    "equivalencia": {
+      "iguais": 28,
+      "diferentes": 0,
+      "faltando": 0,
+      "arquivos_novos": [
+        "avaliacao/erros.npz",
+        "evidencia_espectral/evidencia.json"
+      ],
+      "primeira_comparacao": "inicio/relatorio.md diferia só na data curta da rodada, meio (22/10) contra meio (23/10); a ferramenta passou a escondê-la"
+    },
+    "autoteste_da_equivalencia": {
+      "iguais_sem_diferenca": true,
+      "arquivos_comparados": 30,
+      "alterada_com_diferenca": true
+    },
+    "importacoes_que_nao_resolvem": 0,
+    "pastas_vazias": 0,
+    "comandos": {
+      "ciencia treinar-gpvs --help": 0,
+      "experimento listar": 0,
+      "experimento pdf": 0
+    },
+    "wheel": {
+      "arquivo": "dist/v0.9.0/aliado-0.9.0-py3-none-any.whl",
+      "bytes": 899358,
+      "sha256": "ab2025b1eb978dad2c8a46c4c480408a09b9479d01c431df7bfea214aabcee2d",
+      "arquivos": 197,
+      "modulos_py": 156,
+      "importados_do_wheel": 154,
+      "faltando": 0
+    },
+    "pytest_selecao_rapida_do_pedido": {
+      "passed": 44
+    },
+    "ruff": {
+      "exit_code": 0
+    },
+    "git_diff_check": "sem apontamentos"
+  },
+  "evidence": {
+    "bateria": "tmp/lote-60/bateria/pytest.json",
+    "equivalencia": "tmp/lote-60/equivalencia.log",
+    "autoteste": "tmp/lote-60/autoteste.log",
+    "verificacao": "tmp/lote-60/verificacao.json",
+    "notas": "tmp/releases/v0.9.0.md"
+  },
+  "paid_calls": 0,
+  "local_calls": 0,
+  "downloads": 0,
+  "files": {
+    "CHANGELOG.md": "da0b5c297c83763c6d2fe0e0c658a45f92dbbad317358a24892b98d4ad1f4b80",
+    "README.md": "68e0e8b00d16025fd19d8cd09fb9fc62dea10428ab789178fe4e4e610dc19e3f",
+    "docs/migracao/validacao-lote-60.md": "f10967ee41bd95413d6abbd7ff1c7a3a6a3a8c1d4f4a765602210ba7eab99ade",
+    "docs/roteiro-v0.md": "13cfe035de5d064755fffc60a02b1496e8622bf8ea8245ecdbb8f8a24f3265af",
+    "docs/specs/0060-fechamento-0-9-0.md": "99c98ff373368b3283e48cbec02cac193ed6d3c49e0ba7579b2f230e325cf9e9",
+    "ferramentas/equivalencia.py": "21b3fd7ea75d8a4e06e25efdd9495e55a49a077ff7d8f38112753cbc75eecd10",
+    "pyproject.toml": "c83acf6ab19f7ebde92119ab8a55c0ff07980bc82da046d514ca4655c5791485"
+  }
+}

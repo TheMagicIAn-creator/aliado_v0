@@ -29,8 +29,10 @@ WORK = ROOT / "tmp" / "equivalencia" / "trabalho"
 ROWS = 72_000
 PARAMETERS = ("separacao=2", "sementes=42,13", "teto_epocas=3")
 MASKED_KEYS = frozenset({"duracao_s", "versao", "codigo"})
+# Lote 60: também a data curta entre parênteses, como "meio (22/10)" no relatório do início, que só difere quando a
+# comparação é feita em outro dia; dia e mês válidos, para não esconder uma fração como "(13/16)".
 DATES = re.compile(r"\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:[+-]\d{2}:\d{2}|Z)?)?|\d{2}/\d{2}/\d{4}"
-                   r"(?:,? (?:às )?\d{2}:\d{2}(?::\d{2})?)?")
+                   r"(?:,? (?:às )?\d{2}:\d{2}(?::\d{2})?)?|\((?:0[1-9]|[12]\d|3[01])/(?:0[1-9]|1[0-2])\)")
 
 
 def run_experiment(work: Path) -> Path:
