@@ -22,3 +22,6 @@ htmlcov/
 .idea/
 .vscode/
 .obsidian/
+# Pastas de ferramentas externas (o índice do Obsidian Smart Connections e os anexos do Codex), fora do Git.
+.smart-env/
+.codex-remote-attachments/

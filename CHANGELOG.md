@@ -5,6 +5,20 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 59: a limpeza do disco
+
+- **12,8 GiB para a Lixeira do Windows**, com a autorização do pesquisador:
+  - as cópias da biblioteca das medições dos lotes 29 a 45;
+  - dois modelos de reordenação sem uso;
+  - o catálogo sintético da validação do lote 32;
+  - dois caches de erros antigos;
+  - itens pequenos.
+- **O espaço volta quando ele esvaziar a Lixeira.**
+- **Fica:** a cópia fixa das medições (`tmp/lote-46/medicao`) e os registros de cada medição.
+- **No repositório:** sai a cópia `.txt` do diagnóstico de 20/10, e `.smart-env/` e `.codex-remote-attachments/`
+  entram no `.gitignore`.
+- **Estado:** sem commit; o commit fica com o pesquisador.
+
 ### Lote 58: o cache q4_0 medido no modelo local
 
 - **A medição:** as 16 perguntas com o cache do Ollama em q4_0, comparadas com a rodada em q8_0 de 22/10. O critério

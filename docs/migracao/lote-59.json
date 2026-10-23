@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "batch": "59",
+  "version": "0.8.0 (sem mudança; entrada em Não lançado, rumo à 0.9.0)",
+  "status": "done_uncommitted_items_in_recycle_bin",
+  "base_commit": "296c9c8",
+  "decision": "pesquisador, 23/10/2026: \"Apaga tudo para ter mais espaço\", sobre a lista de 15 itens mais os pequenos; os itens vão para a Lixeira do Windows, e esvaziá-la fica com ele",
+  "spec": "docs/specs/0059-limpeza.md",
+  "validation": "docs/migracao/validacao-lote-59.md",
+  "requirements": {
+    "added": [],
+    "changed": [],
+    "tested_again": []
+  },
+  "product_changed": false,
+  "checks": {
+    "itens_na_lixeira": 22,
+    "itens_com_erro": 0,
+    "mib": 13151,
+    "lixeira_gb": {
+      "antes": 1.83,
+      "depois": 14.65,
+      "capacidade": 25.8
+    },
+    "reordenador_padrao": {
+      "pasta": "data/models/reranker",
+      "notas": [
+        4.84,
+        -9.22
+      ]
+    },
+    "pytest_bateria_rapida": {
+      "grupos": 36,
+      "passed": 830,
+      "failed": 0,
+      "skipped": 0,
+      "seconds": 129.87
+    },
+    "mantido": "tmp/lote-46/medicao"
+  },
+  "removed_from_git": [
+    "docs/revisao/2026-10-20-diagnostico-arquitetura-complementado.txt"
+  ],
+  "evidence": {
+    "lista": "tmp/lote-59/lista.tsv",
+    "execucao": "tmp/lote-59/lixeira.log",
+    "bateria": "tmp/lote-59/bateria-rapida.log"
+  },
+  "paid_calls": 0,
+  "local_calls": 0,
+  "downloads": 0,
+  "files": {
+    ".gitignore": "2c827f7bb04bb00660a84362eaafe68d3b39af03f6c3e8b835f111af68858c22",
+    "CHANGELOG.md": "0c16471cfb9347c41ad79d86cf9684cb4135c8bfa38e45f54447e12584807c71",
+    "docs/migracao/validacao-lote-59.md": "e6fd29767ace693311e74601c153eedb8ab9c090dd956398b5464f6d4062c1ea",
+    "docs/roteiro-v0.md": "134f3abe1793ebe81e776e6e9f3a090b59b08ec7f935a4d7f119ead96c678dbd",
+    "docs/specs/0059-limpeza.md": "84d9ebb277022d2d079f1a76007d6dd851760ffdfaa2e95fb973680efc7b2ef4"
+  }
+}
