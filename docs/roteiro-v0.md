@@ -549,7 +549,8 @@ não dá para separá-los em commits.
 | 60 | O fechamento da 0.9.0: versão, CHANGELOG, README, wheel de uma cópia limpa e notas da versão | Feito em 23/10/2026; commit 385ab5d, tag `v0.9.0` e release publicados no GitHub ([spec 0060](specs/0060-fechamento-0-9-0.md), [validação](migracao/validacao-lote-60.md)) |
 | 61 | O intervalo de páginas abreviado nas citações (`[K…p1–8]`), com as mesmas condições da forma inteira (BIB-05) | Feito em 23/10/2026, sem modelo; commit 6cc1001; lançado na 0.9.1 ([spec 0061](specs/0061-intervalo-abreviado.md), [validação](migracao/validacao-lote-61.md)) |
 | 62 | O lançamento da 0.9.1: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 23/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0062](specs/0062-lancamento-0-9-1.md), [validação](migracao/validacao-lote-62.md)) |
-| 63 | O modo sem internet (`AL_IADO_OFFLINE=1` ou `aliado web --sem-internet`): só o modelo local responde, o que precisaria do Gemini ou da web é recusado com o motivo, e um selo fica no topo da tela | Feito em 23/10/2026, sem modelo; commit f920740 ([spec 0063](specs/0063-sem-internet.md)) |
+| 63 | O modo sem internet (`AL_IADO_OFFLINE=1` ou `aliado web --sem-internet`): só o modelo local responde, o que precisaria do Gemini ou da web é recusado com o motivo, e um selo fica no topo da tela | Feito em 23/10/2026, sem modelo; commit f920740; lançado na 0.9.2 ([spec 0063](specs/0063-sem-internet.md)) |
+| 64 | O lançamento da 0.9.2: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 24/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0064](specs/0064-lancamento-0-9-2.md), [validação](migracao/validacao-lote-64.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -803,6 +804,10 @@ não dá para separá-los em commits.
 - **O lote 62:** o pesquisador pediu "Faça. Não deixe nada pendente." O lote 61, a única mudança fora de uma versão,
   sai na 0.9.1, com a mesma conferência da 0.9.0, a tag, o push e a release, todos autorizados por ele.
 
+- **O lote 64:** o pesquisador pediu "lançar a 0.9.2 com o modo sem internet". Pelo versionamento semântico, uma
+  função nova pediria 0.10.0; perguntado, ele escolheu 0.9.2. A conferência é a mesma da 0.9.1, e o push fica com
+  ele, porque o hook do projeto bloqueia o do assistente.
+
 ## Specs de cada lote
 
 As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale hoje está em
@@ -849,6 +854,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 61 | [0061](specs/0061-intervalo-abreviado.md) |
 | 62 | [0062](specs/0062-lancamento-0-9-1.md) |
 | 63 | [0063](specs/0063-sem-internet.md) |
+| 64 | [0064](specs/0064-lancamento-0-9-2.md) |
 
 ## Fica para a v1
 

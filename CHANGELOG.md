@@ -5,6 +5,27 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [0.9.2] — 2026-10-24
+
+Lotes 63 e 64: o modo sem internet e o lançamento da versão.
+
+### Lote 64: o lançamento da 0.9.2
+
+- **A versão:** passa a 0.9.2, com o CHANGELOG, o README e o roteiro atualizados. O pesquisador escolheu 0.9.2, e não
+  0.10.0, para uma função nova que só liga por pedido.
+- **As conferências:** a bateria completa, com os testes com os dados reais, a equivalência da ciência e o wheel de uma
+  cópia limpa.
+- **A publicação:** o commit, a tag `v0.9.2`, o push e a release no GitHub, com a autorização do pesquisador.
+
+### Lote 63: o modo sem internet
+
+- **Como liga:** `AL_IADO_OFFLINE=1` no `.env`, ou `aliado web --sem-internet`. Sem isso, nada muda.
+- **O que faz:** só o modelo local responde. Toda chamada que iria ao Gemini é recusada antes de abrir a conexão, com o
+  motivo (PRV-08). A busca na web, a leitura ampla e a conferência na web são recusadas na hora, e a resposta local
+  que o Gemini refaria fica como veio (INT-02).
+- **Na tela:** um selo "Sem internet" no topo, com uma nota ao passar o mouse.
+- **Estado:** commits f920740 e 18eb983.
+
 ## [0.9.1] — 2026-10-23
 
 Lotes 61 e 62: a forma abreviada do intervalo de páginas nas citações (BIB-05) e o lançamento da versão.
