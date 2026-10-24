@@ -551,7 +551,8 @@ não dá para separá-los em commits.
 | 62 | O lançamento da 0.9.1: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 23/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0062](specs/0062-lancamento-0-9-1.md), [validação](migracao/validacao-lote-62.md)) |
 | 63 | O modo sem internet (`AL_IADO_OFFLINE=1` ou `aliado web --sem-internet`): só o modelo local responde, o que precisaria do Gemini ou da web é recusado com o motivo, e um selo fica no topo da tela | Feito em 23/10/2026, sem modelo; commit f920740; lançado na 0.9.2 ([spec 0063](specs/0063-sem-internet.md)) |
 | 64 | O lançamento da 0.9.2: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 24/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0064](specs/0064-lancamento-0-9-2.md), [validação](migracao/validacao-lote-64.md)) |
-| 65 | A limpeza sem perda, o grupo A do [levantamento de 24/10](revisao/2026-10-24-levantamento-exclusoes.md): 43 arquivos compilados órfãos e 16 pastas para a Lixeira (52,8 MiB), 10 configurações quebradas do servidor de teste e cerca de 70 linhas de código sem uso | Feito em 24/10/2026, sem modelo; sem commit ([spec 0065](specs/0065-limpeza-sem-perda.md)) |
+| 65 | A limpeza sem perda, o grupo A do [levantamento de 24/10](revisao/2026-10-24-levantamento-exclusoes.md): 43 arquivos compilados órfãos e 16 pastas para a Lixeira (52,8 MiB), 10 configurações quebradas do servidor de teste e cerca de 70 linhas de código sem uso | Feito em 24/10/2026, sem modelo; commit 7f58d37 ([spec 0065](specs/0065-limpeza-sem-perda.md)) |
+| 66 | O resto da limpeza: o comando `aliado biblioteca limpar-versoes` para as indexações antigas (BIB-06), o `transformers` fora do ambiente e o provedor da OpenAI fora do código | Feito em 24/10/2026, sem modelo; sem commit ([spec 0066](specs/0066-limpeza-restante.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -857,6 +858,7 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 63 | [0063](specs/0063-sem-internet.md) |
 | 64 | [0064](specs/0064-lancamento-0-9-2.md) |
 | 65 | [0065](specs/0065-limpeza-sem-perda.md) |
+| 66 | [0066](specs/0066-limpeza-restante.md) |
 
 ## Fica para a v1
 

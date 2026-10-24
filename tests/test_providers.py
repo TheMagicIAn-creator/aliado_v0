@@ -7,109 +7,6 @@ import pytest
 from aliado.llm.contracts import LLMRequest
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.providers.gemini import GeminiProvider
-from aliado.llm.providers.openai import OpenAIProvider
-
-
-class Responses:
-    def __init__(self):
-        self.calls = []
-
-    def create(self, **kwargs):
-        self.calls.append(kwargs)
-        if kwargs.get("stream"):
-            return iter(
-                [
-                    SimpleNamespace(type="response.created"),
-                    SimpleNamespace(type="response.output_text.delta", delta="res"),
-                    SimpleNamespace(type="response.output_text.delta", delta="posta"),
-                ]
-            )
-        return SimpleNamespace(
-            output_text='{"status":"ok"}',
-            usage=SimpleNamespace(input_tokens=10, output_tokens=4, total_tokens=14),
-        )
-
-
-def test_openai_structured_output_e_usage_sem_chamada_real():
-    responses = Responses()
-    provider = OpenAIProvider(client=SimpleNamespace(responses=responses))
-    request = LLMRequest(
-        task_type="evidence_audit",
-        messages=[{"role": "user", "content": "audite"}],
-        structured_output={"type": "object", "properties": {"status": {"type": "string"}}},
-        reasoning_level="low",
-        max_output_tokens=300,
-    )
-    result = provider.generate(request, model_id="modelo-configurado")
-    assert result.structured_data == {"status": "ok"}
-    assert result.usage.total_tokens == 14
-    assert responses.calls[0]["reasoning"] == {"effort": "low"}
-    assert responses.calls[0]["text"]["format"]["type"] == "json_schema"
-
-
-def test_openai_stream_sem_chamada_real():
-    responses = Responses()
-    provider = OpenAIProvider(client=SimpleNamespace(responses=responses))
-    request = LLMRequest(
-        task_type="simple_chat",
-        messages=[{"role": "user", "content": "oi"}],
-    )
-    chunks = list(provider.stream(request, model_id="modelo-configurado"))
-    assert "".join(item.content for item in chunks) == "resposta"
-
-
-def test_openai_le_blocos_e_calcula_total_quando_sdk_nao_fornece():
-    content = [SimpleNamespace(text="parte 1"), SimpleNamespace(text=" parte 2")]
-    response = SimpleNamespace(
-        output=[SimpleNamespace(content=content)],
-        usage=SimpleNamespace(input_tokens=8, output_tokens=2),
-    )
-    responses = SimpleNamespace(create=lambda **_kwargs: response)
-    provider = OpenAIProvider(client=SimpleNamespace(responses=responses))
-    result = provider.generate(
-        LLMRequest(task_type="factual_short", messages=[{"content": "x"}]),
-        model_id="modelo",
-    )
-    assert result.content == "parte 1 parte 2"
-    assert result.usage.total_tokens == 10
-
-
-def test_openai_rejeita_json_estruturado_que_nao_seja_objeto():
-    responses = SimpleNamespace(
-        create=lambda **_kwargs: SimpleNamespace(output_text="[1, 2]", usage=None)
-    )
-    provider = OpenAIProvider(client=SimpleNamespace(responses=responses))
-    request = LLMRequest(
-        task_type="evidence_audit",
-        messages=[{"content": "x"}],
-        structured_output={"type": "object"},
-    )
-    with pytest.raises(ValueError):
-        provider.generate(request, model_id="modelo")
-
-
-def test_openai_sem_configuracao_falha_sem_tentar_rede(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    provider = OpenAIProvider(api_key=None)
-    with pytest.raises(ProviderNotConfiguredError):
-        provider.generate(
-            LLMRequest(task_type="simple_chat", messages=[{"content": "oi"}]),
-            model_id="modelo",
-        )
-
-
-def test_openai_classifica_erro_do_sdk():
-    class RateLimitError(RuntimeError):
-        status_code = 429
-
-    responses = SimpleNamespace(
-        create=lambda **_kwargs: (_ for _ in ()).throw(RateLimitError("limite"))
-    )
-    provider = OpenAIProvider(client=SimpleNamespace(responses=responses))
-    request = LLMRequest(task_type="simple_chat", messages=[{"content": "oi"}])
-    with pytest.raises(ProviderError) as captured:
-        provider.generate(request, model_id="modelo")
-    assert captured.value.transient is True
 
 
 def test_gemini_provider_texto_json_e_stream_sem_chamada_real():
@@ -272,7 +169,6 @@ def test_modelos_gemini_declaram_a_capacidade_multimodal(monkeypatch):
     monkeypatch.setenv("AL_IADO_GEMINI_MODEL_FLASH_LITE", "modelo-flash-lite")
     models = {model["alias"]: model for model in build_default_gateway().registry.status()["models"]}
     assert "multimodal" in models["flash"]["capabilities"] and "multimodal" in models["flash_lite"]["capabilities"]
-    assert "multimodal" not in models["luna"]["capabilities"]
 
 
 def test_gemini_cria_um_cliente_so_com_varias_threads(monkeypatch):

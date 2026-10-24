@@ -1,6 +1,6 @@
 # Spec 0065 — a limpeza sem perda
 
-Estado: feito em 24/10/2026, sem commit; o commit fica com o pesquisador. Os arquivos estão na Lixeira do Windows: o
+Estado: feito em 24/10/2026; commit 7f58d37, feito pelo pesquisador. Os arquivos estão na Lixeira do Windows: o
 espaço volta quando ele a esvaziar.
 
 ## Propósito e decisões

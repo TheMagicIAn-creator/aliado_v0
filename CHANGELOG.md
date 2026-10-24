@@ -5,6 +5,14 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 66: o resto da limpeza
+
+- **As indexações antigas:** o comando `aliado biblioteca limpar-versoes` mostra as que nenhum documento usa e, com
+  `--executar`, apaga-as e compacta o catálogo (BIB-06). Na biblioteca real, são 25 indexações e cerca de 300 MB.
+- **O ambiente:** saem o `transformers` e três pacotes que só ele usava (cerca de 104 MB).
+- **A OpenAI:** sai o provedor, nunca usado, com os modelos luna, terra e sol, a opção `--provider openai` e os testes
+  dele.
+
 ### Lote 65: a limpeza sem perda
 
 - **O levantamento:** o que pode sair do AL-IAdo, em `docs/revisao/2026-10-24-levantamento-exclusoes.md`.

@@ -11,7 +11,6 @@ from aliado.llm.contracts import LLMRequest, LLMResult, LLMStreamChunk
 from aliado.llm.providers.base import ProviderError
 from aliado.llm.providers.gemini import GeminiProvider
 from aliado.llm.providers.local import LocalLimit, LocalOutOfReach, LocalProvider
-from aliado.llm.providers.openai import OpenAIProvider
 from aliado.llm.providers.registry import (
     ModelRegistration,
     ModelStatus,
@@ -166,7 +165,6 @@ def _model_id(*names: str, default: str | None = None) -> str | None:
 def build_default_gateway(*, files=None) -> ProviderGateway:
     """`files`: o registro local do que for enviado ao serviço de arquivos do Google (leitura integral, lote 30)."""
     gateway = ProviderGateway(offline=offline_from_env())
-    gateway.register_provider("openai", OpenAIProvider())
     gateway.register_provider("google", GeminiProvider(files=files))
     gateway.register_provider(LOCAL[0], LocalProvider())
     local = _model_id("AL_IADO_LOCAL_MODEL")
@@ -179,22 +177,6 @@ def build_default_gateway(*, files=None) -> ProviderGateway:
             capabilities=frozenset({"text", "structured_output", "multimodal"}),
         )
     )
-
-    openai_models = {
-        "luna": _model_id("AL_IADO_OPENAI_MODEL_LUNA"),
-        "terra": _model_id("AL_IADO_OPENAI_MODEL_TERRA"),
-        "sol": _model_id("AL_IADO_OPENAI_MODEL_SOL"),
-    }
-    for alias, model_id in openai_models.items():
-        gateway.register_model(
-            ModelRegistration(
-                provider="openai",
-                alias=alias,
-                model_id=model_id,
-                status=ModelStatus.OPERATIONAL if model_id else ModelStatus.DISABLED,
-                capabilities=frozenset({"text", "structured_output"}),
-            )
-        )
 
     flash_lite = _model_id("AL_IADO_GEMINI_MODEL_FLASH_LITE")
     flash = _model_id("AL_IADO_GEMINI_MODEL_FLASH")

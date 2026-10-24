@@ -67,6 +67,28 @@ def test_an_original_shared_with_another_document_stays(tmp_path):
     assert lib.verify()["ok"]
 
 
+def test_old_index_runs_are_shown_and_only_removed_on_request(tmp_path):
+    """BIB-06: sem `execute`, só a conta; com ele, a indexação antiga sai com os trechos e a pasta, e a ativa fica."""
+    lib = library(tmp_path)
+    source = put(tmp_path, "vida.md", "# Vida\nMTTF é o tempo médio até a falha.")
+    first = lib.add(source)
+    second = lib.add(source, reprocess=True)
+    kept = lib.add(put(tmp_path, "reparo.md", "# Reparo\nO MTTR mede o tempo médio de reparo."))
+    assert first["run_id"] != second["run_id"] and first["id"] == second["id"]
+    old = next((lib.root / "extracted" / first["id"]).glob(f"v*/{first['run_id']}"))
+    catalog = (lib.root / "catalog.sqlite3").read_bytes()
+
+    report = lib.prune_runs()
+    assert report == {"indexacoes": 1, "trechos": first["chunks"], "bytes": report["bytes"], "sobras": [],
+                      "executado": False} and report["bytes"] > 0
+    assert old.is_dir() and (lib.root / "catalog.sqlite3").read_bytes() == catalog
+
+    assert lib.prune_runs(execute=True) | {"executado": False} == report
+    assert not old.exists() and next((lib.root / "extracted" / first["id"]).glob(f"v*/{second['run_id']}")).is_dir()
+    assert lib.prune_runs()["indexacoes"] == 0 and lib.verify()["ok"]
+    assert lib.search("mttf")[0]["document_id"] == first["id"] and lib.search("reparo")[0]["document_id"] == kept["id"]
+
+
 def test_unknown_document_is_refused(tmp_path):
     lib = library(tmp_path)
     with pytest.raises(ValueError, match="não encontrado"):

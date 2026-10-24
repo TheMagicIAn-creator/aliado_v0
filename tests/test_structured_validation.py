@@ -6,19 +6,17 @@ import pytest
 
 from aliado.llm.contracts import LLMRequest
 from aliado.llm.providers.gemini import GeminiProvider
-from aliado.llm.providers.openai import OpenAIProvider
 
 
 def provider_with_response(provider_class, content):
     response = SimpleNamespace(output_text=content, text=content)
     client = SimpleNamespace(
-        responses=SimpleNamespace(create=lambda **kwargs: response),
         models=SimpleNamespace(generate_content=lambda **kwargs: response),
     )
     return provider_class(client=client)
 
 
-@pytest.mark.parametrize("provider_class", [OpenAIProvider, GeminiProvider])
+@pytest.mark.parametrize("provider_class", [GeminiProvider])
 @pytest.mark.parametrize("content", ["", "  ", "null", "[]", '"texto"', "0", "true", "{inválido}"])
 def test_structured_output_requires_json_object(provider_class, content):
     provider = provider_with_response(provider_class, content)
@@ -31,7 +29,7 @@ def test_structured_output_requires_json_object(provider_class, content):
         provider.generate(request, model_id="modelo-simulado")
 
 
-@pytest.mark.parametrize("provider_class", [OpenAIProvider, GeminiProvider])
+@pytest.mark.parametrize("provider_class", [GeminiProvider])
 @pytest.mark.parametrize("content, expected", [("{}", {}), ('{"status":"ok"}', {"status": "ok"})])
 def test_structured_output_accepts_objects_including_empty(provider_class, content, expected):
     provider = provider_with_response(provider_class, content)
@@ -45,7 +43,7 @@ def test_structured_output_accepts_objects_including_empty(provider_class, conte
     assert result.structured_data == expected
 
 
-@pytest.mark.parametrize("provider_class", [OpenAIProvider, GeminiProvider])
+@pytest.mark.parametrize("provider_class", [GeminiProvider])
 @pytest.mark.parametrize("content", ["", "null", "resposta comum"])
 def test_plain_text_is_not_interpreted_as_json(provider_class, content):
     provider = provider_with_response(provider_class, content)

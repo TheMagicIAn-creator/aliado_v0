@@ -15,10 +15,9 @@ from aliado.llm.contracts import LLMRequest
 from aliado.llm.providers import ModelRegistration, ProviderGateway, build_default_gateway
 from aliado.llm.providers.base import ProviderNotConfiguredError
 from aliado.llm.providers.gemini import GeminiProvider
-from aliado.llm.providers.openai import OpenAIProvider
 
 
-def test_both_adapters_preserve_instructions_context_and_conversation():
+def test_gemini_adapter_preserves_instructions_context_and_conversation():
     request = LLMRequest(
         task_type="scientific_reasoning", context="Contexto controlado pelo chamador",
         messages=[
@@ -28,12 +27,7 @@ def test_both_adapters_preserve_instructions_context_and_conversation():
             {"role": "user", "content": "Pergunta atual"},
         ],
     )
-    openai = OpenAIProvider._kwargs(request, "configured")
     gemini = GeminiProvider._kwargs(request, "configured")
-    assert openai["store"] is False
-    assert [item["role"] for item in openai["input"]] == [
-        "developer", "developer", "user", "assistant", "user",
-    ]
     assert gemini["config"]["system_instruction"] == "Contexto controlado pelo chamador\n\nRegra do núcleo"
     assert [item["role"] for item in gemini["contents"]] == ["user", "model", "user"]
     assert "Documento externo" not in gemini["config"]["system_instruction"]

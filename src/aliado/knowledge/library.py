@@ -663,6 +663,43 @@ class DocumentLibrary:
             "duplicate": False, "chunks": len(indexed), "original": str(self._path(original)),
         }
 
+    def prune_runs(self, *, execute: bool = False) -> dict:
+        """As indexações que nenhum documento usa (lote 66): os trechos, as pastas e o espaço que ocupam.
+
+        Sem `execute`, só conta. Com ele, apaga e compacta o catálogo; a indexação ativa, as versões dos documentos,
+        os originais, as figuras descritas e as fichas ficam. Sem cópia: não tem volta."""
+        if not (self.root / "catalog.sqlite3").exists():
+            return {"indexacoes": 0, "trechos": 0, "bytes": 0, "sobras": [], "executado": execute}
+        with self._connect() as db:
+            active = {Path(row["json_path"]).parent for row in db.execute(
+                "SELECT r.json_path FROM runs r JOIN documents d ON d.active_run=r.id")}
+            old = db.execute("""SELECT id, json_path FROM runs
+                WHERE id NOT IN (SELECT active_run FROM documents WHERE active_run IS NOT NULL)""").fetchall()
+            ids = [row["id"] for row in old]
+            marks = ",".join("?" * len(ids))
+            chunks = db.execute(f"SELECT COUNT(*) FROM chunks WHERE run_id IN ({marks})", ids).fetchone()[0] if ids else 0
+        # Só a pasta própria de cada indexação, em extracted/<documento>/v<n>/<indexação>, e nunca a de uma ativa.
+        folders = [folder for folder in (self._path(Path(row["json_path"]).parent.as_posix()) for row in old)
+                   if folder.parent.parent.parent == self.root / "extracted"
+                   and folder.relative_to(self.root) not in active]
+        size = sum(f.stat().st_size for folder in folders if folder.exists() for f in folder.rglob("*") if f.is_file())
+        report = {"indexacoes": len(ids), "trechos": chunks, "bytes": size, "sobras": [], "executado": execute}
+        if not execute or not ids:
+            return report
+        with self._connect(create=True) as db, db:
+            db.execute(f"DELETE FROM chunk_fts WHERE id IN (SELECT id FROM chunks WHERE run_id IN ({marks}))", ids)
+            db.execute(f"DELETE FROM chunks WHERE run_id IN ({marks})", ids)
+            db.execute(f"DELETE FROM runs WHERE id IN ({marks})", ids)
+        with self._connect(create=True) as db:
+            db.execute("VACUUM")  # devolve ao disco o espaço das linhas apagadas
+        for folder in folders:
+            try:
+                if folder.exists():
+                    shutil.rmtree(folder)
+            except OSError:
+                report["sobras"].append(folder.relative_to(self.root).as_posix())
+        return report
+
     def delete(self, doc_id: str) -> dict:
         """Apaga de vez um documento: todas as versões do título, extrações, índice e ficha.
 

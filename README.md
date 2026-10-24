@@ -6,7 +6,7 @@ especialização. Versão **0.9.2**. As mudanças estão em [CHANGELOG.md](CHANG
 
 ## O que ele faz
 
-- **Conversa pelo navegador** com o Gemini ou a OpenAI, com skills que orientam cada tema.
+- **Conversa pelo navegador** com o modelo local e o Gemini, com skills que orientam cada tema.
 - **Biblioteca de referências:** PDF, Markdown e JSON enviados pelo chat, com OCR, busca local e citações com a página.
 - **Memória persistente:** lembra quem você é, o que você ensina e as conversas anteriores sobre o mesmo assunto. O que o agente deduz fica marcado para revisão, e correções não apagam o histórico.
 - **Busca na web** com as fontes citadas.
@@ -52,10 +52,9 @@ Nenhum teste chama provedores pagos ou acessa a rede. Os testes que usam os dado
 
 ## Configuração
 
-Copie `.env.example` para `.env`, que fica fora do Git, e preencha só o provedor que for usar:
+Copie `.env.example` para `.env`, que fica fora do Git, e preencha:
 
 - `GOOGLE_API_KEY` e os identificadores reais dos modelos: `AL_IADO_GEMINI_MODEL_FLASH` e `AL_IADO_GEMINI_MODEL_FLASH_LITE`. Por exemplo, `gemini-3.8-flash` e `gemini-3.5-flash-lite`.
-- Opcional: `OPENAI_API_KEY` e `AL_IADO_OPENAI_MODEL_LUNA`, `_TERRA` e `_SOL`.
 - Opcional: `AL_IADO_TESSERACT_CMD`, se o Tesseract estiver em outro lugar. A interface lê essa variável
   do `.env`; os comandos da biblioteca a leem das variáveis do sistema.
 
@@ -276,11 +275,13 @@ memória, para você ver no grafo do Obsidian como eles se ligam e crescem.
 .\.venv\Scripts\python.exe -m aliado biblioteca avaliar --biblioteca data/bibliotecas/principal --saida data/resultados/busca-001
 .\.venv\Scripts\python.exe -m aliado biblioteca reindexar --biblioteca data/bibliotecas/principal
 .\.venv\Scripts\python.exe -m aliado biblioteca figuras --biblioteca data/bibliotecas/principal
+.\.venv\Scripts\python.exe -m aliado biblioteca limpar-versoes --biblioteca data/bibliotecas/principal
 ```
 
 `reindexar` refaz os trechos a partir do texto já guardado, sem ler os arquivos de novo. `figuras` mostra
 as páginas com figura ou tabela ainda não descritas e a estimativa de tokens; só com `--executar` ele
-chama o modelo.
+chama o modelo. `limpar-versoes` mostra as indexações que a reindexação deixou para trás e o espaço delas; só com
+`--executar` ele as apaga, sem volta, e compacta o catálogo.
 
 `avaliar` mede a busca com as perguntas de referência de `data/avaliacao-busca/perguntas.json`,
 que ficam fora do Git. Com `--reescrever --env-file .env`, mede com a consulta reescrita, como no chat:

@@ -184,12 +184,10 @@ def test_erros_de_provedor_sao_classificados(message, transient, unavailable):
 
 
 def test_gateway_padrao_mapeia_aliases_sem_expor_chaves(monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "valor-local-nao-versionado")
-    monkeypatch.setenv("AL_IADO_OPENAI_MODEL_LUNA", "modelo-luna")
+    monkeypatch.setenv("GOOGLE_API_KEY", "valor-local-nao-versionado")
     monkeypatch.setenv("AL_IADO_GEMINI_MODEL_FLASH", "modelo-flash")
     status = build_default_gateway().status()
     aliases = {(item["provider"], item["alias"]): item for item in status["models"]}
-    assert aliases[("openai", "luna")]["model_id"] == "modelo-luna"
-    assert aliases[("openai", "terra")]["status"] == "disabled"
+    assert aliases[("google", "flash_lite")]["status"] == "disabled"
     assert aliases[("google", "flash")]["model_id"] == "modelo-flash"
     assert "valor-local" not in str(status)

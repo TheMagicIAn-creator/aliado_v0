@@ -8,7 +8,7 @@ Criada no lote 37 (18/10/2026), pela [spec 0037](../0037-paginas-sem-leitura.md)
 das páginas. A indexação, a busca e as fichas seguem descritas nas specs 0004, 0019, 0029, 0030 e 0032. O lote 46,
 pela [spec 0046](../0046-correcoes-do-relatorio.md), acrescentou o BIB-05. O lote 47, pela
 [spec 0047](../0047-roteador-e-intervalos.md), alterou o BIB-05. O lote 61, pela
-[spec 0061](../0061-intervalo-abreviado.md), alterou o BIB-05 de novo.
+[spec 0061](../0061-intervalo-abreviado.md), alterou o BIB-05 de novo. O lote 66, pela [spec 0066](../0066-limpeza-restante.md), acrescentou o BIB-06.
 
 ## Requisitos
 
@@ -55,3 +55,12 @@ Não há comparação aproximada.
 P8 (trecho com a página dele) e a da E8 (documento e página de um trecho enviado) valem como os trechos, e o
 `[K...]` sai. As da P5 (truncada) e da E7 (o exemplo das regras) continuam reprovando. O intervalo da E2 do lote
 46 (páginas 1 a 6, todas enviadas) vale pelas seis páginas.
+
+**BIB-06. As indexações antigas saem por pedido.** Cada reindexação de um documento guarda a indexação anterior. O
+comando `aliado biblioteca limpar-versoes` mostra quantas indexações nenhum documento usa, com os trechos e o espaço
+das pastas, sem mudar nada. Com `--executar`, apaga essas indexações, os trechos e as pastas delas e compacta o
+catálogo. A indexação ativa de cada documento, as versões dos documentos, os originais, as figuras descritas e as
+fichas ficam. Sem cópia: não tem volta (lote 66).
+*Cenário:* dado um documento reindexado uma vez, quando o comando roda sem `--executar`, então mostra uma indexação
+antiga e nada muda; com `--executar`, ela sai com os trechos e a pasta, e a busca continua achando o documento pela
+indexação ativa.

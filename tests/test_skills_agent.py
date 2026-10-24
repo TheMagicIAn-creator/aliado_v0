@@ -151,7 +151,7 @@ def test_cli_prepare_never_builds_gateway(monkeypatch, capsys):
 
 
 def test_cli_requires_configured_model_without_network(capsys):
-    assert main(["perguntar", "oi", "--provider", "openai", "--model-alias", "terra"]) == 2
+    assert main(["perguntar", "oi", "--provider", "google", "--model-alias", "flash"]) == 2
     captured = capsys.readouterr()
     assert not captured.out
     assert "Verifique" in captured.err
@@ -211,15 +211,15 @@ def test_cli_keeps_answer_when_usage_log_fails(tmp_path, monkeypatch, capsys):
 
 
 def test_cli_does_not_discover_parent_dotenv(tmp_path, monkeypatch, capsys):
-    (tmp_path / ".env").write_text("AL_IADO_OPENAI_MODEL_TERRA=must-not-load\n", encoding="utf-8")
+    (tmp_path / ".env").write_text("AL_IADO_GEMINI_MODEL_FLASH=must-not-load\n", encoding="utf-8")
     child = tmp_path / "child"
     child.mkdir()
     monkeypatch.chdir(child)
-    assert main(["perguntar", "oi", "--provider", "openai", "--model-alias", "terra"]) == 2
+    assert main(["perguntar", "oi", "--provider", "google", "--model-alias", "flash"]) == 2
     assert "must-not-load" not in capsys.readouterr().err
     import os
 
-    assert "AL_IADO_OPENAI_MODEL_TERRA" not in os.environ
+    assert "AL_IADO_GEMINI_MODEL_FLASH" not in os.environ
 
 
 def test_cli_warns_when_the_answer_was_cut(tmp_path, monkeypatch, capsys):

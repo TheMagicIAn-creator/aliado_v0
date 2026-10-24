@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
         command.add_argument("--referencias", type=Path,
                              help="Pasta com a FMECA, os cenários e os tempos de reparo (padrão: a da especialização)")
         if name == "perguntar":
-            command.add_argument("--provider", choices=("openai", "google"), required=True)
+            command.add_argument("--provider", choices=("google",), required=True)
             command.add_argument("--model-alias", required=True, help="Alias configurado no gateway")
             command.add_argument("--env-file", type=Path, help="Arquivo .env explicitamente selecionado")
             command.add_argument("--registro-uso", type=Path, default=DEFAULT_USAGE_LOG,
@@ -52,9 +52,12 @@ def main(argv: list[str] | None = None) -> int:
     model.add_argument("--diretorio", type=Path)
     reranker = library_commands.add_parser("preparar-reordenador", help="Baixa a rede local que ordena páginas")
     reranker.add_argument("--diretorio", type=Path)
-    for name in ("adicionar", "listar", "buscar", "verificar", "avaliar", "reindexar", "figuras"):
+    for name in ("adicionar", "listar", "buscar", "verificar", "avaliar", "reindexar", "figuras", "limpar-versoes"):
         operation = library_commands.add_parser(name)
         operation.add_argument("--biblioteca", type=Path, required=True)
+        if name == "limpar-versoes":  # lote 66
+            operation.add_argument("--executar", action="store_true",
+                                   help="Apaga as indexações antigas; sem isto, só mostra quantas são e o espaço")
         if name in ("reindexar", "figuras"):  # lote 29
             operation.add_argument("--documento", help="Identificador de um documento; sem ele, todos")
         if name == "figuras":
@@ -163,6 +166,8 @@ def main(argv: list[str] | None = None) -> int:
                                               rewrite=_rewriter(args) if args.reescrever else None)
                     if args.saida is not None:
                         payload = export_evaluation(payload, args.saida)
+                elif args.operation == "limpar-versoes":
+                    payload = library.prune_runs(execute=args.executar)
                 elif args.operation == "reindexar":
                     payload = [{key: result[key] for key in ("id", "title", "version", "status", "chunks", "issues")}
                                for result in map(library.reindex, _latest(library, args.documento))]
