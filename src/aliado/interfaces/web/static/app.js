@@ -152,6 +152,7 @@ async function loadState() {
   state.models = data.modelos;
   if (!data.modelos.length) toast("Nenhum modelo Gemini configurado. Confira o .env e reinicie.");
   state.reading = data.leitura || {};
+  $("offline-badge").hidden = !data.sem_internet;  // lote 63
   checkServerAge(data);
   showUsage(data.uso);
 }

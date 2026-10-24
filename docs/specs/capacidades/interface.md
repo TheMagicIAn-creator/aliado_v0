@@ -1,7 +1,8 @@
 # Capacidade: interface
 
 Spec viva criada no lote 44 (20/10/2026), pela [spec 0044](../0044-revisao-fechamento.md). Começa pelo vínculo dos
-anexos à conversa; os demais comportamentos continuam descritos nas specs de lote anteriores.
+anexos à conversa; os demais comportamentos continuam descritos nas specs de lote anteriores. O lote 63, pela
+[spec 0063](../0063-sem-internet.md), acrescenta o INT-02.
 Cada requisito é citado por pelo menos um teste (`tests/test_specs.py`).
 
 ## Requisitos
@@ -16,3 +17,12 @@ Se a conversa foi apagada, o documento permanece apenas na biblioteca; envios pe
 a criação terminar, então é criada uma única conversa, usada pelo envio e pela pergunta; ao terminar a leitura,
 o documento fica fixado nela. Se ele abrir outra conversa durante a espera, o anexo mantém o destino original e
 a resposta atrasada não muda a conversa aberta.
+
+**INT-02. Sem internet: selo e recusa com o motivo.** No modo sem internet (PRV-08), um selo "Sem internet" fica no
+topo da tela, com a nota de que só o modelo local responde. A busca na web, a leitura ampla e a conferência de uma
+anotação na web são recusadas antes de qualquer chamada. Quando o gateway recusa, a tela diz o motivo e o que fazer
+(pedir só os trechos, ou tirar `AL_IADO_OFFLINE` do .env e reiniciar), e a pergunta não fica na conversa. A resposta
+completa do local que a conferência mandaria refazer fica, com "modo sem internet" na rota (lote 63).
+*Cenário:* dado o modo sem internet, quando o pesquisador pede a busca na web, então a tela recusa na hora e nada é
+chamado; quando uma pergunta passa do contexto local, então a tela diz "Sem internet: esta pergunta precisa do
+Gemini (…)".

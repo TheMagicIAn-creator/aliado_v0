@@ -145,6 +145,15 @@
                       "--dados", "tmp/lote-38/dados", "--biblioteca", "tmp/lote-38/biblioteca"],
       "port": 8784,
       "url": "http://127.0.0.1:8784"
+    },
+    {
+      "name": "aliado-web-lote-63",
+      "runtimeExecutable": ".venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "aliado", "web", "--env-file", ".env", "--sem-internet", "--porta", "8785",
+                      "--sem-navegador", "--sem-obsidian", "--dados", "tmp/lote-63/dados",
+                      "--biblioteca", "tmp/lote-63/biblioteca"],
+      "port": 8785,
+      "url": "http://127.0.0.1:8785"
     }
   ]
 }

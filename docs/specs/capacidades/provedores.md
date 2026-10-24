@@ -10,7 +10,8 @@ chaves seguem descritos nas specs 0009 e 0012; o roteador, o teto de 30 mil e o 
 [roteador.md](roteador.md). O lote 44 amplia os cenários de PRV-02, sem alterar os limites de custo. O lote 46, pela
 [spec 0046](../0046-correcoes-do-relatorio.md), altera PRV-02, PRV-06 e PRV-07; o lote 48, pela
 [spec 0048](../0048-raciocinio-nas-paginas.md), altera o PRV-07. O lote 57, pela
-[spec 0057](../0057-regras-sem-exemplo.md), altera o PRV-06.
+[spec 0057](../0057-regras-sem-exemplo.md), altera o PRV-06. O lote 63, pela
+[spec 0063](../0063-sem-internet.md), acrescenta o PRV-08.
 
 ## Requisitos
 
@@ -91,3 +92,11 @@ páginas.
 sem raciocínio, e a resposta é escrita com o raciocínio que o roteador pediu. Dada uma pergunta com partes, então o
 plano é pedido uma vez, e a pergunta sem partes pede só a consulta. Dada uma pergunta que lê páginas inteiras ou o
 documento, então o local responde sem raciocínio; com trechos, com o raciocínio do roteador.
+
+**PRV-08. Sem internet, nada sai do computador.** Com `AL_IADO_OFFLINE=1` no .env (ou `aliado web --sem-internet`),
+só o modelo local responde. O gateway recusa, antes de abrir a conexão, toda chamada que iria a um provedor
+remoto: a escalada no limite do local (PRV-02), o que o local não alcança (PRV-03) e o pedido com `local=False`. A
+recusa diz o motivo. A descrição das figuras segue pelo local, e a página que ele não alcança fica por descrever.
+Sem a variável, tudo segue como antes (lote 63).
+*Cenário:* dado o modo sem internet, quando o local pede ajuda ou o pedido passa do contexto dele, então a recusa diz
+"o modelo local não deu conta: pediu ajuda" ou "cerca de N tokens, acima do contexto local", e o Gemini não é chamado.

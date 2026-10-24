@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import sys
 from dataclasses import asdict
@@ -12,7 +13,7 @@ from pathlib import Path
 from aliado import specializations
 from aliado.agent import Agent, prepare_request
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
-from aliado.llm.providers.gateway import build_default_gateway
+from aliado.llm.providers.gateway import OfflineRefusal, build_default_gateway
 from aliado.llm.providers.local import LocalUnavailable
 from aliado.llm.usage_log import DEFAULT_USAGE_LOG, record_usage, usage_line
 from aliado.skills.library import list_skills
@@ -93,6 +94,8 @@ def main(argv: list[str] | None = None) -> int:
     web.add_argument("--sem-navegador", action="store_true", help="Não abrir o navegador")
     web.add_argument("--sem-obsidian", action="store_true",
                      help="Não gerar as notas do Obsidian em <dados>/obsidian")
+    web.add_argument("--sem-internet", action="store_true",
+                     help="Só o modelo local responde; recusa o que precisaria do Gemini ou da web (AL_IADO_OFFLINE)")
     experiment = commands.add_parser("experimento", help="Experimentos das especializações: rodar do zero e exportar o PDF")
     experiment_commands = experiment.add_subparsers(dest="operation", required=True)
     experiment_commands.add_parser("listar", help="Os experimentos instalados")
@@ -249,6 +252,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     except LocalUnavailable as exc:
         print(str(exc), file=sys.stderr)  # a mensagem é nossa, sem texto do SDK; nada foi ao Gemini
+        return 2
+    except OfflineRefusal as exc:
+        print(f"Sem internet: o pedido precisa do Gemini ({exc}). Tire AL_IADO_OFFLINE do .env.", file=sys.stderr)
         return 2
     except ProviderError:
         # Exceções de SDK podem incluir cabeçalhos, URLs ou credenciais.
@@ -419,6 +425,8 @@ def _serve_web(args) -> int:
         from dotenv import load_dotenv
 
         load_dotenv(args.env_file, override=False)
+    if args.sem_internet:
+        os.environ["AL_IADO_OFFLINE"] = "1"  # lote 63: o gateway lê daqui, como lê o .env
     try:
         import uvicorn
 
@@ -430,7 +438,9 @@ def _serve_web(args) -> int:
                                 obsidian=not args.sem_obsidian)
     url = f"http://127.0.0.1:{args.porta}"
     print(f"AL-IAdo em {url} (Ctrl+C encerra)", file=sys.stderr)
-    if not settings.models:
+    if settings.offline:
+        print("Modo sem internet: só o modelo local responde.", file=sys.stderr)
+    elif not settings.models:
         print("Aviso: nenhum modelo Gemini configurado; use --env-file .env.", file=sys.stderr)
     if not args.sem_navegador:
         import threading

@@ -331,6 +331,26 @@ def test_ollama_down_raises_without_calling_gemini():
     assert gemini.calls == []
 
 
+def test_offline_refuses_everything_that_would_reach_gemini(monkeypatch):
+    """PRV-08: sem internet, o limite do local, a web, o contexto e local=False são recusados; o Gemini não é chamado."""
+    from aliado.llm.providers.gateway import OfflineRefusal, build_default_gateway
+
+    gateway, gemini, completions = cascade(answer("Resposta local."), answer(ESCALATE), events(ESCALATE))
+    gateway.offline = True
+    assert gateway.execute(ask(), provider="google", model_alias="flash").provider == "ollama"
+    for request, options, reason in ((ask(), {}, "pediu ajuda"), (ask(web_search=True), {}, "busca na web"),
+                                     (ask("x" * 60_000), {}, "contexto local"), (ask(), {"local": False}, "só o Gemini")):
+        with pytest.raises(OfflineRefusal, match=reason):
+            gateway.execute(request, provider="google", model_alias="flash_lite", **options)
+    with pytest.raises(OfflineRefusal, match="pediu ajuda"):
+        list(gateway.stream(ask(), provider="google", model_alias="flash"))
+    assert gemini.calls == [] and len(completions.calls) == 3
+    monkeypatch.setenv("AL_IADO_OFFLINE", "1")
+    assert build_default_gateway().offline
+    monkeypatch.delenv("AL_IADO_OFFLINE")
+    assert not build_default_gateway().offline
+
+
 def test_agent_records_who_answered_and_why():
     """A resposta guarda quem respondeu de fato: o local, ou o Gemini com o motivo; `local=False` pula o local."""
     gateway, gemini, _ = cascade(events("Resposta ", "local."), events(ESCALATE))

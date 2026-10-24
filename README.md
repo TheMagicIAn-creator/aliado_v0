@@ -157,6 +157,12 @@ Detalhes nas validações dos lotes [43](docs/migracao/validacao-lote-43.md), [4
 
 Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir da pasta do projeto.
 
+**Sem internet (lote 63).** Com `AL_IADO_OFFLINE=1` no `.env`, ou `aliado web --sem-internet` para uma vez só, só o
+modelo local responde, e um selo "Sem internet" fica no topo da tela. A busca na biblioteca, a memória, as conversas
+e o Obsidian funcionam como sempre. A busca na web, a leitura ampla e a conferência na web são recusadas na hora. Uma
+pergunta que passa do contexto local ou que o local não alcança é recusada com o motivo, e a resposta local que o
+Gemini refaria fica como veio, com o aviso na rota.
+
 - **Conversas:**
   - Ao abrir ou recarregar, a página mostra a tela de apresentação; as conversas ficam na lista ao lado.
   - Respostas em fluxo, com botão para parar, e os tokens de cada resposta.

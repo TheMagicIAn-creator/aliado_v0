@@ -255,6 +255,41 @@ def test_provider_errors_do_not_leak_details_or_store_messages(env):
     assert client.get(f"/api/conversas/{cid}").json()["messages"] == []
 
 
+def test_offline_mode_shows_the_badge_and_refuses_what_needs_gemini(env):
+    """INT-02: sem internet, o selo aparece; a web, a leitura ampla e a conferência são recusadas antes do modelo, e a
+    recusa do gateway vira uma mensagem que diz o motivo e o que fazer."""
+    from aliado.llm.providers.gateway import OfflineRefusal
+
+    client, calls, settings, memory = env["client"], env["calls"], env["settings"], env["memory"]
+    assert client.get("/api/estado").json()["sem_internet"] is False
+    settings.offline = True
+    assert client.get("/api/estado").json()["sem_internet"] is True
+    cid = new_conversation(client)
+    for extra, what in (({"web": True}, "a busca na web"), ({"leitura": "integral"}, "a leitura ampla")):
+        response, _ = ask(client, cid, **extra)
+        assert response.status_code == 400 and response.json()["erro"].startswith(f"Sem internet: {what}")
+    note = memory.add(kind="fato", text="MTTR de 2 h.", origin="inferido")
+    response = client.post(f"/api/memoria/{note['id']}/conferir", headers=HEADERS)
+    assert response.status_code == 400 and "conferência na web" in response.json()["erro"]
+    assert calls == [] and env["review"]["calls"] == []
+    env["reply"]["error"] = OfflineRefusal("busca na web", unavailable=True)
+    _, events = ask(client, cid)
+    assert events == [{"tipo": "erro", "erro": "Sem internet: esta pergunta precisa do Gemini (busca na web). Peça só "
+                                                "os trechos, ou: Tire AL_IADO_OFFLINE do .env e reinicie para usar o Gemini."}]
+    assert client.get(f"/api/conversas/{cid}").json()["messages"] == []
+
+
+def test_offline_mode_keeps_the_local_answer_instead_of_redoing_it(env):
+    """INT-02: a resposta do local que a conferência reprovaria fica, com o motivo; o Gemini não é chamado."""
+    env["reply"].update(provider="ollama", status="uncited", extra={"retrieved": (SOURCE,)})
+    env["settings"].offline = True
+    client = env["client"]
+    _, events = say(client, new_conversation(client), LIBRARY_QUESTION)
+    reply = fim(events)["mensagens"][1]
+    assert reply["provider"] == "ollama" and all(call.get("local", True) for call in env["calls"])
+    assert "modo sem internet" in " ".join(reply["rota"]["reasons"])
+
+
 def test_local_model_down_shows_what_to_check_and_calls_nothing_else(env):
     """PRV-04: com o Ollama fechado, a tela diz o que conferir, e a pergunta não é refeita por outro modelo."""
     from aliado.llm.providers.local import LocalUnavailable

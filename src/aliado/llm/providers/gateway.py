@@ -24,9 +24,23 @@ ESCALATED = "o modelo local não deu conta ({}): o Gemini Flash respondeu"
 SKIPPED = "o modelo local não alcança este pedido ({}): seguiu direto ao modelo pago"
 
 
+class OfflineRefusal(ProviderError):
+    """Modo sem internet (lote 63): o pedido precisaria de um provedor remoto e nada saiu do computador."""
+
+
+def offline_from_env() -> bool:
+    return (os.getenv("AL_IADO_OFFLINE") or "").strip().lower() in {"1", "sim", "true"}
+
+
 class ProviderGateway:
-    def __init__(self, registry: ProviderRegistry | None = None):
+    def __init__(self, registry: ProviderRegistry | None = None, *, offline: bool = False):
         self.registry = registry or ProviderRegistry()
+        self.offline = offline
+
+    def _remote(self, reason: str | None) -> None:
+        """No modo sem internet, recusa a chamada que iria a um provedor remoto, antes de abrir a conexão."""
+        if self.offline:
+            raise OfflineRefusal(reason or "só o Gemini faz este pedido", unavailable=True)
 
     def register_provider(self, name: str, provider) -> None:
         self.registry.register_provider(name, provider)
@@ -55,7 +69,7 @@ class ProviderGateway:
     ) -> LLMResult:
         """Com `local` e o modelo local ligado, ele responde primeiro: no limite do raciocínio dele, o Gemini
         Flash; o que ele não alcança vai direto ao provedor pedido; fora do ar, o erro sobe, sem gastar."""
-        started, marks = perf_counter(), {}
+        started, marks, reason = perf_counter(), {}, None
         if local and (step := self._local(provider)):
             adapter, model_id = step
             try:
@@ -64,8 +78,12 @@ class ProviderGateway:
             except LocalLimit as exc:
                 provider, model_alias = ESCALATION
                 marks = {"escalation_used": True, "route_reason": ESCALATED.format(exc)}
+                reason = f"o modelo local não deu conta: {exc}"
             except LocalOutOfReach as exc:
                 marks = {"route_reason": SKIPPED.format(exc)}
+                reason = str(exc)
+        if str(provider).lower() != LOCAL[0]:
+            self._remote(reason)
         capabilities = self.required_capabilities(request)
         registration = self.registry.model(
             provider,
@@ -92,7 +110,7 @@ class ProviderGateway:
         local: bool = True,
     ) -> Iterator[LLMStreamChunk]:
         """Como `execute`. A troca acontece antes do primeiro pedaço: o local guarda o começo até saber."""
-        marks = {}
+        marks, reason = {}, None
         if local and (step := self._local(provider)):
             adapter, model_id = step
             try:
@@ -101,8 +119,12 @@ class ProviderGateway:
             except LocalLimit as exc:
                 provider, model_alias = ESCALATION
                 marks = {"fallback_used": True, "route_reason": ESCALATED.format(exc)}
+                reason = f"o modelo local não deu conta: {exc}"
             except LocalOutOfReach as exc:
                 marks = {"route_reason": SKIPPED.format(exc)}
+                reason = str(exc)
+        if str(provider).lower() != LOCAL[0]:
+            self._remote(reason)
         capabilities = self.required_capabilities(request)
         registration = self.registry.model(
             provider,
@@ -143,7 +165,7 @@ def _model_id(*names: str, default: str | None = None) -> str | None:
 
 def build_default_gateway(*, files=None) -> ProviderGateway:
     """`files`: o registro local do que for enviado ao serviço de arquivos do Google (leitura integral, lote 30)."""
-    gateway = ProviderGateway()
+    gateway = ProviderGateway(offline=offline_from_env())
     gateway.register_provider("openai", OpenAIProvider())
     gateway.register_provider("google", GeminiProvider(files=files))
     gateway.register_provider(LOCAL[0], LocalProvider())
@@ -204,4 +226,4 @@ def build_default_gateway(*, files=None) -> ProviderGateway:
     return gateway
 
 
-__all__ = ["ProviderGateway", "build_default_gateway"]
+__all__ = ["OfflineRefusal", "ProviderGateway", "build_default_gateway", "offline_from_env"]

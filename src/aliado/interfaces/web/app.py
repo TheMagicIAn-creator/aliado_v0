@@ -40,6 +40,7 @@ from aliado.knowledge.metadata import reference
 from aliado.knowledge.rewrite import rewrite_kind
 from aliado.knowledge.stopwords import plain
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
+from aliado.llm.providers.gateway import OfflineRefusal
 from aliado.llm.providers.local import ESCALATE, LocalProvider, LocalUnavailable
 from aliado.llm.usage_log import record_usage
 from aliado.memory.reviewer import needs_review
@@ -144,6 +145,8 @@ class WebSettings:
     daily_warning: int = 300_000
     uploaded_files: Callable[[], list[dict]] | None = None
     forget_files: Callable[[], dict] | None = None
+    # Modo sem internet (lote 63): só o modelo local responde; o que precisaria do Gemini ou da web é recusado.
+    offline: bool = False
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -202,6 +205,13 @@ class LocalOnly(BaseHTTPMiddleware):
 
 def _error(message: str, status: int = 400) -> JSONResponse:
     return JSONResponse({"erro": message}, status)
+
+
+OFFLINE_HINT = "Tire AL_IADO_OFFLINE do .env e reinicie para usar o Gemini."
+
+
+def _offline_message(reason: str) -> str:
+    return f"Sem internet: esta pergunta precisa do Gemini ({reason}). Peça só os trechos, ou: {OFFLINE_HINT}"
 
 
 def _view(message: dict) -> dict:
@@ -386,6 +396,7 @@ def create_app(settings: WebSettings) -> Starlette:
                         "modos": list(READING_MODES), "limite": settings.ceiling, "aviso_diario": settings.daily_warning},
             "iniciado": started,
             "uso": _usage_totals(settings.usage_log),
+            "sem_internet": settings.offline,
         })
 
     async def conversations(request: Request):
@@ -481,6 +492,10 @@ def create_app(settings: WebSettings) -> Starlette:
         budget = body.get("teto") or settings.reading_budget
         if mode not in READING_MODES or budget not in reading.BUDGETS:
             return _error("Modo de leitura ou teto desconhecido.")
+        if settings.offline and (use_web or mode == "integral"):
+            # Antes de qualquer chamada: a web e a leitura ampla só existem no Gemini.
+            return _error(f"Sem internet: {'a busca na web' if use_web else 'a leitura ampla'} precisa do Gemini. "
+                          + OFFLINE_HINT)
         confirmed = body.get("confirmado") if isinstance(body.get("confirmado"), str) else None
         asked = [item for item in body.get("documentos") or () if isinstance(item, str)] \
             if isinstance(body.get("documentos"), list) else []
@@ -692,7 +707,10 @@ def create_app(settings: WebSettings) -> Starlette:
                     except OSError:
                         pass
                     # A escalada e sempre para o Flash; a escolha do menor so vale antes dela (lote 44).
-                    if routing.STRONG not in aliases:
+                    if settings.offline:
+                        escalation_failed = True
+                        reasons.append("modo sem internet: a resposta local foi mantida com os avisos")
+                    elif routing.STRONG not in aliases:
                         escalation_failed = True
                         reasons.append("o Gemini Flash não está configurado: a resposta local foi mantida com os avisos")
                     else:
@@ -783,6 +801,9 @@ def create_app(settings: WebSettings) -> Starlette:
             except LocalUnavailable as exc:
                 # A mensagem é nossa, sem texto do SDK: diz o que conferir no Ollama. Nada foi ao Gemini.
                 yield line({"tipo": "erro", "erro": str(exc)})
+                return
+            except OfflineRefusal as exc:
+                yield line({"tipo": "erro", "erro": _offline_message(str(exc))})
                 return
             except ProviderError:
                 # Mensagens de SDK podem conter URLs ou credenciais; não são repassadas.
@@ -1242,6 +1263,8 @@ def create_app(settings: WebSettings) -> Starlette:
         """Confere a anotação na web e aplica as regras de conflito a uma correção."""
         if settings.checker is None:
             return _error("Busca na web não configurada.", 400)
+        if settings.offline:
+            return _error("Sem internet: a conferência na web precisa do Gemini. " + OFFLINE_HINT)
         target = await run_in_threadpool(memory.get, memory_id)
         if target["status"] not in {"ativa", "conflito"}:
             return _error("Só anotações ativas ou em conflito podem ser conferidas.")
@@ -1558,5 +1581,6 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        obsidian_dir=Path(data_dir) / "obsidian" if obsidian else None,
                        figure_reader=read_figures if figure_alias else None,
                        figure_model=figure_name,
-                       uploaded_files=google.uploaded, forget_files=google.forget_uploads)
+                       uploaded_files=google.uploaded, forget_files=google.forget_uploads,
+                       offline=gateway.offline)
     return settings
