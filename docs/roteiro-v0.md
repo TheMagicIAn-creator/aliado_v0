@@ -549,7 +549,7 @@ não dá para separá-los em commits.
 | 60 | O fechamento da 0.9.0: versão, CHANGELOG, README, wheel de uma cópia limpa e notas da versão | Feito em 23/10/2026; commit 385ab5d, tag `v0.9.0` e release publicados no GitHub ([spec 0060](specs/0060-fechamento-0-9-0.md), [validação](migracao/validacao-lote-60.md)) |
 | 61 | O intervalo de páginas abreviado nas citações (`[K…p1–8]`), com as mesmas condições da forma inteira (BIB-05) | Feito em 23/10/2026, sem modelo; commit 6cc1001; lançado na 0.9.1 ([spec 0061](specs/0061-intervalo-abreviado.md), [validação](migracao/validacao-lote-61.md)) |
 | 62 | O lançamento da 0.9.1: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 23/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0062](specs/0062-lancamento-0-9-1.md), [validação](migracao/validacao-lote-62.md)) |
-| 63 | O modo sem internet (`AL_IADO_OFFLINE=1` ou `aliado web --sem-internet`): só o modelo local responde, o que precisaria do Gemini ou da web é recusado com o motivo, e um selo fica no topo da tela | Feito em 23/10/2026, sem modelo; sem commit ([spec 0063](specs/0063-sem-internet.md)) |
+| 63 | O modo sem internet (`AL_IADO_OFFLINE=1` ou `aliado web --sem-internet`): só o modelo local responde, o que precisaria do Gemini ou da web é recusado com o motivo, e um selo fica no topo da tela | Feito em 23/10/2026, sem modelo; commit f920740 ([spec 0063](specs/0063-sem-internet.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 

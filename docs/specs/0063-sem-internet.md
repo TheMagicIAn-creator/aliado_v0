@@ -1,6 +1,6 @@
 # Spec 0063 — o modo sem internet
 
-Estado: feito em 23/10/2026, sem commit.
+Estado: feito em 23/10/2026; commit f920740.
 
 ## Propósito e decisões
 
