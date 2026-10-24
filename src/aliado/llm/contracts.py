@@ -7,18 +7,6 @@ from enum import StrEnum
 from typing import Any
 
 
-class TaskType(StrEnum):
-    SIMPLE_CHAT = "simple_chat"
-    FACTUAL_SHORT = "factual_short"
-    DOCUMENT_EXTRACTION = "document_extraction"
-    MULTIMODAL_ANALYSIS = "multimodal_analysis"
-    SCIENTIFIC_REASONING = "scientific_reasoning"
-    CRITICAL_REASONING = "critical_reasoning"
-    EVIDENCE_AUDIT = "evidence_audit"
-    MEMORY_CONSOLIDATION = "memory_consolidation"
-    DETERMINISTIC = "deterministic"
-
-
 class MethodologicalRisk(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
@@ -85,7 +73,6 @@ class LLMResult:
     usage: LLMUsage | None = None
     attempts: int = 1
     route_reason: str | None = None
-    request_id: str | None = None
     fallback_kind: str | None = None
     escalation_used: bool = False
     validation_status: str | None = None
@@ -126,7 +113,6 @@ class LLMStreamChunk:
     provider: str
     model: str
     task_type: str
-    request_id: str | None = None
     fallback_used: bool = False
     route_reason: str | None = None
     # Consumo acumulado informado pelo provedor; o último valor recebido vale.
@@ -139,62 +125,10 @@ class LLMStreamChunk:
     truncated: bool = False
 
 
-def _partes_de_sequencia(valores):
-    for valor in valores:
-        yield from _partes_textuais(valor)
-
-
-def _partes_de_mapeamento(valor: dict):
-    tipo = str(valor.get("type", "")).lower()
-    if tipo and tipo not in {"text", "output_text"}:
-        return
-    for chave in ("text", "content", "value"):
-        if chave in valor:
-            yield from _partes_textuais(valor[chave])
-            return
-
-
-def _partes_de_objeto(valor):
-    texto = getattr(valor, "text", None)
-    if texto is not None:
-        yield from _partes_textuais(texto)
-        return
-    interno = getattr(valor, "content", None)
-    if interno is not None and interno is not valor:
-        yield from _partes_textuais(interno)
-
-
-def _partes_textuais(valor):
-    if valor is None:
-        return
-    if isinstance(valor, str):
-        if valor:
-            yield valor
-        return
-    if isinstance(valor, (list, tuple)):
-        yield from _partes_de_sequencia(valor)
-        return
-    if isinstance(valor, dict):
-        yield from _partes_de_mapeamento(valor)
-        return
-    yield from _partes_de_objeto(valor)
-
-
-def texto_resultado_llm(resposta: Any) -> str:
-    """Normaliza texto de resultados neutros, SDKs legados e blocos."""
-
-    conteudo = resposta if isinstance(resposta, (str, list, tuple, dict)) else getattr(
-        resposta, "content", resposta
-    )
-    return "".join(_partes_textuais(conteudo) or ())
-
-
 __all__ = [
     "LLMRequest",
     "LLMResult",
     "LLMStreamChunk",
     "LLMUsage",
     "MethodologicalRisk",
-    "TaskType",
-    "texto_resultado_llm",
 ]

@@ -196,15 +196,8 @@ def build_default_gateway(*, files=None) -> ProviderGateway:
             )
         )
 
-    flash_lite = _model_id(
-        "AL_IADO_GEMINI_MODEL_FLASH_LITE",
-        "AL_IADO_GEMINI_MODEL_FUNDO",
-        "AL_IADO_GEMINI_MODEL_AUDITOR",
-    )
-    flash = _model_id(
-        "AL_IADO_GEMINI_MODEL_FLASH",
-        "AL_IADO_GEMINI_MODEL",
-    )
+    flash_lite = _model_id("AL_IADO_GEMINI_MODEL_FLASH_LITE")
+    flash = _model_id("AL_IADO_GEMINI_MODEL_FLASH")
     gateway.register_model(
         ModelRegistration(
             provider="google",

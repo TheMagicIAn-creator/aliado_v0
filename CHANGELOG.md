@@ -5,6 +5,18 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 65: a limpeza sem perda
+
+- **O levantamento:** o que pode sair do AL-IAdo, em `docs/revisao/2026-10-24-levantamento-exclusoes.md`.
+- **Para a Lixeira (52,8 MiB):**
+  - 43 arquivos compilados de módulos que não existem mais;
+  - os caches de teste;
+  - cópias e montagens antigas em `tmp/`;
+  - os pacotes da v0.1.0 à v0.6.0 em `dist/`, idênticos aos das releases.
+- **Servidor de teste:** saem 10 configurações quebradas.
+- **Código sem uso:** saem `texto_resultado_llm`, `TaskType`, o campo `request_id` e três nomes antigos de variáveis
+  do Gemini.
+
 ## [0.9.2] — 2026-10-24
 
 Lotes 63 e 64: o modo sem internet e o lançamento da versão.

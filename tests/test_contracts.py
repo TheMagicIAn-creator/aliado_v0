@@ -2,17 +2,17 @@ from __future__ import annotations
 
 import pytest
 
-from aliado.llm.contracts import LLMRequest, LLMResult, TaskType
+from aliado.llm.contracts import LLMRequest, LLMResult
 
 
 def test_request_valida_campos_criticos():
     request = LLMRequest(
-        task_type=TaskType.SCIENTIFIC_REASONING,
+        task_type="scientific_reasoning",
         messages=[{"role": "user", "content": "analise"}],
         methodological_risk="high",
         max_output_tokens=500,
     )
-    assert request.task_type == TaskType.SCIENTIFIC_REASONING
+    assert request.task_type == "scientific_reasoning"
 
 
 @pytest.mark.parametrize(
