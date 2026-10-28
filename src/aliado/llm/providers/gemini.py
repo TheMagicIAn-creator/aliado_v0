@@ -369,7 +369,9 @@ class GeminiProvider:
     def stream(self, request: LLMRequest, *, model_id: str) -> Iterator[LLMStreamChunk]:
         if request.structured_output:
             result = self.generate(request, model_id=model_id)
-            yield LLMStreamChunk(result.content, self.name, model_id, request.task_type)
+            # Lote 72: com o uso e o corte, como o local (local.py): a chamada paga entra no registro.
+            yield LLMStreamChunk(result.content, self.name, model_id, request.task_type, usage=result.usage,
+                                 truncated=result.truncated)
             return
         kwargs = self._kwargs(request, model_id, self._documents(request))
         try:

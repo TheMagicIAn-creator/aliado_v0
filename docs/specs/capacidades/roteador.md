@@ -7,7 +7,7 @@ retira. Cada requisito é citado por pelo menos um teste (`tests/test_specs.py`)
 Criada no lote 35 (18/10/2026), pela [spec 0035](../0035-chat-tela-minima.md). O roteador nasceu no lote 31
 ([spec 0031](../0031-roteador-e-escada.md)), e o aprendizado com o uso, no lote 33
 ([spec 0033](../0033-reescrita-aprendizado-resultados.md)). O lote 47, pela [spec 0047](../0047-roteador-e-intervalos.md),
-acrescentou o ROT-08.
+acrescentou o ROT-08; o lote 70, pela [spec 0070](../0070-revisor-roteador-harness.md), o ROT-09.
 
 ## O que é
 
@@ -69,3 +69,13 @@ sobre eles, inclusive "faça um resumo dos resultados".
 *Cenário:* dadas a P7 ("Como se calcula a confiabilidade de um sistema com componentes em série e em paralelo?") e a
 E3 (os modelos usados no TCC da UFSC) das perguntas aprovadas, então as duas vão à biblioteca, com trechos; "Mostre
 os resultados da avaliação oficial" continua nos resultados.
+
+**ROT-09. Tradução, explicação curta e lista vão direto ao modelo.** Uma mensagem que pede tradução ("traduza",
+"translate"), explicação para leigo ou curta ("para um leigo", "em uma frase", "em até 3 frases", "em poucas
+palavras") ou começa por "liste" vai ao modelo sem a biblioteca, como tarefa. Não vale quando a mensagem também pede
+fonte (literatura, citação, documentos, referências…) nem quando cita um documento, e não muda as regras de antes
+dela, inclusive a continuação depois de uma resposta com a biblioteca. Pedido de definição ("O que é MTTF?") continua
+indo à biblioteca (lote 70).
+*Cenário:* dadas "Traduza para o inglês: o inversor falhou por sobreaquecimento." e "Explique o que é FMECA para um
+leigo, em até 3 frases.", então as duas vão sem a biblioteca; "Liste as fontes que tratam de MPPT." e as perguntas
+aprovadas que não citam documento continuam na biblioteca.

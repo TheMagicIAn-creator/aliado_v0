@@ -95,9 +95,11 @@ def test_gemini_stream_informa_tokens_no_fim():
 
 
 def test_gemini_provider_saida_estruturada_e_stream_atomico():
+    usage = SimpleNamespace(prompt_token_count=50, candidates_token_count=10, total_token_count=60)
+
     class Models:
         def generate_content(self, **_kwargs):
-            return SimpleNamespace(text='{"status":"aprovado"}')
+            return SimpleNamespace(text='{"status":"aprovado"}', usage_metadata=usage)
 
     provider = GeminiProvider(client=SimpleNamespace(models=Models()))
     request = LLMRequest(
@@ -111,6 +113,8 @@ def test_gemini_provider_saida_estruturada_e_stream_atomico():
     chunks = list(provider.stream(request, model_id="modelo"))
     assert len(chunks) == 1
     assert chunks[0].content == result.content
+    # Lote 72: o pedaço único leva o uso, como o local, para a chamada paga entrar no registro.
+    assert chunks[0].usage.total_tokens == 60 and chunks[0].truncated is False
 
 
 def test_gemini_provider_sem_configuracao(monkeypatch):

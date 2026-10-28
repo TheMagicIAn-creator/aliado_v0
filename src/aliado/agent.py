@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from dataclasses import replace
+from datetime import datetime
 from time import perf_counter
 
 from aliado.knowledge.stopwords import plain
@@ -17,6 +18,10 @@ from aliado.numbers import check_numbers, split_grouped
 from aliado.skills.library import load_skill
 
 CORE_INSTRUCTIONS = """Você é o AL-IAdo, um agente de apoio à pesquisa e engenharia.
+Seu nome é AL-IAdo: quando o usuário escreve "aliado", fala com você, não diz o nome dele. O nome
+do usuário só vem das anotações do perfil; sem ele, não use nenhum nome nem o peça. Só cumprimente
+quando o usuário cumprimentar ou se despedir, e então com o cumprimento informado; só diga a data ou a hora
+quando ele perguntar.
 Responda em português, com clareza e concisão. Preserve o objetivo e as decisões
 explícitas do usuário. Diferencie fatos observados, hipóteses e informações ausentes.
 Mantenha responsabilidades separadas e regras de domínio nas especializações.
@@ -193,6 +198,26 @@ def _mark_web(content: str, supports) -> str:
         marks = "".join(f"[W{n}]" for n in insertions[end])
         content = content[:end] + marks + content[end:]
     return content
+
+
+_WEEKDAYS = ("segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo")
+_PERIODS = ("madrugada", "manhã", "tarde", "noite")
+# Lote 74: a palavra pronta; só com o período, o local ainda dizia "Bom dia" às 21h e na despedida das 23h (lote 73).
+# De madrugada, "Boa noite", como se fala no dia a dia (decisão do pesquisador, 28/10/2026).
+_GREETINGS = ("Boa noite", "Bom dia", "Boa tarde", "Boa noite")
+
+
+def _clock(now: datetime | None = None) -> dict:
+    """A data e o período do dia na hora local (lote 67), e o cumprimento dele (lote 74): sem isso, o modelo chutava
+    "bom dia" à noite. Os nomes ficam aqui, e não no locale do Windows."""
+    now = now or datetime.now().astimezone()
+    index = now.hour // 6
+    # O "só" fica: no lote 67, a frase sem ele levou a 14 cumprimentos fora de hora (spec 0069).
+    return {"role": "developer",
+            "content": f"Agora: {_WEEKDAYS[now.weekday()]}, {now:%d/%m/%Y}, {now.hour}h, {_PERIODS[index]} (hora "
+                       f'local). O cumprimento deste horário é "{_GREETINGS[index]}". Só cumprimente se o usuário '
+                       "cumprimentar ou se despedir, e então com esse, mesmo que ele tenha usado outro. A data e a "
+                       "hora, só se ele perguntar."}
 
 
 def _memory_context(memories) -> list[dict]:
@@ -536,6 +561,8 @@ def prepare_request(question: str, *, skill_name: str | None = None,
     context.extend(_trail_context(trail))
     if mentions:
         context.append({"role": "user", "content": MENTIONS_NOTE + json.dumps(mentions, ensure_ascii=False)})
+    # Fora do começo fixo do pedido, que o provedor reaproveita, e antes da conversa (lote 67).
+    context.append(_clock())
     # A ordem é sempre a mesma, e o que se repete de uma pergunta para a outra fica no começo, onde o provedor
     # pode reaproveitar o que já leu (lote 31): regras, nomes dos documentos, documentos; depois memória,
     # conversa, trechos e a pergunta.

@@ -351,6 +351,25 @@ def test_offline_refuses_everything_that_would_reach_gemini(monkeypatch):
     assert not build_default_gateway().offline
 
 
+def test_forced_offline_refuses_before_checking_the_gemini_setup():
+    """PRV-08 (lote 72): no modo forçado, a recusa vem antes da chave e dos modelos do Gemini, com o motivo; só sem
+    rede (PRV-09) o modelo não configurado segue avisando que falta configurar, sem testar a conexão à toa."""
+    from aliado.llm.providers.base import ProviderNotConfiguredError
+    from aliado.llm.providers.gateway import OfflineRefusal
+
+    gateway, gemini, _ = cascade(answer(ESCALATE), events(ESCALATE), answer(ESCALATE))
+    gemini.configured = False
+    gateway.offline = True
+    with pytest.raises(OfflineRefusal, match="pediu ajuda"):
+        gateway.execute(ask(), provider="google", model_alias="flash_lite")
+    with pytest.raises(OfflineRefusal, match="pediu ajuda"):
+        list(gateway.stream(ask(), provider="google", model_alias="flash_lite"))
+    gateway.offline, gateway.online = False, lambda: False
+    with pytest.raises(ProviderNotConfiguredError):
+        gateway.execute(ask(), provider="google", model_alias="flash_lite")
+    assert gemini.calls == []
+
+
 def test_agent_records_who_answered_and_why():
     """A resposta guarda quem respondeu de fato: o local, ou o Gemini com o motivo; `local=False` pula o local."""
     gateway, gemini, _ = cascade(events("Resposta ", "local."), events(ESCALATE))
@@ -361,3 +380,32 @@ def test_agent_records_who_answered_and_why():
     assert (result.provider, result.escalation_used) == ("google", True) and "Gemini Flash" in result.route_reason
     *_, (_, result) = agent.stream_answer("Oi?", provider="google", model_alias="flash_lite", local=False)
     assert (result.provider, result.route_reason) == ("google", None) and gemini.calls == ["gemini-flash", "gemini-lite"]
+
+
+def test_without_network_the_offline_mode_turns_itself_on_and_off():
+    """PRV-09 (lote 68): sem rede, o gateway recusa o que iria ao Gemini, como no PRV-08; a resposta da conexão fica
+    guardada por 30 s, e a volta da rede é percebida sem reiniciar."""
+    from aliado.llm.providers.gateway import Connectivity, OfflineRefusal
+
+    now, attempts, network = [0.0], [], {"up": False}
+
+    def connect(address, timeout):
+        attempts.append((address, timeout))
+        if not network["up"]:
+            raise OSError("sem rota")
+        return SimpleNamespace(close=lambda: None)
+
+    online = Connectivity(clock=lambda: now[0], connect=connect)
+    assert online() is False and online() is False and len(attempts) == 1
+    assert attempts[0] == (("generativelanguage.googleapis.com", 443), 2.0)
+    gateway, gemini, _ = cascade(answer("Resposta local."), answer(ESCALATE))
+    gateway.online = online
+    with pytest.raises(OfflineRefusal, match="só o Gemini"):
+        gateway.execute(ask(), provider="google", model_alias="flash_lite", local=False)
+    network["up"] = True
+    now[0] = 29.0
+    assert online() is False  # ainda dentro dos 30 s
+    now[0] = 30.0
+    assert online() is True and len(attempts) == 2
+    gateway.execute(ask(), provider="google", model_alias="flash_lite", local=False)
+    assert len(gemini.calls) == 1

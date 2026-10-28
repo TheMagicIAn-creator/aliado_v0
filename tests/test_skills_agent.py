@@ -25,9 +25,9 @@ def test_domain_context_only_enters_selected_requests():
     engineering = prepare_request("Revise esta interface", skill_name="engenharia")
     research = prepare_request("O que falta decidir?", skill_name="pesquisa-inversores")
     assert generic.metadata["skill"] is None
-    assert len(generic.messages) == 2
-    assert len(engineering.messages) == 3
-    reference = research.messages[-2]
+    assert len(generic.messages) == 3  # instruções, hora e pergunta
+    assert len(engineering.messages) == 4
+    reference = research.messages[-3]
     assert reference["role"] == "user"
     skill = library.load_skill("pesquisa-inversores")
     assert [name for name, _ in skill.references] == ["diretrizes-aprovadas-2026-09-22.md"]
@@ -40,7 +40,7 @@ def test_domain_context_only_enters_selected_requests():
     assert research.tools is None
     assert "specializations" in str(library._roots()[-1]) and skill.support == "confiabilidade"
     assert research.messages[1]["content"] == library.load_skill("confiabilidade").instructions  # o apoio vai antes
-    assert library.load_skill("engenharia").support is None and len(engineering.messages) == 3
+    assert library.load_skill("engenharia").support is None and len(engineering.messages) == 4
 
 
 def test_decided_physical_rates_enter_only_the_research_context():
@@ -137,7 +137,7 @@ def test_agent_transmits_selected_skill_through_real_gateway():
     )
     assert result.content == "análise"
     assert calls[0].metadata["skill"] == "pesquisa-inversores"
-    assert len(calls[0].messages) == 5
+    assert len(calls[0].messages) == 6
     assert calls[0].metadata["supporting_skill"] == "confiabilidade"
 
 
@@ -167,6 +167,23 @@ def test_cli_does_not_print_provider_secrets(monkeypatch, capsys):
     assert main(["perguntar", "oi", "--provider", "google", "--model-alias", "flash"]) == 2
     captured = capsys.readouterr()
     assert "segredo-que-nao-pode-aparecer" not in captured.err + captured.out
+
+
+def test_cli_offline_hint_says_why(monkeypatch, capsys):
+    """PRV-09 (lote 72): sem rede, o terminal não manda mexer no .env; só no modo forçado (PRV-08) ele manda."""
+    from aliado.llm.providers.gateway import OfflineRefusal
+
+    def refused(*args, **kwargs):
+        raise OfflineRefusal("busca na web", unavailable=True)
+
+    monkeypatch.setattr(Agent, "answer", refused)
+    argv = ["perguntar", "oi", "--provider", "google", "--model-alias", "flash"]
+    monkeypatch.delenv("AL_IADO_OFFLINE", raising=False)
+    assert main(argv) == 2
+    assert "Confira a conexão" in capsys.readouterr().err
+    monkeypatch.setenv("AL_IADO_OFFLINE", "1")
+    assert main(argv) == 2
+    assert "Tire AL_IADO_OFFLINE do .env." in capsys.readouterr().err
 
 
 def test_cli_reports_and_records_usage_without_conversation_text(tmp_path, monkeypatch, capsys):
@@ -234,3 +251,37 @@ def test_cli_warns_when_the_answer_was_cut(tmp_path, monkeypatch, capsys):
     answer = LLMResult(content="Resposta inteira.", provider="google", model="gemini-teste", task_type="critical_reasoning")
     monkeypatch.setattr(Agent, "answer", lambda *args, **kwargs: answer)
     assert main(argv) == 0 and "interrompida" not in capsys.readouterr().err
+
+
+def test_request_tells_the_time_and_who_aliado_is():
+    """NUC-05 (lote 67): o pedido diz a hora local e o período do dia; "aliado" é o próprio agente."""
+    from datetime import datetime
+
+    from aliado.agent import _clock
+
+    assert _clock(datetime(2026, 10, 24, 21, 5))["content"].startswith("Agora: sábado, 24/10/2026, 21h, noite (hora local).")
+    assert "madrugada" in _clock(datetime(2026, 10, 26, 0, 30))["content"]
+    request = prepare_request("Olá, aliado.")
+    assert 'escreve "aliado", fala com você' in request.messages[0]["content"]
+    assert "Só cumprimente\nquando o usuário cumprimentar" in request.messages[0]["content"]  # lote 69
+    assert request.messages[-2]["content"].startswith("Agora: ")
+    assert request.messages[-1] == {"role": "user", "content": "Olá, aliado."}
+
+
+def test_request_tells_the_greeting_of_the_period():
+    """NUC-05 (lote 74): o pedido traz o cumprimento pronto do período, com "Boa noite" também de madrugada."""
+    from datetime import datetime
+
+    from aliado.agent import _clock
+
+    expected = {(0, 30): "Boa noite", (5, 59): "Boa noite", (6, 0): "Bom dia", (11, 59): "Bom dia",
+                (12, 0): "Boa tarde", (17, 59): "Boa tarde", (18, 0): "Boa noite", (23, 0): "Boa noite"}
+    for (hour, minute), greeting in expected.items():
+        content = _clock(datetime(2026, 10, 28, hour, minute))["content"]
+        assert f'O cumprimento deste horário é "{greeting}"' in content, (hour, minute)
+        assert not any(other in content for other in {"Bom dia", "Boa tarde", "Boa noite"} - {greeting}), content
+    content = _clock(datetime(2026, 10, 24, 23, 0))["content"]
+    assert "Só cumprimente se o usuário cumprimentar ou se despedir" in content  # o "só" do lote 69 e o C21 (lote 73)
+    assert "mesmo que ele tenha usado outro" in content  # "Bom dia!" dito à noite (C02)
+    assert "cumprimentar ou se despedir, e então com o cumprimento informado" in prepare_request("Oi").messages[0][
+        "content"]

@@ -252,7 +252,7 @@ def test_rules_ask_for_every_document_and_verbatim_quotes():
                    "Não crie identificadores, autores, páginas ou referências"):
         assert wanted in LIBRARY_RULES, wanted
     request = prepare_request("O que é MCC?", library=Library())
-    assert [m["content"] for m in request.messages if m["role"] == "developer"][-1] == LIBRARY_RULES
+    assert [m["content"] for m in request.messages if m["role"] == "developer"][-2] == LIBRARY_RULES  # a última é a hora
 
 
 def answer(content: str, library=None, **kwargs) -> LLMResult:

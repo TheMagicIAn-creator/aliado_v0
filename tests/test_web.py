@@ -90,6 +90,9 @@ def env(tmp_path):
                                  validation_status=reply["status"], **web, **reply.get("extra", {}))
 
     memory = MemoryStore(tmp_path / "dados" / "memoria")
+    # O nome já foi perguntado (NUC-06): as respostas dos testes não ganham a pergunta no fim.
+    memory.root.mkdir(parents=True)
+    (memory.root / "nome-perguntado").touch()
     review = {"notes": [{"kind": "preferencia", "text": "Prefiro respostas curtas.", "origin": "feedback",
                          "source": {}, "supersedes": None, "diverges_skill": False}],
               "calls": [], "error": None}
@@ -279,6 +282,20 @@ def test_offline_mode_shows_the_badge_and_refuses_what_needs_gemini(env):
     assert client.get(f"/api/conversas/{cid}").json()["messages"] == []
 
 
+def test_without_network_the_badge_follows_the_connection(env):
+    """INT-02 e PRV-09 (lote 68): sem rede, o selo aparece e a recusa diz que o Gemini volta sozinho; com a rede de
+    volta, o selo some, sem reiniciar."""
+    client, settings, network = env["client"], env["settings"], {"up": False}
+    settings.online = lambda: network["up"]
+    assert client.get("/api/estado").json()["sem_internet"] is True
+    response, _ = ask(client, new_conversation(client), web=True)
+    assert response.status_code == 400
+    assert response.json()["erro"] == ("Sem internet: a busca na web precisa do Gemini. Quando a internet voltar, o "
+                                       "AL-IAdo volta a usar o Gemini sozinho.")
+    network["up"] = True
+    assert client.get("/api/estado").json()["sem_internet"] is False and env["calls"] == []
+
+
 def test_offline_mode_keeps_the_local_answer_instead_of_redoing_it(env):
     """INT-02: a resposta do local que a conferência reprovaria fica, com o motivo; o Gemini não é chamado."""
     env["reply"].update(provider="ollama", status="uncited", extra={"retrieved": (SOURCE,)})
@@ -396,8 +413,102 @@ def test_explicit_request_and_reviewer_failure(env):
     assert review["calls"][-1]["explicit"] is True
     review["error"] = ProviderError("chave=segredo")
     events = ask(client, cid, "Outra")[1]
-    assert fim(events)["mensagens"][1]["content"]  # a resposta vale mesmo se o revisor falhar
-    assert events[-1] == {"tipo": "memoria", "criadas": [], "aviso": "O revisor de memória não respondeu."}
+    reply = fim(events)["mensagens"][1]
+    assert reply["content"]  # a resposta vale mesmo se o revisor falhar
+    # PRV-07 (lote 72): com a mensagem, a tela acha a resposta e mostra o aviso.
+    assert events[-1] == {"tipo": "memoria", "mensagem": reply["id"], "criadas": [],
+                          "aviso": "O revisor de memória não respondeu."}
+
+
+def test_the_name_is_asked_once_and_the_answer_goes_to_the_reviewer(env):
+    """NUC-06 (lote 72): sem o nome no perfil, a primeira resposta termina com a pergunta, uma vez em todas as
+    conversas; a resposta a ela vai ao revisor junto da pergunta."""
+    from aliado.memory.reviewer import NAME_QUESTION
+
+    client, memory, review = env["client"], env["memory"], env["review"]
+    mark = memory.root / "nome-perguntado"
+    mark.unlink()
+    review["notes"] = []
+    # O perfil fala do nome de outra pessoa: o do usuário continua desconhecido.
+    memory.add(kind="perfil", text="A orientadora do usuário se chama Ana.", origin="feedback")
+    cid = new_conversation(client)
+    first = fim(ask(client, cid)[1])["mensagens"][1]
+    assert first["content"] == f"A taxa é 8,9e-6/h [Kabc].\n\n{NAME_QUESTION}" and mark.exists()
+    import sqlite3
+
+    with sqlite3.connect(memory.root / "memoria.sqlite3") as db:  # a memória de conversas guarda sem a pergunta
+        assert [row[0] for row in db.execute("SELECT answer FROM exchanges")] == ["A taxa é 8,9e-6/h [Kabc]."]
+    reply = fim(ask(client, cid, "Rodolfo")[1])["mensagens"][1]
+    assert review["calls"][-1]["question"] == f'O AL-IAdo perguntou "{NAME_QUESTION}". A mensagem seguinte do usuário: Rodolfo'
+    assert NAME_QUESTION not in review["calls"][-1]["answer"]
+    # A resposta é conversa: sem a biblioteca, mesmo depois de uma resposta que a usou (nada de Flash pago à toa).
+    assert (reply["rota"]["rung"], reply["rota"]["intent"]) == (routing.NONE, "conversa")
+    assert NAME_QUESTION not in fim(ask(client, new_conversation(client))[1])["mensagens"][1]["content"]
+
+
+def test_a_question_after_the_name_question_still_follows_the_router(env):
+    """NUC-06 (lote 72): quem ignora a pergunta do nome e pergunta outra coisa continua indo à biblioteca."""
+    client, memory = env["client"], env["memory"]
+    (memory.root / "nome-perguntado").unlink()
+    cid = new_conversation(client)
+    first = fim(ask(client, cid)[1])["mensagens"][1]["rota"]["rung"]
+    reply = fim(ask(client, cid, "Qual a taxa de falhas do IGBT?")[1])["mensagens"][1]
+    assert first > routing.NONE and reply["rota"]["rung"] > routing.NONE and reply["rota"]["intent"] != "conversa"
+
+
+def test_the_name_question_comes_back_when_the_reviewer_fails(env):
+    """NUC-06 (lote 72): se o revisor falha na resposta ao nome, a tela diz que o nome não foi anotado e a pergunta
+    volta uma vez; a saída cortada entra no registro de uso, porque a chamada aconteceu."""
+    from aliado.llm.contracts import TruncatedOutput
+    from aliado.memory.reviewer import NAME_QUESTION
+
+    client, memory, review, settings = env["client"], env["memory"], env["review"], env["settings"]
+    mark = memory.root / "nome-perguntado"
+    mark.unlink()
+    cid = new_conversation(client)
+    ask(client, cid)
+    review["error"] = TruncatedOutput("cortada", LLMResult("{", "google", "lite", "memoria-revisor",
+                                                            usage=LLMUsage(10, 2048, 2058), truncated=True))
+    events = ask(client, cid, "Rodolfo")[1]
+    assert "Seu nome não foi anotado" in events[-1]["aviso"] and not mark.exists()
+    logged = [json.loads(row) for row in settings.usage_log.read_text(encoding="utf-8").splitlines()]
+    assert logged[-1]["task_type"] == "memoria-revisor" and logged[-1]["total_tokens"] == 2058
+    review["error"] = None
+    assert fim(ask(client, cid, "Outra")[1])["mensagens"][1]["content"].endswith(NAME_QUESTION)
+    # Quem ignora a pergunta e pergunta outra coisa não a traz de volta, mesmo com o revisor falhando.
+    review["error"] = ProviderError("fora do ar")
+    events = ask(client, cid, "Qual a taxa do IGBT no Baschel?")[1]
+    assert "Seu nome" not in events[-1]["aviso"] and mark.exists()
+
+
+def test_a_cut_reading_card_still_enters_the_usage_log(env):
+    """PRV-07 (lote 72): a ficha cortada não vira ficha, mas a chamada entra no registro de uso."""
+    from aliado.llm.contracts import TruncatedOutput
+
+    def cut(**kwargs):
+        raise TruncatedOutput("cortada", LLMResult("{", "google", "lite", "memoria-ficha", usage=LLMUsage(9, 2048, 2057),
+                                                    truncated=True))
+
+    env["settings"].card_maker = cut
+    status = upload(env["client"], "Sarquis 2020.pdf")
+    assert status["resultado"]["fichas"] == 0 and status["resultado"]["aviso_ficha"]
+    logged = [json.loads(row) for row in env["settings"].usage_log.read_text(encoding="utf-8").splitlines()]
+    assert [row["task_type"] for row in logged] == ["memoria-ficha"] and logged[0]["total_tokens"] == 2057
+
+
+def test_no_name_question_when_the_message_says_it_or_the_profile_has_it(env):
+    """NUC-06 (lote 72): a mensagem que diz o nome não ganha a pergunta; com o nome no perfil, ela não aparece."""
+    from aliado.memory.reviewer import NAME_QUESTION
+
+    client, memory = env["client"], env["memory"]
+    mark = memory.root / "nome-perguntado"
+    mark.unlink()
+    cid = new_conversation(client)
+    for said in ("Meu nome é Rodolfo.", "Oi, sou o Rodolfo."):
+        assert NAME_QUESTION not in fim(ask(client, cid, said)[1])["mensagens"][1]["content"]
+    assert not mark.exists()
+    memory.add(kind="perfil", text="O usuário se chama Rodolfo.", origin="feedback")
+    assert NAME_QUESTION not in fim(ask(client, cid)[1])["mensagens"][1]["content"] and not mark.exists()
 
 
 def test_memory_routes_list_create_revoke_edit_and_resolve(env):
@@ -940,6 +1051,10 @@ def test_google_files_route_counts_and_forgets(env):
     settings.forget_files = broken
     failed = client.delete("/api/biblioteca/arquivos", headers=HEADERS)
     assert failed.status_code == 502 and "segredo" not in failed.text
+    # PRV-08 (lote 72): apagar também fala com o Google; sem internet, a exclusão é recusada e nada é chamado.
+    settings.forget_files, settings.offline = lambda: forgotten.append(2) or {"apagados": 1, "falhas": 0}, True
+    refused = client.delete("/api/biblioteca/arquivos", headers=HEADERS)
+    assert refused.status_code == 409 and refused.json()["erro"].startswith("Sem internet") and forgotten == [1]
 
 
 def test_library_tab_gave_place_to_the_documents_panel(env):

@@ -160,7 +160,11 @@ Abre `http://127.0.0.1:8765`, acessível só pelo seu computador. Rode a partir 
 modelo local responde, e um selo "Sem internet" fica no topo da tela. A busca na biblioteca, a memória, as conversas
 e o Obsidian funcionam como sempre. A busca na web, a leitura ampla e a conferência na web são recusadas na hora. Uma
 pergunta que passa do contexto local ou que o local não alcança é recusada com o motivo, e a resposta local que o
-Gemini refaria fica como veio, com o aviso na rota.
+Gemini refaria fica como veio, com o aviso na rota. Sem rede, o modo entra sozinho e sai quando a internet volta, sem
+reiniciar (lote 68); a variável continua forçando o modo, com ou sem rede.
+
+**O seu nome (lote 72).** Se a memória ainda não sabe o seu nome, o AL-IAdo pergunta uma única vez, no fim de uma
+resposta. A resposta vira uma anotação de perfil, que você vê e edita na aba Memória.
 
 - **Conversas:**
   - Ao abrir ou recarregar, a página mostra a tela de apresentação; as conversas ficam na lista ao lado.

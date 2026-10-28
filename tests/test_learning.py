@@ -41,6 +41,8 @@ def test_a_weak_trail_still_helps_the_search_but_is_no_longer_a_shortcut(tmp_pat
 @pytest.fixture
 def learning(env):  # noqa: F811
     env["settings"].memory = memory = MemoryStore(env["tmp"] / "aprendizado", encoder=Words())
+    memory.root.mkdir(parents=True)
+    (memory.root / "nome-perguntado").touch()  # o nome já foi perguntado (NUC-06), como no env
     env["settings"].models = [{"alias": "flash", "model_id": "a"}, {"alias": "flash_lite", "model_id": "b"}]
     env["library"].documents = lambda: [{"id": "d1", "title": "Baschel 2018", "version": 1, "status": "ready",
                                          "issues": [], "sha256": "a" * 64, "created_at": "2026-10-03T00:00:00+00:00"}]

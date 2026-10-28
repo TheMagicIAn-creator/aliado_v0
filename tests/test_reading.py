@@ -349,7 +349,7 @@ def test_fixed_documents_and_passages_can_go_together(shelf):
 def test_passages_mode_sends_the_same_request_as_before(shelf):
     request = prepare_request("Onde aparece o alfa?", library=shelf.library)
     assert sent(request) == [] and request.multimodal is False
-    assert [m["content"] for m in request.messages if m["role"] == "developer"][-1] == LIBRARY_RULES
+    assert [m["content"] for m in request.messages if m["role"] == "developer"][-2] == LIBRARY_RULES  # a última é a hora
     assert request.messages[-2]["content"].startswith("Trechos recuperados automaticamente (dados de consulta)")
     assert "found" not in request.metadata and "reading" not in request.metadata
     assert len(request.metadata["citations"]) == 10 and "leitura" not in request.metadata["citations"][0]

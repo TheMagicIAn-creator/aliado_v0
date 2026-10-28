@@ -81,6 +81,9 @@ _SOURCES = re.compile(r"\b(literatura|fontes?|citac\w+|definic\w+|conceitos?|ref
 _WORKS = re.compile(r"\b(teses?|thesis|theses|tcc|monografias?)\b")
 _TASK = re.compile(r"\b(traceback|python|codigo|script|planilha|e-?mail|https?|na web|noticias?|programa\w*)\b")
 _CODE = re.compile(r"\b(traceback|python|codigo|script|programa\w*)\b")
+# Lote 70: tradução, explicação para leigo ou curta e lista pedem só o modelo; sem pedido de fonte, a biblioteca só atrasa.
+_DIRECT = re.compile(r"^(traduza|traduzir|translate)\b|\bpara (um |uma )?leig[oa]s?\b|"
+                     r"\bem (uma|duas|tres|ate (duas|tres|\d+)|\d+) (frases?|linhas?)\b|\bem poucas palavras\b|^liste\b")
 _SYNTHESIS = re.compile(r"\b(compare|comparar|explique|discuta|resuma|o que (e|sao)|como funciona|por que)\b")
 _INSTITUTION_NOISE = {"inc", "ltd", "and", "of", "for", "the"}
 # Pedidos escritos (lote 35): o que antes era um seletor ou uma chave da tela. Valem só no começo ou no fim de uma
@@ -335,8 +338,10 @@ def _intent(text: str, question: str, words: list[str], named: tuple, encoder, c
         return "continuacao", "mensagem curta que continua a pergunta anterior"
     if after_results and len(words) <= FOLLOW_UP_WORDS and not _GREETING.search(text):
         return "resultados", "mensagem curta que continua a pergunta sobre os resultados"
-    label, value, margin = _best(_scores(encoder, "intents", _specialized()["intents"], question))
     sources = bool(_SOURCES.search(text))
+    if _DIRECT.search(text) and not sources:
+        return "tarefa", "pede tradução, explicação curta ou lista, sem pedir fontes: responde direto"
+    label, value, margin = _best(_scores(encoder, "intents", _specialized()["intents"], question))
     if (label is not None and value >= MIN_SIMILARITY and margin >= MIN_MARGIN
             and not (label in {"conversa", "tarefa"} and sources) and not (label == "resultados" and _WORKS.search(text))):
         return label, f"parece uma mensagem do tipo «{label}»"

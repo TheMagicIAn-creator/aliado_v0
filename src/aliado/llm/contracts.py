@@ -125,10 +125,20 @@ class LLMStreamChunk:
     truncated: bool = False
 
 
+class TruncatedOutput(ValueError):
+    """A saída estruturada veio cortada no teto de tokens e não serve; a chamada aconteceu e, no Gemini, foi cobrada:
+    `result` leva o uso para o registro (lote 72)."""
+
+    def __init__(self, message: str, result: LLMResult):
+        super().__init__(message)
+        self.result = result
+
+
 __all__ = [
     "LLMRequest",
     "LLMResult",
     "LLMStreamChunk",
     "LLMUsage",
     "MethodologicalRisk",
+    "TruncatedOutput",
 ]

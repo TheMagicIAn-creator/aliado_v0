@@ -416,3 +416,24 @@ def test_trail_pages_rise_when_cited_again_and_old_databases_gain_the_columns(tm
     again.remember_exchange(conversation_id="c1", message_id="m1", question="x", answer="y",
                             pages=[{"sha256": "a" * 64, "page": 3}])
     assert again.trail("Qual a taxa de falha do ventilador?")[0]["pages"][0]["page"] == 3
+
+
+def test_translation_short_explanation_and_lists_go_straight_to_the_model():
+    """ROT-09 (lote 70): tradução, explicação para leigo ou curta e lista vão direto ao modelo, sem a biblioteca; com
+    pedido de fonte, continuam na biblioteca, e as perguntas aprovadas que não citam documento também."""
+    for text in ("Traduza para o inglês: o inversor falhou por sobreaquecimento.",
+                 "Liste 3 causas comuns de falha em inversores, em tópicos.",
+                 "Explique o que é FMECA para um leigo, em até 3 frases.",
+                 "Resuma em uma frase o que é um inversor fotovoltaico."):
+        found = go(text)
+        assert (found.intent, found.rung) == ("tarefa", routing.NONE), text
+    for text in ("Liste as fontes que tratam de MPPT.", "Explique para um leigo, com citação, o que é MTBF.",
+                 # P5, P6, P7, P8, E4 e E8 das perguntas aprovadas, que ficam em data/avaliacao-busca.
+                 "Como o aprendizado por reforço ajusta a taxa de contaminação do Isolation Forest em usinas solares?",
+                 "Como funciona o rastreamento do ponto de máxima potência (MPPT) em sistemas fotovoltaicos?",
+                 "Como se calcula a confiabilidade de um sistema com componentes em série e em paralelo?",
+                 "Qual a confiabilidade estimada dos reguladores de tensão de bateria em sistemas fotovoltaicos?",
+                 "When did FMEA originate, and which military procedure introduced it?",
+                 "What causes random failures in the bathtub curve, such as stress-strength interference or an "
+                 "insufficient safety factor?"):
+        assert go(text).rung >= routing.PASSAGES, text

@@ -9,9 +9,10 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable
+from dataclasses import replace
 
 from aliado.knowledge.stopwords import plain
-from aliado.llm.contracts import LLMRequest, LLMResult
+from aliado.llm.contracts import LLMRequest, LLMResult, TruncatedOutput
 from aliado.memory.store import KINDS, MAX_TEXT
 
 MAX_NOTES = 8
@@ -21,7 +22,8 @@ MAX_CARD_CHARS = 200_000
 # Lote 32: filtro conservador, sem modelo. Na dúvida sobre uma declaração, revisar.
 _DURABLE = re.compile(
     r"\b(prefiro|preferimos|minha preferencia|nao (?:quero|use|utilize)|"
-    r"(?:meu nome (?:e|eh)|me chamo|me chamar|me chame)|sou|moro|"
+    r"(?:meu nome (?:e|eh)|(?<!como )(?<!como eu )me chamo|me chamar|me chame)|sou|moro|"
+    r"(?:anotar|guardar|gravar|salvar)(?: o)? meu nome|"
     r"(?:meu|minha|nosso|nossa) (?:orientador|orientadora|prazo|instituicao|universidade|pesquisa|projeto)|"
     r"eu (?:trabalho|estudo|defendo)|decidi|decidimos|escolhi|escolhemos|"
     r"vamos (?:usar|adotar|manter|trocar)|ficou decidido|a partir de agora|"
@@ -35,9 +37,39 @@ _LOOKUP = re.compile(
     r"mostre|mostrar|traga|trazer|busque|buscar|procure|pesquise|verifique|verificar|"
     r"defina|descreva|calcule|analise|cite|liste|continue|prossiga|traduza|"
     r"me (?:diga|explique|mostre|traga|ajude))\b")
-_SMALL_TALK = re.compile(
-    r"^(?:oi|ola|bom dia|boa tarde|boa noite|obrigado|obrigada|muito obrigado|muito obrigada|"
-    r"valeu|ok|certo|entendi|perfeito|sim|nao|continue|prossiga)[!. ,]*$")
+# Lote 70: com o vocativo ("Olá, aliado.") e as despedidas ("Tchau, até amanhã!"), que acionavam o revisor.
+_GREETINGS = (r"(?:oi|ola|bom dia|boa tarde|boa noite|obrigado|obrigada|muito obrigado|muito obrigada|"
+              r"valeu|ok|certo|entendi|perfeito|sim|nao|continue|prossiga|tchau|ate (?:amanha|logo|mais|breve)|"
+              r"aliado|al-iado)")
+_SMALL_TALK = re.compile(rf"^{_GREETINGS}(?:[!. ,]+{_GREETINGS})*[!. ,]*$")
+# Lote 72 (NUC-06): sem o nome no perfil, o app pergunta uma única vez, com esta frase, no fim de uma resposta.
+NAME_QUESTION = "Ainda não sei seu nome: como prefere ser chamado?"
+
+
+_TELLS_NAME = re.compile(r"\b(?:meu nome|me chamo|me chame|me chamar|sou (?:o|a)|aqui (?:e|eh) (?:o|a))\b")
+
+
+def answers_name(history=()) -> bool:
+    """A mensagem vem logo depois da pergunta do nome: a última resposta do assistente terminou com ela."""
+    last = next((item["content"] for item in reversed(history) if item["role"] == "assistant"), "")
+    return last.rstrip().endswith(NAME_QUESTION)
+
+
+def tells_name(text: str) -> bool:
+    """A mensagem diz o nome do usuário ("Meu nome é…", "me chame de…", "sou o…")."""
+    return bool(_TELLS_NAME.search(plain(" ".join(text.split()))))
+
+
+def name_reply(text: str, history=()) -> bool:
+    """A mensagem responde à pergunta do nome: diz o nome, ou é só um nome ("Rodolfo Torres"). Uma pergunta, uma
+    reclamação ("Não era isso.") ou um "Continue" ignoram a pergunta do nome e seguem o roteador (NUC-06)."""
+    if not answers_name(history) or "?" in text:
+        return False
+    if tells_name(text):
+        return True
+    words = [word for word in re.findall(r"[^\W\d_]+", text) if len(word) > 2]  # sem "de", "da", "do"
+    return 0 < len(words) <= 3 and all(word[0].isupper() for word in words) \
+        and not _SMALL_TALK.fullmatch(plain(" ".join(text.split())))
 
 
 def needs_review(question: str, *, explicit: bool = False, history=()) -> bool:
@@ -47,7 +79,7 @@ def needs_review(question: str, *, explicit: bool = False, history=()) -> bool:
     não acionam o revisor sozinhas; fatos documentais continuam sendo anotados nas fichas.
     """
     text = plain(" ".join(question.split()))
-    if explicit:
+    if explicit or answers_name(history):
         return True
     if text.rstrip(".! ") in {"sim", "nao", "ok", "certo", "pode", "pode ser"}:
         last = next((plain(item["content"]) for item in reversed(history) if item["role"] == "assistant"), "")
@@ -182,7 +214,11 @@ def review_exchange(execute: Callable[[LLMRequest], LLMResult], *, question: str
         "anotacoes_existentes": [{"id": m["id"], "tipo": m["kind"], "origem": m["origin"], "texto": m["text"]}
                                  for m in existing],
     }
-    result = execute(_request("memoria-revisor", instructions, payload, REVIEW_SCHEMA))
+    # Lote 70: sem raciocínio, como a reescrita (PRV-07). Com ele, o local gastava os 2.048 tokens pensando, em 83 s,
+    # e a resposta cortada perdia as anotações em silêncio.
+    result = execute(replace(_request("memoria-revisor", instructions, payload, REVIEW_SCHEMA), reasoning_level="low"))
+    if result.truncated:
+        raise TruncatedOutput("A resposta do revisor de memória veio cortada.", result)
     by_citation = {s["citation_id"]: s for s in sources if s.get("citation_id")}
     existing_ids = {m["id"] for m in existing}
     notes = []
@@ -216,7 +252,10 @@ def reading_card(execute: Callable[[LLMRequest], LLMResult], *, title: str, mark
     """Resumo e fatos-chave com página conferida; páginas inexistentes são descartadas."""
     payload = {"titulo": title, "documento_markdown": markdown[:MAX_CARD_CHARS],
                "truncado": len(markdown) > MAX_CARD_CHARS}
-    result = execute(_request("memoria-ficha", CARD_INSTRUCTIONS, payload, CARD_SCHEMA))
+    # Lote 72: o mesmo defeito do revisor (lote 70): com raciocínio, o local gastava o teto pensando (PRV-07).
+    result = execute(replace(_request("memoria-ficha", CARD_INSTRUCTIONS, payload, CARD_SCHEMA), reasoning_level="low"))
+    if result.truncated:
+        raise TruncatedOutput("A ficha de leitura veio cortada.", result)
     data = result.structured_data or {}
     base = {"document_id": document_id, "title": title, "ficha": True}
     notes = []

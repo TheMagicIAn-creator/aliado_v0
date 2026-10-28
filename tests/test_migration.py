@@ -108,5 +108,5 @@ def test_cli_prepares_unicode_context_in_windows_pipe(tmp_path):
     from aliado.skills.library import load_skill
 
     reference = load_skill("pesquisa-inversores").references[0][1]
-    assert reference in request["messages"][-2]["content"]
+    assert reference in request["messages"][-3]["content"]  # a hora fica entre eles (NUC-05)
     assert request["messages"][-1]["content"] == "Explique as taxas de falha"

@@ -146,13 +146,19 @@ $("font").addEventListener("change", (event) => applyFont(event.target.value));
 applyFont(store.get("aliado.font", "padrao"));
 
 /* Estado geral */
+// Lote 63; no lote 68, o selo entra e sai sozinho com a rede: a cada resposta e a cada minuto.
+function showOffline(data) {
+  $("offline-badge").hidden = !data.sem_internet;
+}
+setInterval(() => api("/api/estado").then(showOffline).catch(() => {}), 60_000);
+
 async function loadState() {
   const data = await api("/api/estado");
   // Lote 35: sem seletores na tela, o roteador escolhe a skill, o modelo e a leitura de cada mensagem.
   state.models = data.modelos;
   if (!data.modelos.length) toast("Nenhum modelo Gemini configurado. Confira o .env e reinicie.");
   state.reading = data.leitura || {};
-  $("offline-badge").hidden = !data.sem_internet;  // lote 63
+  showOffline(data);
   checkServerAge(data);
   showUsage(data.uso);
 }
@@ -1162,7 +1168,7 @@ async function submitQuestion(text, extra = {}) {
           conversation.messages.push(...data.mensagens);
           messages.scrollTop = messages.scrollHeight;
           loadConversations();
-          api("/api/estado").then((s) => showUsage(s.uso)).catch(() => {});
+          api("/api/estado").then((s) => { showUsage(s.uso); showOffline(s); }).catch(() => {});
         },
         onMemory(event) {
           if (!active()) return;
@@ -1180,6 +1186,7 @@ async function submitQuestion(text, extra = {}) {
             toast(`${event.criadas.length} anotação(ões) nova(s) na memória.`);
             refreshMemoryBadge();
           }
+          if (event.aviso) toast(event.aviso); // lote 72: a falha do revisor aparece (PRV-07)
         },
       }, controller.signal);
     } catch (error) {

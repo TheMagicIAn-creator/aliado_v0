@@ -39,11 +39,12 @@ from aliado.knowledge.coverage import make_plan
 from aliado.knowledge.metadata import reference
 from aliado.knowledge.rewrite import rewrite_kind
 from aliado.knowledge.stopwords import plain
+from aliado.llm.contracts import TruncatedOutput
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
 from aliado.llm.providers.gateway import OfflineRefusal
 from aliado.llm.providers.local import ESCALATE, LocalProvider, LocalUnavailable
 from aliado.llm.usage_log import record_usage
-from aliado.memory.reviewer import needs_review
+from aliado.memory.reviewer import NAME_QUESTION, answers_name, name_reply, needs_review, tells_name
 from aliado.memory.store import TRAIL_QUESTION, TRAIL_STRONG, trail_pages
 from aliado.skills.library import list_skills, load_skill
 
@@ -59,6 +60,12 @@ OUT_OF_CONTEXT = {"insufficient_evidence", "invalid_citations", "invalid_result_
 UNVERIFIED_RESULTS = "numeros_nao_conferidos"
 # "Lembre que…", "lembre-se de que…", "lembra que…": pedido explícito de anotação.
 EXPLICIT_MEMORY = re.compile(r"^\s*lembr[ae](?:-se)?(?:\s+de)?\s+que\b", re.IGNORECASE)
+# Lote 72 (NUC-06): a pergunta do nome é feita uma única vez; o arquivo marca, na pasta da memória, que já foi.
+NAME_MARK = "nome-perguntado"
+# Uma anotação de perfil com o nome do próprio usuário ("O usuário se chama Rodolfo.", não "A orientadora do usuário
+# se chama Ana.").
+NAMED = re.compile(r"(?<!do )(?<!da )\b(?:usuari[oa]|pesquisadora?) (?:se chama|prefere ser chamad[oa]|e chamad[oa])\b"
+                   r"|\bnome (?:completo )?d[oa] (?:usuari[oa]|pesquisadora?)\b|\bseu nome (?:e|eh)\b")
 MEMORY_VIEW_KEYS = ("id", "kind", "text", "origin", "status", "skill", "source", "diverges_skill",
                     "conflict_with", "supersedes", "superseded_by", "created_at")
 # Modelo que descreve as figuras e tabelas (lote 29), escolhido pelo pesquisador no piloto de 03/10/2026,
@@ -147,6 +154,8 @@ class WebSettings:
     forget_files: Callable[[], dict] | None = None
     # Modo sem internet (lote 63): só o modelo local responde; o que precisaria do Gemini ou da web é recusado.
     offline: bool = False
+    # Lote 68: há rede agora? Sem ela, o modo sem internet entra sozinho e sai quando ela volta.
+    online: Callable[[], bool] | None = None
 
     def __post_init__(self):
         self.data_dir = Path(self.data_dir).resolve()
@@ -208,10 +217,20 @@ def _error(message: str, status: int = 400) -> JSONResponse:
 
 
 OFFLINE_HINT = "Tire AL_IADO_OFFLINE do .env e reinicie para usar o Gemini."
+NO_NETWORK_HINT = "Quando a internet voltar, o AL-IAdo volta a usar o Gemini sozinho."
 
 
-def _offline_message(reason: str) -> str:
-    return f"Sem internet: esta pergunta precisa do Gemini ({reason}). Peça só os trechos, ou: {OFFLINE_HINT}"
+def _offline(settings) -> bool:
+    """Sem internet (lote 68): forçado pelo .env, ou sem rede agora."""
+    return settings.offline or (settings.online is not None and not settings.online())
+
+
+def _hint(settings) -> str:
+    return OFFLINE_HINT if settings.offline else NO_NETWORK_HINT
+
+
+def _offline_message(reason: str, hint: str = OFFLINE_HINT) -> str:
+    return f"Sem internet: esta pergunta precisa do Gemini ({reason}). Peça só os trechos, ou: {hint}"
 
 
 def _view(message: dict) -> dict:
@@ -305,6 +324,34 @@ def _local_missed(result) -> bool:
         or result.results_status == UNVERIFIED_RESULTS or ESCALATE in result.content)
 
 
+def _asks_name(settings, memories, text: str) -> bool:
+    """Sem o nome no perfil, a resposta termina perguntando por ele, uma única vez em todas as conversas (NUC-06).
+    A mensagem que já diz o nome não ganha a pergunta: o revisor anota o nome dela. Sem revisor, não há quem anote."""
+    memory = settings.memory
+    if memory is None or settings.reviewer is None or (Path(memory.root) / NAME_MARK).exists():
+        return False
+    known = any(m["kind"] == "perfil" and NAMED.search(plain(m["text"])) for m in memories)
+    return not known and not tells_name(text)
+
+
+def _ask_name_again(memory) -> None:
+    """A resposta à pergunta do nome não chegou à memória (revisor falhou, resposta fora do contexto): a pergunta volta
+    na próxima resposta, em vez de o nome se perder de vez (NUC-06)."""
+    try:
+        (Path(memory.root) / NAME_MARK).unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _record_cut(error, log) -> None:
+    """A saída cortada é erro, mas a chamada aconteceu: o uso entra no registro (lote 72)."""
+    if isinstance(error, TruncatedOutput):
+        try:
+            record_usage(error.result, log)
+        except OSError:
+            pass
+
+
 def _deeper(rung: int, result, library_) -> dict | None:
     """O degrau seguinte da escada e quanto ele custaria, para o botão "Ler mais fundo" (lote 31). Vai até o
     documento citado: a leitura ampla só por pedido escrito (lote 35)."""
@@ -396,7 +443,7 @@ def create_app(settings: WebSettings) -> Starlette:
                         "modos": list(READING_MODES), "limite": settings.ceiling, "aviso_diario": settings.daily_warning},
             "iniciado": started,
             "uso": _usage_totals(settings.usage_log),
-            "sem_internet": settings.offline,
+            "sem_internet": await run_in_threadpool(_offline, settings),
         })
 
     async def conversations(request: Request):
@@ -492,10 +539,10 @@ def create_app(settings: WebSettings) -> Starlette:
         budget = body.get("teto") or settings.reading_budget
         if mode not in READING_MODES or budget not in reading.BUDGETS:
             return _error("Modo de leitura ou teto desconhecido.")
-        if settings.offline and (use_web or mode == "integral"):
+        if (use_web or mode == "integral") and await run_in_threadpool(_offline, settings):
             # Antes de qualquer chamada: a web e a leitura ampla só existem no Gemini.
             return _error(f"Sem internet: {'a busca na web' if use_web else 'a leitura ampla'} precisa do Gemini. "
-                          + OFFLINE_HINT)
+                          + _hint(settings))
         confirmed = body.get("confirmado") if isinstance(body.get("confirmado"), str) else None
         asked = [item for item in body.get("documentos") or () if isinstance(item, str)] \
             if isinstance(body.get("documentos"), list) else []
@@ -525,6 +572,11 @@ def create_app(settings: WebSettings) -> Starlette:
                 text, encoder=getattr(source, "encoder", None), cards=cards, skills=list(skills),
                 current_skill=(last_user or {}).get("skill") if skill == "auto" else skill,
                 library=source is not None, results=use_results, previous=previous, vocabulary=vocabulary())
+            if name_reply(text, history):
+                # NUC-06: a resposta à pergunta do nome é conversa, sem a biblioteca e com o modelo mais barato. Como
+                # continuação, ela ia aos trechos, e o Flash podia refazer, pago, um "Prazer" que não citou nada.
+                found = routing.Route("conversa", routing.NONE, None, routing.CHEAP,
+                                      reasons=("a mensagem responde à pergunta do nome: é conversa",))
             reasons = list(found.reasons)
             if redo:
                 reasons.insert(0, "a mensagem só tinha um pedido: a pergunta anterior foi refeita com ele")
@@ -707,7 +759,7 @@ def create_app(settings: WebSettings) -> Starlette:
                     except OSError:
                         pass
                     # A escalada e sempre para o Flash; a escolha do menor so vale antes dela (lote 44).
-                    if settings.offline:
+                    if _offline(settings):
                         escalation_failed = True
                         reasons.append("modo sem internet: a resposta local foi mantida com os avisos")
                     elif routing.STRONG not in aliases:
@@ -803,7 +855,7 @@ def create_app(settings: WebSettings) -> Starlette:
                 yield line({"tipo": "erro", "erro": str(exc)})
                 return
             except OfflineRefusal as exc:
-                yield line({"tipo": "erro", "erro": _offline_message(str(exc))})
+                yield line({"tipo": "erro", "erro": _offline_message(str(exc), _hint(settings))})
                 return
             except ProviderError:
                 # Mensagens de SDK podem conter URLs ou credenciais; não são repassadas.
@@ -846,6 +898,12 @@ def create_app(settings: WebSettings) -> Starlette:
                               or (lesson["campo"] == "leitura" and mode == "auto")],
                 "trilha": {"data": trail["created_at"], "pergunta": " ".join(trail["question"].split())[:200],
                            "conversa": trail["conversation_id"]} if trail else None}
+            spoken = result.content  # a memória de conversas guarda a resposta sem a pergunta do nome
+            ask_name = in_context and _asks_name(settings, memories, text)
+            if ask_name:
+                result = replace(result, content=f"{result.content.rstrip()}\n\n{NAME_QUESTION}")
+            elif not in_context and settings.memory is not None and name_reply(text, history):
+                _ask_name_again(settings.memory)  # a resposta ao nome ficou fora do contexto: o revisor não a vê
             reply = {"role": "assistant", "content": result.content, "in_context": in_context,
                      "provider": result.provider, "model": result.model,
                      "usage": asdict(result.usage) if result.usage else None,
@@ -878,11 +936,16 @@ def create_app(settings: WebSettings) -> Starlette:
             except ValueError:
                 yield line({"tipo": "erro", "erro": "A conversa foi apagada durante a resposta."})
                 return
+            if ask_name:
+                try:
+                    (Path(settings.memory.root) / NAME_MARK).touch()
+                except OSError:
+                    pass  # sem a marca, a pergunta volta na próxima resposta: melhor que perder a conversa
             if in_context and settings.memory is not None:
                 try:
                     settings.memory.remember_exchange(
                         conversation_id=cid, message_id=stored["messages"][-1]["id"], question=text,
-                        answer=result.content, skill=memory_skill,
+                        answer=spoken, skill=memory_skill,
                         created_at=stored["messages"][-1].get("created_at"),
                         # A trilha: as páginas citadas, quando a pergunta é das que os documentos respondem.
                         **({"pages": pages, "key": search_query} if found.intent in LIBRARY_INTENTS
@@ -896,7 +959,7 @@ def create_app(settings: WebSettings) -> Starlette:
                         "mensagens": [_view(m) for m in stored["messages"][-2:]]})
             if in_context and settings.memory is not None and settings.reviewer is not None and needs_review(
                     text, explicit=bool(EXPLICIT_MEMORY.match(text)), history=history):
-                yield line(review(stored, memories, result))
+                yield line(review(stored, memories, replace(result, content=spoken)))  # sem a pergunta do nome
 
         def results_for_request() -> tuple[dict | None, list[str]]:
             """O resumo dos resultados e o que faltou, em palavras; uma falha aqui não derruba a conversa."""
@@ -987,7 +1050,9 @@ def create_app(settings: WebSettings) -> Starlette:
                 record_usage(rewrite_result, settings.usage_log)
             except OSError:
                 pass
-            return query, (rewrite_result.usage.total_tokens or 0) if rewrite_result.usage else 0
+            # Os tokens do modelo local não são pagos (lote 38): não descontam do teto (lote 72).
+            local = rewrite_result.provider == LocalProvider.name
+            return query, (rewrite_result.usage.total_tokens or 0) if rewrite_result.usage and not local else 0
 
         def review(stored: dict, memories: list[dict], result) -> dict:
             """Revisor depois da resposta: a conversa já está salva, e uma falha aqui não a afeta."""
@@ -996,15 +1061,25 @@ def create_app(settings: WebSettings) -> Starlette:
                 memory_skill = stored["messages"][-2].get("skill")
                 memory_skill = None if memory_skill == "nenhuma" else memory_skill
                 skill_text = load_skill(memory_skill).instructions if memory_skill else ""
+                # A mensagem depois da pergunta do nome ("Rodolfo") vai com a pergunta, dita como do AL-IAdo, para o
+                # revisor anotar o perfil se ela trouxer o nome (NUC-06).
+                question = (f'O AL-IAdo perguntou "{NAME_QUESTION}". A mensagem seguinte do usuário: {text}'
+                            if answers_name(history) else text)
                 notes, review_result = settings.reviewer(
-                    question=text, answer=result.content, skill=memory_skill, skill_text=skill_text,
+                    question=question, answer=result.content, skill=memory_skill, skill_text=skill_text,
                     sources=list(result.sources) + [
                         {"citation_id": f"W{n}", "title": s.get("title") or s.get("domain") or "web",
                          "url": s.get("uri"), "text": ""} for n, s in enumerate(result.web_sources, 1)],
                     existing=memories,
                     explicit=bool(EXPLICIT_MEMORY.match(text)))
-            except (ProviderError, ValueError, KeyError, TypeError):
-                return {"tipo": "memoria", "criadas": [], "aviso": "O revisor de memória não respondeu."}
+            except (ProviderError, ValueError, KeyError, TypeError) as error:
+                _record_cut(error, settings.usage_log)
+                notice = "O revisor de memória não respondeu."
+                if name_reply(text, history):
+                    _ask_name_again(settings.memory)
+                    notice += " Seu nome não foi anotado: a pergunta volta na próxima resposta."
+                # Lote 72: com a mensagem, a tela acha a resposta e mostra o aviso (PRV-07).
+                return {"tipo": "memoria", "mensagem": reply_id, "criadas": [], "aviso": notice}
             try:
                 record_usage(review_result, settings.usage_log)
             except OSError:
@@ -1048,7 +1123,11 @@ def create_app(settings: WebSettings) -> Starlette:
 
     def _document_card(library_, title: str) -> dict:
         """Ficha do documento pelo Flash-Lite, conferida no texto; grava mesmo vazia (tentativa feita)."""
-        card, card_result = settings.card_extractor(title=title, text=library_.opening_text(title))
+        try:
+            card, card_result = settings.card_extractor(title=title, text=library_.opening_text(title))
+        except TruncatedOutput as error:
+            _record_cut(error, settings.usage_log)
+            raise
         try:
             record_usage(card_result, settings.usage_log)
         except OSError:
@@ -1183,7 +1262,8 @@ def create_app(settings: WebSettings) -> Starlette:
                 notes, card_result = settings.card_maker(
                     title=result["title"], markdown=markdown, document_id=result["id"],
                     pages=_pdf_pages(markdown))
-            except (ProviderError, ValueError, OSError, KeyError, TypeError):
+            except (ProviderError, ValueError, OSError, KeyError, TypeError) as error:
+                _record_cut(error, settings.usage_log)
                 return {"fichas": 0, "aviso_ficha": "A ficha de leitura não pôde ser criada agora."}
             try:
                 record_usage(card_result, settings.usage_log)
@@ -1263,8 +1343,8 @@ def create_app(settings: WebSettings) -> Starlette:
         """Confere a anotação na web e aplica as regras de conflito a uma correção."""
         if settings.checker is None:
             return _error("Busca na web não configurada.", 400)
-        if settings.offline:
-            return _error("Sem internet: a conferência na web precisa do Gemini. " + OFFLINE_HINT)
+        if await run_in_threadpool(_offline, settings):
+            return _error("Sem internet: a conferência na web precisa do Gemini. " + _hint(settings))
         target = await run_in_threadpool(memory.get, memory_id)
         if target["status"] not in {"ativa", "conflito"}:
             return _error("Só anotações ativas ou em conflito podem ser conferidas.")
@@ -1440,6 +1520,9 @@ def create_app(settings: WebSettings) -> Starlette:
         if request.method == "DELETE":
             if settings.forget_files is None:
                 return _error("O serviço de arquivos não está configurado.")
+            if _offline(settings):
+                # Lote 72: apagar também fala com o Google; sem internet, nada sai do computador (PRV-08).
+                return _error(f"Sem internet: os arquivos ficam no Google até a internet voltar. {_hint(settings)}", 409)
             try:
                 counts = await run_in_threadpool(settings.forget_files)
             except ProviderError:
@@ -1582,5 +1665,5 @@ def default_settings(*, data_dir: Path, library_dir: Path, port: int, results_di
                        figure_reader=read_figures if figure_alias else None,
                        figure_model=figure_name,
                        uploaded_files=google.uploaded, forget_files=google.forget_uploads,
-                       offline=gateway.offline)
+                       offline=gateway.offline, online=gateway.online)
     return settings

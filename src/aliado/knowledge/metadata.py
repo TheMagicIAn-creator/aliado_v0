@@ -13,7 +13,7 @@ from collections.abc import Callable
 from datetime import date
 
 from aliado.knowledge.stopwords import STOPWORDS, plain
-from aliado.llm.contracts import LLMRequest, LLMResult
+from aliado.llm.contracts import LLMRequest, LLMResult, TruncatedOutput
 
 MAX_CHARS = 6000
 MAX_AUTHORS = 12
@@ -109,9 +109,12 @@ def extract_card(execute: Callable[[LLMRequest], LLMResult], *, title: str, text
         messages=[{"role": "developer", "content": INSTRUCTIONS},
                   {"role": "user", "content": json.dumps({"arquivo": title, "inicio_do_documento": opening},
                                                          ensure_ascii=False)}],
-        structured_output=CARD_SCHEMA, max_output_tokens=512, temperature=0.0,
+        # Lote 72: sem raciocínio, como o revisor (PRV-07): com ele, o local gastava os 512 tokens pensando.
+        structured_output=CARD_SCHEMA, max_output_tokens=512, temperature=0.0, reasoning_level="low",
     )
     result = execute(request)
+    if result.truncated:
+        raise TruncatedOutput("A ficha do documento veio cortada.", result)
     return check_card(result.structured_data or {}, opening), result
 
 

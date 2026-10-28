@@ -177,6 +177,43 @@ def test_reviewer_accepts_profile_and_reads_up_to_eight_notes():
     assert "- perfil:" in calls[0].messages[0]["content"]
 
 
+def test_reviewer_asks_for_low_reasoning_and_refuses_a_cut_answer():
+    """PRV-07 (lote 70): o revisor vai sem raciocínio; a saída cortada vira erro, em vez de uma lista vazia calada."""
+    from dataclasses import replace
+
+    import pytest
+
+    execute, calls = fake_execute({"anotacoes": []})
+    review_exchange(execute, question="Meu nome é Rodolfo.", answer="Olá, Rodolfo!", skill=None)
+    assert calls[0].reasoning_level == "low" and calls[0].task_type == "memoria-revisor"
+    with pytest.raises(ValueError, match="cortada"):
+        review_exchange(lambda request: replace(execute(request), truncated=True, structured_data=None),
+                        question="Meu nome é Rodolfo.", answer="Olá, Rodolfo!", skill=None)
+
+
+def test_cards_ask_for_low_reasoning_and_refuse_a_cut_answer():
+    """PRV-07 (lote 72): as duas fichas vão sem raciocínio, como o revisor; a saída cortada vira erro, não ficha vazia."""
+    from dataclasses import replace
+
+    from aliado.knowledge.metadata import extract_card
+
+    execute, calls = fake_execute({"resumo": "Estudo.", "fatos": []})
+    reading_card(execute, title="doc.pdf", markdown="texto", document_id="d1", pages=0)
+    extract_card(execute, title="doc.pdf", text="Um título qualquer")
+    assert [call.reasoning_level for call in calls] == ["low", "low"]
+
+    def cut(request):
+        return replace(execute(request), truncated=True, structured_data=None)
+
+    from aliado.llm.contracts import TruncatedOutput
+
+    with pytest.raises(TruncatedOutput, match="cortada") as caught:
+        reading_card(cut, title="doc.pdf", markdown="texto", document_id="d1", pages=0)
+    assert caught.value.result.truncated  # o resultado vai junto, para o uso entrar no registro
+    with pytest.raises(TruncatedOutput, match="cortada"):
+        extract_card(cut, title="doc.pdf", text="Um título qualquer")
+
+
 def test_profile_is_global_and_always_recalled(store):
     profile = store.add(kind="perfil", text="O usuário se chama Rodolfo e é mestrando.", origin="feedback",
                         skill="pesquisa-inversores")

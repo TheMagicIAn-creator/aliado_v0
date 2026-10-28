@@ -5,6 +5,44 @@ seguem o [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+### Lote 74: o cumprimento certo do período
+
+- **O cumprimento:** o pedido ao modelo traz a palavra pronta do período ("Bom dia", "Boa tarde" ou "Boa noite", também
+  de madrugada). Ela vale para cumprimentar e para se despedir (NUC-05).
+- **A medição** (30 chamadas locais, nenhuma paga):
+  - a despedida foi corrigida, e os cumprimentos acertaram em 15 de 18;
+  - 11 de 30 respostas comentam as instruções, ainda sem a comparação com a mensagem antiga.
+
+### Lote 73: a rodada do lote 72 no modelo local
+
+- **A medição:** 38 chamadas locais, nenhuma paga.
+  - O nome "Rodolfo" foi anotado e usado numa conversa nova; "Rô" foi anotado, mas não foi usado.
+  - As quatro fichas saíram no local, sem corte.
+  - A conversa passou em 32 de 35 conferências.
+
+### Lote 72: o nome do usuário e a integração do Gemini com o Ollama
+
+- **O nome:** sem o nome no perfil, o AL-IAdo pergunta uma única vez, no fim de uma resposta, e o revisor de memória
+  anota a resposta no perfil (NUC-06). A falha do revisor passa a aparecer na tela.
+- **As fichas:** a ficha de leitura e a ficha do documento vão sem raciocínio, como o revisor; a saída cortada é erro.
+- **Sem internet:** apagar os arquivos do Google é recusado; no modo forçado, a recusa vem antes de conferir a chave.
+- **O teto:** a reescrita feita pelo modelo local não desconta mais do teto de 30 mil tokens.
+- **Pequenos acertos:** a dica de sem internet no terminal, o uso no streaming estruturado do Gemini e três variáveis
+  documentadas no `.env.example`.
+
+### Lote 71: a orientação do assistente de desenvolvimento
+
+- **Novos:** `CLAUDE.md`, `WORKFLOW.md`, `ESTADO.md`, cinco workflows em `workflows/` e um subagente revisor só de
+  leitura. A versão de 24/10, que não chegou ao Git, foi refeita do zero a pedido do pesquisador.
+
+### Lotes 67 a 70: a hora, a internet automática e a bateria do modelo local
+
+- **A hora e os nomes (lote 67):** o pedido diz a data e o período do dia; "aliado" é o próprio AL-IAdo (NUC-05).
+- **A internet automática (lote 68):** sem rede, o modo sem internet entra e sai sozinho (PRV-09).
+- **A bateria do local (lote 69):** 55 chamadas locais, nenhuma paga; 7 achados.
+- **O revisor e o roteador (lote 70):** o revisor de memória sem raciocínio (de 83 s para 4 s) e a tradução, a
+  explicação curta e a lista direto ao modelo (ROT-09).
+
 ### Lote 66: o resto da limpeza
 
 - **As indexações antigas:** o comando `aliado biblioteca limpar-versoes` mostra as que nenhum documento usa e, com

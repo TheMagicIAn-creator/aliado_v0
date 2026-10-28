@@ -11,7 +11,9 @@ chaves seguem descritos nas specs 0009 e 0012; o roteador, o teto de 30 mil e o 
 [spec 0046](../0046-correcoes-do-relatorio.md), altera PRV-02, PRV-06 e PRV-07; o lote 48, pela
 [spec 0048](../0048-raciocinio-nas-paginas.md), altera o PRV-07. O lote 57, pela
 [spec 0057](../0057-regras-sem-exemplo.md), altera o PRV-06. O lote 63, pela
-[spec 0063](../0063-sem-internet.md), acrescenta o PRV-08.
+[spec 0063](../0063-sem-internet.md), acrescenta o PRV-08; o lote 68, pela [spec 0068](../0068-internet-automatica.md),
+acrescenta o PRV-09; o lote 70, pela [spec 0070](../0070-revisor-roteador-harness.md), altera o PRV-07; o lote 72,
+pela [spec 0071](../0071-nome-e-provedores.md), altera o PRV-05, o PRV-07 e o PRV-08.
 
 ## Requisitos
 
@@ -54,7 +56,8 @@ abra o Ollama…", a pergunta não é refeita por outro modelo e o registro de u
 
 **PRV-05. O local não conta no uso pago.** As chamadas ao modelo local ficam no registro de uso, com o provedor
 `ollama`, mas não entram no "hoje", no total, no teto de 30 mil nem no aviso diário de 300 mil tokens; na resposta,
-os tokens dele aparecem como "tokens locais".
+os tokens dele aparecem como "tokens locais". Isso vale também para a reescrita da busca feita pelo local, que não
+desconta do teto da segunda leitura (lote 72).
 *Cenário:* dada uma resposta do local refeita pelo Gemini, quando a tela mostra o uso do dia, então ele soma só os
 tokens do Gemini.
 
@@ -85,6 +88,12 @@ páginas.
 - **A leitura de páginas inteiras ou do documento:** vai sem raciocínio no local (lote 48). Medido com o critério
   fixado antes: a chamada mediana caiu de 133 para 71 s, e 11 das 12 respostas citaram certo. O Gemini segue como
   antes.
+- **O revisor de memória (lote 70):** também vai com raciocínio baixo. Com raciocínio, o local gastava os 2.048 tokens
+  dele pensando, cerca de 83 s, e a saída cortada perdia as anotações em silêncio; agora a saída cortada é um erro, e
+  a tela diz que o revisor não respondeu. O filtro antes dele não chama o modelo para cumprimento com vocativo
+  ("Olá, aliado."), despedida ("Tchau, até amanhã!") nem pergunta ("Como eu me chamo?").
+- **As fichas (lote 72):** a ficha de leitura da memória e a ficha do documento (título, autores, ano) também vão com
+  raciocínio baixo, pelo mesmo motivo, e a saída cortada é um erro, em vez de uma ficha vazia.
 - **A segurança da resposta não muda:** a resposta sem citação, com números que não conferem ou com o pedido de ajuda
   é refeita pelo Gemini (PRV-02).
 
@@ -96,7 +105,16 @@ documento, então o local responde sem raciocínio; com trechos, com o raciocín
 **PRV-08. Sem internet, nada sai do computador.** Com `AL_IADO_OFFLINE=1` no .env (ou `aliado web --sem-internet`),
 só o modelo local responde. O gateway recusa, antes de abrir a conexão, toda chamada que iria a um provedor
 remoto: a escalada no limite do local (PRV-02), o que o local não alcança (PRV-03) e o pedido com `local=False`. A
-recusa diz o motivo. A descrição das figuras segue pelo local, e a página que ele não alcança fica por descrever.
+recusa diz o motivo; no modo forçado, ela vem antes de conferir a chave e os modelos do Gemini (lote 72). Apagar os
+arquivos enviados ao serviço de arquivos do Google também é recusado: eles ficam lá até a internet voltar (lote 72).
+A descrição das figuras segue pelo local, e a página que ele não alcança fica por descrever.
 Sem a variável, tudo segue como antes (lote 63).
 *Cenário:* dado o modo sem internet, quando o local pede ajuda ou o pedido passa do contexto dele, então a recusa diz
 "o modelo local não deu conta: pediu ajuda" ou "cerca de N tokens, acima do contexto local", e o Gemini não é chamado.
+
+**PRV-09. Sem rede, o modo sem internet entra sozinho.** Antes de uma chamada que iria a um provedor remoto, o gateway
+abre uma conexão com o servidor do Gemini (`generativelanguage.googleapis.com`, porta 443), por até 2 s, sem enviar
+nada, e guarda a resposta por 30 s. Sem conexão, vale tudo o que o PRV-08 diz; com a conexão de volta, tudo segue como
+antes, sem reiniciar. `AL_IADO_OFFLINE=1` continua forçando o modo, com ou sem rede (lote 68).
+*Cenário:* dado o computador sem rede, quando o pedido iria ao Gemini, então ele é recusado e o Gemini não é chamado; e,
+30 s depois de a rede voltar, o pedido vai ao Gemini.

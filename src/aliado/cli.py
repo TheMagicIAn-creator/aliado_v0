@@ -13,7 +13,7 @@ from pathlib import Path
 from aliado import specializations
 from aliado.agent import Agent, prepare_request
 from aliado.llm.providers.base import ProviderError, ProviderNotConfiguredError
-from aliado.llm.providers.gateway import OfflineRefusal, build_default_gateway
+from aliado.llm.providers.gateway import OfflineRefusal, build_default_gateway, offline_from_env
 from aliado.llm.providers.local import LocalUnavailable
 from aliado.llm.usage_log import DEFAULT_USAGE_LOG, record_usage, usage_line
 from aliado.skills.library import list_skills
@@ -259,7 +259,9 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)  # a mensagem é nossa, sem texto do SDK; nada foi ao Gemini
         return 2
     except OfflineRefusal as exc:
-        print(f"Sem internet: o pedido precisa do Gemini ({exc}). Tire AL_IADO_OFFLINE do .env.", file=sys.stderr)
+        # Lote 72: sem rede (lote 68), o modo sai sozinho; só o forçado pede para mexer no .env.
+        hint = "Tire AL_IADO_OFFLINE do .env." if offline_from_env() else "Confira a conexão e tente de novo."
+        print(f"Sem internet: o pedido precisa do Gemini ({exc}). {hint}", file=sys.stderr)
         return 2
     except ProviderError:
         # Exceções de SDK podem incluir cabeçalhos, URLs ou credenciais.

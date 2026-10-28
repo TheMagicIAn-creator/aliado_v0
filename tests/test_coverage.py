@@ -181,3 +181,22 @@ def test_the_second_call_happens_only_when_a_part_has_something_new_to_read(chat
     reply["confirm"] = 40_000
     answer = route_of(client, new_conversation(client), "Compare FMEA e FMECA.")
     assert answer["cobertura"]["complemento"] == "confirmacao_necessaria" and answer["cobertura"]["tokens_complemento"] == 40_000
+
+
+def test_a_local_rewrite_does_not_spend_the_paid_ceiling(chat):
+    """PRV-05 (lote 72): a reescrita feita pelo modelo local não desconta do teto da segunda chamada."""
+    from dataclasses import replace
+
+    client, calls, reply, settings = chat["client"], chat["calls"], chat["reply"], chat["settings"]
+    paid = settings.query_rewriter
+
+    def local(**kwargs):
+        query, result = paid(**kwargs)
+        return query, replace(result, provider="ollama")
+
+    settings.query_rewriter = local
+    reply["sources"] = ()
+    reply["extra"] = {"coverage": {"unidades": [unit("u1", "FMEA", "citada", ["Kabc"]), unit("u2", "FMECA", "nao_enviado")],
+                                   "completa": False, "decomposicao": "modelo"}}
+    route_of(client, new_conversation(client), "Compare FMEA e FMECA.")
+    assert calls[-1]["ceiling"] == 30_000 - 320

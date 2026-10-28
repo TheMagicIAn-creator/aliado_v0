@@ -4,7 +4,10 @@ Spec viva: diz o que vale **hoje** para a separação entre o núcleo do AL-IAdo
 [spec 0001](../0001-fundacao.md): o núcleo é independente de domínio, e as especializações entram à parte.
 
 Criada no lote 34 (17/10/2026), pela [spec 0034](../0034-experimentos.md); NUC-01 completado e NUC-02 e NUC-03
-acrescentados no lote 36 (18/10/2026), pela [spec 0036](../0036-mestrado-fora-do-nucleo.md).
+acrescentados no lote 36 (18/10/2026), pela [spec 0036](../0036-mestrado-fora-do-nucleo.md); NUC-05
+acrescentado no lote 67 (24/10/2026), pela [spec 0067](../0067-hora-e-nomes.md), e alterado no lote 69, pela
+[spec 0069](../0069-bateria-do-local.md), e no lote 74 (28/10/2026), pela [spec 0072](../0072-cumprimento-do-periodo.md);
+NUC-06 acrescentado no lote 72 (27/10/2026), pela [spec 0071](../0071-nome-e-provedores.md).
 
 ## Requisitos
 
@@ -43,3 +46,36 @@ tem e em que etapa entra, sem importar nada; a exceção é o `__init__.py` do p
 (NUC-02). O mapa das pastas fica em `docs/ciencia/mapa-das-pastas.md`.
 *Cenário:* dada uma pasta nova em `science/` sem `__init__.py`, ou com um `__init__.py` que importa algo, então
 `tests/test_isolation.py` falha.
+
+**NUC-05. Quem fala e quando.** Todo pedido ao modelo leva a data, o dia da semana, a hora e o período do dia
+(madrugada, manhã, tarde ou noite) na hora local, numa mensagem depois da memória e antes da conversa, fora do
+começo fixo do pedido. As instruções do núcleo dizem que "aliado" é o próprio AL-IAdo, não o nome do usuário, e que
+o nome do usuário só vem das anotações do perfil; sem ele, o agente não usa nome nenhum nem o pede (quem pergunta
+é o app, uma única vez: NUC-06). O agente só cumprimenta quando o usuário cumprimenta ou se despede (lote 74) e só
+diz a data ou a hora quando ele pergunta (lote 69).
+- **O cumprimento pronto (lote 74):** a mensagem da hora diz também o cumprimento do período. É "Bom dia" de manhã,
+  "Boa tarde" à tarde e "Boa noite" à noite e de madrugada. A mensagem pede ao agente que só cumprimente se o
+  usuário cumprimentar ou se despedir, e então com esse cumprimento, mesmo que o usuário tenha usado outro. Ainda não
+  foi medido no modelo real ([spec 0072](../0072-cumprimento-do-periodo.md)).
+
+*Cenário:* dado "Olá, aliado." às 21h de um sábado, então o pedido diz "sábado, ..., 21h, noite" e 'O cumprimento
+deste horário é "Boa noite"', e as instruções dizem que "aliado" é o agente.
+
+**NUC-06. O nome do usuário é perguntado uma vez.** Sem uma anotação de perfil com o nome do próprio usuário (a do
+nome da orientadora não conta), a primeira resposta concluída termina com a frase fixa "Ainda não sei seu nome: como
+prefere ser chamado?", sem chamada a mais ao modelo. Um arquivo na pasta da memória (`nome-perguntado`) registra que
+a pergunta foi feita: ela não volta, nem se ficar sem resposta. A mensagem que já diz o nome ("Meu nome é…", "me
+chame de…", "sou o…") não ganha a pergunta. Sem revisor de memória, ela não é feita.
+- **A resposta à pergunta** (só o nome, ou uma frase que diz o nome) é conversa: vai sem a biblioteca e com o modelo
+  mais barato; uma pergunta, uma reclamação ou um "Continue" seguem o roteador. A mensagem seguinte à pergunta aciona
+  o revisor, que a recebe junto da pergunta, dita como do AL-IAdo, e anota o nome no perfil; daí em diante, o nome
+  vai em todo pedido.
+- **Se a resposta com o nome não chegar à memória,** a pergunta volta uma vez: quando o revisor falha, a tela diz
+  que o nome não foi anotado; quando a resposta fica fora do contexto, a pergunta só volta. Uma mensagem que ignorou a
+  pergunta não a traz de volta.
+- **A memória de conversas e o revisor** recebem a resposta sem a pergunta (lote 72).
+
+*Cenário:* dada a memória sem o nome, quando chega "Qual a taxa?", então a resposta termina com a pergunta do nome;
+quando chega "Rodolfo", então ela vai sem a biblioteca, o revisor recebe 'O AL-IAdo perguntou "Ainda não sei seu
+nome: como prefere ser chamado?". A mensagem seguinte do usuário: Rodolfo', e a pergunta não aparece em nenhuma
+resposta seguinte.

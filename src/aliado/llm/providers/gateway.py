@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import os
+import socket
 from dataclasses import replace
-from time import perf_counter
+from time import monotonic, perf_counter
 from typing import Iterator
 
 from aliado.llm.contracts import LLMRequest, LLMResult, LLMStreamChunk
@@ -31,14 +32,45 @@ def offline_from_env() -> bool:
     return (os.getenv("AL_IADO_OFFLINE") or "").strip().lower() in {"1", "sim", "true"}
 
 
+# Lote 68: o servidor do Gemini, que é o que precisa da internet.
+PROBE = ("generativelanguage.googleapis.com", 443)
+
+
+class Connectivity:
+    """Há internet agora? Abre uma conexão com o servidor do Gemini, por até `timeout` segundos, e guarda a resposta
+    por `ttl` segundos: a queda e a volta da rede são percebidas sem reiniciar (lote 68). Nada é enviado."""
+
+    def __init__(self, address=PROBE, *, timeout: float = 2.0, ttl: float = 30.0, clock=monotonic,
+                 connect=socket.create_connection):
+        self.address, self.timeout, self.ttl, self.clock, self.connect = address, timeout, ttl, clock, connect
+        self._checked, self._online = None, True
+
+    def __call__(self) -> bool:
+        now = self.clock()
+        if self._checked is None or now - self._checked >= self.ttl:
+            try:
+                self.connect(self.address, timeout=self.timeout).close()
+                self._online = True
+            except OSError:
+                self._online = False
+            self._checked = now
+        return self._online
+
+
 class ProviderGateway:
-    def __init__(self, registry: ProviderRegistry | None = None, *, offline: bool = False):
+    def __init__(self, registry: ProviderRegistry | None = None, *, offline: bool = False, online=None):
+        """`offline` é o modo forçado (AL_IADO_OFFLINE); `online`, quando há, diz se há rede agora (lote 68)."""
         self.registry = registry or ProviderRegistry()
         self.offline = offline
+        self.online = online
+
+    def disconnected(self) -> bool:
+        """Sem internet: forçado pelo .env, ou sem rede agora."""
+        return self.offline or (self.online is not None and not self.online())
 
     def _remote(self, reason: str | None) -> None:
         """No modo sem internet, recusa a chamada que iria a um provedor remoto, antes de abrir a conexão."""
-        if self.offline:
+        if self.disconnected():
             raise OfflineRefusal(reason or "só o Gemini faz este pedido", unavailable=True)
 
     def register_provider(self, name: str, provider) -> None:
@@ -81,8 +113,9 @@ class ProviderGateway:
             except LocalOutOfReach as exc:
                 marks = {"route_reason": SKIPPED.format(exc)}
                 reason = str(exc)
-        if str(provider).lower() != LOCAL[0]:
-            self._remote(reason)
+        remote = str(provider).lower() != LOCAL[0]
+        if remote and self.offline:
+            self._remote(reason)  # lote 72: o modo forçado recusa antes de tudo, com o motivo dele
         capabilities = self.required_capabilities(request)
         registration = self.registry.model(
             provider,
@@ -95,6 +128,8 @@ class ProviderGateway:
             from aliado.llm.providers.base import ProviderNotConfiguredError
 
             raise ProviderNotConfiguredError(provider)
+        if remote:
+            self._remote(reason)  # depois da configuração: sem modelo, não há por que testar a rede (lote 68)
         result = adapter.generate(request, model_id=str(registration.model_id))
         latency = (perf_counter() - started) * 1000.0
         return replace(result, latency_ms=latency, **marks)
@@ -122,8 +157,9 @@ class ProviderGateway:
             except LocalOutOfReach as exc:
                 marks = {"route_reason": SKIPPED.format(exc)}
                 reason = str(exc)
-        if str(provider).lower() != LOCAL[0]:
-            self._remote(reason)
+        remote = str(provider).lower() != LOCAL[0]
+        if remote and self.offline:
+            self._remote(reason)  # lote 72: o modo forçado recusa antes de tudo, com o motivo dele
         capabilities = self.required_capabilities(request)
         registration = self.registry.model(
             provider,
@@ -136,6 +172,8 @@ class ProviderGateway:
             from aliado.llm.providers.base import ProviderNotConfiguredError
 
             raise ProviderNotConfiguredError(provider)
+        if remote:
+            self._remote(reason)  # depois da configuração: sem modelo, não há por que testar a rede (lote 68)
         for chunk in adapter.stream(request, model_id=str(registration.model_id)):
             yield replace(chunk, **marks)
 
@@ -164,7 +202,7 @@ def _model_id(*names: str, default: str | None = None) -> str | None:
 
 def build_default_gateway(*, files=None) -> ProviderGateway:
     """`files`: o registro local do que for enviado ao serviço de arquivos do Google (leitura integral, lote 30)."""
-    gateway = ProviderGateway(offline=offline_from_env())
+    gateway = ProviderGateway(offline=offline_from_env(), online=Connectivity())
     gateway.register_provider("google", GeminiProvider(files=files))
     gateway.register_provider(LOCAL[0], LocalProvider())
     local = _model_id("AL_IADO_LOCAL_MODEL")
@@ -201,4 +239,4 @@ def build_default_gateway(*, files=None) -> ProviderGateway:
     return gateway
 
 
-__all__ = ["OfflineRefusal", "ProviderGateway", "build_default_gateway", "offline_from_env"]
+__all__ = ["Connectivity", "OfflineRefusal", "ProviderGateway", "build_default_gateway", "offline_from_env"]

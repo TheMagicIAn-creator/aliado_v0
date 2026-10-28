@@ -552,7 +552,15 @@ não dá para separá-los em commits.
 | 63 | O modo sem internet (`AL_IADO_OFFLINE=1` ou `aliado web --sem-internet`): só o modelo local responde, o que precisaria do Gemini ou da web é recusado com o motivo, e um selo fica no topo da tela | Feito em 23/10/2026, sem modelo; commit f920740; lançado na 0.9.2 ([spec 0063](specs/0063-sem-internet.md)) |
 | 64 | O lançamento da 0.9.2: versão, CHANGELOG, README, wheel de uma cópia limpa, tag e release | Feito em 24/10/2026, com a autorização do pesquisador para o commit, a tag, o push e a release ([spec 0064](specs/0064-lancamento-0-9-2.md), [validação](migracao/validacao-lote-64.md)) |
 | 65 | A limpeza sem perda, o grupo A do [levantamento de 24/10](revisao/2026-10-24-levantamento-exclusoes.md): 43 arquivos compilados órfãos e 16 pastas para a Lixeira (52,8 MiB), 10 configurações quebradas do servidor de teste e cerca de 70 linhas de código sem uso | Feito em 24/10/2026, sem modelo; commit 7f58d37 ([spec 0065](specs/0065-limpeza-sem-perda.md)) |
-| 66 | O resto da limpeza: o comando `aliado biblioteca limpar-versoes` para as indexações antigas (BIB-06), o `transformers` fora do ambiente e o provedor da OpenAI fora do código | Feito em 24/10/2026, sem modelo; sem commit ([spec 0066](specs/0066-limpeza-restante.md)) |
+| 66 | O resto da limpeza: o comando `aliado biblioteca limpar-versoes` para as indexações antigas (BIB-06), o `transformers` fora do ambiente e o provedor da OpenAI fora do código | Feito em 24/10/2026, sem modelo; commit 2f3bdaa ([spec 0066](specs/0066-limpeza-restante.md)) |
+| 67 | A hora e os nomes: o pedido diz a data e o período do dia, e as instruções dizem que "aliado" é o próprio AL-IAdo e que o nome do pesquisador vem só do perfil (NUC-05) | Feito em 24/10/2026, sem modelo; sem commit ([spec 0067](specs/0067-hora-e-nomes.md)) |
+| 68 | A internet automática: sem rede, o modo sem internet entra sozinho e sai quando ela volta, conferido por uma conexão de até 2 s com o servidor do Gemini, guardada por 30 s (PRV-09, INT-02) | Feito em 24/10/2026, sem modelo; sem commit ([spec 0068](specs/0068-internet-automatica.md)) |
+| 69 | A bateria grande do modelo local: 24 mensagens de conversa e as 16 perguntas de pesquisa, só no local, com o Gemini simulado (55 chamadas locais, nenhum token pago); 7 achados para avaliação e a correção do cumprimento fora de hora do lote 67 (NUC-05) | Feito em 24/10/2026; sem commit ([spec 0069](specs/0069-bateria-do-local.md)) |
+| 70 | O revisor de memória sem raciocínio e com o filtro mais justo (PRV-07), a tradução, a explicação curta e a lista direto ao modelo (ROT-09) e o Gemini simulado da bateria com resposta válida | Feito em 24/10/2026; rodada de validação feita no mesmo dia (47 chamadas locais, nenhum token pago) e registrada em 27/10; sem commit ([spec 0070](specs/0070-revisor-roteador-harness.md)) |
+| 71 | A orientação do assistente de desenvolvimento, refeita do zero: `CLAUDE.md`, `WORKFLOW.md`, `ESTADO.md`, cinco workflows em `workflows/` e um subagente revisor só de leitura; o pesquisador deixa de administrar lotes | Feito em 27/10/2026, sem modelo e sem spec de produto; sem commit ([registro](migracao/skills-desenvolvimento.md)) |
+| 72 | O nome do usuário, perguntado uma vez (NUC-06), e a integração do Gemini com o Ollama: fichas sem raciocínio (PRV-07), arquivos do Google e modo forçado sem internet (PRV-08), reescrita local fora do teto (PRV-05) | Feito em 27/10/2026, sem modelo; 881 testes; sem commit ([spec 0071](specs/0071-nome-e-provedores.md), [revisão](revisao/2026-10-27-pendencias-provedores-nome.md)) |
+| 73 | A rodada do lote 72 no modelo local: a pergunta do nome, as fichas e os 21 casos de conversa do lote 70 | Feita em 28/10/2026 (38 das 45 chamadas locais autorizadas, nenhum token pago) e registrada na [spec 0071](specs/0071-nome-e-provedores.md). O nome "Rodolfo" foi anotado e usado; "Rô" foi anotado e não usado. As quatro fichas saíram no local, sem corte. Conversa: 32 de 35 (eram 30), com duas paradas do Ollama; sem commit |
+| 74 | O cumprimento certo do período: a mensagem da hora diz a palavra pronta ("Bom dia", "Boa tarde" ou "Boa noite", também de madrugada), usada ao cumprimentar e ao se despedir (NUC-05) | Feito em 28/10/2026; 882 testes. Rodada curta no mesmo dia: 30 das 35 chamadas locais autorizadas, nenhum token pago. A despedida foi corrigida; os cumprimentos acertaram em 15 de 18. Achado novo: 11 de 30 respostas comentam as instruções, ainda sem a comparação com a mensagem antiga nas mesmas sementes. Sem commit ([spec 0072](specs/0072-cumprimento-do-periodo.md)) |
 
 ### Decisões e resultado do lote 46 (20 e 21/10/2026)
 
@@ -859,6 +867,14 @@ As specs 0001 a 0033 são o registro de cada lote, sem alteração; o que vale h
 | 64 | [0064](specs/0064-lancamento-0-9-2.md) |
 | 65 | [0065](specs/0065-limpeza-sem-perda.md) |
 | 66 | [0066](specs/0066-limpeza-restante.md) |
+| 67 | [0067](specs/0067-hora-e-nomes.md) |
+| 68 | [0068](specs/0068-internet-automatica.md) |
+| 69 | [0069](specs/0069-bateria-do-local.md) |
+| 70 | [0070](specs/0070-revisor-roteador-harness.md) |
+| 71 | — (só instruções do assistente) |
+| 72 | [0071](specs/0071-nome-e-provedores.md) |
+| 73 | [0071](specs/0071-nome-e-provedores.md) (a rodada no modelo local) |
+| 74 | [0072](specs/0072-cumprimento-do-periodo.md) |
 
 ## Fica para a v1
 
