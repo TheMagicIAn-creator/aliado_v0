@@ -137,3 +137,26 @@ linhas podem ser bloqueados mesmo sem descarte. O hook é uma proteção auxilia
 não uma sandbox: não resolve aliases, scripts externos ou execução dinâmica.
 As regras de `AGENTS.md` continuam obrigatórias, inclusive commits pelo usuário.
 O hook não se aplica ao Codex, ao runtime do AL-IAdo nem ao terminal do pesquisador.
+
+## Orientação do Claude Code — 27/10/2026
+
+Em 24/10, o pesquisador pediu arquivos Markdown baseados no
+[vídeo do AI Master](https://www.youtube.com/watch?v=bcM9dP_uXJU) e um fluxo por pedido, em vez de
+administrar lotes. A primeira versão (um `CLAUDE.md`, a skill `aliado-fluxo`, três agentes e a pasta
+`docs/desenvolvimento/`) não chegou a ser commitada. Em 27/10, ele pediu para refazê-la do zero; a
+versão antiga ficou em `tmp/lote-71-antigo/`, fora do Git.
+
+A estrutura nova segue os capítulos do vídeo: o `CLAUDE.md` como peça central, planejar antes de
+agir e um workflow em arquivo para cada tarefa que se repete.
+
+- [CLAUDE.md](../../CLAUDE.md): importa o `AGENTS.md` e traz quem é o pesquisador, como trabalhar,
+  qual workflow usar, o mapa do repositório e as armadilhas do ambiente.
+- [WORKFLOW.md](../../WORKFLOW.md): o caminho de todo pedido, para o Claude Code e o Codex.
+- [ESTADO.md](../../ESTADO.md): o trabalho em andamento e a retomada.
+- [workflows/](../../workflows/): mudança de comportamento, correção de defeito, bateria do modelo
+  local, diagnóstico e lançamento.
+- `.claude/agents/revisor.md`: um subagente só de leitura, para a revisão independente.
+
+O `AGENTS.md` continua sendo a fonte das regras de custo, dados e Git e aponta para o `WORKFLOW.md`.
+Hooks, permissões, as skills anteriores e a configuração dos modelos não mudam. Foram consultados
+a descrição e os capítulos do vídeo; a transcrição e o material do autor exigem login e não foram lidos.

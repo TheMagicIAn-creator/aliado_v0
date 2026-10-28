@@ -8,8 +8,9 @@ Comece pela [spec 0001](docs/specs/0001-fundacao.md) e pela
 
 - O que vale hoje está nas specs vivas, uma por capacidade, em `docs/specs/capacidades/`, com requisitos
   numerados e um cenário por requisito. Cada requisito é citado por pelo menos um teste (`tests/test_specs.py`).
-- Cada lote tem a sua spec de mudança (`docs/specs/00NN-*.md`), que diz quais requisitos acrescenta, altera ou
-  retira; ao fim do lote, a spec viva é atualizada. As specs 0001 a 0033 ficam como registro.
+- Cada mudança de comportamento tem a sua spec (`docs/specs/00NN-*.md`), que diz quais requisitos acrescenta,
+  altera ou retira; ao concluir a mudança, a spec viva é atualizada. O assistente cuida desses registros e da
+  numeração. As specs 0001 a 0033 e os lotes anteriores ficam como registro histórico.
 - A lista dos lotes, das specs e das decisões de cada um fica no [roteiro](docs/roteiro-v0.md); o mapa e a
   proveniência da migração, em `docs/migracao/`.
 
@@ -22,16 +23,21 @@ Comece pela [spec 0001](docs/specs/0001-fundacao.md) e pela
 
 ## Como trabalhar
 
-- Trabalhe em pequenos lotes, combinados com o pesquisador antes de começar. Explique propósito e arquivos
-  antes das alterações e apresente os resultados e os testes para revisão.
+- Conduza cada pedido pelo fluxo entender → planejar → implementar → verificar → revisar → entregar,
+  descrito no [WORKFLOW.md](WORKFLOW.md), com os passos de cada tipo de pedido em `workflows/` e o trabalho em
+  andamento no [ESTADO.md](ESTADO.md). Explique propósito, arquivos e
+  critérios de aceitação antes das alterações. Se a direção já estiver autorizada, execute e coordene as etapas
+  até apresentar o resultado e os testes; pergunte pelas decisões que faltarem antes da parte dependente.
+  O pesquisador não precisa criar ou administrar lotes: tarefas internas, specs e registros são do assistente.
 - Commit, push, PR, merge, publicação e exclusões são discutidos com o pesquisador sobre o resultado concreto
   e nunca feitos automaticamente. Os commits são dele: o assistente prepara os arquivos e mostra os comandos.
-- Preserve os manifestos anteriores como registros da entrega original; documente mudanças posteriores em novo lote.
+- Preserve os manifestos anteriores como registros da entrega original; documente mudanças posteriores em novo
+  registro de mudança, sem reescrever a entrega anterior.
 - Preserve o repositório de origem, seus dados, resultados e histórico. Não importe `.env`, dados brutos,
   memórias, índices ou acervo antigo por padrão.
 - Nas telas e nas respostas ao pesquisador, apresente dados em linguagem simples, sem códigos internos
   (M09–M14), "semente" ou "canônica" sem explicação, e com uma nota para cada índice ou indicador.
-- Responda de forma concisa e pergunte qual será o próximo passo ao concluir um lote.
+- Responda de forma concisa e pergunte qual será o próximo passo ao concluir o pedido.
 
 ## Custo e autorizações
 
