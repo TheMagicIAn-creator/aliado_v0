@@ -22,25 +22,24 @@ trabalho, não uma autorização: confira com os arquivos, o Git e a conversa at
   - as respostas que comentam as instruções: para saber se vêm da mensagem nova, falta rodar a mensagem antiga com
     as sementes 71 e 72 (20 chamadas), o que pede autorização nova;
   - o Ollama parou duas vezes (C09 e C19). Ele se atualizou sozinho em 25/10.
-- **Comandos de commit:** `tmp/lote-72/comandos-commit.txt` (dois commits: orientação; produto dos lotes 67 a 70, 72 e
-  o registro do 73).
 - **Decisões do pesquisador:**
   - 27/10: o nome é perguntado uma única vez pelo app; a orientação foi refeita do zero; arquivos primeiro, código
     depois;
-  - 28/10: rodada com teto de 45 chamadas; o cumprimento corrigido primeiro; "Boa noite" de madrugada.
+  - 28/10: rodada com teto de 45 chamadas; o cumprimento corrigido primeiro; "Boa noite" de madrugada; parar aqui
+    e fazer o commit.
 
-## Sem commit desde 2f3bdaa (24/10)
+## Commits de 28/10 (a pedido do pesquisador)
 
-- Lotes 67 a 70 (specs 0067 a 0070), com o código, as specs vivas e os testes deles.
-- Lote 71: `CLAUDE.md`, `WORKFLOW.md`, `ESTADO.md`, `workflows/`, `.claude/agents/revisor.md` e os ajustes no
-  `AGENTS.md`, no roteiro e em `docs/migracao/skills-desenvolvimento.md`.
-- Lote 72: o código, a spec 0071, as specs vivas, os testes, o README, o CHANGELOG e a revisão de 27/10.
-- Lote 73: o registro da rodada na spec 0071 e no roteiro (nenhum código).
-- Lote 74: `src/aliado/agent.py`, o teste em `tests/test_skills_agent.py`, a spec 0072, o NUC-05, o roteiro e o
-  CHANGELOG.
+- `3c772fd`: lote 71, a orientação do assistente (`CLAUDE.md`, `WORKFLOW.md`, `ESTADO.md`, `workflows/`,
+  `.claude/agents/revisor.md`, `AGENTS.md`, `docs/migracao/skills-desenvolvimento.md`).
+- `0709c73`: lotes 67 a 70 e 72 a 74, com o código, as specs, os testes, o README, o CHANGELOG e a revisão de 27/10.
+- Um terceiro commit registra os dois no roteiro e aqui.
+- O push fica com o pesquisador. Nenhuma tag nem versão: os lotes 67 a 74 estão em "Não lançado" no CHANGELOG.
 
 ## Próxima ação
 
-Pedir a autorização da comparação com a mensagem antiga (20 chamadas). Depois dela, decidir com o pesquisador se a
-mensagem fica, muda ou volta, e então se vem o nome dito como apelido ("prefere ser chamado de") ou os outros passos
-da revisão de 27/10.
+Na próxima conversa, perguntar ao pesquisador por onde seguir:
+- a comparação com a mensagem antiga nas sementes 71 e 72 (20 chamadas, pede autorização). Depois dela, decidir se
+  a mensagem da hora fica, muda ou volta;
+- o nome dito como apelido ("prefere ser chamado de");
+- os outros passos da revisão de 27/10.
